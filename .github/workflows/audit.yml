@@ -1,6 +1,7 @@
 # Runs a daily security audit of dependencies using `cargo audit`, an issue gets created for vulnerabilities detected
 name: Security audit
 on:
+  workflow_dispatch:
   schedule:
     - cron: '0 0 * * *'
 jobs:
