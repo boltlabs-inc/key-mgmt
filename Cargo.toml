@@ -1,0 +1,21 @@
+[package]
+name = "key-mgmt"
+version = "0.1.0"
+edition = "2018"
+
+[lib]
+name = "keymgmt"
+path = "src/lib.rs"
+
+[[bin]]
+name = "key-mgmt-client"
+path = "src/bin/client.rs"
+
+[[bin]]
+name = "key-mgmt-server"
+path = "src/bin/server.rs"
+
+[[test]]
+name = "integration_tests"
+path = "integration_tests/main.rs"
+harness = false

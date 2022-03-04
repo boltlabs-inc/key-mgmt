@@ -1,0 +1,50 @@
+# CI pipeline runs on PRs and for every commit on main
+# Runs: rustfmt, Clippy, build, test, doctest, doc build
+name: Rust
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          components: rustfmt, clippy
+
+      - name: Format check
+        run: cargo fmt -- --check
+
+      - name: Clippy lint
+        run: cargo clippy --all-features --all-targets --verbose -- -Dwarnings
+
+      - name: Build
+        run: cargo build --all-features --all-targets --verbose
+
+      - name: Run all unit + library tests (not doc, integration, benchmark, or example tests)
+        run: cargo test --all-features --lib --bins
+
+      - name: Run all doctests
+        run: cargo test --all-features --doc --verbose
+
+      - name: Build documentation
+        run: RUSTDOCFLAGS="-Dwarnings" cargo doc --all-features --no-deps --verbose
