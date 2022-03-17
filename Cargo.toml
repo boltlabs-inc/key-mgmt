@@ -16,8 +16,3 @@ path = "src/bin/client.rs"
 [[bin]]
 name = "key-mgmt-server"
 path = "src/bin/server.rs"
-
-[[test]]
-name = "integration_tests"
-path = "integration_tests/main.rs"
-harness = false
