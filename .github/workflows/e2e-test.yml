@@ -25,5 +25,5 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Format check
+      - name: Run tests
         run: cargo test --all-features --all-targets --verbose
