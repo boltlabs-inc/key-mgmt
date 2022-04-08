@@ -1,11 +1,30 @@
-fn main() {}
+use anyhow::Context;
+use futures::FutureExt;
+use keymgmt::server::defaults::config_path;
+use keymgmt::server::keymgmt::Command;
+use keymgmt::server::{cli, Cli, Config};
+use std::convert::identity;
+use structopt::StructOpt;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+pub async fn main_with_cli(cli: Cli) -> Result<(), anyhow::Error> {
+    let config_path = cli.config.ok_or_else(config_path).or_else(identity)?;
+    let config = Config::load(&config_path).map(|result| {
+        result.with_context(|| {
+            format!(
+                "Could not load merchant configuration from {:?}",
+                config_path
+            )
+        })
+    });
 
-    #[test]
-    fn test_server_runs() {
-        main()
+    use cli::Server::*;
+    match cli.server {
+        Run(run) => run.run(config.await?).await,
     }
+}
+
+#[allow(unused)]
+#[tokio::main]
+async fn main() -> Result<(), anyhow::Error> {
+    main_with_cli(Cli::from_args()).await
 }

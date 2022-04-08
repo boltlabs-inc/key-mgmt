@@ -10,9 +10,39 @@ name = "keymgmt"
 path = "src/lib.rs"
 
 [[bin]]
+name = "key-mgmt"
+path = "src/bin/main.rs"
+
+[[bin]]
 name = "key-mgmt-client"
 path = "src/bin/client.rs"
 
 [[bin]]
 name = "key-mgmt-server"
 path = "src/bin/server.rs"
+
+[dependencies]
+anyhow = "1"
+async-trait = "0"
+dialectic = { git = "https://github.com/boltlabs-inc/dialectic.git", branch = "main" }
+dialectic-tokio-serde = { git = "https://github.com/boltlabs-inc/dialectic.git", branch = "main" }
+dialectic-tokio-serde-bincode = { git = "https://github.com/boltlabs-inc/dialectic.git", branch = "main" }
+dialectic-reconnect = { features = ["serde", "humantime-serde"], git = "https://github.com/boltlabs-inc/dialectic.git", branch = "main" }
+directories = "3"
+futures = "0"
+http = "0"
+http-serde = "1"
+humantime = "2"
+humantime-serde = "1"
+rand = "0"
+reqwest = "0"
+serde = "1"
+serde_with = "1"
+structopt = "0"
+thiserror = "1"
+tokio = { version = "1", features = ["full"] }
+toml = "0"
+tracing = "0"
+tracing-subscriber = { version = "0", features = ["env-filter"] }
+transport = { git = "https://github.com/boltlabs-inc/transport.git", branch = "fix-integration-test", features = ["allow_explicit_certificate_trust"] }
+webpki = "0"
