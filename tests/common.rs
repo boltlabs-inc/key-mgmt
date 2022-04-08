@@ -168,7 +168,7 @@ async fn client_test_config() -> keymgmt::client::Config {
     let m = HashMap::from([("trust_certificate", "\"localhost.crt\"")]);
 
     let contents = m.into_iter().fold("".to_string(), |acc, (key, value)| {
-        format!("{}{} = {}\n", acc, key.to_string(), value.to_string())
+        format!("{}{} = {}\n", acc, key, value)
     });
 
     write_config_file(CLIENT_CONFIG, contents);
