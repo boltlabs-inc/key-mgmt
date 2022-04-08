@@ -11,6 +11,7 @@ use std::fmt;
 pub mod client;
 pub mod protocol;
 pub mod server;
+pub mod timeout;
 pub mod transport;
 
 mod cli;

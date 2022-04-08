@@ -17,7 +17,7 @@ mod retrieve;
 use create::Create;
 use retrieve::Retrieve;
 
-/// A single merchant-side command, parameterized by the currently loaded configuration.
+/// A single server-side command, parameterized by the currently loaded configuration.
 ///
 /// All subcommands of [`cli::Server`](crate::server::cli::Server) should implement this.
 #[async_trait]

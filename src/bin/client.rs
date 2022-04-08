@@ -9,12 +9,8 @@ use structopt::StructOpt;
 pub async fn main_with_cli(cli: Cli) -> Result<(), anyhow::Error> {
     let config_path = cli.config.ok_or_else(config_path).or_else(identity)?;
     let _config = Config::load(&config_path).map(|result| {
-        result.with_context(|| {
-            format!(
-                "Could not load customer configuration from {:?}",
-                config_path
-            )
-        })
+        result
+            .with_context(|| format!("Could not load client configuration from {:?}", config_path))
     });
 
     match cli.client {
