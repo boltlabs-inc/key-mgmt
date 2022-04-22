@@ -1,8 +1,6 @@
 use anyhow::{anyhow, Context};
 use futures::FutureExt;
-use keymgmt::server::defaults::config_path;
-use keymgmt::server::keymgmt::Command;
-use keymgmt::server::{cli, Cli, Config};
+use keymgmt::server::{cli, defaults::config_path, keymgmt::Command, Cli, Config};
 use std::convert::identity;
 use structopt::StructOpt;
 use thiserror::Error;

@@ -1,7 +1,4 @@
-use crate::cli::server::Run;
-use crate::config::server::Config;
-use crate::protocol::KeyMgmt;
-use crate::TestLogs;
+use crate::{cli::server::Run, config::server::Config, protocol::KeyMgmt, TestLogs};
 use async_trait::async_trait;
 use dialectic::offer;
 use futures::stream::{FuturesUnordered, StreamExt};

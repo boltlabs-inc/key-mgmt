@@ -1,6 +1,10 @@
-use crate::protocol;
-use crate::server::config::Service;
-use crate::server::Config;
+use crate::{
+    client::keymgmt::SecretInfo,
+    protocol,
+    server::{config::Service, Config},
+    timeout::WithTimeout,
+};
+use anyhow::Context;
 use rand::rngs::StdRng;
 use transport::server::{Chan, SessionKey};
 
@@ -12,10 +16,20 @@ impl Retrieve {
         _rng: StdRng,
         _client: &reqwest::Client,
         _config: &Config,
-        _service: &Service,
+        service: &Service,
         _session_key: SessionKey,
-        _chan: Chan<protocol::Retrieve>,
+        chan: Chan<protocol::Retrieve>,
     ) -> Result<(), anyhow::Error> {
+        let (_create_secret_request, chan) = chan
+            .recv()
+            .with_timeout(service.message_timeout)
+            .await
+            .context("Did not receive create secret request")??;
+
+        chan.send(SecretInfo {})
+            .await
+            .context("Couldn't respond with SecretInfo")?
+            .close();
         Ok(())
     }
 }

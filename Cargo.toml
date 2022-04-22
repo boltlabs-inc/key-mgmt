@@ -21,6 +21,9 @@ path = "src/bin/client.rs"
 name = "key-mgmt-server"
 path = "src/bin/server.rs"
 
+[features]
+allow_explicit_certificate_trust = []
+
 [dependencies]
 anyhow = "1"
 async-trait = "0"

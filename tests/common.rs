@@ -1,9 +1,8 @@
-use std::io::Read;
 use std::{
     collections::HashMap,
     fmt,
     fs::{self, File},
-    io::Write,
+    io::{Read, Write},
     process::Command,
     sync::Mutex,
 };
@@ -70,19 +69,6 @@ impl Party {
     }
 }
 
-// Form a client CLI request. These cannot be constructed directly because the CLI types are
-// non-exhaustive.
-macro_rules! _client_cli {
-    ($cli:ident, $args:expr) => {
-        match ::keymgmt::client::cli::Client::from_iter(
-            ::std::iter::once("key-mgmt-client").chain($args),
-        ) {
-            ::keymgmt::client::cli::Client::$cli(result) => result,
-            _ => panic!("Failed to parse client CLI"),
-        }
-    };
-}
-
 /// Form a server CLI request. These cannot be constructed directly because the CLI types are
 /// non-exhaustive.
 macro_rules! server_cli {
@@ -105,7 +91,7 @@ pub async fn setup() -> ServerFuture {
         .arg("tests/gen")
         .spawn()
         .expect("Failed to generate new certificates");
-    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+    tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
 
     // write config options for each party
     let _client_config = client_test_config().await;
@@ -245,7 +231,7 @@ impl LogType {
 }
 
 /// Get any errors from the log file, filtered by party and log type.
-fn get_logs(log_type: LogType, party: Party) -> Result<String, LogError> {
+pub fn get_logs(log_type: LogType, party: Party) -> Result<String, LogError> {
     let mut file = File::open(ERROR_FILENAME).map_err(LogError::OpenFailed)?;
     let mut logs = String::new();
     file.read_to_string(&mut logs)
@@ -262,7 +248,7 @@ fn get_logs(log_type: LogType, party: Party) -> Result<String, LogError> {
 /// Wait for the log file to contain a specific entry.
 ///
 /// This checks the log every 1 second; refactor if greater granularity is needed.
-async fn await_log(party: Party, log: TestLogs) -> Result<(), anyhow::Error> {
+pub async fn await_log(party: Party, log: TestLogs) -> Result<(), anyhow::Error> {
     loop {
         let result = get_logs(LogType::Info, party);
         if result?.contains(&log.to_string()) {

@@ -1,12 +1,8 @@
-use crate::keymgmt::client::CreateSecretRequest;
-use crate::keymgmt::client::SecretInfo;
-use crate::keymgmt::client::SecretRetrieveRequest;
-use {
-    dialectic::prelude::*,
-    serde::{Deserialize, Serialize},
-    std::fmt::{self, Display, Formatter},
-    thiserror::Error,
-};
+use crate::keymgmt::client::{CreateSecretRequest, SecretInfo, SecretRetrieveRequest};
+use dialectic::prelude::*;
+use serde::{Deserialize, Serialize};
+use std::fmt::{self, Display, Formatter};
+use thiserror::Error;
 
 type _OfferAbort<Next, Err> = Session! {
     offer {

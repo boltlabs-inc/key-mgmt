@@ -1,3 +1,4 @@
+use crate::transport::KeyMgmtAddress;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
@@ -23,9 +24,15 @@ pub enum Client {
 /// Create a secret.
 #[derive(Debug, StructOpt)]
 #[non_exhaustive]
-pub struct Create {}
+pub struct Create {
+    /// The `keymgmt://` address for the server.
+    pub server: KeyMgmtAddress,
+}
 
 /// Retrieve a secret.
 #[derive(Debug, StructOpt)]
 #[non_exhaustive]
-pub struct Retrieve {}
+pub struct Retrieve {
+    /// The `keymgmt://` address for the server.
+    pub server: KeyMgmtAddress,
+}

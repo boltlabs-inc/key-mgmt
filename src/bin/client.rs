@@ -1,8 +1,10 @@
 use anyhow::Context;
 use futures::FutureExt;
-use keymgmt::client::cli::Client::{Create, Retrieve};
-use keymgmt::client::defaults::config_path;
-use keymgmt::client::{Cli, Config};
+use keymgmt::client::{
+    cli::Client::{Create, Retrieve},
+    defaults::config_path,
+    Cli, Config,
+};
 use std::convert::identity;
 use structopt::StructOpt;
 
