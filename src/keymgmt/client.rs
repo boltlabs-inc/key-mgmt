@@ -1,4 +1,5 @@
 use crate::{client::Config, protocol, transport::KeyMgmtAddress};
+#[cfg(feature = "allow_explicit_certificate_trust")]
 use anyhow::Context;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
@@ -21,9 +22,7 @@ pub struct SecretRetrieveRequest;
 
 /// A single client-side command, parameterized by the currently loaded configuration.
 ///
-/// All subcommands of [`cli::Client`](crate::client::cli::Client) should implement this,
-/// except [`Configure`](crate::client::cli::Client::Configure), which does not need
-/// to start with a valid loaded configuration.
+/// All subcommands of [`cli::Client`](crate::client::cli::Client) should implement this.
 #[async_trait]
 pub trait Command {
     type Output;
@@ -33,7 +32,7 @@ pub trait Command {
     async fn run(self, config: Config) -> Result<Self::Output, anyhow::Error>;
 }
 
-/// Connect to a given [`ZkChannelAddress`], configured using the parameters in the [`Config`].
+/// Connect to a given [`KeyMgmtAddress`], configured using the parameters in the [`Config`].
 pub async fn connect(
     config: &Config,
     address: &KeyMgmtAddress,
