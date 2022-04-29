@@ -100,16 +100,13 @@ impl Test {
             let outcome = match op {
                 Operation::Create => {
                     let est = client_cli!(Create, vec!["create", "keymgmt://localhost"]);
-                    est.run(client_config.clone())
+                    est.run(client_config.clone()).await.map(|_| ())
                 }
                 Operation::Retrieve => {
                     let est = client_cli!(Retrieve, vec!["retrieve", "keymgmt://localhost"]);
-                    est.run(client_config.clone())
+                    est.run(client_config.clone()).await.map(|_| ())
                 }
-                Operation::NoOp => Box::pin(async { Ok(()) }),
-                // err_op => return Err(TestError::NotImplemented(*err_op).into()),
-            }
-            .await;
+            };
 
             // Get error logs for each party - we make the following assumptions:
             // - logs are deleted after each test, so all errors correspond to this test
@@ -161,7 +158,6 @@ enum TestError {
 enum Operation {
     Create,
     Retrieve,
-    NoOp,
 }
 
 #[derive(Debug)]

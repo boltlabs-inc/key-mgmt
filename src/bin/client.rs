@@ -18,7 +18,10 @@ pub async fn main_with_cli(cli: Cli) -> Result<(), anyhow::Error> {
 
     match cli.client {
         Create(create) => create.run(config.await?).await,
-        Retrieve(retrieve) => retrieve.run(config.await?).await,
+        Retrieve(retrieve) => {
+            println!("{:?}", retrieve.run(config.await?).await?);
+            Ok(())
+        }
     }
 }
 
