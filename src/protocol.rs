@@ -1,7 +1,7 @@
 use crate::keymgmt::client::{CreateSecretRequest, SecretInfo, SecretRetrieveRequest};
 use dialectic::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::fmt::{self, Display, Formatter};
+use std::fmt;
 use thiserror::Error;
 
 type _OfferAbort<Next, Err> = Session! {
@@ -74,17 +74,9 @@ pub enum Party {
     Server,
 }
 
-impl Display for Party {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        use Party::*;
-        write!(
-            f,
-            "{}",
-            match self {
-                Client => "Client",
-                Server => "Server",
-            }
-        )
+impl fmt::Display for Party {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
     }
 }
 
@@ -153,17 +145,5 @@ pub mod retrieve {
     pub type RetrieveSecret = Session! {
         send SecretRetrieveRequest;
         recv SecretInfo;
-    };
-}
-
-pub mod daemon {
-    use super::*;
-    use dialectic::types::Done;
-
-    pub type Daemon = Session! {
-        choose {
-            // Refresh
-            0 => Done,
-        }
     };
 }

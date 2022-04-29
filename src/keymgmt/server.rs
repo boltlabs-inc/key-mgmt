@@ -19,17 +19,13 @@ use retrieve::Retrieve;
 /// All subcommands of [`cli::Server`](crate::server::cli::Server) should implement this.
 #[async_trait]
 pub trait Command {
-    /// Output type of the server
-    type Output;
-
     /// Run the server
-    async fn run(self, config: Config) -> Result<Self::Output, anyhow::Error>;
+    async fn run(self, config: Config) -> Result<(), anyhow::Error>;
 }
 
 #[async_trait]
 impl Command for Run {
-    type Output = ();
-    async fn run(self, config: Config) -> Result<Self::Output, anyhow::Error> {
+    async fn run(self, config: Config) -> Result<(), anyhow::Error> {
         // Share the configuration between all server threads
         let client = reqwest::Client::new();
         let config = config.clone();

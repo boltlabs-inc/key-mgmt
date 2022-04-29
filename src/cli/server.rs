@@ -16,14 +16,8 @@ pub struct Cli {
 
 #[derive(Debug, StructOpt)]
 pub enum Server {
-    Placeholder(Placeholder),
     Run(Run),
 }
-
-/// TODO: A Placeholder option to make tests run for now.
-#[derive(Debug, StructOpt)]
-#[non_exhaustive]
-pub struct Placeholder {}
 
 /// Run the server.
 #[derive(Debug, StructOpt)]

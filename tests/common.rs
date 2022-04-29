@@ -1,6 +1,5 @@
 use std::{
     collections::HashMap,
-    fmt,
     fs::{self, File},
     io::{Read, Write},
     process::Command,
@@ -9,8 +8,6 @@ use std::{
 use structopt::StructOpt;
 
 use futures::future;
-use strum::IntoEnumIterator;
-use strum_macros::EnumIter;
 use thiserror::Error;
 use tokio::{task::JoinHandle, time::Duration};
 use tracing::info_span;
@@ -24,33 +21,7 @@ pub const CLIENT_CONFIG: &str = "tests/gen/TestClient.toml";
 pub const SERVER_CONFIG: &str = "tests/gen/TestServer.toml";
 pub const ERROR_FILENAME: &str = "tests/gen/errors.log";
 
-/// The default server services we will set up for tests (all run on localhost)
-#[derive(Debug, Clone, Copy, EnumIter)]
-enum ServerServices {
-    IpV4,
-    // The server supports IPv6 but it doesn't run on the Github Actions test harness.
-    //IpV6,
-}
-
-impl ServerServices {
-    fn to_str(self) -> &'static str {
-        match self {
-            Self::IpV4 => "127.0.0.1",
-            //Self::IpV6 => "::1",
-        }
-    }
-}
-
-impl fmt::Display for ServerServices {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        // Note: this hard-codes the default port.
-        let ipaddr = match self {
-            Self::IpV4 => self.to_str().to_string(),
-            //Self::IpV6 => format!("[{}]", self.to_str()),
-        };
-        write!(f, "{}:1113", ipaddr)
-    }
-}
+const SERVER_ADDRESS: &str = "127.0.0.1";
 
 /// Give a name to the slightly annoying type of the joined server futures
 type ServerFuture = JoinHandle<Result<(), anyhow::Error>>;
@@ -77,7 +48,6 @@ macro_rules! server_cli {
             ::std::iter::once("key-mgmt-server").chain($args),
         ) {
             ::keymgmt::server::cli::Server::$cli(result) => result,
-            _ => panic!("Failed to parse server CLI"),
         }
     };
 }
@@ -105,6 +75,7 @@ pub async fn setup() -> ServerFuture {
         .init();
 
     // Form the server run request and execute
+    #[allow(clippy::infallible_destructuring_match)]
     let run = server_cli!(Run, vec!["run"]);
     let server_handle = tokio::spawn(
         run.run(server_config)
@@ -115,7 +86,7 @@ pub async fn setup() -> ServerFuture {
     // Note: hard-coded to match the 2-service server with default port.
     let checks = vec![await_log(
         Party::Server,
-        TestLogs::ServerSpawned(ServerServices::IpV4.to_string()),
+        TestLogs::ServerSpawned(SERVER_ADDRESS.to_string() + ":1113"),
     )];
 
     // Wait up to 30sec for the servers to set up or fail
@@ -167,21 +138,15 @@ async fn client_test_config() -> keymgmt::client::Config {
 /// Encode the customizable fields of the keymgmt server Config struct for testing.
 async fn server_test_config() -> keymgmt::server::Config {
     // Helper to write out the service for the server service addresses
-    let generate_service = |addr: ServerServices| {
-        HashMap::from([
-            ("address", addr.to_str()),
-            ("private_key", "localhost.key"),
-            ("certificate", "localhost.crt"),
-        ])
-        .into_iter()
-        .fold("\n[[service]]".to_string(), |acc, (key, value)| {
-            format!("{}\n{} = \"{}\"", acc, key, value)
-        })
-    };
-
-    let services = ServerServices::iter()
-        .map(generate_service)
-        .fold(String::new(), |acc, next| format!("{}\n{}", acc, next));
+    let services = HashMap::from([
+        ("address", SERVER_ADDRESS),
+        ("private_key", "localhost.key"),
+        ("certificate", "localhost.crt"),
+    ])
+    .into_iter()
+    .fold("\n[[service]]".to_string(), |acc, (key, value)| {
+        format!("{}\n{} = \"{}\"", acc, key, value)
+    });
 
     write_config_file(SERVER_CONFIG, services.to_string());
 

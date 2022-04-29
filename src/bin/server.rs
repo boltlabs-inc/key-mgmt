@@ -1,9 +1,8 @@
-use anyhow::{anyhow, Context};
+use anyhow::Context;
 use futures::FutureExt;
 use keymgmt::server::{cli, defaults::config_path, keymgmt::Command, Cli, Config};
 use std::convert::identity;
 use structopt::StructOpt;
-use thiserror::Error;
 
 pub async fn main_with_cli(cli: Cli) -> Result<(), anyhow::Error> {
     let config_path = cli.config.ok_or_else(config_path).or_else(identity)?;
@@ -15,14 +14,7 @@ pub async fn main_with_cli(cli: Cli) -> Result<(), anyhow::Error> {
     use cli::Server::*;
     match cli.server {
         Run(run) => run.run(config.await?).await,
-        _ => Err(anyhow!(CliError::NotImplemented)),
     }
-}
-
-#[derive(Error, Debug)]
-pub enum CliError {
-    #[error("Command not implemented")]
-    NotImplemented,
 }
 
 #[allow(unused)]

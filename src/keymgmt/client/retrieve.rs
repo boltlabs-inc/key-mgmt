@@ -18,16 +18,16 @@ impl Command for Retrieve {
             .await
             .context("Failed to connect to server")?;
 
-        // ...and select the Create session
+        // ...and select the retrieve session
         let chan = chan
             .choose::<1>()
             .await
-            .context("Failed to select create secret session")?;
+            .context("Failed to select retrieve secret session")?;
 
         let chan = chan
             .send(SecretRetrieveRequest {})
             .await
-            .context("Failed to send CreateSecretRequest")?;
+            .context("Failed to send SecretRetrieveRequest")?;
 
         let result = chan
             .recv()
