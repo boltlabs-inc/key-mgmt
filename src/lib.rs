@@ -17,6 +17,8 @@ mod cli;
 mod config;
 mod defaults;
 mod keymgmt;
+mod keys;
+mod localclient;
 
 /// Logs used to verify that an operation completed in the integration tests.
 #[derive(Debug)]
