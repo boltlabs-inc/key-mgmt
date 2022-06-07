@@ -49,7 +49,7 @@ impl Session {
 #[allow(unused)]
 pub enum Error {
     #[error("Session failed: {0:?}")]
-    SessionError(#[from] SessionError),
+    SessionFailed(#[from] SessionError),
 
     #[error("Expected a delegated key, but got a self-custodial or passive key")]
     ExpectedDelegatedKey,
@@ -58,6 +58,8 @@ pub enum Error {
     TransactionApprovalRequestFailed,
 }
 
+/// Generate a new, distributed [`DigitalAssetKey`] with the given use parameters,
+/// and compatible with the specified blockchain.
 #[allow(unused)]
 pub fn create_digital_asset_key(
     session: Session,
