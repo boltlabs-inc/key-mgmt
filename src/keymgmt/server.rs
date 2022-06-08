@@ -8,6 +8,7 @@ use tokio::{signal, sync::broadcast};
 use tracing::{error, info};
 use transport::server::{Chan, Server};
 
+mod command;
 mod create;
 mod retrieve;
 

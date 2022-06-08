@@ -42,6 +42,6 @@ pub struct OriginatorId(UserId);
 #[derive(Debug)]
 pub struct Transaction {}
 
-/// Signature on a [`Transaction`] under a [`DigitalAssetKey`]
+/// Signature on a [`Transaction`] under a [`DigitalAssetKey`](crate::keys::DigitalAssetKey).
 #[derive(Debug)]
 pub struct TransactionSignature {}

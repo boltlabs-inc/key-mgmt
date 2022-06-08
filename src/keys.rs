@@ -33,7 +33,7 @@ pub struct KeyInfo {
 /// This represents a full key pair.
 #[derive(Debug)]
 #[allow(unused)]
-struct DigitalAssetKey<P, R>
+pub struct DigitalAssetKey<P, R>
 where
     P: UsePermission,
     R: UseRestriction,
@@ -41,6 +41,20 @@ where
     permission: P,
     restriction: R,
 
+    key_info: KeyInfo,
+}
+
+/// Share of a digital asset key, parameterized by use permissions and restrictions.
+/// This contains a share of the key, _not_ the [full key pair](DigitalAssetKey).
+#[derive(Debug)]
+#[allow(unused)]
+pub struct DigitalAssetKeyShare<P, R>
+where
+    P: UsePermission,
+    R: UseRestriction,
+{
+    permission: P,
+    restriction: R,
     key_info: KeyInfo,
 }
 
@@ -53,7 +67,7 @@ pub trait UsePermission {}
 /// Authorization policy that requires a user to participate in any action
 /// involving the associated object.
 #[derive(Debug)]
-struct SelfCustodial;
+pub struct SelfCustodial;
 impl UsePermission for SelfCustodial {}
 
 /// Authorization policy that allows a user to set a
@@ -61,7 +75,7 @@ impl UsePermission for SelfCustodial {}
 /// delegated party.
 #[derive(Debug)]
 #[allow(unused)]
-struct Delegated {
+pub struct Delegated {
     user_policy: UserPolicySpecification,
 }
 impl UsePermission for Delegated {}
@@ -69,7 +83,7 @@ impl UsePermission for Delegated {}
 /// Authorization policy that removes all user control over a key, passing it
 /// entirely to a delegated party.
 #[derive(Debug)]
-struct Passive;
+pub struct Passive;
 impl UsePermission for Passive {}
 
 /// Specification of a user policy.

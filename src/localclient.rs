@@ -58,7 +58,7 @@ pub enum Error {
     TransactionApprovalRequestFailed,
 }
 
-/// Generate a new, distributed [`DigitalAssetKey`] with the given use parameters,
+/// Generate a new, distributed [`DigitalAssetKey`](crate::keys::DigitalAssetKey) with the given use parameters,
 /// and compatible with the specified blockchain.
 #[allow(unused)]
 pub fn create_digital_asset_key(
