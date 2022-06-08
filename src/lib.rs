@@ -17,6 +17,7 @@ mod cli;
 mod config;
 mod defaults;
 mod keymgmt;
+
 mod keys;
 mod localclient;
 mod transaction;
