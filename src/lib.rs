@@ -12,13 +12,13 @@ pub mod protocol;
 pub mod server;
 pub mod timeout;
 pub mod transport;
+pub mod local_client;
 
 mod cli;
 mod config;
 mod defaults;
-mod keymgmt;
+mod key_mgmt;
 mod keys;
-mod localclient;
 mod transaction;
 
 /// Logs used to verify that an operation completed in the integration tests.

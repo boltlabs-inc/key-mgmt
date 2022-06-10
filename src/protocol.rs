@@ -1,4 +1,4 @@
-use crate::keymgmt::client::{CreateSecretRequest, SecretInfo, SecretRetrieveRequest};
+use crate::key_mgmt::client::{CreateSecretRequest, SecretInfo, SecretRetrieveRequest};
 use dialectic::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::fmt;
