@@ -49,7 +49,6 @@ tracing = "0"
 tracing-futures = "0"
 tracing-subscriber = { version = "0", features = ["env-filter"] }
 transport = { git = "https://github.com/boltlabs-inc/transport.git", branch = "main", features = ["allow_explicit_certificate_trust"] }
-uuid = { version = "1", features = ["v4", "fast-rng"] }
 webpki = "0"
 
 [dev-dependencies]

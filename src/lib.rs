@@ -8,11 +8,11 @@
 use std::fmt;
 
 pub mod client;
+pub mod local_client;
 pub mod protocol;
 pub mod server;
 pub mod timeout;
 pub mod transport;
-pub mod local_client;
 
 mod cli;
 mod config;
