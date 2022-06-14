@@ -2,7 +2,7 @@
 
 use crate::{
     keys::{KeyId, KeyInfo, KeyTag, UsePermission, UseRestriction, UserPolicySpecification},
-    transaction::{TarId, TransactionApprovalRequest, TransactionSignature},
+    transaction::{TarId, TransactionApprovalRequest, TransactionSignature, UserId},
 };
 
 use thiserror::Error;
@@ -15,13 +15,14 @@ pub struct Password;
 
 /// Deployment details for a session.
 ///
-/// Sample fields: timeouts, key server IPs
+/// Possible fields include: timeouts, key server IPs.
 #[derive(Debug)]
 pub struct SessionConfig;
 
 /// Communication session with a set of key servers.
 /// A session can be ended manually, or it might time out and require
-/// re-authentication (that is, a new [`Session`])
+/// re-authentication (that is, a new [`Session`]).
+#[derive(Debug)]
 #[allow(unused)]
 pub struct Session {
     config: SessionConfig,
@@ -51,33 +52,34 @@ pub enum Error {
     #[error("Session failed: {0:?}")]
     SessionFailed(#[from] SessionError),
 
-    #[error("Expected a delegated key, but got a self-custodial or passive key")]
-    ExpectedDelegatedKey,
-
     #[error("The request was rejected")]
     TransactionApprovalRequestFailed,
 }
 
-/// Generate a new, distributed [`DigitalAssetKey`] with the given use parameters,
-/// and compatible with the specified blockchain.
+/// Generate a new, distributed [`DigitalAssetKey`] with the given use
+/// parameters, and compatible with the specified blockchain.
+///
+/// TODO (implementation): Pass the appropriate blockchain as a parameter.
 #[allow(unused)]
 pub fn create_digital_asset_key(
     session: Session,
+    user_id: UserId,
     key_tag: Option<KeyTag>,
-    //blockchain:
     permission: impl UsePermission,
     restriction: impl UseRestriction,
 ) -> Result<(), Error> {
     todo!()
 }
 
-/// Set a user key policy for a delegated key.
+/// Set a asset-owner-specified key policy for a delegated key.
 ///
-/// Errors: If the key with given ID is not delegated, returns
-/// [`Error::ExpectedDelegatedKey`].
+/// User-specified policies can only be set for
+/// [`SelfCustodial`](crate::keys::SelfCustodial) and 
+/// [`Delegated`](crate::keys::Delegated) key types.
 #[allow(unused)]
 pub fn set_user_key_policy(
     session: Session,
+    user_id: UserId,
     key_id: KeyId,
     user_policy: UserPolicySpecification,
 ) -> Result<(), Error> {
@@ -85,6 +87,15 @@ pub fn set_user_key_policy(
 }
 
 /// Request approval for a transaction.
+///
+/// Assumption: A [`TransactionApprovalRequest`] originates either with the asset owner or the service provider.
+/// This is cryptographically enforced with an authenticated [`Session`] between
+/// the key server and one of the asset owner or the service provider.
+/// This request will fail if the calling party is not from one of those entities.
+/// 
+/// TODO (implementation): Define a whitelist of approved entities that are allowed
+/// to submit this request (this should live on the key servers, not on the local client, or
+/// be a system-wide configuration).
 #[allow(unused)]
 pub fn transaction_approval_request(
     session: Session,
@@ -98,31 +109,43 @@ pub fn transaction_approval_request(
 #[allow(unused)]
 pub fn transaction_signature_export(
     session: Session,
+    user_id: UserId,
     tar_id: TarId,
 ) -> Result<TransactionSignature, Error> {
     todo!()
 }
 
-/// Retrieve the public key info for all keys associated with the user (as
-/// defined by the open `session`).
+/// Retrieve the public key info for all keys associated with the specified
+/// user.
 #[allow(unused)]
-pub fn retrieve_keys(session: Session) -> Result<KeyInfo, Error> {
+pub fn retrieve_public_keys(session: Session, user_id: UserId) -> Result<Vec<KeyInfo>, Error> {
     todo!()
 }
 
-/// Retrieve the public key info for the specified key associated with the user
-/// (as defined by the open `session`).
+/// Retrieve the public key info for the specified key associated with the user.
 #[allow(unused)]
-pub fn retrieve_public_key(session: Session, key_id: &KeyId) -> Result<KeyInfo, Error> {
+pub fn retrieve_public_key(
+    session: Session,
+    user_id: UserId,
+    key_id: &KeyId,
+) -> Result<KeyInfo, Error> {
     todo!()
 }
 
-/// Retrieve the audit log for the user (as defined by the open `session`);
-/// optionally, filter for logs associated with the specified [`KeyId`].
-/// The audit log includes actions, date, approvals, context about the request.
+/// Retrieve the audit log for a specified asset owner; optionally, filter for logs associated
+/// with the specified [`KeyId`]. The audit log includes context about any
+/// action requested and/or taken on the digital asset key, including which
+/// action was requested and by whom, the date, details about approval or
+/// rejection from each key server, the policy engine, and each asset fiduciary
+/// (if relevant), and any other relevant details.
 ///
-/// Future updates: add an optional date range, update return type.
+/// TODO (implementation): update return value to a structured log type (rather than a generic `String`).
+/// TODO (feature): add an optional date range 
 #[allow(unused)]
-pub fn retrieve_audit_log(session: Session, key_id: Option<&KeyId>) -> Result<String, Error> {
+pub fn retrieve_audit_log(
+    session: Session,
+    user_id: UserId,
+    key_id: Option<&KeyId>,
+) -> Result<String, Error> {
     todo!()
 }

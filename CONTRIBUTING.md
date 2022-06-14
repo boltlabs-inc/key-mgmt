@@ -13,3 +13,4 @@ Please report any violations of this code of conduct to
 Issues are described in the issue tracker, but there is also supporting inline documentation noting the specific location of various types of problems in the code. These are marked as `TODO (optional modifiers):`. Potential modifiers include:
 - `design`: Solving the issue requires addressing an open design question
 - `implementation`: Solving the issue requires building out some aspect of the implementation that didn't exist at time of writing
+- `feature`: Solving the issue involves building an optional feature

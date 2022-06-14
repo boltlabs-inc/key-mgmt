@@ -5,11 +5,14 @@ use crate::keys::KeyId;
 /// must be owned by the [`UserId`], and the transaction must involve the
 /// specified [`AssetId`], and be originated by the associated [`OriginatorId`].
 ///
-/// Future iterations may add some cryptographic proof that this request was
-/// formed by the specified [`OriginatorId`].
-///
 /// The [`Transaction`] should be a valid transaction format for the blockchain
 /// that the [`KeyId`] is associated with.
+/// 
+/// Assumption: TARs originate either with the asset owner or the service provider.
+/// This is cryptographically enforced with an authenticated session when the request
+/// is submitted from the client component. That is, TARs should only be accepted 
+/// by the key servers if they are received via an authenticated session between
+/// the key server and one of the asset owner or the service provider.
 #[derive(Debug)]
 #[allow(unused)]
 pub struct TransactionApprovalRequest {
