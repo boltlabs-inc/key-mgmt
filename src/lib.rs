@@ -8,7 +8,7 @@
 use std::fmt;
 
 pub mod client;
-pub mod local_client;
+pub mod localclient;
 pub mod protocol;
 pub mod server;
 pub mod timeout;
