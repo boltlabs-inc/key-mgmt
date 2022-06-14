@@ -5,6 +5,8 @@
 //! and types describing the various allowed use permissions and restrictions in
 //! the system.
 
+use crate::transaction::UserId;
+
 /// Unique identifier for a key.
 #[allow(unused)]
 #[derive(Debug)]
@@ -22,6 +24,7 @@ pub struct DigitalAssetPublicKey;
 #[derive(Debug)]
 #[allow(unused)]
 pub struct KeyInfo {
+    user_id: UserId,
     key_id: KeyId,
     key_tag: Option<KeyTag>,
     public_key: DigitalAssetPublicKey,

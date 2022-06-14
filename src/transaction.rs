@@ -6,13 +6,16 @@ use crate::keys::KeyId;
 /// specified [`AssetId`], and be originated by the associated [`OriginatorId`].
 ///
 /// The [`Transaction`] should be a valid transaction format for the blockchain
-/// that the [`KeyId`] is associated with.
-/// 
-/// Assumption: TARs originate either with the asset owner or the service provider.
-/// This is cryptographically enforced with an authenticated session when the request
-/// is submitted from the client component. That is, TARs should only be accepted 
-/// by the key servers if they are received via an authenticated session between
-/// the key server and one of the asset owner or the service provider.
+/// that the [`KeyId`] is associated with. This must be validated by the calling
+/// application - it will not be checked by the [`TransactionApprovalRequest`]
+/// constructor.
+///
+/// Assumption: TARs originate either with the asset owner or the service
+/// provider. This is cryptographically enforced with an authenticated session
+/// when the request is submitted from the client component. That is, TARs
+/// should only be accepted by the key servers if they are received via an
+/// authenticated session between the key server and one of the asset owner or
+/// the service provider.
 #[derive(Debug)]
 #[allow(unused)]
 pub struct TransactionApprovalRequest {
@@ -41,7 +44,8 @@ pub struct AssetId {}
 #[derive(Debug, Clone, Copy)]
 pub struct OriginatorId(UserId);
 
-/// Transaction on a blockchain.
+/// A transaction describes the transfer of a digital asset owned by an asset
+/// owner to another entity.
 #[derive(Debug)]
 pub struct Transaction {}
 
