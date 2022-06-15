@@ -86,7 +86,7 @@ impl UsePermission for Delegated {}
 /// Use permission that refers to a digital asset key that was created by
 /// the Service Provider on behalf of an asset owner, i.e., the asset owner does
 /// not have a registered account with the key servers. The Service Provider has
-/// custody of the key, including completel signing authority, i.e., there is
+/// custody of the key, including complete signing authority, i.e., there is
 /// no [`UserPolicySpecification`] set.
 ///
 /// TODO (design): Defining the specification for `Passive` use permission is an

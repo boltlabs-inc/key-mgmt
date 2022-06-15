@@ -90,7 +90,7 @@ pub fn create_digital_asset_key(
     todo!()
 }
 
-/// Set a asset-owner-specified key policy for a delegated key.
+/// Set an asset-owner-specified key policy for a delegated key.
 ///
 /// User-specified policies can only be set for
 /// [`SelfCustodial`](crate::keys::SelfCustodial) and
