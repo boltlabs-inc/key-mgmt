@@ -8,10 +8,12 @@
 use std::fmt;
 
 pub mod client;
+pub mod keys;
 pub mod localclient;
 pub mod protocol;
 pub mod server;
 pub mod timeout;
+pub mod transaction;
 pub mod transport;
 
 mod cli;
@@ -20,8 +22,6 @@ mod config;
 mod crypto;
 mod defaults;
 mod key_mgmt;
-mod keys;
-mod transaction;
 
 /// Logs used to verify that an operation completed in the integration tests.
 #[derive(Debug)]

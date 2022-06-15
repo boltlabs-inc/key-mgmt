@@ -1,8 +1,10 @@
 //! Public API for the DAMS local client library.
 
 use crate::{
-    keys::{KeyId, KeyInfo, KeyTag, UsePermission, UseRestriction, UserPolicySpecification},
-    transaction::{TarId, TransactionApprovalRequest, TransactionSignature, UserId},
+    keys::{
+        KeyId, KeyInfo, KeyTag, UsePermission, UseRestriction, UserId, UserPolicySpecification,
+    },
+    transaction::{TarId, TransactionApprovalRequest, TransactionSignature},
 };
 
 use thiserror::Error;
@@ -23,7 +25,7 @@ pub struct SessionConfig;
 /// A `Session` is an abstraction over a set of mutually authenticated
 /// communication sessions between an asset owner and a key server. The
 /// key servers are specified in the [`SessionConfig`]. An open `Session` is
-/// required to interact with the [`localclient`] API.
+/// required to interact with the [`crate::localclient`] API.
 ///
 /// A session can be ended manually, or it might time out and require
 /// re-authentication (that is, creation of a new [`Session`]).
@@ -50,7 +52,7 @@ impl Session {
     /// [`SessionConfig`].
     ///
     /// This only needs to be called once per user; future sessions can be
-    /// created with [`open()`].
+    /// created with [`Session::open()`].
     pub fn register(
         user_id: UserId,
         password: Password,
@@ -75,7 +77,8 @@ pub enum Error {
     TransactionApprovalRequestFailed,
 }
 
-/// Generate a new, distributed [`DigitalAssetKey`] with the given use
+/// Generate a new, distributed
+/// [`DigitalAssetKey`](crate::keys::DigitalAssetKey) with the given use
 /// parameters, and compatible with the specified blockchain.
 ///
 /// TODO (implementation): Pass the appropriate blockchain as a parameter.

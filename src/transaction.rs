@@ -1,9 +1,12 @@
-use crate::keys::KeyId;
+//! Library for blockchains, transactions, and requests for signatures on
+//! transactions.
+
+use crate::keys::{KeyId, UserId};
 
 /// A transaction approval request is used to log a request for a
 /// [`TransactionSignature`] under key associated with the [`KeyId`]. The key
 /// must be owned by the [`UserId`], and the transaction must involve the
-/// specified [`AssetId`], and be originated by the associated [`OriginatorId`].
+/// specified [`AssetId`].
 ///
 /// The [`Transaction`] should be a valid transaction format for the blockchain
 /// that the [`KeyId`] is associated with. This must be validated by the calling
@@ -23,14 +26,8 @@ pub struct TransactionApprovalRequest {
     user_id: UserId,
     asset_id: AssetId,
     tar_id: TarId,
-    originator_id: OriginatorId,
     transaction: Transaction,
 }
-
-/// Unique ID for a user. Assumption: this will be derived from an ID generated
-/// in the Forte ecosystem.
-#[derive(Debug, Clone, Copy)]
-pub struct UserId;
 
 /// Unique ID for a [`TransactionApprovalRequest`].
 #[derive(Debug, Clone, Copy)]
@@ -40,15 +37,12 @@ pub struct TarId;
 #[derive(Debug, Clone, Copy)]
 pub struct AssetId {}
 
-/// Unique ID for the entity that originates a transaction.
-#[derive(Debug, Clone, Copy)]
-pub struct OriginatorId(UserId);
-
 /// A transaction describes the transfer of a digital asset owned by an asset
 /// owner to another entity.
 #[derive(Debug)]
 pub struct Transaction {}
 
-/// Signature on a [`Transaction`] under a [`DigitalAssetKey`]
+/// Signature on a [`Transaction`] under a
+/// [`DigitalAssetKey`](crate::keys::DigitalAssetKey).
 #[derive(Debug)]
 pub struct TransactionSignature {}

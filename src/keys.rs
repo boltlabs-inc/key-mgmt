@@ -1,14 +1,15 @@
-//! High-level key types, including whole keys and shares of keys, and their
-//! associated information.
+//! Digital asset keys and descriptions.
 //!
-//! Additional information includes machine- and human-readable tags for keys
-//! and types describing the various allowed use permissions and restrictions in
-//! the system.
+//! Includes basic key types (both standard keys and shares of keys);
+//! modifiers describing access control and custody;
+//! and machine- and human-readable tags for keys.
 
-use crate::{
-    crypto::{KeyPair, PublicKey},
-    transaction::UserId,
-};
+use crate::crypto::{KeyPair, PublicKey};
+
+/// Unique ID for a user. Assumption: this will be derived from an ID generated
+/// in the Forte ecosystem.
+#[derive(Debug, Clone, Copy)]
+pub struct UserId;
 
 /// Unique identifier for a key.
 #[allow(unused)]
@@ -37,7 +38,7 @@ pub struct KeyInfo {
 /// This represents a full key pair.
 #[derive(Debug)]
 #[allow(unused)]
-struct DigitalAssetKey<P, R>
+pub struct DigitalAssetKey<P, R>
 where
     P: UsePermission,
     R: UseRestriction,
@@ -68,7 +69,7 @@ pub trait UsePermission {}
 
 #[derive(Debug)]
 #[allow(unused)]
-struct SelfCustodial {
+pub struct SelfCustodial {
     user_policy: UserPolicySpecification,
 }
 impl UsePermission for SelfCustodial {}
@@ -85,7 +86,7 @@ impl UsePermission for SelfCustodial {}
 /// and how many might exist.
 #[derive(Debug)]
 #[allow(unused)]
-struct Delegated {
+pub struct Delegated {
     user_policy: UserPolicySpecification,
 }
 impl UsePermission for Delegated {}
@@ -103,14 +104,14 @@ impl UsePermission for Delegated {}
 /// authority. Figure out how to represent such an authority and how many might
 /// exist.
 #[derive(Debug)]
-struct Passive;
+pub struct Passive;
 impl UsePermission for Passive {}
 
-/// Specification of a user-set policy. This describes the set of policies that an
-/// asset owner can define around use of a digital asset key that are enforced
-/// by the DAMS key servers. If the key servers find that a user-set policy has
-/// been violated, they can require additional validation directly from the
-/// asset owner.
+/// Specification of a user-set policy. This describes the set of policies that
+/// an asset owner can define around use of a digital asset key that are
+/// enforced by the DAMS key servers. If the key servers find that a user-set
+/// policy has been violated, they can require additional validation directly
+/// from the asset owner.
 ///
 /// TODO (design): Define the concrete policies this can encompass.
 #[derive(Debug)]
