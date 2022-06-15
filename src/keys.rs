@@ -56,7 +56,7 @@ where
 /// A use permission is a type that defines the degree to which the asset owner
 /// has delegated custody of a digital asset key or key share to another entity.
 ///
-/// TODO (design): This abstraction relies on the design of [`Delegated`] and
+/// TODO #28 (design): This abstraction relies on the design of [`Delegated`] and
 /// [`Passive`] key types and their capabilities, which are open design
 /// questions.
 pub trait UsePermission {}
@@ -78,10 +78,10 @@ impl UsePermission for SelfCustodial {}
 /// delegated party. The asset owner can set a [`UserPolicySpecification`] to
 /// apply additional rules and requirements for digital asset key usage.
 ///
-/// TODO (design): Defining the specification for `Delegated` use permission
+/// TODO #28 (design): Defining the specification for `Delegated` use permission
 /// is an open design question. See also the note on [`UsePermission`].
 ///
-/// TODO (design, implementation): Add a field describing the designated signing
+/// TODO #27 (design, implementation): Add a field describing the designated signing
 /// authority / delegated party. Figure out how to represent such an authority
 /// and how many might exist.
 #[derive(Debug)]
@@ -97,10 +97,10 @@ impl UsePermission for Delegated {}
 /// custody of the key, including complete signing authority, i.e., there is
 /// no [`UserPolicySpecification`] set.
 ///
-/// TODO (design): Defining the specification for `Passive` use permission is an
+/// TODO #28 (design): Defining the specification for `Passive` use permission is an
 /// open design question. See also the note on [`UsePermission`].
 ///
-/// TODO (design, implementation): Add a field describing the designated signing
+/// TODO #27 (design, implementation): Add a field describing the designated signing
 /// authority. Figure out how to represent such an authority and how many might
 /// exist.
 #[derive(Debug)]
@@ -113,7 +113,7 @@ impl UsePermission for Passive {}
 /// policy has been violated, they can require additional validation directly
 /// from the asset owner.
 ///
-/// TODO (design): Define the concrete policies this can encompass.
+/// TODO #28 (design): Define the concrete policies this can encompass.
 #[derive(Debug)]
 pub struct UserPolicySpecification {}
 
@@ -127,7 +127,7 @@ pub trait UseRestriction {}
 /// fixed set of asset fiduciaries, configured at system setup. The asset
 /// fiduciaries will not change for different keys or different users.
 ///
-/// TODO (implementation): create a config file with appropriate details about
+/// TODO #29 (implementation): create a config file with appropriate details about
 /// the asset fiduciaries; make a constructor for this type that instantiates
 /// based on that configuration.
 #[derive(Debug)]

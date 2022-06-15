@@ -81,7 +81,7 @@ pub enum Error {
 /// [`DigitalAssetKey`](crate::keys::DigitalAssetKey) with the given use
 /// parameters, and compatible with the specified blockchain.
 ///
-/// TODO (implementation): Pass the appropriate blockchain as a parameter.
+/// TODO #25 (implementation): Pass the appropriate blockchain as a parameter.
 #[allow(unused)]
 pub fn create_digital_asset_key(
     session: Session,
