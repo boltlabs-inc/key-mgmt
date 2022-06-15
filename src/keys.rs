@@ -5,7 +5,10 @@
 //! and types describing the various allowed use permissions and restrictions in
 //! the system.
 
-use crate::transaction::UserId;
+use crate::{
+    crypto::{KeyPair, PublicKey},
+    transaction::UserId,
+};
 
 /// Unique identifier for a key.
 #[allow(unused)]
@@ -18,7 +21,7 @@ pub struct KeyTag(String);
 
 /// Public key portion of a digital asset key pair.
 #[derive(Debug)]
-pub struct DigitalAssetPublicKey;
+pub struct DigitalAssetPublicKey(PublicKey);
 
 /// Convenient grouping of the public components of a digital asset key pair.
 #[derive(Debug)]
@@ -42,7 +45,11 @@ where
     permission: P,
     restriction: R,
 
-    key_info: KeyInfo,
+    key_tag: Option<KeyTag>,
+    key_id: KeyId,
+    user_id: UserId,
+
+    key_pair: KeyPair,
 }
 
 /// A use permission is a type that defines the degree to which the asset owner
