@@ -73,6 +73,13 @@ pub struct SelfCustodial {
     user_policy: UserPolicySpecification,
 }
 impl UsePermission for SelfCustodial {}
+impl Default for SelfCustodial {
+    fn default() -> Self {
+        Self {
+            user_policy: UserPolicySpecification,
+        }
+    }
+}
 
 /// Use permission that delegates signing authority to a specified
 /// delegated party. The asset owner can set a [`UserPolicySpecification`] to
@@ -115,7 +122,7 @@ impl UsePermission for Passive {}
 ///
 /// TODO #28 (design): Define the concrete policies this can encompass.
 #[derive(Debug)]
-pub struct UserPolicySpecification {}
+pub struct UserPolicySpecification;
 
 /// A use restriction is a type that defines what entities have veto power over
 /// the use of a digital asset key.
@@ -131,12 +138,12 @@ pub trait UseRestriction {}
 /// the asset fiduciaries; make a constructor for this type that instantiates
 /// based on that configuration.
 #[derive(Debug)]
-struct SharedControl;
+pub struct SharedControl;
 impl UseRestriction for SharedControl {}
 
 /// Use restriction that does not assign veto power to a given set of asset
 /// fiduciaries; that is, given a valid, authenticated request to use a digital
 /// asset key, no additional parties are consulted.
 #[derive(Debug)]
-struct Unilateral;
+pub struct Unilateral;
 impl UseRestriction for Unilateral {}

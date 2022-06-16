@@ -29,20 +29,32 @@ pub struct TransactionApprovalRequest {
     transaction: Transaction,
 }
 
+impl Default for TransactionApprovalRequest {
+    fn default() -> Self {
+        Self {
+            key_id: KeyId,
+            user_id: UserId,
+            asset_id: AssetId,
+            tar_id: TarId,
+            transaction: Transaction,
+        }
+    }
+}
+
 /// Unique ID for a [`TransactionApprovalRequest`].
 #[derive(Debug, Clone, Copy)]
 pub struct TarId;
 
 /// Unique ID for a digital asset.
 #[derive(Debug, Clone, Copy)]
-pub struct AssetId {}
+pub struct AssetId;
 
 /// A transaction describes the transfer of a digital asset owned by an asset
 /// owner to another entity.
 #[derive(Debug)]
-pub struct Transaction {}
+pub struct Transaction;
 
 /// Signature on a [`Transaction`] under a
 /// [`DigitalAssetKey`](crate::keys::DigitalAssetKey).
 #[derive(Debug)]
-pub struct TransactionSignature {}
+pub struct TransactionSignature;
