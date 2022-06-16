@@ -1,7 +1,7 @@
 pub(crate) mod common;
 
 use common::{get_logs, LogType, Party};
-use keymgmt::{client, client::keymgmt::Command};
+use key_mgmt::{client, client::key_mgmt::Command};
 use std::fs::OpenOptions;
 use structopt::StructOpt;
 use thiserror::Error;
@@ -10,10 +10,10 @@ use thiserror::Error;
 // non-exhaustive.
 macro_rules! client_cli {
     ($cli:ident, $args:expr) => {
-        match ::keymgmt::client::cli::Client::from_iter(
+        match ::key_mgmt::client::cli::Client::from_iter(
             ::std::iter::once("key-mgmt-client").chain($args),
         ) {
-            ::keymgmt::client::cli::Client::$cli(result) => result,
+            ::key_mgmt::client::cli::Client::$cli(result) => result,
             _ => panic!("Failed to parse client CLI"),
         }
     };

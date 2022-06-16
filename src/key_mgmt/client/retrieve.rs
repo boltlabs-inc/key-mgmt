@@ -2,10 +2,10 @@ use super::Command;
 use anyhow::{anyhow, Context};
 use async_trait::async_trait;
 
-use crate::client::keymgmt::SecretInfo;
+use crate::client::key_mgmt::SecretInfo;
 use crate::client::{
     cli::Retrieve,
-    keymgmt::{connect, Config, SecretRetrieveRequest},
+    key_mgmt::{connect, Config, SecretRetrieveRequest},
 };
 
 #[async_trait]

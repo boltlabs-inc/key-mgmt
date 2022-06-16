@@ -1,4 +1,4 @@
-use keymgmt::{
+use key_mgmt::{
     keys::{KeyId, SelfCustodial, SharedControl, UserId, UserPolicySpecification},
     localclient::*,
     transaction::{TarId, TransactionApprovalRequest},
@@ -75,4 +75,3 @@ fn retrieve_public_key_by_id_not_implemented() {
 fn retrieve_audit_log_not_implemented() {
     let _result = retrieve_audit_log(default_session(), UserId, None);
 }
-

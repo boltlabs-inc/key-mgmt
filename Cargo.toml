@@ -6,7 +6,7 @@ license = "MIT"
 description = "implementation of a secure key mangement system"
 
 [lib]
-name = "keymgmt"
+name = "key_mgmt"
 path = "src/lib.rs"
 
 [[bin]]

@@ -4,7 +4,7 @@ use async_trait::async_trait;
 
 use crate::client::{
     cli::Create,
-    keymgmt::{connect, Config, CreateSecretRequest},
+    key_mgmt::{connect, Config, CreateSecretRequest},
 };
 
 #[async_trait]

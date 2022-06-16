@@ -1,7 +1,7 @@
 use anyhow::Context;
 use futures::FutureExt;
-use keymgmt::client::keymgmt::Command;
-use keymgmt::client::{
+use key_mgmt::client::key_mgmt::Command;
+use key_mgmt::client::{
     cli::Client::{Create, Retrieve},
     defaults::config_path,
     Cli, Config,
