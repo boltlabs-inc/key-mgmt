@@ -93,7 +93,7 @@ pub fn create_digital_asset_key(
     key_tag: Option<KeyTag>,
     permission: impl UsePermission,
     restriction: impl UseRestriction,
-) -> Result<(), Error> {
+) -> Result<KeyInfo, Error> {
     todo!()
 }
 

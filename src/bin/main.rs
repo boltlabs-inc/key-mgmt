@@ -8,8 +8,8 @@ mod server;
 
 #[derive(Debug, StructOpt)]
 pub enum Cli {
-    Client(key_mgmt::client::Cli),
-    Server(key_mgmt::server::Cli),
+    Client(da_mgmt::client::Cli),
+    Server(da_mgmt::server::Cli),
 }
 
 #[tokio::main]

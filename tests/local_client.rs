@@ -1,4 +1,4 @@
-use key_mgmt::{
+use da_mgmt::{
     keys::{KeyId, KeyTag, SelfCustodial, SharedControl, UserId, UserPolicySpecification},
     localclient::*,
     transaction::TransactionApprovalRequest,

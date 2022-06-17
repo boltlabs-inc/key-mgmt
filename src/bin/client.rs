@@ -1,11 +1,11 @@
 use anyhow::Context;
-use futures::FutureExt;
-use key_mgmt::client::key_mgmt::Command;
-use key_mgmt::client::{
+use da_mgmt::client::key_mgmt::Command;
+use da_mgmt::client::{
     cli::Client::{Create, Retrieve},
     defaults::config_path,
     Cli, Config,
 };
+use futures::FutureExt;
 use std::convert::identity;
 use structopt::StructOpt;
 
