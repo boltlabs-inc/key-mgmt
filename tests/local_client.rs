@@ -1,7 +1,7 @@
 use key_mgmt::{
     keys::{KeyId, SelfCustodial, SharedControl, UserId, UserPolicySpecification},
     localclient::*,
-    transaction::{TarId, TransactionApprovalRequest},
+    transaction::TransactionApprovalRequest,
 };
 
 #[test]
@@ -47,15 +47,9 @@ fn set_user_key_policy_not_implemented() {
 
 #[test]
 #[should_panic(expected = "not yet implemented")]
-fn request_transaction_approval_not_implemented() {
+fn request_transaction_signature_not_implemented() {
     let tar = TransactionApprovalRequest::default();
-    let _result = request_transaction_approval(default_session(), tar);
-}
-
-#[test]
-#[should_panic(expected = "not yet implemented")]
-fn transaction_signature_export_not_implemented() {
-    let _result = transaction_signature_export(default_session(), UserId, TarId);
+    let _result = request_transaction_signature(default_session(), tar);
 }
 
 #[test]

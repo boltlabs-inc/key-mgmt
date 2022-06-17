@@ -24,7 +24,8 @@ pub struct KeyTag(String);
 #[derive(Debug)]
 pub struct DigitalAssetPublicKey(PublicKey);
 
-/// Convenient grouping of the public components of a digital asset key pair.
+/// Convenient grouping of the non-secret components of a digital asset key
+/// pair.
 #[derive(Debug)]
 #[allow(unused)]
 pub struct KeyInfo {
@@ -56,8 +57,8 @@ where
 /// A use permission is a type that defines the degree to which the asset owner
 /// has delegated custody of a digital asset key or key share to another entity.
 ///
-/// TODO #28 (design): This abstraction relies on the design of [`Delegated`] and
-/// [`Passive`] key types and their capabilities, which are open design
+/// TODO #28 (design): This abstraction relies on the design of [`Delegated`]
+/// and [`Passive`] key types and their capabilities, which are open design
 /// questions.
 pub trait UsePermission {}
 
@@ -88,9 +89,9 @@ impl Default for SelfCustodial {
 /// TODO #28 (design): Defining the specification for `Delegated` use permission
 /// is an open design question. See also the note on [`UsePermission`].
 ///
-/// TODO #27 (design, implementation): Add a field describing the designated signing
-/// authority / delegated party. Figure out how to represent such an authority
-/// and how many might exist.
+/// TODO #27 (design, implementation): Add a field describing the designated
+/// signing authority / delegated party. Figure out how to represent such an
+/// authority and how many might exist.
 #[derive(Debug)]
 #[allow(unused)]
 pub struct Delegated {
@@ -104,12 +105,12 @@ impl UsePermission for Delegated {}
 /// custody of the key, including complete signing authority, i.e., there is
 /// no [`UserPolicySpecification`] set.
 ///
-/// TODO #28 (design): Defining the specification for `Passive` use permission is an
-/// open design question. See also the note on [`UsePermission`].
+/// TODO #28 (design): Defining the specification for `Passive` use permission
+/// is an open design question. See also the note on [`UsePermission`].
 ///
-/// TODO #27 (design, implementation): Add a field describing the designated signing
-/// authority. Figure out how to represent such an authority and how many might
-/// exist.
+/// TODO #27 (design, implementation): Add a field describing the designated
+/// signing authority. Figure out how to represent such an authority and how
+/// many might exist.
 #[derive(Debug)]
 pub struct Passive;
 impl UsePermission for Passive {}
@@ -134,9 +135,9 @@ pub trait UseRestriction {}
 /// fixed set of asset fiduciaries, configured at system setup. The asset
 /// fiduciaries will not change for different keys or different users.
 ///
-/// TODO #29 (implementation): create a config file with appropriate details about
-/// the asset fiduciaries; make a constructor for this type that instantiates
-/// based on that configuration.
+/// TODO #29 (implementation): create a config file with appropriate details
+/// about the asset fiduciaries; make a constructor for this type that
+/// instantiates based on that configuration.
 #[derive(Debug)]
 pub struct SharedControl;
 impl UseRestriction for SharedControl {}
