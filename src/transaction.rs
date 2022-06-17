@@ -1,15 +1,15 @@
 //! Library for blockchains, transactions, and requests for signatures on
 //! transactions.
 
-use crate::keys::{KeyId, UserId};
+use crate::keys::{Indicator, KeyId, UserId};
 
 /// A transaction approval request is used to log a request for a
-/// [`TransactionSignature`] under key associated with the [`KeyId`]. The key
+/// [`TransactionSignature`] under the specified key. The key
 /// must be owned by the [`UserId`], and the transaction must involve the
 /// specified [`AssetId`].
 ///
 /// The [`Transaction`] should be a valid transaction format for the blockchain
-/// that the [`KeyId`] is associated with. This must be validated by the calling
+/// that the key is associated with. This must be validated by the calling
 /// application - it will not be checked by the [`TransactionApprovalRequest`]
 /// constructor.
 ///
@@ -22,7 +22,7 @@ use crate::keys::{KeyId, UserId};
 #[derive(Debug)]
 #[allow(unused)]
 pub struct TransactionApprovalRequest {
-    key_id: KeyId,
+    key_indicator: Indicator,
     user_id: UserId,
     asset_id: AssetId,
     tar_id: TarId,
@@ -32,7 +32,7 @@ pub struct TransactionApprovalRequest {
 impl Default for TransactionApprovalRequest {
     fn default() -> Self {
         Self {
-            key_id: KeyId,
+            key_indicator: Indicator::Id(KeyId),
             user_id: UserId,
             asset_id: AssetId,
             tar_id: TarId,

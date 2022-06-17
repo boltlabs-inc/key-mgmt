@@ -2,9 +2,10 @@
 
 use crate::{
     keys::{
-        KeyId, KeyInfo, KeyTag, UsePermission, UseRestriction, UserId, UserPolicySpecification,
+        Indicator, KeyId, KeyInfo, KeyTag, UsePermission, UseRestriction, UserId,
+        UserPolicySpecification,
     },
-    transaction::{TarId, TransactionApprovalRequest, TransactionSignature},
+    transaction::{TransactionApprovalRequest, TransactionSignature},
 };
 
 use thiserror::Error;
@@ -105,7 +106,7 @@ pub fn create_digital_asset_key(
 pub fn set_user_key_policy(
     session: Session,
     user_id: UserId,
-    key_id: KeyId,
+    key: Indicator,
     user_policy: UserPolicySpecification,
 ) -> Result<(), Error> {
     todo!()
@@ -135,10 +136,10 @@ pub fn retrieve_public_keys(session: Session, user_id: UserId) -> Result<Vec<Key
 
 /// Retrieve the public key info for the specified key associated with the user.
 #[allow(unused)]
-pub fn retrieve_public_key_by_id(
+pub fn retrieve_public_key_by_indicator(
     session: Session,
     user_id: UserId,
-    key_id: &KeyId,
+    key_indicator: &Indicator,
 ) -> Result<KeyInfo, Error> {
     todo!()
 }

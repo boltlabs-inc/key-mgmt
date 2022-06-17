@@ -11,14 +11,37 @@ use crate::crypto::{KeyPair, PublicKey};
 #[derive(Debug, Clone, Copy)]
 pub struct UserId;
 
-/// Unique identifier for a key.
+/// Universally unique identifier for a key.
 #[allow(unused)]
 #[derive(Debug)]
 pub struct KeyId;
 
-/// Human-readable identifier for a key.
-#[derive(Debug)]
+/// Human-readable identifier for a key. This must be unique on a per-user
+/// basis.
+#[derive(Debug, Default)]
 pub struct KeyTag(String);
+
+/// Indicator type for settings that require a reference to a key, but aren't
+/// particular about whether it's the universal [`KeyId`] or the user-specific
+/// [`KeyTag`].
+#[derive(Debug)]
+#[allow(unused)]
+pub enum Indicator {
+    Id(KeyId),
+    Tag(KeyTag),
+}
+
+impl From<KeyId> for Indicator {
+    fn from(item: KeyId) -> Self {
+        Self::Id(item)
+    }
+}
+
+impl From<KeyTag> for Indicator {
+    fn from(item: KeyTag) -> Self {
+        Self::Tag(item)
+    }
+}
 
 /// Public key portion of a digital asset key pair.
 #[derive(Debug)]
