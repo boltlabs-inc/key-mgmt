@@ -1,10 +1,8 @@
-//! Public API for the DAMS local client library.
+//! Full implementation of the public API for the DAMS local client library.
+//!
 
 use crate::{
-    keys::{
-        Indicator, KeyId, KeyInfo, KeyTag, UsePermission, UseRestriction, UserId,
-        UserPolicySpecification,
-    },
+    keys::{KeyId, KeyInfo, UsePermission, UseRestriction, UserId, UserPolicySpecification},
     transaction::{TransactionApprovalRequest, TransactionSignature},
 };
 
@@ -90,7 +88,6 @@ pub enum Error {
 pub fn create_digital_asset_key(
     session: Session,
     user_id: UserId,
-    key_tag: Option<KeyTag>,
     permission: impl UsePermission,
     restriction: impl UseRestriction,
 ) -> Result<KeyInfo, Error> {
@@ -106,7 +103,7 @@ pub fn create_digital_asset_key(
 pub fn set_user_key_policy(
     session: Session,
     user_id: UserId,
-    key: Indicator,
+    key_id: KeyId,
     user_policy: UserPolicySpecification,
 ) -> Result<(), Error> {
     todo!()
@@ -136,10 +133,10 @@ pub fn retrieve_public_keys(session: Session, user_id: UserId) -> Result<Vec<Key
 
 /// Retrieve the public key info for the specified key associated with the user.
 #[allow(unused)]
-pub fn retrieve_public_key_by_indicator(
+pub fn retrieve_public_key_by_id(
     session: Session,
     user_id: UserId,
-    key_indicator: &Indicator,
+    key_id: &KeyId,
 ) -> Result<KeyInfo, Error> {
     todo!()
 }

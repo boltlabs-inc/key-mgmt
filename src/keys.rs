@@ -4,55 +4,29 @@
 //! modifiers describing access control and custody;
 //! and machine- and human-readable tags for keys.
 
+use serde::{Deserialize, Serialize};
+
 /// Unique ID for a user. Assumption: this will be derived from an ID generated
 /// in the Forte ecosystem.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct UserId;
 
 /// Universally unique identifier for a key.
 #[allow(unused)]
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct KeyId;
 
-/// Human-readable identifier for a key. This must be unique on a per-user
-/// basis.
-#[derive(Debug, Default)]
-pub struct KeyTag(String);
-
-/// Indicator type for settings that require a reference to a key, but aren't
-/// particular about whether it's the universal [`KeyId`] or the user-specific
-/// [`KeyTag`].
-#[derive(Debug)]
-#[allow(unused)]
-pub enum Indicator {
-    Id(KeyId),
-    Tag(KeyTag),
-}
-
-impl From<KeyId> for Indicator {
-    fn from(item: KeyId) -> Self {
-        Self::Id(item)
-    }
-}
-
-impl From<KeyTag> for Indicator {
-    fn from(item: KeyTag) -> Self {
-        Self::Tag(item)
-    }
-}
-
 /// Public key portion of a digital asset key pair.
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct DigitalAssetPublicKey;
 
 /// Convenient grouping of the non-secret components of a digital asset key
 /// pair.
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 #[allow(unused)]
 pub struct KeyInfo {
     user_id: UserId,
     key_id: KeyId,
-    key_tag: Option<KeyTag>,
     public_key: DigitalAssetPublicKey,
 }
 
@@ -61,7 +35,7 @@ pub struct KeyInfo {
 ///
 /// TODO #19: add key material from the crypto library, when it exists.
 /// This should hold an asymmetric key pair.
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 #[allow(unused)]
 pub struct DigitalAssetKey<P, R>
 where
@@ -71,7 +45,6 @@ where
     permission: P,
     restriction: R,
 
-    key_tag: Option<KeyTag>,
     key_id: KeyId,
     user_id: UserId,
 }
@@ -90,7 +63,7 @@ pub trait UsePermission {}
 /// set a [`UserPolicySpecification`] to apply additional rules and requirements
 /// for digital asset key usage.
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 #[allow(unused)]
 pub struct SelfCustodial {
     user_policy: UserPolicySpecification,
@@ -114,7 +87,7 @@ impl Default for SelfCustodial {
 /// TODO #27 (design, implementation): Add a field describing the designated
 /// signing authority / delegated party. Figure out how to represent such an
 /// authority and how many might exist.
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 #[allow(unused)]
 pub struct Delegated {
     user_policy: UserPolicySpecification,
@@ -133,7 +106,7 @@ impl UsePermission for Delegated {}
 /// TODO #27 (design, implementation): Add a field describing the designated
 /// signing authority. Figure out how to represent such an authority and how
 /// many might exist.
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Passive;
 impl UsePermission for Passive {}
 
@@ -144,7 +117,7 @@ impl UsePermission for Passive {}
 /// from the asset owner.
 ///
 /// TODO #28 (design): Define the concrete policies this can encompass.
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct UserPolicySpecification;
 
 /// A use restriction is a type that defines what entities have veto power over
@@ -160,13 +133,13 @@ pub trait UseRestriction {}
 /// TODO #29 (implementation): create a config file with appropriate details
 /// about the asset fiduciaries; make a constructor for this type that
 /// instantiates based on that configuration.
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct SharedControl;
 impl UseRestriction for SharedControl {}
 
 /// Use restriction that does not assign veto power to a given set of asset
 /// fiduciaries; that is, given a valid, authenticated request to use a digital
 /// asset key, no additional parties are consulted.
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Unilateral;
 impl UseRestriction for Unilateral {}

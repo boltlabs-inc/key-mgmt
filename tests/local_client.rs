@@ -1,5 +1,5 @@
 use da_mgmt::{
-    keys::{KeyId, KeyTag, SelfCustodial, SharedControl, UserId, UserPolicySpecification},
+    keys::{KeyId, SelfCustodial, SharedControl, UserId, UserPolicySpecification},
     localclient::*,
     transaction::TransactionApprovalRequest,
 };
@@ -33,7 +33,6 @@ fn create_digital_asset_key_not_implemented() {
     let _result = create_digital_asset_key(
         default_session(),
         UserId,
-        None,
         SelfCustodial::default(),
         SharedControl,
     );
@@ -42,12 +41,7 @@ fn create_digital_asset_key_not_implemented() {
 #[test]
 #[should_panic(expected = "not yet implemented")]
 fn set_user_key_policy_not_implemented() {
-    let _result = set_user_key_policy(
-        default_session(),
-        UserId,
-        KeyId.into(),
-        UserPolicySpecification,
-    );
+    let _result = set_user_key_policy(default_session(), UserId, KeyId, UserPolicySpecification);
 }
 
 #[test]
@@ -65,10 +59,8 @@ fn retrieve_public_keys_not_implemented() {
 
 #[test]
 #[should_panic(expected = "not yet implemented")]
-fn retrieve_public_key_by_indicator_not_implemented() {
-    let _result =
-        retrieve_public_key_by_indicator(default_session(), UserId, &KeyTag::default().into());
-    let _result = retrieve_public_key_by_indicator(default_session(), UserId, &KeyId.into());
+fn retrieve_public_key_by_id_not_implemented() {
+    let _result = retrieve_public_key_by_id(default_session(), UserId, &KeyId);
 }
 
 #[test]

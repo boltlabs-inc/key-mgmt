@@ -1,7 +1,9 @@
 //! Library for blockchains, transactions, and requests for signatures on
 //! transactions.
 
-use crate::keys::{Indicator, KeyId, UserId};
+use serde::{Deserialize, Serialize};
+
+use crate::keys::{KeyId, UserId};
 
 /// A transaction approval request is used to log a request for a
 /// [`TransactionSignature`] under the specified key. The key
@@ -19,10 +21,10 @@ use crate::keys::{Indicator, KeyId, UserId};
 /// should only be accepted by the key servers if they are received via an
 /// authenticated session between the key server and one of the asset owner or
 /// the service provider.
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 #[allow(unused)]
 pub struct TransactionApprovalRequest {
-    key_indicator: Indicator,
+    key_id: KeyId,
     user_id: UserId,
     asset_id: AssetId,
     tar_id: TarId,
@@ -32,7 +34,7 @@ pub struct TransactionApprovalRequest {
 impl Default for TransactionApprovalRequest {
     fn default() -> Self {
         Self {
-            key_indicator: Indicator::Id(KeyId),
+            key_id: KeyId,
             user_id: UserId,
             asset_id: AssetId,
             tar_id: TarId,
@@ -42,19 +44,19 @@ impl Default for TransactionApprovalRequest {
 }
 
 /// Unique ID for a [`TransactionApprovalRequest`].
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct TarId;
 
 /// Unique ID for a digital asset.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct AssetId;
 
 /// A transaction describes the transfer of a digital asset owned by an asset
 /// owner to another entity.
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Transaction;
 
 /// Signature on a [`Transaction`] under a
 /// [`DigitalAssetKey`](crate::keys::DigitalAssetKey).
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct TransactionSignature;
