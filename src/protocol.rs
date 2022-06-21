@@ -86,7 +86,7 @@ impl Party {
     /// # Examples
     ///
     /// ```
-    /// use key_mgmt::protocol::Party::*;
+    /// use da_mgmt::protocol::Party::*;
     ///
     /// assert_eq!(Client.opposite(), Server);
     /// assert_eq!(Server.opposite(), Client);
