@@ -1,5 +1,10 @@
 //! Full implementation of the public API for the DAMS local client library.
 //!
+//! This API is designed for use with a local client application - that is, an
+//! application running directly on the device of an asset owner. The inputs
+//! the asset owner provides should be passed directly to this API without being
+//! sent to a separate machine.
+//!
 
 use crate::{
     keys::{KeyId, KeyInfo, UsePermission, UseRestriction, UserId, UserPolicySpecification},
@@ -14,21 +19,24 @@ pub enum SessionError {}
 #[derive(Debug)]
 pub struct Password;
 
-/// Deployment details for a session.
+/// Deployment details for a [`Session`].
 ///
 /// Possible fields include: timeouts, key server IPs, PKI information,
 /// preshared keys.
 #[derive(Debug)]
 pub struct SessionConfig;
 
-/// A `Session` is an abstraction over a mutually authenticated,
-/// confidential, ??
+/// A `Session` is an abstraction over a
 /// communication session between an asset owner and a key server
-/// (specified in the [`SessionConfig`]). An open `Session` is
+/// that provides mutual authentication, confidentiality, and integrity.
+/// An open `Session` is
 /// required to interact with the [`crate::localclient`] API.
 ///
 /// A session can be ended manually, or it might time out and require
 /// re-authentication (that is, creation of a new [`Session`]).
+///
+/// Full details about the `Session`, such as the identity of the key
+/// server, are described in the [`SessionConfig`].
 ///
 /// TODO #30: This abstraction needs a lot of design attention.
 #[derive(Debug)]
@@ -81,7 +89,9 @@ pub enum Error {
 
 /// Generate a new, distributed
 /// [`DigitalAssetKey`](crate::keys::DigitalAssetKey) with the given use
-/// parameters, and compatible with the specified blockchain.
+/// parameters for the [`UserId`], and compatible with the specified blockchain.
+///
+/// The [`UserId`] must be the same user who opened the [`Session`].
 ///
 /// TODO #25 (implementation): Pass the appropriate blockchain as a parameter.
 #[allow(unused)]
@@ -98,7 +108,9 @@ pub fn create_digital_asset_key(
 ///
 /// User-specified policies can only be set for
 /// [`SelfCustodial`](crate::keys::SelfCustodial) and
-/// [`Delegated`](crate::keys::Delegated) key types.
+/// [`Delegated`](crate::keys::Delegated) key types. The [`KeyId`] must
+/// correspond to a key owned by the [`UserId`], and the [`UserId`] must
+/// match the user authenticated in the [`Session`].
 #[allow(unused)]
 pub fn set_user_key_policy(
     session: Session,
@@ -109,7 +121,11 @@ pub fn set_user_key_policy(
     todo!()
 }
 
-/// Request approval for a transaction.
+/// Request a signature on a transaction from the key server.
+///
+/// Among the parameters in the [`TransactionApprovalRequest`], the [`KeyId`]
+/// must correspond to a key owned by the [`UserId`], and the [`UserId`] must
+/// match the user authenticated in the [`Session`].
 ///
 /// Assumption: A [`TransactionApprovalRequest`] originates either with the
 /// asset owner or the service provider. This is cryptographically enforced with
@@ -125,13 +141,20 @@ pub fn request_transaction_signature(
 }
 
 /// Retrieve the public key info for all keys associated with the specified
-/// user.
+/// user from the key server.
+///
+/// The [`UserId`] must match the asset owner authenticated in the [`Session`].
+/// This function cannot be used to retrieve keys for a different user.
 #[allow(unused)]
 pub fn retrieve_public_keys(session: Session, user_id: UserId) -> Result<Vec<KeyInfo>, Error> {
     todo!()
 }
 
-/// Retrieve the public key info for the specified key associated with the user.
+/// Retrieve the public key info from the key server for the specified key
+/// associated with the user.
+///
+/// The [`UserId`] must match the asset owner authenticated in the [`Session`],
+/// and the [`KeyId`] must correspond to a key owned by the [`UserId`].
 #[allow(unused)]
 pub fn retrieve_public_key_by_id(
     session: Session,
@@ -141,12 +164,17 @@ pub fn retrieve_public_key_by_id(
     todo!()
 }
 
-/// Retrieve the audit log for a specified asset owner; optionally, filter for
-/// logs associated with the specified [`KeyId`]. The audit log includes context
+/// Retrieve the audit log from the key server for a specified asset owner;
+/// optionally, filter for logs associated with the specified [`KeyId`].
+///
+/// The audit log includes context
 /// about any action requested and/or taken on the digital asset key, including
 /// which action was requested and by whom, the date, details about approval or
 /// rejection from each key server, the policy engine, and each asset fiduciary
 /// (if relevant), and any other relevant details.
+///
+/// The [`UserId`] must match the asset owner authenticated in the [`Session`], and
+/// if specified, the [`KeyId`] must correspond to a key owned by the [`UserId`].
 #[allow(unused)]
 pub fn retrieve_audit_log(
     session: Session,

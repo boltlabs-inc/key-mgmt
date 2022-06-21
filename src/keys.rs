@@ -112,8 +112,8 @@ impl UsePermission for Passive {}
 
 /// Specification of a user-set policy. This describes the set of policies that
 /// an asset owner can define around use of a digital asset key that are
-/// enforced by the DAMS key servers. If the key servers find that a user-set
-/// policy has been violated, they can require additional validation directly
+/// enforced by the DAMS key servers. When a user-set policy is triggered, the
+/// key server can seek additional authentication or confirmation directly
 /// from the asset owner.
 ///
 /// TODO #28 (design): Define the concrete policies this can encompass.
