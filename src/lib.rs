@@ -18,8 +18,6 @@ pub mod transport;
 
 mod cli;
 mod config;
-// TODO #23 (implementation): make this its own crate.
-mod crypto;
 mod defaults;
 mod key_mgmt;
 

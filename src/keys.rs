@@ -4,8 +4,6 @@
 //! modifiers describing access control and custody;
 //! and machine- and human-readable tags for keys.
 
-use crate::crypto::{KeyPair, PublicKey};
-
 /// Unique ID for a user. Assumption: this will be derived from an ID generated
 /// in the Forte ecosystem.
 #[derive(Debug, Clone, Copy)]
@@ -45,7 +43,7 @@ impl From<KeyTag> for Indicator {
 
 /// Public key portion of a digital asset key pair.
 #[derive(Debug)]
-pub struct DigitalAssetPublicKey(PublicKey);
+pub struct DigitalAssetPublicKey;
 
 /// Convenient grouping of the non-secret components of a digital asset key
 /// pair.
@@ -60,6 +58,9 @@ pub struct KeyInfo {
 
 /// Digital asset key, parameterized by use permissions and restrictions.
 /// This represents a full key pair.
+///
+/// TODO #19: add key material from the crypto library, when it exists.
+/// This should hold an asymmetric key pair.
 #[derive(Debug)]
 #[allow(unused)]
 pub struct DigitalAssetKey<P, R>
@@ -73,8 +74,6 @@ where
     key_tag: Option<KeyTag>,
     key_id: KeyId,
     user_id: UserId,
-
-    key_pair: KeyPair,
 }
 
 /// A use permission is a type that defines the degree to which the asset owner
