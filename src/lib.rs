@@ -11,6 +11,7 @@ pub mod client;
 pub mod keys;
 pub mod local_client;
 pub mod protocol;
+pub mod remote_client;
 pub mod server;
 pub mod timeout;
 pub mod transaction;
