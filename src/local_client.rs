@@ -4,7 +4,6 @@
 //! application running directly on the device of an asset owner. The inputs
 //! the asset owner provides should be passed directly to this API without being
 //! sent to a separate machine.
-//!
 
 use crate::{
     keys::{KeyId, KeyInfo, UsePermission, UseRestriction, UserId, UserPolicySpecification},
@@ -178,8 +177,9 @@ pub fn retrieve_public_key_by_id(
 /// rejection from each key server, the policy engine, and each asset fiduciary
 /// (if relevant), and any other relevant details.
 ///
-/// The [`UserId`] must match the asset owner authenticated in the [`Session`], and
-/// if specified, the [`KeyId`] must correspond to a key owned by the [`UserId`].
+/// The [`UserId`] must match the asset owner authenticated in the [`Session`],
+/// and if specified, the [`KeyId`] must correspond to a key owned by the
+/// [`UserId`].
 #[allow(unused)]
 pub fn retrieve_audit_log(
     session: Session,
