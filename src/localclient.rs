@@ -130,7 +130,7 @@ pub fn set_user_key_policy(
 /// Assumption: A [`TransactionApprovalRequest`] originates either with the
 /// asset owner or the service provider. This is cryptographically enforced with
 /// an authenticated [`Session`] between the key server and one of the asset
-/// owner or the service provider. This request will fail if the calling party
+/// owner or a key fiduciary. This request will fail if the calling party
 /// is not from one of those entities.
 #[allow(unused)]
 pub fn request_transaction_signature(
