@@ -7,7 +7,7 @@
 use serde::{Deserialize, Serialize};
 
 /// Unique ID for a user. Assumption: this will be derived from an ID generated
-/// in the Forte ecosystem.
+/// by the Service Provider.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct UserId;
 
