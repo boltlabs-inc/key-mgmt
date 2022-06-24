@@ -87,8 +87,7 @@ pub enum Error {
     TransactionApprovalRequestFailed,
 }
 
-/// Generate a new, distributed
-/// [`DigitalAssetKey`](crate::keys::DigitalAssetKey) with the given use
+/// Generate a new, distributed digital asset key with the given use
 /// parameters for the [`UserId`], and compatible with the specified blockchain.
 ///
 /// The [`UserId`] must be the same user who opened the [`Session`].
@@ -141,7 +140,10 @@ pub fn request_transaction_signature(
 }
 
 /// Retrieve the public key info for all keys associated with the specified
-/// user from the key server.
+/// user that are stored at the key servers.
+///
+/// Implementation note: this material may be cached and retrieved from a
+/// machine other than the key servers.
 ///
 /// The [`UserId`] must match the asset owner authenticated in the [`Session`].
 /// This function cannot be used to retrieve keys for a different user.
@@ -150,8 +152,11 @@ pub fn retrieve_public_keys(session: Session, user_id: UserId) -> Result<Vec<Key
     todo!()
 }
 
-/// Retrieve the public key info from the key server for the specified key
-/// associated with the user.
+/// Retrieve the public key info for the specified key associated with the user
+/// user.
+///
+/// Implementation note: this material may be cached and retrieved from a
+/// machine other than the key servers.
 ///
 /// The [`UserId`] must match the asset owner authenticated in the [`Session`],
 /// and the [`KeyId`] must correspond to a key owned by the [`UserId`].

@@ -1,8 +1,7 @@
 //! Digital asset keys and descriptions.
 //!
-//! Includes basic key types (both standard keys and shares of keys);
-//! modifiers describing access control and custody;
-//! and machine- and human-readable tags for keys.
+//! Includes basic key types (both standard keys and shares of keys) and identifiers
+//! and modifiers describing access control and custody.
 
 use serde::{Deserialize, Serialize};
 
@@ -37,7 +36,7 @@ pub struct KeyInfo {
 /// This should hold an asymmetric key pair.
 #[derive(Debug, Serialize, Deserialize)]
 #[allow(unused)]
-pub struct DigitalAssetKey<P, R>
+struct DigitalAssetKey<P, R>
 where
     P: UsePermission,
     R: UseRestriction,

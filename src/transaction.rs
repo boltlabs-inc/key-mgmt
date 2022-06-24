@@ -56,7 +56,6 @@ pub struct AssetId;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Transaction;
 
-/// Signature on a [`Transaction`] under a
-/// [`DigitalAssetKey`](crate::keys::DigitalAssetKey).
+/// Signature on a [`Transaction`] under a digital asset key.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TransactionSignature;
