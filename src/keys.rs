@@ -30,7 +30,7 @@ pub struct KeyInfo {
 }
 
 /// Digital asset key, parameterized by use permissions and restrictions.
-/// This represents a full key pair.
+/// This represents an asymmetric key pair with a public and private component.
 ///
 /// TODO #19: add key material from the crypto library, when it exists.
 /// This should hold an asymmetric key pair.
