@@ -30,7 +30,7 @@ pub struct SessionConfig;
 /// communication session between an asset owner and a key server
 /// that provides mutual authentication, confidentiality, and integrity.
 /// An open `Session` is
-/// required to interact with the [`crate::localclient`] API.
+/// required to interact with the [`crate::local_client`] API.
 ///
 /// A session can be ended manually, or it might time out and require
 /// re-authentication (that is, creation of a new [`Session`]).

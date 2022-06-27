@@ -1,6 +1,6 @@
 use da_mgmt::{
     keys::{KeyId, SelfCustodial, SharedControl, UserId, UserPolicySpecification},
-    localclient::*,
+    local_client::*,
     transaction::TransactionApprovalRequest,
 };
 
