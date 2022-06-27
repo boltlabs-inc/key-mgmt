@@ -1,4 +1,5 @@
 use da_mgmt::{
+    blockchain::Blockchain,
     keys::{KeyId, SelfCustodial, SharedControl, UserId, UserPolicySpecification},
     localclient::*,
     transaction::TransactionApprovalRequest,
@@ -33,6 +34,7 @@ fn create_digital_asset_key_not_implemented() {
     let _result = create_digital_asset_key(
         default_session(),
         UserId,
+        Blockchain::EVM,
         SelfCustodial::default(),
         SharedControl,
     );
