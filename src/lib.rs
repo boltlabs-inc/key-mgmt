@@ -7,6 +7,7 @@
 
 use std::fmt;
 
+pub mod blockchain;
 pub mod client;
 pub mod keys;
 pub mod local_client;
