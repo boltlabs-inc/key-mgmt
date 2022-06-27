@@ -18,7 +18,7 @@ use crate::keys::{KeyId, UserId};
 /// Assumption: TARs originate either with the asset owner or the service
 /// provider. This is cryptographically enforced with an authenticated session
 /// when the request is submitted from the client component. That is, TARs
-/// should only be accepted by the key servers if they are received via an
+/// should only be accepted by the key server if they are received via an
 /// authenticated session between the key server and one of the asset owner or
 /// the service provider.
 #[derive(Debug, Serialize, Deserialize)]

@@ -140,10 +140,10 @@ pub fn request_transaction_signature(
 }
 
 /// Retrieve the public key info for all keys associated with the specified
-/// user that are stored at the key servers.
+/// user that are stored at the key server.
 ///
 /// Implementation note: this material may be cached and retrieved from a
-/// machine other than the key servers.
+/// machine other than the key server.
 ///
 /// The [`UserId`] must match the asset owner authenticated in the [`Session`].
 /// This function cannot be used to retrieve keys for a different user.
@@ -152,11 +152,11 @@ pub fn retrieve_public_keys(session: Session, user_id: UserId) -> Result<Vec<Key
     todo!()
 }
 
-/// Retrieve the public key info for the specified key associated with the user
+/// Retrieve the public key info for the specified key associated with the
 /// user.
 ///
 /// Implementation note: this material may be cached and retrieved from a
-/// machine other than the key servers.
+/// machine other than the key server.
 ///
 /// The [`UserId`] must match the asset owner authenticated in the [`Session`],
 /// and the [`KeyId`] must correspond to a key owned by the [`UserId`].

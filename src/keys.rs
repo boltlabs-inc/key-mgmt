@@ -95,7 +95,7 @@ impl UsePermission for Delegated {}
 
 /// Use permission that refers to a digital asset key that was created by
 /// the Service Provider on behalf of an asset owner, i.e., the asset owner does
-/// not have a registered account with the key servers. The Service Provider has
+/// not have a registered account with the key server. The Service Provider has
 /// custody of the key, including complete signing authority, i.e., there is
 /// no [`UserPolicySpecification`] set.
 ///
@@ -111,7 +111,7 @@ impl UsePermission for Passive {}
 
 /// Specification of a user-set policy. This describes the set of policies that
 /// an asset owner can define around use of a digital asset key that are
-/// enforced by the DAMS key servers. When a user-set policy is triggered, the
+/// enforced by the DAMS key server. When a user-set policy is triggered, the
 /// key server can seek additional authentication or confirmation directly
 /// from the asset owner.
 ///
