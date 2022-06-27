@@ -20,19 +20,22 @@ pub struct SecretInfo;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SecretRetrieveRequest;
 
-/// A single client-side command, parameterized by the currently loaded configuration.
+/// A single client-side command, parameterized by the currently loaded
+/// configuration.
 ///
-/// All subcommands of [`cli::Client`](crate::client::cli::Client) should implement this.
+/// All subcommands of [`cli::Client`](crate::client::cli::Client) should
+/// implement this.
 #[async_trait]
 pub trait Command {
     type Output;
 
-    /// Run the command to completion using the given random number generator for all randomness and
-    /// the given customer configuration.
+    /// Run the command to completion using the given random number generator
+    /// for all randomness and the given customer configuration.
     async fn run(self, config: Config) -> Result<Self::Output, anyhow::Error>;
 }
 
-/// Connect to a given [`KeyMgmtAddress`], configured using the parameters in the [`Config`].
+/// Connect to a given [`KeyMgmtAddress`], configured using the parameters in
+/// the [`Config`].
 pub async fn connect(
     config: &Config,
     address: &KeyMgmtAddress,

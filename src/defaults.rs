@@ -30,7 +30,8 @@ pub(crate) mod shared {
         1113
     }
 
-    /// Length of time (seconds) that a party waits for a normal message to be computed and sent.
+    /// Length of time (seconds) that a party waits for a normal message to be
+    /// computed and sent.
     pub const fn message_timeout() -> Duration {
         Duration::from_secs(60)
     }
