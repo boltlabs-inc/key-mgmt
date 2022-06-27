@@ -6,6 +6,7 @@
 //! sent to a separate machine.
 
 use crate::{
+    blockchain::Blockchain,
     keys::{KeyId, KeyInfo, UsePermission, UseRestriction, UserId, UserPolicySpecification},
     transaction::{TransactionApprovalRequest, TransactionSignature},
 };
@@ -97,6 +98,7 @@ pub enum Error {
 pub fn create_digital_asset_key(
     session: Session,
     user_id: UserId,
+    blockchain: Blockchain,
     permission: impl UsePermission,
     restriction: impl UseRestriction,
 ) -> Result<KeyInfo, Error> {

@@ -3,6 +3,7 @@
 //! This API is designed for use with a remote client application - that is, an
 //! application running the servers of a Service Provider.
 
+use crate::blockchain::Blockchain;
 use crate::{
     keys::{KeyId, KeyInfo, UseRestriction, UserId},
     transaction::{TransactionApprovalRequest, TransactionSignature},
@@ -22,6 +23,7 @@ pub enum Error {}
 #[allow(unused)]
 pub fn create_passive_digital_asset_key(
     user_id: UserId,
+    blockchain: Blockchain,
     restriction: impl UseRestriction,
 ) -> Result<KeyInfo, Error> {
     todo!()
