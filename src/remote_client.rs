@@ -1,7 +1,7 @@
 //! Full implementation of the public API for the DAMS remote client library.
 //!
 //! This API is designed for use with a remote client application - that is, an
-//! application running the servers of a Service Provider.
+//! application running on the servers of a Service Provider.
 
 use crate::blockchain::Blockchain;
 use crate::{

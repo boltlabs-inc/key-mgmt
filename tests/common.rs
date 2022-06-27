@@ -40,8 +40,8 @@ impl Party {
     }
 }
 
-/// Form a server CLI request. These cannot be constructed directly because the CLI types are
-/// non-exhaustive.
+/// Form a server CLI request. These cannot be constructed directly because the
+/// CLI types are non-exhaustive.
 macro_rules! server_cli {
     ($cli:ident, $args:expr) => {
         match ::da_mgmt::server::cli::Server::from_iter(
@@ -120,7 +120,8 @@ pub async fn teardown(server_future: ServerFuture) {
     let _ = fs::remove_dir_all("tests/gen/");
 }
 
-/// Encode the customizable fields of the keymgmt client Config struct for testing.
+/// Encode the customizable fields of the keymgmt client Config struct for
+/// testing.
 async fn client_test_config() -> da_mgmt::client::Config {
     let m = HashMap::from([("trust_certificate", "\"localhost.crt\"")]);
 
@@ -135,7 +136,8 @@ async fn client_test_config() -> da_mgmt::client::Config {
         .expect("Failed to load client config")
 }
 
-/// Encode the customizable fields of the keymgmt server Config struct for testing.
+/// Encode the customizable fields of the keymgmt server Config struct for
+/// testing.
 async fn server_test_config() -> da_mgmt::server::Config {
     // Helper to write out the service for the server service addresses
     let services = HashMap::from([
@@ -212,7 +214,8 @@ pub fn get_logs(log_type: LogType, party: Party) -> Result<String, LogError> {
 
 /// Wait for the log file to contain a specific entry.
 ///
-/// This checks the log every 1 second; refactor if greater granularity is needed.
+/// This checks the log every 1 second; refactor if greater granularity is
+/// needed.
 pub async fn await_log(party: Party, log: TestLogs) -> Result<(), anyhow::Error> {
     loop {
         let result = get_logs(LogType::Info, party);
