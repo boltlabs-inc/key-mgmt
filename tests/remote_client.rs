@@ -1,3 +1,4 @@
+use da_mgmt::blockchain::Blockchain;
 use da_mgmt::{
     keys::{KeyId, SharedControl, UserId},
     remote_client::*,
@@ -7,7 +8,7 @@ use da_mgmt::{
 #[test]
 #[should_panic(expected = "not yet implemented")]
 fn create_passive_digital_asset_key_not_implemented() {
-    let _result = create_passive_digital_asset_key(UserId, SharedControl);
+    let _result = create_passive_digital_asset_key(UserId, Blockchain::EVM, SharedControl);
 }
 
 #[test]
