@@ -1,21 +1,21 @@
-//! Blockchain abstraction
+//! Blockchain abstraction.
 //!
-//! Includes options for types of blockchains and defines primitives based on those options
+//! Includes options for types of blockchains and defines primitives based on those options.
 //!
 
 use serde::{Deserialize, Serialize};
 
-/// Options for type of blockchain
+/// Options for type of blockchain.
 ///
-/// A blockchain option must be specified when creating or importing a [`DigitalAssetKey`]
-#[derive(Debug, Serialize, Deserialize)]
+/// A blockchain option must be specified when creating or importing a [`DigitalAssetKey`].
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum Blockchain {
     EVM,
 }
 
-/// A signature scheme that uses a specific signature algorithm
+/// Indicator trait to identify objects that represent a signature scheme.
 ///
-/// All specific signature scheme structs should implement this trait and define their signature algorithms there
+/// TODO #43 (implementation, refactor): Move this definition to a crypto module and define signing operations
 pub trait SignatureScheme {}
 
 /// The ECDSA signature scheme
@@ -25,7 +25,9 @@ pub struct ECDSA;
 impl SignatureScheme for ECDSA {}
 
 impl Blockchain {
-    /// Identify signature scheme that corresponds to each blockchain type
+    /// Identify signature scheme that corresponds to each blockchain type.
+    ///
+    /// In particular, the blockchain accepts valid transactions that are signed under the given scheme.
     pub fn signature_scheme(&self) -> impl SignatureScheme {
         match self {
             Blockchain::EVM => ECDSA,

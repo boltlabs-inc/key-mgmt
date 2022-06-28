@@ -92,7 +92,6 @@ pub enum Error {
 ///
 /// The [`UserId`] must be the same user who opened the [`Session`].
 ///
-/// TODO #25 (implementation): Pass the appropriate blockchain as a parameter.
 #[allow(unused)]
 pub fn create_digital_asset_key(
     session: Session,

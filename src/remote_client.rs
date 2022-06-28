@@ -18,7 +18,6 @@ pub enum Error {}
 /// restrictions for the [`UserId`], and compatible with the specified
 /// blockchain.
 ///
-/// TODO #25 (implementation): Pass the appropriate blockchain as a parameter.
 /// TODO #30 (design, implementation): Pass a session
 #[allow(unused)]
 pub fn create_passive_digital_asset_key(
