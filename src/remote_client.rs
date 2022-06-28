@@ -8,6 +8,7 @@ use crate::{
     transaction::{TransactionApprovalRequest, TransactionSignature},
 };
 use thiserror::Error;
+use crate::keys::Passive;
 
 #[derive(Debug, Error)]
 pub enum Error {}
@@ -47,6 +48,35 @@ pub fn create_passive_digital_asset_key(
 pub fn request_transaction_signature(
     transaction_approval_request: TransactionApprovalRequest,
 ) -> Result<TransactionSignature, Error> {
+    todo!()
+}
+
+/// Import an existing key as a [`Passive`][crate::keys::Passive]
+/// [`DigitalAssetKey`](crate::keys::DigitalAssetKey) with the given use
+/// restrictions for the [`UserId`], and compatible with the specified
+/// blockchain.
+///
+/// TODO #25 (implementation): Pass the appropriate blockchain as a parameter.
+/// TODO #30 (design, implementation): Pass a session
+#[allow(unused)]
+pub fn import_asset_key(
+    user_id: UserId,
+    restriction: impl UseRestriction,
+) -> Result<KeyInfo, Error> {
+    todo!()
+}
+
+/// Export key material from the key servers
+///
+/// The [`KeyId`] must correspond to a [`Passive`][crate::keys::Passive]
+/// [`DigitalAssetKey`](crate::keys::DigitalAssetKey)
+///
+/// TODO #30 (design, implementation): Pass a session
+#[allow(unused)]
+pub fn export_asset_key(
+    user_id: UserId,
+    key_id: &KeyId
+) -> Result<Passive, Error> {
     todo!()
 }
 
