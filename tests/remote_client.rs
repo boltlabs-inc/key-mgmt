@@ -13,6 +13,18 @@ fn create_passive_digital_asset_key_not_implemented() {
 
 #[test]
 #[should_panic(expected = "not yet implemented")]
+fn import_key_not_implemented() {
+    let _result = import_asset_key(UserId, SharedControl);
+}
+
+#[test]
+#[should_panic(expected = "not yet implemented")]
+fn export_key_not_implemented() {
+    let _result = export_asset_key(UserId, &KeyId);
+}
+
+#[test]
+#[should_panic(expected = "not yet implemented")]
 fn request_transaction_signature_not_implemented() {
     let tar = TransactionApprovalRequest::default();
     let _result = request_transaction_signature(tar);
