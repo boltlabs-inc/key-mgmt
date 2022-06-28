@@ -22,6 +22,7 @@ mod cli;
 mod config;
 mod defaults;
 mod key_mgmt;
+mod policy_engine;
 
 /// Logs used to verify that an operation completed in the integration tests.
 #[derive(Debug)]
