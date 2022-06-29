@@ -6,6 +6,12 @@ use da_mgmt::{
 
 #[test]
 #[should_panic(expected = "not yet implemented")]
+fn register_passive_user_not_implemented() {
+    let _result = register_passive_user(UserId);
+}
+
+#[test]
+#[should_panic(expected = "not yet implemented")]
 fn create_passive_digital_asset_key_not_implemented() {
     let _result = create_passive_digital_asset_key(UserId, SharedControl);
 }

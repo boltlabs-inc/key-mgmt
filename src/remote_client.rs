@@ -13,6 +13,18 @@ use thiserror::Error;
 #[derive(Debug, Error)]
 pub enum Error {}
 
+/// Register a passive user to the key fiduciary authenticated in this session.
+///
+/// Assumption: a passive user only has [`Passive`][crate::keys::Passive] keys, which is why a key
+/// fiduciary would need to call this function to indicate that they can take
+/// actions on this user's behalf.
+///
+/// TODO #30 (design, implementation): Pass a session
+#[allow(unused)]
+pub fn register_passive_user(user_id: UserId) -> Result<(), Error> {
+    todo!()
+}
+
 /// Generate a new, distributed, [`Passive`][crate::keys::Passive]
 /// [`DigitalAssetKey`](crate::keys::DigitalAssetKey) with the given use
 /// restrictions for the [`UserId`], and compatible with the specified
