@@ -11,6 +11,7 @@ pub mod blockchain;
 pub mod client;
 pub mod keys;
 pub mod local_client;
+pub mod policy_engine;
 pub mod protocol;
 pub mod remote_client;
 pub mod server;
@@ -22,7 +23,6 @@ mod cli;
 mod config;
 mod defaults;
 mod key_mgmt;
-mod policy_engine;
 
 /// Logs used to verify that an operation completed in the integration tests.
 #[derive(Debug)]
