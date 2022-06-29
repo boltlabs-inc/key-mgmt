@@ -10,8 +10,8 @@ use thiserror::Error;
 /// [`SharedControl`](crate::keys::SharedControl).
 ///
 /// This trait describes the interactions between a key server and the policy
-/// engine, but doesn't encompass the entire behavior of a policy engine -- this
-/// would also include interactions with service providers and asset
+/// engine, but doesn't encompass the entire behavior of a policy engine -- the
+/// policy engine is responsible for all interactions with service providers and asset
 /// fiduciaries.
 ///
 /// Assumption: any policy engine implementation will have one or more API
@@ -39,7 +39,7 @@ enum TransactionApprovalDecision {
 /// Signature from an asset fiduciary over a [`TransactionApprovalRequest`].
 ///
 /// Assumption: The signature is from an asset fiduciary. The set of asset
-/// fiduciaries is fixed and defined in the system configuraiton. This type
+/// fiduciaries is fixed and defined in the system configuration. This type
 /// must not be instantiated if the underlying signature does not correspond
 /// to one of the specified fiduciaries.
 #[derive(Debug)]
