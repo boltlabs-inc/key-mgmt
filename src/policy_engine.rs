@@ -18,7 +18,7 @@ use thiserror::Error;
 /// endpoints that correspond to the trait methods. Instantiation of this trait
 /// will call out to the appropriate endpoints, and will handle any retries and
 /// waiting behavior dictated by the external implementation.
-trait PolicyEngine {
+pub trait PolicyEngine {
     fn request_transaction_approval(
         &self,
         request: TransactionApprovalRequest,
@@ -31,7 +31,7 @@ trait PolicyEngine {
 /// signatures or a note to describe the rejection.
 #[derive(Debug)]
 #[allow(unused)]
-enum TransactionApprovalDecision {
+pub enum TransactionApprovalDecision {
     Approve(Vec<ApprovalSignature>),
     Reject(RejectionContext),
 }
@@ -43,12 +43,12 @@ enum TransactionApprovalDecision {
 /// must not be instantiated if the underlying signature does not correspond
 /// to one of the specified fiduciaries.
 #[derive(Debug)]
-struct ApprovalSignature;
+pub struct ApprovalSignature;
 
 /// Context for why a the [`PolicyEngine`] rejected a
 /// [`TransactionApprovalRequest`].
 #[derive(Debug)]
-struct RejectionContext;
+pub struct RejectionContext;
 
 /// Errors that can arise during a transaction approval request to a policy
 /// engine.
@@ -56,4 +56,4 @@ struct RejectionContext;
 /// This does not include rejection of a request! That is covered by a
 /// [`TransactionApprovalDecision`].
 #[derive(Debug, Error)]
-enum PolicyEngineError {}
+pub enum PolicyEngineError {}
