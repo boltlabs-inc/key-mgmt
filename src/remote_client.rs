@@ -3,13 +3,12 @@
 //! This API is designed for use with a remote client application - that is, an
 //! application running on the servers of a Service Provider.
 
-use crate::blockchain::Blockchain;
 use crate::{
-    keys::{KeyId, KeyInfo, UseRestriction, UserId},
+    blockchain::Blockchain,
+    keys::{KeyId, KeyInfo, Passive, UseRestriction, UserId},
     transaction::{TransactionApprovalRequest, TransactionSignature},
 };
 use thiserror::Error;
-use crate::keys::Passive;
 
 #[derive(Debug, Error)]
 pub enum Error {}
@@ -44,7 +43,7 @@ pub fn create_passive_digital_asset_key(
 /// or a key fiduciary. This request will fail if the calling party
 /// is not from one of those entities.
 ///
-/// TODO #30 (design, implementation): Pass a session
+/// TODO #30 (design, implementation): Pass a session.
 #[allow(unused)]
 pub fn request_transaction_signature(
     transaction_approval_request: TransactionApprovalRequest,
@@ -52,10 +51,13 @@ pub fn request_transaction_signature(
     todo!()
 }
 
-/// Import an existing key as a [`Passive`][crate::keys::Passive]
-/// [`DigitalAssetKey`](crate::keys::DigitalAssetKey) with the given use
-/// restrictions for the [`UserId`], and compatible with the specified
-/// blockchain.
+/// Import passive key material to the key servers.
+///
+/// The key must correspond to a [`Passive`][crate::keys::Passive]
+/// [`DigitalAssetKey`](crate::keys::DigitalAssetKey).
+///
+/// Assumption: The [`import_asset_key`] functionality is called by the service provider. This is cryptographically enforced with
+/// an authenticated session between the key server and the service provider. This request will fail otherwise.
 ///
 /// TODO #25 (implementation): Pass the appropriate blockchain as a parameter.
 /// TODO #30 (design, implementation): Pass a session
@@ -67,17 +69,17 @@ pub fn import_asset_key(
     todo!()
 }
 
-/// Export key material from the key servers
+/// Export passive key material from the key servers.
 ///
 /// The [`KeyId`] must correspond to a [`Passive`][crate::keys::Passive]
-/// [`DigitalAssetKey`](crate::keys::DigitalAssetKey)
+/// [`DigitalAssetKey`](crate::keys::DigitalAssetKey).
+///
+/// Assumption: The [`export_asset_key`] functionality is called by the service provider. This is cryptographically enforced with
+/// an authenticated session between the key server and the service provider. This request will fail otherwise.
 ///
 /// TODO #30 (design, implementation): Pass a session
 #[allow(unused)]
-pub fn export_asset_key(
-    user_id: UserId,
-    key_id: &KeyId
-) -> Result<Passive, Error> {
+pub fn export_asset_key(user_id: UserId, key_id: &KeyId) -> Result<Passive, Error> {
     todo!()
 }
 
