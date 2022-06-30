@@ -12,10 +12,13 @@ use thiserror::Error;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AssetFiduciaryConfig;
 
-/// Configuration for a policy engine.
+/// System-wide configuration for a policy engine.
 ///
-/// Assumption: The access control structure for asset fiduciaries requires approval
-/// from all fiduciaries.
+/// The policy engine relies on a fixed set of asset fiduciaries; this set is
+/// specified in the `PolicyEngineConfig`. When a key operation is requested,
+/// the [`PolicyEngine`] asks each asset fiduciary for a corresponding approval
+/// decision. Final approval of the operation by the [`PolicyEngine`] requires receipt
+/// of an approval from each asset fiduciary specified in the policy configuration.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PolicyEngineConfig {
     /// Indicates whether unilateral control keys are allowed in the system.
@@ -27,7 +30,7 @@ pub struct PolicyEngineConfig {
     /// The number of [`Delegated`](crate::keys::Delegated) keys each user can create.
     #[serde(default)]
     max_delegated: u16,
-    /// The set of asset fiduciaries.
+    /// The system-wide set of asset fiduciaries.
     asset_fiduciaries: Vec<AssetFiduciaryConfig>,
 }
 
@@ -77,20 +80,20 @@ pub trait PolicyEngine {
 #[allow(unused)]
 pub enum TransactionApprovalDecision {
     /// All asset fiduciaries approved the request; there must be exactly one
-    /// signature per asset fiduciary.
-    Approve(Vec<ApprovalSignature>),
+    /// approval per asset fiduciary.
+    Approve(Vec<FiduciaryApproval>),
     /// At least one asset fiduciary rejected the request; the vector cannot be
     /// empty.
     Reject(Vec<RejectionContext>),
 }
 
-/// Signature from an asset fiduciary over a [`TransactionApprovalRequest`].
+/// Approval from an asset fiduciary over a [`TransactionApprovalRequest`].
 ///
 /// The set of asset fiduciaries is fixed and defined in the [`PolicyEngineConfig`].
-/// This type can only be instantiated if the underlying signature corresponds
-/// to one of the specified fiduciaries.
+/// A `FiduciaryApproval` must be tied to a specific asset fiduciary specified in
+/// that configuration.
 #[derive(Debug)]
-pub struct ApprovalSignature;
+pub struct FiduciaryApproval;
 
 /// Context for why an asset fiduciary rejected a [`TransactionApprovalRequest`].
 #[derive(Debug)]
