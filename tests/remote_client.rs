@@ -21,7 +21,7 @@ fn create_passive_digital_asset_key_not_implemented() {
 #[should_panic(expected = "not yet implemented")]
 fn import_key_not_implemented() {
     let key_material = KeyMaterial::default();
-    let _result = import_asset_key(UserId, key_material, SharedControl);
+    let _result = import_asset_key(UserId, key_material, Blockchain::EVM, SharedControl);
 }
 
 #[test]

@@ -81,12 +81,12 @@ pub fn request_transaction_signature(
 ///
 /// Output: If successful, returns the [`KeyInfo`] for the newly imported digital asset key.
 ///
-/// TODO #25 (implementation): Pass the appropriate blockchain as a parameter.
 /// TODO #30 (design, implementation): Pass a session.
 #[allow(unused)]
 pub fn import_asset_key(
     user_id: UserId,
     key_material: KeyMaterial,
+    blockchain: Blockchain,
     restriction: impl UseRestriction,
 ) -> Result<KeyInfo, Error> {
     todo!()
