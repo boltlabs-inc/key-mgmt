@@ -6,8 +6,8 @@ use std::fs::OpenOptions;
 use structopt::StructOpt;
 use thiserror::Error;
 
-// Form a client CLI request. These cannot be constructed directly because the CLI types are
-// non-exhaustive.
+// Form a client CLI request. These cannot be constructed directly because the
+// CLI types are non-exhaustive.
 macro_rules! client_cli {
     ($cli:ident, $args:expr) => {
         match ::da_mgmt::client::cli::Client::from_iter(
@@ -55,8 +55,9 @@ pub async fn integration_tests() {
             .unwrap_or_else(|e| panic!("Failed to clear error file after {}: {:?}", test.name, e));
     }
 
-    // Fail if any test failed. This is separate from evaluation to enforce that _every_ test must
-    // run without short-circuiting the execution at first failure
+    // Fail if any test failed. This is separate from evaluation to enforce that
+    // _every_ test must run without short-circuiting the execution at first
+    // failure
     let mut errors = Vec::with_capacity(results.len());
     for result in results.iter() {
         match result {
@@ -74,7 +75,8 @@ pub async fn integration_tests() {
 }
 
 /// Get a list of tests to execute.
-/// Assumption: none of these will cause a fatal error to the long-running processes (server).
+/// Assumption: none of these will cause a fatal error to the long-running
+/// processes (server).
 fn tests() -> Vec<Test> {
     vec![
         Test {
@@ -111,7 +113,8 @@ impl Test {
             // Get error logs for each party - we make the following assumptions:
             // - logs are deleted after each test, so all errors correspond to this test
             // - any Operation that throws an error is the final Operation in the test
-            // These mean that any error found in the logs is caused by the current operation
+            // These mean that any error found in the logs is caused by the current
+            // operation
             let server_errors = get_logs(LogType::Error, Party::Server)?;
 
             // Check whether the process errors matched the expectation.
@@ -162,6 +165,7 @@ enum Operation {
 
 #[derive(Debug)]
 struct Outcome {
-    /// Which process, if any, had an error? Assumes that exactly one party will error.
+    /// Which process, if any, had an error? Assumes that exactly one party will
+    /// error.
     error: Option<Party>,
 }

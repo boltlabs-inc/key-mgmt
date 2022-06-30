@@ -49,6 +49,9 @@ pub struct Session {
 impl Session {
     /// Open a new mutually authenticated session between a previously
     /// registered user and a key server described in the [`SessionConfig`].
+    ///
+    /// Output: If successful, returns an open [`Session`] between the specified [`UserId`]
+    /// and the configured key server.
     pub fn open(
         user_id: UserId,
         password: Password,
@@ -63,6 +66,9 @@ impl Session {
     ///
     /// This only needs to be called once per user; future sessions can be
     /// created with [`Session::open()`].
+    ///
+    /// Output: If successful, returns an open [`Session`] between the specified [`UserId`]
+    /// and the configured key server.
     pub fn register(
         user_id: UserId,
         password: Password,
@@ -72,6 +78,8 @@ impl Session {
     }
 
     /// Close a session.
+    ///
+    /// Outputs: None, if successful.
     pub fn close(self) -> Result<(), SessionError> {
         todo!()
     }
@@ -111,6 +119,8 @@ pub fn create_digital_asset_key(
 /// [`Delegated`](crate::keys::Delegated) key types. The [`KeyId`] must
 /// correspond to a key owned by the [`UserId`], and the [`UserId`] must
 /// match the user authenticated in the [`Session`].
+///
+/// Output: None, if successful.
 #[allow(unused)]
 pub fn set_user_key_policy(
     session: Session,
@@ -128,10 +138,15 @@ pub fn set_user_key_policy(
 /// match the user authenticated in the [`Session`].
 ///
 /// Assumption: A [`TransactionApprovalRequest`] originates either with the
-/// asset owner or the service provider. This is cryptographically enforced with
+/// asset owner or a key fiduciary. This is cryptographically enforced with
 /// an authenticated [`Session`] between the key server and one of the asset
 /// owner or a key fiduciary. This request will fail if the calling party
 /// is not from one of those entities.
+///
+/// Output: If successful, returns a [`TransactionSignature`] as specified in the
+/// original [`TransactionApprovalRequest`] -- that is, over the
+/// [`Transaction`](crate::transaction::Transaction), and using the key corresponding
+/// to the [`KeyId`].
 #[allow(unused)]
 pub fn request_transaction_signature(
     session: Session,
@@ -145,6 +160,8 @@ pub fn request_transaction_signature(
 ///
 /// The [`UserId`] must match the asset owner authenticated in the [`Session`].
 /// This function cannot be used to retrieve keys for a different user.
+///
+/// Output: If successful, returns the [`KeyInfo`] for every key belonging to the user.
 #[allow(unused)]
 pub fn retrieve_public_keys(session: Session, user_id: UserId) -> Result<Vec<KeyInfo>, Error> {
     todo!()
@@ -155,6 +172,8 @@ pub fn retrieve_public_keys(session: Session, user_id: UserId) -> Result<Vec<Key
 ///
 /// The [`UserId`] must match the asset owner authenticated in the [`Session`],
 /// and the [`KeyId`] must correspond to a key owned by the [`UserId`].
+///
+/// Output: If successful, returns the [`KeyInfo`] for the requested key.
 #[allow(unused)]
 pub fn retrieve_public_key_by_id(
     session: Session,
@@ -176,6 +195,8 @@ pub fn retrieve_public_key_by_id(
 /// The [`UserId`] must match the asset owner authenticated in the [`Session`],
 /// and if specified, the [`KeyId`] must correspond to a key owned by the
 /// [`UserId`].
+///
+/// Output: if successful, returns a [`String`] representation of the logs.
 #[allow(unused)]
 pub fn retrieve_audit_log(
     session: Session,

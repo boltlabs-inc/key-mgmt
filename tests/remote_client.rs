@@ -1,14 +1,33 @@
 use da_mgmt::blockchain::Blockchain;
 use da_mgmt::{
-    keys::{KeyId, SharedControl, UserId},
+    keys::{KeyId, KeyMaterial, SharedControl, UserId},
     remote_client::*,
     transaction::TransactionApprovalRequest,
 };
 
 #[test]
 #[should_panic(expected = "not yet implemented")]
+fn register_passive_user_not_implemented() {
+    let _result = register_passive_user(UserId);
+}
+
+#[test]
+#[should_panic(expected = "not yet implemented")]
 fn create_passive_digital_asset_key_not_implemented() {
     let _result = create_passive_digital_asset_key(UserId, Blockchain::EVM, SharedControl);
+}
+
+#[test]
+#[should_panic(expected = "not yet implemented")]
+fn import_key_not_implemented() {
+    let key_material = KeyMaterial::default();
+    let _result = import_asset_key(UserId, key_material, SharedControl);
+}
+
+#[test]
+#[should_panic(expected = "not yet implemented")]
+fn export_key_not_implemented() {
+    let _result = export_asset_key(UserId, &KeyId);
 }
 
 #[test]
