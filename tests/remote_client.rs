@@ -1,6 +1,6 @@
 use da_mgmt::blockchain::Blockchain;
 use da_mgmt::{
-    keys::{KeyId, SharedControl, UserId},
+    keys::{KeyId, KeyMaterial, SharedControl, UserId},
     remote_client::*,
     transaction::TransactionApprovalRequest,
 };
@@ -20,7 +20,8 @@ fn create_passive_digital_asset_key_not_implemented() {
 #[test]
 #[should_panic(expected = "not yet implemented")]
 fn import_key_not_implemented() {
-    let _result = import_asset_key(UserId, SharedControl);
+    let key_material = KeyMaterial::default();
+    let _result = import_asset_key(UserId, key_material, SharedControl);
 }
 
 #[test]
