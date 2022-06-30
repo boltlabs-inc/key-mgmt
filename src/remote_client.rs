@@ -19,6 +19,8 @@ pub enum Error {}
 /// fiduciary would need to call this function to indicate that they can take
 /// actions on this user's behalf.
 ///
+/// Returns a [`Result`] holding either an empty [`Ok()`] if successful or an [`Error`] otherwise.
+///
 /// TODO #30 (design, implementation): Pass a session
 #[allow(unused)]
 pub fn register_passive_user(user_id: UserId) -> Result<(), Error> {
@@ -29,6 +31,8 @@ pub fn register_passive_user(user_id: UserId) -> Result<(), Error> {
 /// [`DigitalAssetKey`](crate::keys::DigitalAssetKey) with the given use
 /// restrictions for the [`UserId`], and compatible with the specified
 /// blockchain.
+///
+/// Returns a [`Result`] holding either a [`KeyInfo`] object for the newly created key if successful or an [`Error`] otherwise.
 ///
 /// TODO #25 (implementation): Pass the appropriate blockchain as a parameter.
 /// TODO #30 (design, implementation): Pass a session
@@ -55,6 +59,8 @@ pub fn create_passive_digital_asset_key(
 /// or a key fiduciary. This request will fail if the calling party
 /// is not from one of those entities.
 ///
+/// Returns a [`Result`] holding either a [`TransactionSignature`] object if successful or an [`Error`] otherwise.
+///
 /// TODO #30 (design, implementation): Pass a session.
 #[allow(unused)]
 pub fn request_transaction_signature(
@@ -70,6 +76,8 @@ pub fn request_transaction_signature(
 ///
 /// Assumption: The [`import_asset_key`] functionality is called by the service provider. This is cryptographically enforced with
 /// an authenticated session between the key server and the service provider. This request will fail otherwise.
+///
+/// Returns a [`Result`] holding either a [`KeyInfo`] object for the newly imported key if successful or an [`Error`] otherwise.
 ///
 /// TODO #25 (implementation): Pass the appropriate blockchain as a parameter.
 /// TODO #30 (design, implementation): Pass a session
@@ -89,6 +97,8 @@ pub fn import_asset_key(
 /// Assumption: The [`export_asset_key`] functionality is called by the service provider. This is cryptographically enforced with
 /// an authenticated session between the key server and the service provider. This request will fail otherwise.
 ///
+/// Returns a [`Result`] holding either the requested [`Passive`] key if successful or an [`Error`] otherwise.
+///
 /// TODO #30 (design, implementation): Pass a session
 #[allow(unused)]
 pub fn export_asset_key(user_id: UserId, key_id: &KeyId) -> Result<Passive, Error> {
@@ -103,6 +113,7 @@ pub fn export_asset_key(user_id: UserId, key_id: &KeyId) -> Result<Passive, Erro
 /// have delegated signing authority to the key fiduciary authenticated in the
 /// session. The [`KeyId`] must correspond to a key owned by the [`UserId`].
 ///
+/// Returns a [`Result`] holding either a vector of [`KeyInfo`] objects for this user's keys if successful or an [`Error`] otherwise.
 ///
 /// TODO #30 (design, implementation): Pass a session
 #[allow(unused)]
@@ -117,6 +128,8 @@ pub fn retrieve_public_keys(user_id: UserId) -> Result<Vec<KeyInfo>, Error> {
 /// [`Delegated`](crate::keys::Delegated) key that
 /// have delegated signing authority to the key fiduciary authenticated in the
 /// session. The [`KeyId`] must correspond to a key owned by the [`UserId`].
+///
+/// Returns a [`Result`] holding either a [`KeyInfo`] object for the requested key if successful or an [`Error`] otherwise.
 ///
 /// TODO #30 (design, implementation): Pass a session
 #[allow(unused)]
@@ -138,6 +151,8 @@ pub fn retrieve_public_key_by_id(user_id: UserId, key_id: &KeyId) -> Result<KeyI
 /// which action was requested and by whom, the date, details about approval or
 /// rejection from each key server, the policy engine, and each asset fiduciary
 /// (if relevant), and any other relevant details.
+///
+/// Returns a [`Result`] holding either a String representing the logs if successful or an [`Error`] otherwise.
 ///
 /// TODO #30 (design, implementation): Pass a session
 #[allow(unused)]

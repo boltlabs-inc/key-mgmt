@@ -48,6 +48,8 @@ pub struct Session {
 impl Session {
     /// Open a new mutually authenticated session between a previously
     /// registered user and a key server described in the [`SessionConfig`].
+    ///
+    /// Returns a [`Result`] holding either an open [`Session`] if successful or a [`SessionError`] otherwise.
     pub fn open(
         user_id: UserId,
         password: Password,
@@ -62,6 +64,8 @@ impl Session {
     ///
     /// This only needs to be called once per user; future sessions can be
     /// created with [`Session::open()`].
+    ///
+    /// Returns a [`Result`] holding either an open [`Session`] if successful or a [`SessionError`] otherwise.
     pub fn register(
         user_id: UserId,
         password: Password,
@@ -71,6 +75,8 @@ impl Session {
     }
 
     /// Close a session.
+    ///
+    /// Returns a [`Result`] holding either an empty [`Ok()`] if successful or a [`SessionError`] otherwise.
     pub fn close(self) -> Result<(), SessionError> {
         todo!()
     }
@@ -92,6 +98,8 @@ pub enum Error {
 ///
 /// The [`UserId`] must be the same user who opened the [`Session`].
 ///
+/// Returns a [`Result`] holding either a [`KeyInfo`] object for the newly created key if successful or an [`Error`] otherwise.
+///
 /// TODO #25 (implementation): Pass the appropriate blockchain as a parameter.
 #[allow(unused)]
 pub fn create_digital_asset_key(
@@ -110,6 +118,8 @@ pub fn create_digital_asset_key(
 /// [`Delegated`](crate::keys::Delegated) key types. The [`KeyId`] must
 /// correspond to a key owned by the [`UserId`], and the [`UserId`] must
 /// match the user authenticated in the [`Session`].
+///
+///  Returns a [`Result`] holding either an empty [`Ok()`] if successful or an [`Error`] otherwise.
 #[allow(unused)]
 pub fn set_user_key_policy(
     session: Session,
@@ -131,6 +141,8 @@ pub fn set_user_key_policy(
 /// an authenticated [`Session`] between the key server and one of the asset
 /// owner or a key fiduciary. This request will fail if the calling party
 /// is not from one of those entities.
+///
+/// Returns a [`Result`] holding either a [`TransactionSignature`] object if successful or an [`Error`] otherwise.
 #[allow(unused)]
 pub fn request_transaction_signature(
     session: Session,
@@ -144,6 +156,8 @@ pub fn request_transaction_signature(
 ///
 /// The [`UserId`] must match the asset owner authenticated in the [`Session`].
 /// This function cannot be used to retrieve keys for a different user.
+///
+/// Returns a [`Result`] holding either a vector of [`KeyInfo`] objects for this user's keys if successful or an [`Error`] otherwise.
 #[allow(unused)]
 pub fn retrieve_public_keys(session: Session, user_id: UserId) -> Result<Vec<KeyInfo>, Error> {
     todo!()
@@ -154,6 +168,8 @@ pub fn retrieve_public_keys(session: Session, user_id: UserId) -> Result<Vec<Key
 ///
 /// The [`UserId`] must match the asset owner authenticated in the [`Session`],
 /// and the [`KeyId`] must correspond to a key owned by the [`UserId`].
+///
+/// Returns a [`Result`] holding either a [`KeyInfo`] object for the requested key if successful or an [`Error`] otherwise.
 #[allow(unused)]
 pub fn retrieve_public_key_by_id(
     session: Session,
@@ -175,6 +191,8 @@ pub fn retrieve_public_key_by_id(
 /// The [`UserId`] must match the asset owner authenticated in the [`Session`],
 /// and if specified, the [`KeyId`] must correspond to a key owned by the
 /// [`UserId`].
+///
+/// Returns a [`Result`] holding either a String representing the logs if successful or an [`Error`] otherwise.
 #[allow(unused)]
 pub fn retrieve_audit_log(
     session: Session,
