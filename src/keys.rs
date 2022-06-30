@@ -4,6 +4,7 @@
 //! modifiers describing access control and custody;
 //! and machine- and human-readable tags for keys.
 
+use bytes::BytesMut;
 use serde::{Deserialize, Serialize};
 
 /// Unique ID for a user. Assumption: this will be derived from an ID generated
@@ -28,6 +29,22 @@ pub struct KeyInfo {
     user_id: UserId,
     key_id: KeyId,
     public_key: DigitalAssetPublicKey,
+}
+
+/// Wrapper around [`Bytes`] to represent key material that is not a full [`DigitalAssetKey`]
+///
+/// TODO #49 (design, implementation): Define key material properly
+#[derive(Debug, Serialize, Deserialize)]
+#[allow(unused)]
+pub struct KeyMaterial {
+    key_material: BytesMut,
+}
+impl Default for KeyMaterial {
+    fn default() -> Self {
+        Self {
+            key_material: BytesMut::with_capacity(32),
+        }
+    }
 }
 
 /// Digital asset key, parameterized by use permissions and restrictions.

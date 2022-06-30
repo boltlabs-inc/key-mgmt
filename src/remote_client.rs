@@ -3,9 +3,8 @@
 //! This API is designed for use with a remote client application - that is, an
 //! application running on the servers of a Service Provider.
 
-use crate::keys::Passive;
 use crate::{
-    keys::{KeyId, KeyInfo, UseRestriction, UserId},
+    keys::{KeyId, KeyInfo, KeyMaterial, UseRestriction, UserId},
     transaction::{TransactionApprovalRequest, TransactionSignature},
 };
 use thiserror::Error;
@@ -84,6 +83,7 @@ pub fn request_transaction_signature(
 #[allow(unused)]
 pub fn import_asset_key(
     user_id: UserId,
+    key_material: KeyMaterial,
     restriction: impl UseRestriction,
 ) -> Result<KeyInfo, Error> {
     todo!()
@@ -97,11 +97,11 @@ pub fn import_asset_key(
 /// Assumption: The [`export_asset_key`] functionality is called by the service provider. This is cryptographically enforced with
 /// an authenticated session between the key server and the service provider. This request will fail otherwise.
 ///
-/// Returns a [`Result`] holding either the requested [`Passive`] key if successful or an [`Error`] otherwise.
+/// Returns a [`Result`] holding either the [`KeyMaterial`] of the requested key if successful or an [`Error`] otherwise.
 ///
 /// TODO #30 (design, implementation): Pass a session
 #[allow(unused)]
-pub fn export_asset_key(user_id: UserId, key_id: &KeyId) -> Result<Passive, Error> {
+pub fn export_asset_key(user_id: UserId, key_id: &KeyId) -> Result<KeyMaterial, Error> {
     todo!()
 }
 
