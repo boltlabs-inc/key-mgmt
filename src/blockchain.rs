@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 /// Options for type of blockchain.
 ///
-/// A blockchain option must be specified when creating or importing a [`DigitalAssetKey`].
+/// A blockchain option must be specified when creating or importing a digital asset key.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum Blockchain {
     EVM,

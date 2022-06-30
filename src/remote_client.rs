@@ -29,7 +29,7 @@ pub fn register_passive_user(user_id: UserId) -> Result<(), Error> {
 }
 
 /// Generate a new, distributed, [`Passive`][crate::keys::Passive]
-/// [`DigitalAssetKey`](crate::keys::DigitalAssetKey) with the given use
+/// digital asset key with the given use
 /// restrictions for the [`UserId`], and compatible with the specified
 /// blockchain. This must be called by the service provider over an
 /// authenticated session.
@@ -74,7 +74,7 @@ pub fn request_transaction_signature(
 /// Import passive key material to the key servers.
 ///
 /// The key must correspond to a [`Passive`][crate::keys::Passive]
-/// [`DigitalAssetKey`](crate::keys::DigitalAssetKey).
+/// digital asset key.
 ///
 /// Assumption: The [`import_asset_key`] functionality is called by the service provider. This is cryptographically enforced with
 /// an authenticated session between the key server and the service provider. This request will fail otherwise.
@@ -95,7 +95,7 @@ pub fn import_asset_key(
 /// Export passive key material from the key servers.
 ///
 /// The [`KeyId`] must correspond to a [`Passive`][crate::keys::Passive]
-/// [`DigitalAssetKey`](crate::keys::DigitalAssetKey).
+/// digital asset key.
 ///
 /// Assumption: The [`export_asset_key`] functionality is called by the service
 /// provider. This is cryptographically enforced with an authenticated session

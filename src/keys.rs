@@ -30,10 +30,9 @@ pub struct KeyInfo {
     public_key: DigitalAssetPublicKey,
 }
 
-/// Wrapper around [`BytesMut`] to represent key material that is not imported into
-/// the system as a full [`DigitalAssetKey`].
+/// Wrapper around [`BytesMut`] to represent key material external to the system.
 ///
-/// TODO #49 (design, implementation): Define key material properly
+/// TODO #49 (design, implementation): Define key material properly.
 #[derive(Debug, Serialize, Deserialize)]
 #[allow(unused)]
 pub struct KeyMaterial {
