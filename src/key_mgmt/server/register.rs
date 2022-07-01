@@ -1,5 +1,5 @@
 use crate::config::opaque::OpaqueCipherSuite;
-use crate::opaque_storage::{retrieve_opaque, store_opaque};
+use crate::opaque_storage::{create_or_retrieve_server_key_opaque, retrieve_opaque, store_opaque};
 use crate::{
     abort, proceed, protocol,
     protocol::register,
@@ -7,7 +7,7 @@ use crate::{
     timeout::WithTimeout,
 };
 use anyhow::Context;
-use opaque_ke::{ServerRegistration, ServerSetup};
+use opaque_ke::ServerRegistration;
 use rand::rngs::StdRng;
 use transport::server::{Chan, SessionKey};
 
@@ -16,14 +16,15 @@ pub struct Register;
 impl Register {
     pub async fn run(
         &self,
-        mut rng: StdRng,
+        rng: StdRng,
         _client: &reqwest::Client,
         _config: &Config,
         service: &Service,
         _session_key: SessionKey,
         chan: Chan<protocol::Register>,
     ) -> Result<(), anyhow::Error> {
-        let server_setup = ServerSetup::<OpaqueCipherSuite>::new(&mut rng);
+        let server_setup = create_or_retrieve_server_key_opaque(rng, service)
+            .context("could not find/create server key")?;
 
         let (register_start, chan) = chan
             .recv()
@@ -47,7 +48,7 @@ impl Register {
         let chan = chan
             .send(server_registration_start_result.message)
             .await
-            .context("Couldn't respond with SecretInfo")?;
+            .context("Couldn't respond with RegisterStartReceived")?;
 
         let (register_finish, _chan) = chan
             .recv()

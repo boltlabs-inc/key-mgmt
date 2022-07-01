@@ -3,9 +3,11 @@ address = "::1"
 private_key = "localhost.key"
 certificate = "localhost.crt"
 opaque_path = "dev/opaque"
+opaque_server_key = "dev/opaque/server_setup"
 
 [[service]]
 address = "127.0.0.1"
 private_key = "localhost.key"
 certificate = "localhost.crt"
 opaque_path = "dev/opaque"
+opaque_server_key = "dev/opaque/server_setup"

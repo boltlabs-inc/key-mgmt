@@ -88,6 +88,10 @@ fn tests() -> Vec<Test> {
             operations: vec![(Operation::Register, Outcome { error: None })],
         },
         Test {
+            name: "Authenticate as a client to the server".to_string(),
+            operations: vec![(Operation::Authenticate, Outcome { error: None })],
+        },
+        Test {
             name: "Retrieve a secret from the server".to_string(),
             operations: vec![(Operation::Retrieve, Outcome { error: None })],
         },
@@ -124,6 +128,21 @@ impl Test {
                 }
                 Operation::Retrieve => {
                     let est = client_cli!(Retrieve, vec!["retrieve", "keymgmt://localhost"]);
+                    est.run(client_config.clone()).await.map(|_| ())
+                }
+
+                Operation::Authenticate => {
+                    let est = client_cli!(
+                        Authenticate,
+                        vec![
+                            "authenticate",
+                            "keymgmt://localhost",
+                            "--username",
+                            "test_user",
+                            "--password",
+                            "test_password"
+                        ]
+                    );
                     est.run(client_config.clone()).await.map(|_| ())
                 }
             };
@@ -180,6 +199,7 @@ enum Operation {
     Create,
     Register,
     Retrieve,
+    Authenticate,
 }
 
 #[derive(Debug)]

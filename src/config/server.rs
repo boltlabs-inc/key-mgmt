@@ -34,6 +34,7 @@ pub struct Service {
     pub private_key: PathBuf,
     pub certificate: PathBuf,
     pub opaque_path: PathBuf,
+    pub opaque_server_key: PathBuf,
 }
 
 impl Config {

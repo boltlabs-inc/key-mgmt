@@ -8,10 +8,12 @@ use tokio::{signal, sync::broadcast};
 use tracing::{error, info};
 use transport::server::{Chan, Server};
 
+mod authenticate;
 mod create;
 mod register;
 mod retrieve;
 
+use authenticate::Authenticate;
 use create::Create;
 use register::Register;
 use retrieve::Retrieve;
@@ -93,6 +95,14 @@ impl Command for Run {
                                     chan,
                                 ).await?,
                                 2 => Retrieve.run(
+                                    rng,
+                                    &client,
+                                    &config,
+                                    &service,
+                                    session_key,
+                                    chan,
+                                ).await?,
+                                3 => Authenticate.run(
                                     rng,
                                     &client,
                                     &config,

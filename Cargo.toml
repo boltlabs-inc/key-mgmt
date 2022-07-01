@@ -27,6 +27,7 @@ allow_explicit_certificate_trust = []
 [dependencies]
 anyhow = "1"
 async-trait = "0"
+bincode = "1"
 bytes = { version = "1", features = ["serde"] }
 dialectic = { git = "https://github.com/boltlabs-inc/dialectic.git", branch = "main" }
 dialectic-tokio-serde = { git = "https://github.com/boltlabs-inc/dialectic.git", branch = "main" }

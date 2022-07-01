@@ -1,6 +1,6 @@
 use crate::key_mgmt::client::{
-    CreateSecretRequest, RegisterFinish, RegisterStart, RegisterStartReceived, SecretInfo,
-    SecretRetrieveRequest,
+    AuthFinish, AuthStart, AuthStartReceived, CreateSecretRequest, RegisterFinish, RegisterStart,
+    RegisterStartReceived, SecretInfo, SecretRetrieveRequest,
 };
 use dialectic::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -104,6 +104,7 @@ impl Party {
 }
 
 // All protocols are from the perspective of the client.
+pub use authenticate::Authenticate;
 pub use create::Create;
 pub use register::Register;
 pub use retrieve::Retrieve;
@@ -114,6 +115,7 @@ pub type KeyMgmt = Session! {
         0 => Create,
         1 => Register,
         2 => Retrieve,
+        3 => Authenticate,
     }
 };
 
@@ -180,5 +182,35 @@ pub mod retrieve {
     pub type RetrieveSecret = Session! {
         send SecretRetrieveRequest;
         recv SecretInfo;
+    };
+}
+
+/// The protocol to authenticate using OPAQUE
+pub mod authenticate {
+    use super::*;
+
+    /// Possible errors of the protocol
+    #[derive(Debug, Clone, Error, Serialize, Deserialize)]
+    pub enum Error {
+        #[error("Username does not exist")]
+        UsernameDoesNotExist,
+    }
+
+    /// The actual sessionType for the registration protocol
+    pub type Authenticate = DoAuthenticate;
+
+    /// The internals of the registration protocol
+    pub type DoAuthenticate = Session! {
+        send AuthStart;
+        AuthStartReceivedSess;
+    };
+
+    pub type AuthStartReceivedSess = Session! {
+        OfferAbort<AuthStartReceivedSessNoAbort, Error>;
+    };
+
+    pub type AuthStartReceivedSessNoAbort = Session! {
+        recv AuthStartReceived;
+        send AuthFinish;
     };
 }
