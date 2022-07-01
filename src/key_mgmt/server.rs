@@ -9,9 +9,11 @@ use tracing::{error, info};
 use transport::server::{Chan, Server};
 
 mod create;
+mod register;
 mod retrieve;
 
 use create::Create;
+use register::Register;
 use retrieve::Retrieve;
 
 /// A single server-side command, parameterized by the currently loaded
@@ -82,7 +84,15 @@ impl Command for Run {
                                     session_key,
                                     chan,
                                 ).await?,
-                                1 => Retrieve.run(
+                                1 => Register.run(
+                                    rng,
+                                    &client,
+                                    &config,
+                                    &service,
+                                    session_key,
+                                    chan,
+                                ).await?,
+                                2 => Retrieve.run(
                                     rng,
                                     &client,
                                     &config,

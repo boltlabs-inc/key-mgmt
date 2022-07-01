@@ -1,4 +1,7 @@
-use crate::key_mgmt::client::{CreateSecretRequest, SecretInfo, SecretRetrieveRequest};
+use crate::key_mgmt::client::{
+    CreateSecretRequest, RegisterFinish, RegisterStart, RegisterStartReceived, SecretInfo,
+    SecretRetrieveRequest,
+};
 use dialectic::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -102,13 +105,15 @@ impl Party {
 
 // All protocols are from the perspective of the client.
 pub use create::Create;
+pub use register::Register;
 pub use retrieve::Retrieve;
 
 /// The key-mgmt session type from the perspective of the client
 pub type KeyMgmt = Session! {
     choose {
         0 => Create,
-        1 => Retrieve,
+        1 => Register,
+        2 => Retrieve,
     }
 };
 
@@ -127,6 +132,25 @@ pub mod create {
     pub type InitiateCreateSecret = Session! {
         send CreateSecretRequest;
         recv SecretInfo;
+    };
+}
+
+/// The protocol to register using OPAQUE
+pub mod register {
+    use super::*;
+
+    /// Possible errors of the protocol
+    #[derive(Debug, Clone, Error, Serialize, Deserialize)]
+    pub enum Error {}
+
+    /// The actual sessionType for the registration protocol
+    pub type Register = DoRegister;
+
+    /// The internals of the registration protocol
+    pub type DoRegister = Session! {
+        send RegisterStart;
+        recv RegisterStartReceived;
+        send RegisterFinish;
     };
 }
 

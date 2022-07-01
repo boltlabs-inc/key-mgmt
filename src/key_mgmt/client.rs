@@ -8,7 +8,18 @@ use tracing::warn;
 use transport::client::{Chan, Client, SessionKey};
 
 mod create;
+mod register;
 mod retrieve;
+
+/// The object that the client sends to the server when registering using OPAQUE
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RegisterStart;
+/// The object that the server responds with to the client when ['RegisterStart'] has been received
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RegisterStartReceived;
+/// The object that the client sends to the server to finish registration using OPAQUE
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RegisterFinish;
 
 /// The object that the client sends to the server when creating a secret
 #[derive(Debug, Serialize, Deserialize)]

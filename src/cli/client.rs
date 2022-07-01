@@ -18,6 +18,7 @@ pub struct Cli {
 #[derive(Debug, StructOpt)]
 pub enum Client {
     Create(Create),
+    Register(Register),
     Retrieve(Retrieve),
 }
 
@@ -25,6 +26,14 @@ pub enum Client {
 #[derive(Debug, StructOpt)]
 #[non_exhaustive]
 pub struct Create {
+    /// The `keymgmt://` address for the server.
+    pub server: KeyMgmtAddress,
+}
+
+/// Register using OPAQUE.
+#[derive(Debug, StructOpt)]
+#[non_exhaustive]
+pub struct Register {
     /// The `keymgmt://` address for the server.
     pub server: KeyMgmtAddress,
 }
