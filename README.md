@@ -13,7 +13,7 @@ The DAMS aims to provide a flexible system of components for managing digital as
 
 * A **key server** which includes a flexible program that can be deployed at multiple providers. The server has the following properties:
 
-    * The server may be run by either an external cloud provider, e.g, Microsoft Azure, AWS, or directly by Forte. This allows for a flexible distribution of trust; in particular, the compromise of a single server (or some group of servers below a designated threshold) does not allow for theft or misuse of the given private key.
+    * The server may be run by either an external cloud provider, e.g, Microsoft Azure, AWS, or directly by the service provider. This allows for a flexible distribution of trust; in particular, the compromise of a single server (or some group of servers below a designated threshold) does not allow for theft or misuse of the given private key.
 
     * Integrates with an **external policy engine client** for approval/rejection of requested signing operations via a well-defined API.
 
