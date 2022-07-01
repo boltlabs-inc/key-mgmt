@@ -104,6 +104,10 @@ impl Test {
                     let est = client_cli!(Create, vec!["create", "keymgmt://localhost"]);
                     est.run(client_config.clone()).await.map(|_| ())
                 }
+                Operation::Register => {
+                    let est = client_cli!(Register, vec!["register", "keymgmt://localhost"]);
+                    est.run(client_config.clone()).await.map(|_| ())
+                }
                 Operation::Retrieve => {
                     let est = client_cli!(Retrieve, vec!["retrieve", "keymgmt://localhost"]);
                     est.run(client_config.clone()).await.map(|_| ())
@@ -160,6 +164,7 @@ enum TestError {
 #[derive(Debug, Clone, Copy)]
 enum Operation {
     Create,
+    Register,
     Retrieve,
 }
 

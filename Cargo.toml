@@ -28,6 +28,7 @@ allow_explicit_certificate_trust = []
 anyhow = "1"
 async-trait = "0"
 bytes = { version = "1", features = ["serde"] }
+curve25519-dalek = "3"
 dialectic = { git = "https://github.com/boltlabs-inc/dialectic.git", branch = "main" }
 dialectic-tokio-serde = { git = "https://github.com/boltlabs-inc/dialectic.git", branch = "main" }
 dialectic-tokio-serde-bincode = { git = "https://github.com/boltlabs-inc/dialectic.git", branch = "main" }
@@ -38,10 +39,12 @@ http = "0"
 http-serde = "1"
 humantime = "2"
 humantime-serde = "1"
+opaque-ke = "2.0.0-pre.2"
 rand = "0"
 reqwest = "0"
 serde = "1"
 serde_with = "1"
+sha2 = "0"
 structopt = "0"
 thiserror = "1"
 tokio = { version = "1", features = ["full"] }
@@ -51,7 +54,6 @@ tracing-futures = "0"
 tracing-subscriber = { version = "0", features = ["env-filter"] }
 transport = { git = "https://github.com/boltlabs-inc/transport.git", branch = "main", features = ["allow_explicit_certificate_trust"] }
 webpki = "0"
-opaque-ke = "1"
 
 [dev-dependencies]
 rand = "0.8.3"

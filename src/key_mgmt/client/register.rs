@@ -1,17 +1,26 @@
 use super::Command;
-use anyhow::{anyhow, Context};
+use anyhow::Context;
 use async_trait::async_trait;
+use opaque_ke::{ClientRegistration, ClientRegistrationFinishParameters};
+use rand::rngs::OsRng;
 
 use crate::client::{
     cli::Register,
-    key_mgmt::{connect, Config, RegisterFinish, RegisterStart},
+    key_mgmt::{connect, Config, RegisterStart},
 };
+use crate::config::opaque::OpaqueCipherSuite;
 
 #[async_trait]
 impl Command for Register {
     type Output = ();
     async fn run(self, config: self::Config) -> Result<Self::Output, anyhow::Error> {
-        let Self { server: address } = self;
+        let Self {
+            username,
+            password,
+            server: address,
+        } = self;
+
+        let mut rng = OsRng;
 
         // Connect with the server...
         let (_session_key, chan) = connect(&config, &address)
@@ -24,24 +33,37 @@ impl Command for Register {
             .await
             .context("Failed to select create secret session")?;
 
+        let client_registration_start_result =
+            ClientRegistration::<OpaqueCipherSuite>::start(&mut rng, password.as_bytes()).unwrap();
+
         let chan = chan
-            .send(RegisterStart {})
+            .send(RegisterStart {
+                request: client_registration_start_result.message,
+                username,
+            })
             .await
             .context("Failed to send RegisterStart")?;
 
-        let (_register_start_received, chan) = chan
+        let (register_start_received, chan) = chan
             .recv()
             .await
             .context("Failed to recv RegisterStartReceived from server")?;
 
-        let chan = chan
-            .send(RegisterFinish {})
-            .await
-            .context("Failed to send RegisterFinish");
+        let client_finish_registration_result = client_registration_start_result
+            .state
+            .finish(
+                &mut rng,
+                password.as_bytes(),
+                register_start_received,
+                ClientRegistrationFinishParameters::default(),
+            )
+            .unwrap();
 
-        if chan.is_ok() {
-            return Ok(());
-        }
-        return Err(anyhow!("Didn't receive correct response from server"));
+        chan.send(client_finish_registration_result.message)
+            .await
+            .context("Failed to send RegisterFinish")?
+            .close();
+
+        return Ok(());
     }
 }
