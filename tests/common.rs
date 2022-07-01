@@ -144,6 +144,7 @@ async fn server_test_config() -> da_mgmt::server::Config {
         ("address", SERVER_ADDRESS),
         ("private_key", "localhost.key"),
         ("certificate", "localhost.crt"),
+        ("opaque_path", "tests/gen/opaque"),
     ])
     .into_iter()
     .fold("\n[[service]]".to_string(), |acc, (key, value)| {

@@ -35,6 +35,7 @@ dialectic-tokio-serde-bincode = { git = "https://github.com/boltlabs-inc/dialect
 dialectic-reconnect = { features = ["serde", "humantime-serde"], git = "https://github.com/boltlabs-inc/dialectic.git", branch = "main" }
 directories = "3"
 futures = "0"
+generic-array = "0"
 http = "0"
 http-serde = "1"
 humantime = "2"

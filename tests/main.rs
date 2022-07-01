@@ -84,6 +84,10 @@ fn tests() -> Vec<Test> {
             operations: vec![(Operation::Create, Outcome { error: None })],
         },
         Test {
+            name: "Register as a client to the server".to_string(),
+            operations: vec![(Operation::Register, Outcome { error: None })],
+        },
+        Test {
             name: "Retrieve a secret from the server".to_string(),
             operations: vec![(Operation::Retrieve, Outcome { error: None })],
         },
@@ -105,7 +109,17 @@ impl Test {
                     est.run(client_config.clone()).await.map(|_| ())
                 }
                 Operation::Register => {
-                    let est = client_cli!(Register, vec!["register", "keymgmt://localhost"]);
+                    let est = client_cli!(
+                        Register,
+                        vec![
+                            "register",
+                            "keymgmt://localhost",
+                            "--username",
+                            "test_user",
+                            "--password",
+                            "test_password"
+                        ]
+                    );
                     est.run(client_config.clone()).await.map(|_| ())
                 }
                 Operation::Retrieve => {

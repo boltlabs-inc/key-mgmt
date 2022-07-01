@@ -9,6 +9,8 @@ use crate::client::{
     key_mgmt::{connect, Config, RegisterStart},
 };
 use crate::config::opaque::OpaqueCipherSuite;
+use crate::offer_abort;
+use crate::protocol::Party::Client;
 
 #[async_trait]
 impl Command for Register {
@@ -43,6 +45,8 @@ impl Command for Register {
             })
             .await
             .context("Failed to send RegisterStart")?;
+
+        offer_abort!(in chan as Client);
 
         let (register_start_received, chan) = chan
             .recv()

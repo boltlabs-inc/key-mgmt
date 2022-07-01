@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 use thiserror::Error;
 
-type _OfferAbort<Next, Err> = Session! {
+type OfferAbort<Next, Err> = Session! {
     offer {
         0 => recv Err,
         1 => Next,
@@ -141,7 +141,10 @@ pub mod register {
 
     /// Possible errors of the protocol
     #[derive(Debug, Clone, Error, Serialize, Deserialize)]
-    pub enum Error {}
+    pub enum Error {
+        #[error("Username already exists")]
+        UsernameAlreadyExists,
+    }
 
     /// The actual sessionType for the registration protocol
     pub type Register = DoRegister;
@@ -149,6 +152,14 @@ pub mod register {
     /// The internals of the registration protocol
     pub type DoRegister = Session! {
         send RegisterStart;
+        RegisterStartReceivedSess;
+    };
+
+    pub type RegisterStartReceivedSess = Session! {
+        OfferAbort<RegisterStartReceivedSessNoAbort, Error>;
+    };
+
+    pub type RegisterStartReceivedSessNoAbort = Session! {
         recv RegisterStartReceived;
         send RegisterFinish;
     };

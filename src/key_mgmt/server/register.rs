@@ -1,6 +1,8 @@
 use crate::config::opaque::OpaqueCipherSuite;
+use crate::opaque_storage::{retrieve_opaque, store_opaque};
 use crate::{
-    protocol,
+    abort, proceed, protocol,
+    protocol::register,
     server::{config::Service, Config},
     timeout::WithTimeout,
 };
@@ -29,12 +31,18 @@ impl Register {
             .await
             .context("Did not receive RegisterStart")??;
 
+        let username = register_start.username;
+        if retrieve_opaque(service, username.clone()).is_ok() {
+            abort!(in chan return register::Error::UsernameAlreadyExists);
+        }
         let server_registration_start_result = ServerRegistration::<OpaqueCipherSuite>::start(
             &server_setup,
             register_start.request,
-            register_start.username.as_bytes(),
+            username.as_bytes(),
         )
         .unwrap();
+
+        proceed!(in chan);
 
         let chan = chan
             .send(server_registration_start_result.message)
@@ -47,8 +55,8 @@ impl Register {
             .await
             .context("Did not receive RegisterFinish")??;
 
-        let _password_file = ServerRegistration::finish(register_finish);
-        // password_file.serialize();
+        let password_file = ServerRegistration::finish(register_finish);
+        store_opaque(service, username, password_file.serialize())?;
 
         Ok(())
     }

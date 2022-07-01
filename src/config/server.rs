@@ -33,6 +33,7 @@ pub struct Service {
     pub max_message_length: usize,
     pub private_key: PathBuf,
     pub certificate: PathBuf,
+    pub opaque_path: PathBuf,
 }
 
 impl Config {
