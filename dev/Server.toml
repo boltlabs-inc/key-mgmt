@@ -2,10 +2,10 @@
 address = "::1"
 private_key = "localhost.key"
 certificate = "localhost.crt"
-opaque_path = "opaque"
+opaque_path = "dev/opaque"
 
 [[service]]
 address = "127.0.0.1"
 private_key = "localhost.key"
 certificate = "localhost.crt"
-opaque_path = "opaque"
+opaque_path = "dev/opaque"
