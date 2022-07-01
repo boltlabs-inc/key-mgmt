@@ -8,8 +8,8 @@ use serde::{Deserialize, Serialize};
 
 /// Unique ID for a user. Assumption: this will be derived from an ID generated
 /// by the Service Provider.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct UserId;
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct UserId(pub String);
 
 /// Universally unique identifier for a key.
 #[allow(unused)]

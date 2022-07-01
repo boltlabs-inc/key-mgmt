@@ -10,21 +10,59 @@ use crate::{
     keys::{KeyId, KeyInfo, UsePermission, UseRestriction, UserId, UserPolicySpecification},
     transaction::{TransactionApprovalRequest, TransactionSignature},
 };
+use dialectic_reconnect::Backoff;
+use std::fmt::{Display, Formatter};
+use std::path::PathBuf;
+use std::str::FromStr;
+use std::time::Duration;
 
+use crate::client::cli::Register;
+use crate::client::Config;
+use crate::key_mgmt::client::Command;
+use crate::transport::KeyMgmtAddress;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
-pub enum SessionError {}
+pub enum SessionError {
+    RegistrationFailed,
+}
 
-#[derive(Debug)]
-pub struct Password;
+impl Display for SessionError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+// TODO: password security, e.g. memory management, etc... #54
+#[derive(Debug, Default)]
+pub struct Password(String);
 
 /// Deployment details for a [`Session`].
 ///
 /// Possible fields include: timeouts, key server IPs, PKI information,
 /// preshared keys.
-#[derive(Debug)]
-pub struct SessionConfig;
+#[derive(Debug, Clone)]
+pub struct SessionConfig {
+    pub client_config: Config,
+    pub server: KeyMgmtAddress,
+}
+
+impl Default for SessionConfig {
+    fn default() -> Self {
+        SessionConfig {
+            client_config: Config {
+                backoff: Backoff::with_delay(Duration::from_secs(1)),
+                connection_timeout: None,
+                max_pending_connection_retries: 4,
+                message_timeout: Duration::from_secs(60),
+                max_message_length: 1024 * 16,
+                max_note_length: 0,
+                trust_certificate: Some(PathBuf::from("tests/gen/localhost.crt")),
+            },
+            server: KeyMgmtAddress::from_str("keymgmt://localhost").unwrap(),
+        }
+    }
+}
 
 /// A `Session` is an abstraction over a
 /// communication session between an asset owner and a key server
@@ -42,7 +80,7 @@ pub struct SessionConfig;
 #[derive(Debug)]
 #[allow(unused)]
 pub struct Session {
-    config: SessionConfig,
+    pub config: SessionConfig,
 }
 
 #[allow(unused)]
@@ -69,12 +107,30 @@ impl Session {
     ///
     /// Output: If successful, returns an open [`Session`] between the specified [`UserId`]
     /// and the configured key server.
-    pub fn register(
+    pub async fn register(
         user_id: UserId,
         password: Password,
         config: &SessionConfig,
     ) -> Result<Self, SessionError> {
-        todo!()
+        let result = Register {
+            username: user_id.0,
+            password: password.0,
+            server: config.server.clone(),
+        }
+        .run(config.client_config.clone())
+        .await;
+        return match result {
+            Ok(_) => {
+                let session = Session {
+                    config: config.clone(),
+                };
+                Ok(session)
+            }
+            Err(e) => {
+                print!("{:?}", e);
+                Err(SessionError::RegistrationFailed)
+            }
+        };
     }
 
     /// Close a session.

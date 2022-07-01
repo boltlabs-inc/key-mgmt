@@ -35,7 +35,7 @@ impl Default for TransactionApprovalRequest {
     fn default() -> Self {
         Self {
             key_id: KeyId,
-            user_id: UserId,
+            user_id: UserId::default(),
             asset_id: AssetId,
             tar_id: TarId,
             transaction: Transaction,
