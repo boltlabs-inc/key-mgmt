@@ -23,7 +23,10 @@ pub async fn main_with_cli(cli: Cli) -> Result<(), anyhow::Error> {
             println!("{:?}", retrieve.run(config.await?).await?);
             Ok(())
         }
-        Authenticate(auth) => auth.run(config.await?).await,
+        Authenticate(auth) => match auth.run(config.await?).await {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e),
+        },
     }
 }
 

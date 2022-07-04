@@ -64,13 +64,9 @@ impl Authenticate {
             .await
             .context("Did not receive AuthFinish")??;
 
-        let server_login_finish_result =
+        let _server_login_finish_result =
             server_login_start_result.state.finish(auth_finish).unwrap();
 
-        println!(
-            "session_key: {:?}",
-            server_login_finish_result.session_key.as_slice()
-        );
         Ok(())
     }
 }

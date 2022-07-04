@@ -16,15 +16,17 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::time::Duration;
 
-use crate::client::cli::Register;
+use crate::client::cli::{Authenticate, Register};
 use crate::client::Config;
 use crate::key_mgmt::client::Command;
 use crate::transport::KeyMgmtAddress;
 use thiserror::Error;
+use tracing::error;
 
 #[derive(Debug, Error)]
 pub enum SessionError {
     RegistrationFailed,
+    AuthenticationFailed,
 }
 
 impl Display for SessionError {
@@ -81,6 +83,7 @@ impl Default for SessionConfig {
 #[allow(unused)]
 pub struct Session {
     pub config: SessionConfig,
+    pub session_key: [u8; 64],
 }
 
 #[allow(unused)]
@@ -90,12 +93,31 @@ impl Session {
     ///
     /// Output: If successful, returns an open [`Session`] between the specified [`UserId`]
     /// and the configured key server.
-    pub fn open(
+    pub async fn open(
         user_id: UserId,
         password: Password,
         config: &SessionConfig,
     ) -> Result<Self, SessionError> {
-        todo!()
+        let result = Authenticate {
+            username: user_id.0,
+            password: password.0,
+            server: config.server.clone(),
+        }
+        .run(config.client_config.clone())
+        .await;
+        return match result {
+            Ok(result) => {
+                let session = Session {
+                    config: config.clone(),
+                    session_key: result,
+                };
+                Ok(session)
+            }
+            Err(e) => {
+                error!("{:?}", e);
+                Err(SessionError::AuthenticationFailed)
+            }
+        };
     }
 
     /// Register a new user who has not yet interacted with the service and open
@@ -113,24 +135,21 @@ impl Session {
         config: &SessionConfig,
     ) -> Result<Self, SessionError> {
         let result = Register {
-            username: user_id.0,
-            password: password.0,
+            username: user_id.0.clone(),
+            password: password.0.clone(),
             server: config.server.clone(),
         }
         .run(config.client_config.clone())
         .await;
-        return match result {
+        match result {
             Ok(_) => {
-                let session = Session {
-                    config: config.clone(),
-                };
-                Ok(session)
+                return Self::open(user_id, password, config).await;
             }
             Err(e) => {
-                print!("{:?}", e);
+                error!("{:?}", e);
                 Err(SessionError::RegistrationFailed)
             }
-        };
+        }
     }
 
     /// Close a session.

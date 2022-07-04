@@ -14,7 +14,7 @@ use crate::protocol::Party::Client;
 
 #[async_trait]
 impl Command for Authenticate {
-    type Output = ();
+    type Output = [u8; 64];
     async fn run(self, config: self::Config) -> Result<Self::Output, anyhow::Error> {
         let Self {
             username,
@@ -70,11 +70,6 @@ impl Command for Authenticate {
             .context("Failed to send AuthFinish")?
             .close();
 
-        println!(
-            "session_key: {:?}",
-            client_login_finish_result.session_key.as_slice()
-        );
-
-        return Ok(());
+        return Ok(<[u8; 64]>::from(client_login_finish_result.session_key));
     }
 }

@@ -12,19 +12,39 @@ use std::fs::File;
 use std::path::PathBuf;
 use std::str::FromStr;
 
-#[test]
-#[should_panic(expected = "not yet implemented")]
-fn open_session_not_implemented() {
-    let _result = Session::open(
-        UserId::default(),
-        Password::default(),
-        &SessionConfig::default(),
-    );
+#[tokio::test]
+async fn test_session() {
+    let server_future = common::setup().await;
+    test_register_session().await;
+    test_open_session().await;
+    common::teardown(server_future).await;
 }
 
-#[tokio::test]
-async fn register_session() {
-    let server_future = common::setup().await;
+async fn test_open_session() {
+    let client_config = client::Config::load(common::CLIENT_CONFIG)
+        .await
+        .expect("Failed to load client config");
+    let config = SessionConfig {
+        client_config,
+        server: KeyMgmtAddress::from_str("keymgmt://localhost").unwrap(),
+    };
+    let _ = Session::register(
+        UserId("test_user".to_string()),
+        Password::default(),
+        &config,
+    )
+    .await;
+    tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
+    let result = Session::open(
+        UserId("test_user".to_string()),
+        Password::default(),
+        &config,
+    )
+    .await;
+    assert!(result.is_ok());
+}
+
+async fn test_register_session() {
     let client_config = client::Config::load(common::CLIENT_CONFIG)
         .await
         .expect("Failed to load client config");
@@ -46,7 +66,6 @@ async fn register_session() {
             .join("test_user")
     )
     .is_ok());
-    common::teardown(server_future).await;
 }
 
 #[test]
@@ -54,6 +73,7 @@ async fn register_session() {
 fn close_session_not_implemented() {
     let session = Session {
         config: SessionConfig::default(),
+        session_key: [0; 64],
     };
     let _result = session.close();
 }
@@ -61,6 +81,7 @@ fn close_session_not_implemented() {
 fn default_session() -> Session {
     Session {
         config: SessionConfig::default(),
+        session_key: [0; 64],
     }
 }
 
