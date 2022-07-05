@@ -25,15 +25,9 @@ Both clients also include the cryptographic functionality for:
 
 ## Install & Setup
 
-To build the DAMS project, you will need: 
+You will need a recent version of [stable Rust](https://www.rust-lang.org/) to build the DAMS project. We have tested with 1.59.0.
 
-  - A recent version of stable Rust. This project has been tested with 1.59.0. You can set this with:
-  ```
-  $ rustup toolchain install 1.59.0
-  $ rustup override set 1.59.0
-  ```
-
-Then, build the project as follows:
+Once Rust is installed, build the project as follows:
 
 ```bash
 cargo build --all-features --all-targets
