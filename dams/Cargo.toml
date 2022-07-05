@@ -1,36 +1,9 @@
-[workspace]
-members = [
-    "dams",
-    "dams-local-client",
-    "dams-remote-client",
-    "dams-key-server",
-]
-
 [package]
-name = "key-mgmt"
+name = "dams"
 version = "0.1.0"
-edition = "2018"
-license = "MIT"
-description = "implementation of a secure key mangement system"
+edition = "2021"
 
-[lib]
-name = "da_mgmt"
-path = "src/lib.rs"
-
-[[bin]]
-name = "key-mgmt"
-path = "dams-key-server/src/main.rs"
-
-[[bin]]
-name = "key-mgmt-client"
-path = "src/bin/client.rs"
-
-[[bin]]
-name = "key-mgmt-server"
-path = "dams-key-server/src/server.rs"
-
-[features]
-allow_explicit_certificate_trust = []
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 anyhow = "1"
@@ -44,21 +17,12 @@ directories = "3"
 futures = "0"
 http = "0"
 http-serde = "1"
-humantime = "2"
-humantime-serde = "1"
 rand = "0"
-reqwest = "0"
 serde = "1"
-serde_with = "1"
-structopt = "0"
 thiserror = "1"
 tokio = { version = "1", features = ["full"] }
-toml = "0"
 tracing = "0"
 tracing-futures = "0"
 tracing-subscriber = { version = "0", features = ["env-filter"] }
 transport = { git = "https://github.com/boltlabs-inc/transport.git", branch = "main", features = ["allow_explicit_certificate_trust"] }
 webpki = "0"
-
-[dev-dependencies]
-rand = "0.8.3"

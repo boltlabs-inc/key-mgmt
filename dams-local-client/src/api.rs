@@ -5,7 +5,7 @@
 //! the asset owner provides should be passed directly to this API without being
 //! sent to a separate machine.
 
-use crate::{
+use dams::{
     blockchain::Blockchain,
     keys::{KeyId, KeyInfo, UsePermission, UseRestriction, UserId, UserPolicySpecification},
     transaction::{TransactionApprovalRequest, TransactionSignature},

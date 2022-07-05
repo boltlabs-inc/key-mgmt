@@ -1,9 +1,7 @@
-use da_mgmt::blockchain::Blockchain;
-use da_mgmt::{
-    keys::{KeyId, KeyMaterial, SharedControl, UserId},
-    remote_client::*,
-    transaction::TransactionApprovalRequest,
-};
+use dams::blockchain::Blockchain;
+use dams::keys::{KeyId, KeyMaterial, SharedControl, UserId};
+use dams::transaction::TransactionApprovalRequest;
+use dams_remote_client::remote_client::*;
 
 #[test]
 #[should_panic(expected = "not yet implemented")]

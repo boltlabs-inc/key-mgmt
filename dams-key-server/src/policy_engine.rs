@@ -2,7 +2,7 @@
 //!
 //! The key server will interact with a [`PolicyEngine`] instantiation.
 
-use crate::transaction::TransactionApprovalRequest;
+use dams::transaction::TransactionApprovalRequest;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 

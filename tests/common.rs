@@ -15,7 +15,8 @@ use tracing_futures::Instrument;
 
 use da_mgmt::TestLogs;
 
-use da_mgmt::{server::key_mgmt::Command as _, timeout::WithTimeout};
+use da_mgmt::server::key_mgmt::Command as _;
+use dams::timeout::WithTimeout;
 
 pub const CLIENT_CONFIG: &str = "tests/gen/TestClient.toml";
 pub const SERVER_CONFIG: &str = "tests/gen/TestServer.toml";

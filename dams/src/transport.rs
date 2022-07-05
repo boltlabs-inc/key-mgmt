@@ -3,9 +3,9 @@ use std::{fmt, fmt::Display, str::FromStr};
 use thiserror::Error;
 use webpki::{DnsName, DnsNameRef, InvalidDnsNameError};
 
-use crate::client;
-use tclient::Address;
+use crate::{ defaults::client::port };
 use transport::client as tclient;
+use tclient::Address;
 
 /// The address of a keymgmt server: a URI of the form
 /// `keymgmt://some.domain.com:1113` with an optional port number.
@@ -21,7 +21,7 @@ impl Address for KeyMgmtAddress {
     }
 
     fn get_port(&self) -> u16 {
-        self.port.unwrap_or_else(client::defaults::port)
+        self.port.unwrap_or_else(port)
     }
 }
 

@@ -1,6 +1,7 @@
 use crate::{
     client::key_mgmt::SecretInfo,
     protocol,
+    config::server::{Config, Service},
     server::{config::Service, Config},
     timeout::WithTimeout,
 };

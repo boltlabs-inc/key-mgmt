@@ -3,7 +3,7 @@
 //! This API is designed for use with a remote client application - that is, an
 //! application running on the servers of a Service Provider.
 
-use crate::{
+use dams::{
     blockchain::Blockchain,
     keys::{KeyId, KeyInfo, KeyMaterial, UseRestriction, UserId},
     transaction::{TransactionApprovalRequest, TransactionSignature},

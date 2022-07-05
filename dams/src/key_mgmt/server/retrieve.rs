@@ -1,7 +1,7 @@
 use crate::{
     client::key_mgmt::SecretInfo,
     protocol,
-    server::{config::Service, Config},
+    config::server::{Config, Service},
     timeout::WithTimeout,
 };
 use anyhow::Context;
