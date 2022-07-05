@@ -9,7 +9,7 @@ The DAMS aims to provide a flexible system of components for managing digital as
 * A **local** and **remote client library**: The *local client* allows a user to generate and store a secret key in a distributed way, across multiple servers, and provides generic functionality for requesting a signature under the stored key, and reconstructs a full signature from a set of partial signatures. The *remote client* provides functionality to support key delegation for automated key use flows whereby users do not actively participate in transaction signing. <br/>
 Both clients also include the cryptographic functionality for:
   * authentication,
-  * networking with servers.
+  * networking with servers,
   * integration as a self-contained library.
 
 * A **key server** is responsible for the generation, the secure storage for secret keys and distributed operations on those keys with cryptographic-based guarantees. The server has the following properties:
@@ -31,7 +31,6 @@ To build the DAMS project, you will need:
   ```
   $ rustup toolchain install 1.59.0
   $ rustup override set 1.59.0
-  $ 
   ```
 
 Then, build the project as follows:
