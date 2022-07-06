@@ -5,7 +5,7 @@ use std::{
     time::Duration,
 };
 
-use crate::client::defaults;
+use crate::defaults::client as defaults;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]

@@ -1,10 +1,9 @@
-use crate::{
-    client::key_mgmt::SecretInfo,
-    protocol,
+use anyhow::Context;
+use dams::{
     config::server::{Config, Service},
+    protocol,
     timeout::WithTimeout,
 };
-use anyhow::Context;
 use rand::rngs::StdRng;
 use transport::server::{Chan, SessionKey};
 
@@ -26,7 +25,7 @@ impl Retrieve {
             .await
             .context("Did not receive create secret request")??;
 
-        chan.send(SecretInfo {})
+        chan.send(protocol::SecretInfo {})
             .await
             .context("Couldn't respond with SecretInfo")?
             .close();

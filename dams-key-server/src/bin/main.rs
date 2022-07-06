@@ -2,14 +2,11 @@ use structopt::StructOpt;
 use tracing::error;
 use tracing_subscriber::EnvFilter;
 
-pub mod policy_engine;
-
-mod cli;
 mod server;
 
 #[derive(Debug, StructOpt)]
 pub enum Cli {
-    Server(da_mgmt::server::Cli),
+    Server(key_server::cli::Cli),
 }
 
 #[tokio::main]

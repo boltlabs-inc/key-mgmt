@@ -6,5 +6,14 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+anyhow = "1"
+async-trait = "0"
 dams = { version = "0.1.0", path = "../dams" }
+serde = "1"
+serde_with = "1"
+structopt = "0"
 thiserror = "1"
+tracing = "0"
+tracing-futures = "0"
+tracing-subscriber = { version = "0", features = ["env-filter"] }
+transport = { git = "https://github.com/boltlabs-inc/transport.git", branch = "main", features = ["allow_explicit_certificate_trust"] }

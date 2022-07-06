@@ -1,11 +1,8 @@
-use super::Command;
+use super::{connect, Command};
+use crate::cli::Create;
 use anyhow::{anyhow, Context};
 use async_trait::async_trait;
-
-use crate::client::{
-    cli::Create,
-    key_mgmt::{connect, Config, CreateSecretRequest},
-};
+use dams::{config::client::Config, protocol::CreateSecretRequest};
 
 #[async_trait]
 impl Command for Create {

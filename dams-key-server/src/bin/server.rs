@@ -1,9 +1,9 @@
 use anyhow::Context;
-use dams::{ config::server::Config, defaults::server::config_path, key_mgmt::server::Command };
+use dams::{config::server::Config, defaults::server::config_path};
 use futures::FutureExt;
+use key_server::{cli, cli::Cli, command::Command};
 use std::convert::identity;
 use structopt::StructOpt;
-use crate::cli::*;
 
 pub async fn main_with_cli(cli: Cli) -> Result<(), anyhow::Error> {
     let config_path = cli.config.ok_or_else(config_path).or_else(identity)?;

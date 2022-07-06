@@ -10,13 +10,11 @@ use std::fmt;
 pub mod blockchain;
 pub mod config;
 pub mod defaults;
-pub mod key_mgmt;
 pub mod keys;
 pub mod protocol;
 pub mod timeout;
 pub mod transaction;
 pub mod transport;
-
 
 /// Logs used to verify that an operation completed in the integration tests.
 #[derive(Debug)]

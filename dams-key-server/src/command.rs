@@ -1,5 +1,6 @@
-use crate::{cli::server::Run, config::server::Config, protocol::KeyMgmt, TestLogs};
+use crate::cli::Run;
 use async_trait::async_trait;
+use dams::{config::server::Config, protocol::KeyMgmt, TestLogs};
 use dialectic::offer;
 use futures::stream::{FuturesUnordered, StreamExt};
 use rand::{rngs::StdRng, SeedableRng};

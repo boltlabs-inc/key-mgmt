@@ -1,8 +1,17 @@
-use crate::key_mgmt::client::{CreateSecretRequest, SecretInfo, SecretRetrieveRequest};
 use dialectic::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use thiserror::Error;
+
+/// The object that the client sends to the server when creating a secret
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CreateSecretRequest;
+/// The object containing info about a secret
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SecretInfo;
+/// The object that the client sends to the server when retrieving a secret
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SecretRetrieveRequest;
 
 type _OfferAbort<Next, Err> = Session! {
     offer {

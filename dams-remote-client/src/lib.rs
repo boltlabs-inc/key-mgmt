@@ -7,6 +7,4 @@
 #![warn(unused)]
 #![forbid(rustdoc::broken_intra_doc_links)]
 
-use std::fmt;
-
 pub mod api;

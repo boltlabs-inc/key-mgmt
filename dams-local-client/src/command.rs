@@ -1,7 +1,7 @@
-use crate::{config::client::Config, protocol, transport::KeyMgmtAddress};
 #[cfg(feature = "allow_explicit_certificate_trust")]
 use anyhow::Context;
 use async_trait::async_trait;
+use dams::{config::client::Config, protocol, transport::KeyMgmtAddress};
 use serde::{Deserialize, Serialize};
 #[cfg(not(feature = "allow_explicit_certificate_trust"))]
 use tracing::warn;
