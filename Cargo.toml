@@ -13,52 +13,16 @@ edition = "2018"
 license = "MIT"
 description = "implementation of a secure key mangement system"
 
-[lib]
-name = "da_mgmt"
-path = "src/lib.rs"
-
-[[bin]]
-name = "key-mgmt"
-path = "dams-key-server/src/main.rs"
-
-[[bin]]
-name = "key-mgmt-client"
-path = "src/bin/client.rs"
-
-[[bin]]
-name = "key-mgmt-server"
-path = "dams-key-server/src/server.rs"
-
-[features]
-allow_explicit_certificate_trust = []
-
 [dependencies]
 anyhow = "1"
-async-trait = "0"
-bytes = { version = "1", features = ["serde"] }
-dialectic = { git = "https://github.com/boltlabs-inc/dialectic.git", branch = "main" }
-dialectic-tokio-serde = { git = "https://github.com/boltlabs-inc/dialectic.git", branch = "main" }
-dialectic-tokio-serde-bincode = { git = "https://github.com/boltlabs-inc/dialectic.git", branch = "main" }
-dialectic-reconnect = { features = ["serde", "humantime-serde"], git = "https://github.com/boltlabs-inc/dialectic.git", branch = "main" }
-directories = "3"
+dams = { version = "0.1.0", path = "dams" }
+dams-key-server = { version = "0.1.0", path = "dams-key-server" }
+dams-local-client = { version = "0.1.0", path = "dams-local-client" }
+dams-remote-client = { version = "0.1.0", path = "dams-remote-client" }
 futures = "0"
-http = "0"
-http-serde = "1"
-humantime = "2"
-humantime-serde = "1"
-rand = "0"
-reqwest = "0"
-serde = "1"
-serde_with = "1"
 structopt = "0"
 thiserror = "1"
 tokio = { version = "1", features = ["full"] }
-toml = "0"
 tracing = "0"
 tracing-futures = "0"
 tracing-subscriber = { version = "0", features = ["env-filter"] }
-transport = { git = "https://github.com/boltlabs-inc/transport.git", branch = "main", features = ["allow_explicit_certificate_trust"] }
-webpki = "0"
-
-[dev-dependencies]
-rand = "0.8.3"

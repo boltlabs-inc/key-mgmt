@@ -1,7 +1,7 @@
 use dams::blockchain::Blockchain;
 use dams::keys::{KeyId, KeyMaterial, SharedControl, UserId};
 use dams::transaction::TransactionApprovalRequest;
-use dams_remote_client::remote_client::*;
+use dams_remote_client::api::*;
 
 #[test]
 #[should_panic(expected = "not yet implemented")]

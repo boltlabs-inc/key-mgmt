@@ -6,6 +6,5 @@
 #![forbid(rustdoc::broken_intra_doc_links)]
 
 pub mod api;
-
-mod cli;
-mod command;
+pub mod cli;
+pub mod command;

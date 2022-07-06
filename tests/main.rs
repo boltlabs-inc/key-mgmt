@@ -1,19 +1,19 @@
 pub(crate) mod common;
 
 use common::{get_logs, LogType, Party};
-use da_mgmt::{client, client::key_mgmt::Command};
+use dams_local_client::command::Command;
 use std::fs::OpenOptions;
 use structopt::StructOpt;
 use thiserror::Error;
 
-// Form a client CLI request. These cannot be constructed directly because the
-// CLI types are non-exhaustive.
+/// Form a client CLI request. These cannot be constructed directly because the
+/// CLI types are non-exhaustive.
 macro_rules! client_cli {
     ($cli:ident, $args:expr) => {
-        match ::da_mgmt::client::cli::Client::from_iter(
+        match ::dams_local_client::cli::Client::from_iter(
             ::std::iter::once("key-mgmt-client").chain($args),
         ) {
-            ::da_mgmt::client::cli::Client::$cli(result) => result,
+            ::dams_local_client::cli::Client::$cli(result) => result,
             _ => panic!("Failed to parse client CLI"),
         }
     };
@@ -22,7 +22,7 @@ macro_rules! client_cli {
 #[tokio::test]
 pub async fn integration_tests() {
     let server_future = common::setup().await;
-    let client_config = client::Config::load(common::CLIENT_CONFIG)
+    let client_config = dams::config::client::Config::load(common::CLIENT_CONFIG)
         .await
         .expect("Failed to load client config");
 
@@ -97,7 +97,10 @@ struct Test {
 }
 
 impl Test {
-    async fn execute(&self, client_config: &client::Config) -> Result<(), anyhow::Error> {
+    async fn execute(
+        &self,
+        client_config: &dams::config::client::Config,
+    ) -> Result<(), anyhow::Error> {
         for (op, expected_outcome) in &self.operations {
             let outcome = match op {
                 Operation::Create => {

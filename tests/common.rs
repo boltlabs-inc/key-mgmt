@@ -13,10 +13,8 @@ use tokio::{task::JoinHandle, time::Duration};
 use tracing::info_span;
 use tracing_futures::Instrument;
 
-use da_mgmt::TestLogs;
-
-use da_mgmt::server::key_mgmt::Command as _;
-use dams::timeout::WithTimeout;
+use dams::{timeout::WithTimeout, TestLogs};
+use key_server::command::Command as _;
 
 pub const CLIENT_CONFIG: &str = "tests/gen/TestClient.toml";
 pub const SERVER_CONFIG: &str = "tests/gen/TestServer.toml";
@@ -45,10 +43,10 @@ impl Party {
 /// CLI types are non-exhaustive.
 macro_rules! server_cli {
     ($cli:ident, $args:expr) => {
-        match ::da_mgmt::server::cli::Server::from_iter(
+        match ::key_server::cli::Server::from_iter(
             ::std::iter::once("key-mgmt-server").chain($args),
         ) {
-            ::da_mgmt::server::cli::Server::$cli(result) => result,
+            ::key_server::cli::Server::$cli(result) => result,
         }
     };
 }
@@ -123,7 +121,7 @@ pub async fn teardown(server_future: ServerFuture) {
 
 /// Encode the customizable fields of the keymgmt client Config struct for
 /// testing.
-async fn client_test_config() -> da_mgmt::client::Config {
+async fn client_test_config() -> dams::config::client::Config {
     let m = HashMap::from([("trust_certificate", "\"localhost.crt\"")]);
 
     let contents = m.into_iter().fold("".to_string(), |acc, (key, value)| {
@@ -132,14 +130,14 @@ async fn client_test_config() -> da_mgmt::client::Config {
 
     write_config_file(CLIENT_CONFIG, contents);
 
-    da_mgmt::client::Config::load(CLIENT_CONFIG)
+    dams::config::client::Config::load(CLIENT_CONFIG)
         .await
         .expect("Failed to load client config")
 }
 
 /// Encode the customizable fields of the keymgmt server Config struct for
 /// testing.
-async fn server_test_config() -> da_mgmt::server::Config {
+async fn server_test_config() -> dams::config::server::Config {
     // Helper to write out the service for the server service addresses
     let services = HashMap::from([
         ("address", SERVER_ADDRESS),
@@ -153,7 +151,7 @@ async fn server_test_config() -> da_mgmt::server::Config {
 
     write_config_file(SERVER_CONFIG, services.to_string());
 
-    da_mgmt::server::Config::load(SERVER_CONFIG)
+    dams::config::server::Config::load(SERVER_CONFIG)
         .await
         .expect("failed to load server config")
 }

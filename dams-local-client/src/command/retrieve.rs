@@ -2,7 +2,10 @@ use super::{connect, Command};
 use crate::cli::Retrieve;
 use anyhow::{anyhow, Context};
 use async_trait::async_trait;
-use dams::{config::client::Config, protocol::{SecretInfo, SecretRetrieveRequest}};
+use dams::{
+    config::client::Config,
+    protocol::{SecretInfo, SecretRetrieveRequest},
+};
 
 #[async_trait]
 impl Command for Retrieve {

@@ -1,7 +1,9 @@
-use dams::blockchain::Blockchain;
-use dams::keys::{KeyId, SelfCustodial, SharedControl, UserId, UserPolicySpecification};
-use dams::transaction::TransactionApprovalRequest;
-use dams_local_client::local_client::*;
+use dams::{
+    blockchain::Blockchain,
+    keys::{KeyId, SelfCustodial, SharedControl, UserId, UserPolicySpecification},
+    transaction::TransactionApprovalRequest,
+};
+use dams_local_client::api::*;
 
 #[test]
 #[should_panic(expected = "not yet implemented")]
