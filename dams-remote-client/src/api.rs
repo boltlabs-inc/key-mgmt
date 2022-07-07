@@ -15,7 +15,7 @@ pub enum Error {}
 
 /// Register a passive user to the service provider authenticated in this session.
 ///
-/// Assumption: a passive user only has [`Passive`][crate::keys::Passive] keys and has
+/// Assumption: a passive user only has [`Passive`][dams::keys::Passive] keys and has
 /// not independently registered with the system, so
 /// the service provider needs to call this function to indicate that they can take
 /// actions on this user's behalf.
@@ -28,7 +28,7 @@ pub fn register_passive_user(user_id: UserId) -> Result<(), Error> {
     todo!()
 }
 
-/// Generate a new, distributed, [`Passive`][crate::keys::Passive]
+/// Generate a new, distributed, [`Passive`][dams::keys::Passive]
 /// digital asset key with the given use
 /// restrictions for the [`UserId`], and compatible with the specified
 /// blockchain. This must be called by the service provider over an
@@ -51,8 +51,8 @@ pub fn create_passive_digital_asset_key(
 /// Among the parameters in the [`TransactionApprovalRequest`], the [`KeyId`]
 /// must correspond to a key owned by the [`UserId`].
 /// The [`KeyId`] must correspond to a digital asset key in the system. If the
-/// key is a [`Passive`](crate::keys::Passive) key, the caller must be the
-/// service provider. If the key is a [`Delegated`](crate::keys::Delegated)
+/// key is a [`Passive`](dams::keys::Passive) key, the caller must be the
+/// service provider. If the key is a [`Delegated`](dams::keys::Delegated)
 /// key, the caller must be a key fiduciary who has delegated signing authority
 /// for the given key with [`KeyId`].
 /// In either case, the caller must make the request over an authenticated
@@ -60,7 +60,7 @@ pub fn create_passive_digital_asset_key(
 ///
 /// Output: If successful, returns a [`TransactionSignature`] as specified in the
 /// original [`TransactionApprovalRequest`] -- that is, over the
-/// [`Transaction`](crate::transaction::Transaction), and using the key corresponding
+/// [`Transaction`](dams::transaction::Transaction), and using the key corresponding
 /// to the [`KeyId`].
 ///
 /// TODO #30 (design, implementation): Pass a session.
@@ -73,7 +73,7 @@ pub fn request_transaction_signature(
 
 /// Import passive key material to the key servers.
 ///
-/// The key must correspond to a [`Passive`][crate::keys::Passive]
+/// The key must correspond to a [`Passive`][dams::keys::Passive]
 /// digital asset key.
 ///
 /// Assumption: The [`import_asset_key`] functionality is called by the service provider. This is cryptographically enforced with
@@ -94,7 +94,7 @@ pub fn import_asset_key(
 
 /// Export passive key material from the key servers.
 ///
-/// The [`KeyId`] must correspond to a [`Passive`][crate::keys::Passive]
+/// The [`KeyId`] must correspond to a [`Passive`][dams::keys::Passive]
 /// digital asset key.
 ///
 /// Assumption: The [`export_asset_key`] functionality is called by the service
@@ -113,9 +113,9 @@ pub fn export_asset_key(user_id: UserId, key_id: &KeyId) -> Result<KeyMaterial, 
 /// user from the key server.
 ///
 /// The [`KeyId`] must correspond to a digital asset key owned by the [`UserId`].
-/// If the key is [`Passive`](crate::keys::Passive), the caller must be the
+/// If the key is [`Passive`](dams::keys::Passive), the caller must be the
 /// service provider.
-/// If the key is [`Delegated`](crate::keys::Delegated), the caller must be a
+/// If the key is [`Delegated`](dams::keys::Delegated), the caller must be a
 /// key fiduciary with delegated signing authority for the key.
 /// In either case, the request must be made by the caller over an authenticated
 /// session.
@@ -133,9 +133,9 @@ pub fn retrieve_public_keys(user_id: UserId) -> Result<Vec<KeyInfo>, Error> {
 /// associated with the user.
 ///
 /// The [`KeyId`] must correspond to a digital asset key owned by the [`UserId`].
-/// If the key is [`Passive`](crate::keys::Passive), the caller must be the
+/// If the key is [`Passive`](dams::keys::Passive), the caller must be the
 /// service provider.
-/// If the key is [`Delegated`](crate::keys::Delegated), the caller must be a
+/// If the key is [`Delegated`](dams::keys::Delegated), the caller must be a
 /// key fiduciary with delegated signing authority for the key.
 /// In either case, the request must be made by the caller over an authenticated
 /// session.
@@ -152,9 +152,9 @@ pub fn retrieve_public_key_by_id(user_id: UserId, key_id: &KeyId) -> Result<KeyI
 /// optionally, filter for logs associated with the specified [`KeyId`].
 ///
 /// The [`KeyId`] must correspond to a digital asset key owned by the [`UserId`].
-/// If the key is [`Passive`](crate::keys::Passive), the caller must be the
+/// If the key is [`Passive`](dams::keys::Passive), the caller must be the
 /// service provider.
-/// If the key is [`Delegated`](crate::keys::Delegated), the caller must be a
+/// If the key is [`Delegated`](dams::keys::Delegated), the caller must be a
 /// key fiduciary with delegated signing authority for the key.
 /// In either case, the request must be made by the caller over an authenticated
 /// session.

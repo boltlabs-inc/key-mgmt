@@ -24,10 +24,10 @@ pub struct PolicyEngineConfig {
     /// Indicates whether unilateral control keys are allowed in the system.
     #[serde(default)]
     unilateral_control_allowed: bool,
-    /// The number of [`SelfCustodial`](crate::keys::SelfCustodial) keys each user can create.
+    /// The number of [`SelfCustodial`](dams::keys::SelfCustodial) keys each user can create.
     #[serde(default)]
     max_self_custodial: u16,
-    /// The number of [`Delegated`](crate::keys::Delegated) keys each user can create.
+    /// The number of [`Delegated`](dams::keys::Delegated) keys each user can create.
     #[serde(default)]
     max_delegated: u16,
     /// The system-wide set of asset fiduciaries.
@@ -52,7 +52,7 @@ impl PolicyEngineConfig {
 
 /// A `PolicyEngine` is the entity responsible for coordination and management
 /// of operations requested on digital asset keys with
-/// [`SharedControl`](crate::keys::SharedControl).
+/// [`SharedControl`](dams::keys::SharedControl).
 ///
 /// This trait describes the interactions between a key server and the policy
 /// engine, but doesn't encompass the entire behavior of a policy engine -- the

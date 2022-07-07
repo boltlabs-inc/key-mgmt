@@ -30,7 +30,7 @@ pub struct SessionConfig;
 /// communication session between an asset owner and a key server
 /// that provides mutual authentication, confidentiality, and integrity.
 /// An open `Session` is
-/// required to interact with the [`crate::local_client`] API.
+/// required to interact with the [`crate::api`] API.
 ///
 /// A session can be ended manually, or it might time out and require
 /// re-authentication (that is, creation of a new [`Session`]).
@@ -116,8 +116,8 @@ pub fn create_digital_asset_key(
 /// Set an asset-owner-specified key policy for a delegated key.
 ///
 /// User-specified policies can only be set for
-/// [`SelfCustodial`](crate::keys::SelfCustodial) and
-/// [`Delegated`](crate::keys::Delegated) key types. The [`KeyId`] must
+/// [`SelfCustodial`](dams::keys::SelfCustodial) and
+/// [`Delegated`](dams::keys::Delegated) key types. The [`KeyId`] must
 /// correspond to a key owned by the [`UserId`], and the [`UserId`] must
 /// match the user authenticated in the [`Session`].
 ///
@@ -146,7 +146,7 @@ pub fn set_user_key_policy(
 ///
 /// Output: If successful, returns a [`TransactionSignature`] as specified in the
 /// original [`TransactionApprovalRequest`] -- that is, over the
-/// [`Transaction`](crate::transaction::Transaction), and using the key corresponding
+/// [`Transaction`](dams::transaction::Transaction), and using the key corresponding
 /// to the [`KeyId`].
 #[allow(unused)]
 pub fn request_transaction_signature(

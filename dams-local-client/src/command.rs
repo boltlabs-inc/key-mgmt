@@ -23,7 +23,7 @@ pub struct SecretRetrieveRequest;
 /// A single client-side command, parameterized by the currently loaded
 /// configuration.
 ///
-/// All subcommands of [`cli::Client`](crate::client::cli::Client) should
+/// All subcommands of [`cli::Client`](crate::cli::Client) should
 /// implement this.
 #[async_trait]
 pub trait Command {
