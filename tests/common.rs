@@ -43,9 +43,8 @@ impl Party {
 /// CLI types are non-exhaustive.
 macro_rules! server_cli {
     ($cli:ident, $args:expr) => {
-        match ::key_server::cli::Server::from_iter(
-            ::std::iter::once("key-mgmt-server").chain($args),
-        ) {
+        match ::key_server::cli::Server::from_iter(::std::iter::once("key-server-cli").chain($args))
+        {
             ::key_server::cli::Server::$cli(result) => result,
         }
     };
@@ -80,7 +79,6 @@ pub async fn setup() -> ServerFuture {
         run.run(server_config)
             .instrument(info_span!(Party::Server.to_str())),
     );
-
     // Check the logs of server + client for indication of a successful set-up
     // Note: hard-coded to match the 2-service server with default port.
     let checks = vec![await_log(
@@ -205,7 +203,7 @@ pub fn get_logs(log_type: LogType, party: Party) -> Result<String, LogError> {
 
     Ok(logs
         .lines()
-        .filter(|s| s.contains("key_mgmt::"))
+        .filter(|s| s.contains("key_server::"))
         .filter(|s| s.contains(log_type.to_str()))
         .filter(|s| s.contains(party.to_str()))
         .fold("".to_string(), |acc, s| format!("{}{}\n", acc, s)))

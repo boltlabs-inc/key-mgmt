@@ -11,7 +11,7 @@ use thiserror::Error;
 macro_rules! client_cli {
     ($cli:ident, $args:expr) => {
         match ::dams_local_client::cli::Client::from_iter(
-            ::std::iter::once("key-mgmt-client").chain($args),
+            ::std::iter::once("local-client-cli").chain($args),
         ) {
             ::dams_local_client::cli::Client::$cli(result) => result,
             _ => panic!("Failed to parse client CLI"),
