@@ -118,6 +118,15 @@ pub struct Session {
     session_key: [u8; 64],
 }
 
+impl Default for Session {
+    fn default() -> Self {
+        Session {
+            config: SessionConfig::default(),
+            session_key: [0; 64],
+        }
+    }
+}
+
 #[allow(unused)]
 impl Session {
     /// Open a new mutually authenticated session between a previously
@@ -314,14 +323,6 @@ impl Session {
     /// Outputs: None, if successful.
     pub fn close(self) -> Result<(), SessionError> {
         todo!()
-    }
-
-    //TODO: remove
-    pub fn new(config: SessionConfig, session_key: [u8; 64]) -> Self {
-        Self {
-            config,
-            session_key,
-        }
     }
 }
 

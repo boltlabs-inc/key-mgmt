@@ -28,13 +28,16 @@ type ServerFuture = JoinHandle<Result<(), anyhow::Error>>;
 
 /// Set of processes that run during a test.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[allow(unused)]
 pub enum Party {
+    Client,
     Server,
 }
 
 impl Party {
     pub const fn to_str(self) -> &'static str {
         match self {
+            Party::Client => "party: client",
             Party::Server => "party: server",
         }
     }
