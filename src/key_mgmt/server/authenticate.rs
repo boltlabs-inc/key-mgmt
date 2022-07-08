@@ -61,9 +61,9 @@ impl Authenticate {
             .await
             .context("Did not receive AuthFinish")??;
 
-        let _server_login_finish_result =
-            server_login_start_result.state.finish(auth_finish).unwrap();
-
-        Ok(())
+        match server_login_start_result.state.finish(auth_finish) {
+            Ok(_) => Ok(()),
+            Err(e) => Err(anyhow!(e)),
+        }
     }
 }
