@@ -3,10 +3,6 @@ name = "dams-key-server"
 version = "0.1.0"
 edition = "2021"
 
-[lib]
-name = "key_server"
-path = "src/lib.rs"
-
 [[bin]]
 name = "key-server-cli"
 path = "src/bin/main.rs"

@@ -14,7 +14,7 @@ use tracing::info_span;
 use tracing_futures::Instrument;
 
 use dams::{timeout::WithTimeout, TestLogs};
-use key_server::command::Command as _;
+use dams_key_server::command::Command as _;
 
 pub const CLIENT_CONFIG: &str = "tests/gen/TestClient.toml";
 pub const SERVER_CONFIG: &str = "tests/gen/TestServer.toml";
@@ -43,9 +43,10 @@ impl Party {
 /// CLI types are non-exhaustive.
 macro_rules! server_cli {
     ($cli:ident, $args:expr) => {
-        match ::key_server::cli::Server::from_iter(::std::iter::once("key-server-cli").chain($args))
-        {
-            ::key_server::cli::Server::$cli(result) => result,
+        match ::dams_key_server::cli::Server::from_iter(
+            ::std::iter::once("key-server-cli").chain($args),
+        ) {
+            ::dams_key_server::cli::Server::$cli(result) => result,
         }
     };
 }
@@ -203,7 +204,7 @@ pub fn get_logs(log_type: LogType, party: Party) -> Result<String, LogError> {
 
     Ok(logs
         .lines()
-        .filter(|s| s.contains("key_server::"))
+        .filter(|s| s.contains("dams_key_server::"))
         .filter(|s| s.contains(log_type.to_str()))
         .filter(|s| s.contains(party.to_str()))
         .fold("".to_string(), |acc, s| format!("{}{}\n", acc, s)))

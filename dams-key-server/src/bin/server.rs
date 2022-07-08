@@ -1,7 +1,7 @@
 use anyhow::Context;
 use dams::{config::server::Config, defaults::server::config_path};
+use dams_key_server::{cli, cli::Cli, command::Command};
 use futures::FutureExt;
-use key_server::{cli, cli::Cli, command::Command};
 use std::convert::identity;
 use structopt::StructOpt;
 
