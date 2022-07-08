@@ -97,34 +97,43 @@ fn tests() -> Vec<Test> {
             )],
         },
         Test {
-            name: "Register as a client to the server".to_string(),
-            operations: vec![(
-                Register(
-                    UserId::from_str("testUser").unwrap(),
-                    Password::from_str("testPassword").unwrap(),
-                ),
-                Outcome {
-                    error: None,
-                    expected_error: None,
-                },
-            )],
-        },
-        Test {
-            name: "Register existing user".to_string(),
-            operations: vec![(
-                Register(
-                    UserId::from_str("testUser").unwrap(),
-                    Password::from_str("testPassword").unwrap(),
-                ),
-                Outcome {
-                    error: Some(Client),
-                    expected_error: Some(anyhow!("RegistrationFailed")),
-                },
-            )],
-        },
-        Test {
-            name: "Open multiple sessions as a client to the server".to_string(),
+            name: "Register the same user twice user".to_string(),
             operations: vec![
+                (
+                    Register(
+                        UserId::from_str("sameUser").unwrap(),
+                        Password::from_str("testPassword1").unwrap(),
+                    ),
+                    Outcome {
+                        error: None,
+                        expected_error: None,
+                    },
+                ),
+                (
+                    Register(
+                        UserId::from_str("sameUser").unwrap(),
+                        Password::from_str("testPassword2").unwrap(),
+                    ),
+                    Outcome {
+                        error: Some(Client),
+                        expected_error: Some(anyhow!("RegistrationFailed")),
+                    },
+                ),
+            ],
+        },
+        Test {
+            name: "Register and open multiple sessions as a client to the server".to_string(),
+            operations: vec![
+                (
+                    Register(
+                        UserId::from_str("testUser").unwrap(),
+                        Password::from_str("testPassword").unwrap(),
+                    ),
+                    Outcome {
+                        error: None,
+                        expected_error: None,
+                    },
+                ),
                 (
                     Authenticate(
                         UserId::from_str("testUser").unwrap(),
