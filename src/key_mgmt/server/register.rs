@@ -6,7 +6,7 @@ use crate::{
     server::{config::Service, Config},
     timeout::WithTimeout,
 };
-use anyhow::Context;
+use anyhow::{anyhow, Context};
 use opaque_ke::ServerRegistration;
 use rand::rngs::StdRng;
 use transport::server::{Chan, SessionKey};
@@ -32,16 +32,18 @@ impl Register {
             .await
             .context("Did not receive RegisterStart")??;
 
-        let username = register_start.username;
-        if retrieve_opaque(service, username.clone()).is_ok() {
-            abort!(in chan return register::Error::UsernameAlreadyExists);
+        let user_id = register_start.user_id();
+        if retrieve_opaque(service, user_id).is_ok() {
+            abort!(in chan return register::Error::UserIdAlreadyExists);
         }
-        let server_registration_start_result = ServerRegistration::<OpaqueCipherSuite>::start(
+        let server_registration_start_result = match ServerRegistration::<OpaqueCipherSuite>::start(
             &server_setup,
-            register_start.request,
-            username.as_bytes(),
-        )
-        .unwrap();
+            register_start.request().clone(),
+            user_id.to_string().as_bytes(),
+        ) {
+            Ok(server_registration_start_result) => server_registration_start_result,
+            Err(_) => return Err(anyhow!("could not start server registration")),
+        };
 
         proceed!(in chan);
 
@@ -56,8 +58,8 @@ impl Register {
             .await
             .context("Did not receive RegisterFinish")??;
 
-        let password_file = ServerRegistration::finish(register_finish);
-        store_opaque(service, username, password_file.serialize())?;
+        let password_file = ServerRegistration::<OpaqueCipherSuite>::finish(register_finish);
+        store_opaque(service, user_id, &password_file)?;
 
         Ok(())
     }

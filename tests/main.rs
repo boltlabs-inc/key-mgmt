@@ -1,8 +1,13 @@
 pub(crate) mod common;
 
 use common::{get_logs, LogType, Party};
+use da_mgmt::keys::UserId;
+use da_mgmt::local_client::{Password, Session, SessionConfig};
+use da_mgmt::transport::KeyMgmtAddress;
 use da_mgmt::{client, client::key_mgmt::Command};
-use std::fs::OpenOptions;
+use std::fs::{File, OpenOptions};
+use std::path::PathBuf;
+use std::str::FromStr;
 use structopt::StructOpt;
 use thiserror::Error;
 
@@ -113,18 +118,28 @@ impl Test {
                     est.run(client_config.clone()).await.map(|_| ())
                 }
                 Operation::Register => {
-                    let est = client_cli!(
-                        Register,
-                        vec![
-                            "register",
-                            "keymgmt://localhost",
-                            "--username",
-                            "test_user",
-                            "--password",
-                            "test_password"
-                        ]
+                    let client_config = client::Config::load(common::CLIENT_CONFIG)
+                        .await
+                        .expect("Failed to load client config");
+                    let config = SessionConfig::new(
+                        client_config,
+                        KeyMgmtAddress::from_str("keymgmt://localhost").unwrap(),
                     );
-                    est.run(client_config.clone()).await.map(|_| ())
+                    let result = Session::register(
+                        &UserId::from_str("test_user").unwrap(),
+                        &Password::default(),
+                        &config,
+                    )
+                    .await;
+                    assert!(result.is_ok());
+                    tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
+                    assert!(File::open(
+                        PathBuf::from_str("tests/gen/opaque")
+                            .unwrap()
+                            .join("test_user")
+                    )
+                    .is_ok());
+                    Ok(())
                 }
                 Operation::Retrieve => {
                     let est = client_cli!(Retrieve, vec!["retrieve", "keymgmt://localhost"]);
@@ -132,18 +147,28 @@ impl Test {
                 }
 
                 Operation::Authenticate => {
-                    let est = client_cli!(
-                        Authenticate,
-                        vec![
-                            "authenticate",
-                            "keymgmt://localhost",
-                            "--username",
-                            "test_user",
-                            "--password",
-                            "test_password"
-                        ]
+                    let client_config = client::Config::load(common::CLIENT_CONFIG)
+                        .await
+                        .expect("Failed to load client config");
+                    let config = SessionConfig::new(
+                        client_config,
+                        KeyMgmtAddress::from_str("keymgmt://localhost").unwrap(),
                     );
-                    est.run(client_config.clone()).await.map(|_| ())
+                    let _ = Session::register(
+                        &UserId::from_str("test_user").unwrap(),
+                        &Password::default(),
+                        &config,
+                    )
+                    .await;
+                    tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
+                    let result = Session::open(
+                        &UserId::from_str("test_user").unwrap(),
+                        &Password::default(),
+                        &config,
+                    )
+                    .await;
+                    assert!(result.is_ok());
+                    Ok(())
                 }
             };
 

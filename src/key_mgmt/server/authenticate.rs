@@ -1,4 +1,3 @@
-use crate::config::opaque::OpaqueCipherSuite;
 use crate::opaque_storage::{create_or_retrieve_server_key_opaque, retrieve_opaque};
 use crate::{
     abort, proceed, protocol,
@@ -6,8 +5,8 @@ use crate::{
     server::{config::Service, Config},
     timeout::WithTimeout,
 };
-use anyhow::Context;
-use opaque_ke::{ServerLogin, ServerLoginStartParameters, ServerRegistration};
+use anyhow::{anyhow, Context};
+use opaque_ke::{ServerLogin, ServerLoginStartParameters};
 use rand::rngs::{OsRng, StdRng};
 use transport::server::{Chan, SessionKey};
 
@@ -32,24 +31,22 @@ impl Authenticate {
             .await
             .context("Did not receive RegisterStart")??;
 
-        let password_file_serialized = retrieve_opaque(service, auth_start.username.clone());
-        if password_file_serialized.is_err() {
-            abort!(in chan return authenticate::Error::UsernameDoesNotExist)
-        }
-        let password_file = ServerRegistration::<OpaqueCipherSuite>::deserialize(
-            &password_file_serialized.unwrap(),
-        )
-        .unwrap();
+        let server_registration = match retrieve_opaque(service, auth_start.user_id()) {
+            Ok(server_registration) => server_registration,
+            Err(_) => abort!(in chan return authenticate::Error::UserIdDoesNotExist),
+        };
         let mut rng = OsRng;
-        let server_login_start_result = ServerLogin::start(
+        let server_login_start_result = match ServerLogin::start(
             &mut rng,
             &server_setup,
-            Some(password_file),
-            auth_start.request,
-            auth_start.username.as_bytes(),
+            Some(server_registration),
+            auth_start.request().clone(),
+            auth_start.user_id().to_string().as_bytes(),
             ServerLoginStartParameters::default(),
-        )
-        .unwrap();
+        ) {
+            Ok(server_login_start_result) => server_login_start_result,
+            Err(e) => return Err(anyhow!(e)),
+        };
 
         proceed!(in chan);
 

@@ -8,17 +8,26 @@
 use crate::{
     blockchain::Blockchain,
     keys::{KeyId, KeyInfo, UsePermission, UseRestriction, UserId, UserPolicySpecification},
+    offer_abort,
     transaction::{TransactionApprovalRequest, TransactionSignature},
 };
+use anyhow::{anyhow, Context};
 use dialectic_reconnect::Backoff;
+use opaque_ke::{
+    ClientLogin, ClientLoginFinishParameters, ClientRegistration,
+    ClientRegistrationFinishParameters,
+};
+use rand::rngs::OsRng;
 use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::time::Duration;
 
-use crate::client::cli::{Authenticate, Register};
 use crate::client::Config;
-use crate::key_mgmt::client::Command;
+use crate::config::opaque::OpaqueCipherSuite;
+use crate::key_mgmt::client::connect;
+use crate::protocol::Party::Client;
+use crate::protocol::{AuthStart, RegisterStart};
 use crate::transport::KeyMgmtAddress;
 use thiserror::Error;
 use tracing::error;
@@ -39,14 +48,37 @@ impl Display for SessionError {
 #[derive(Debug, Default)]
 pub struct Password(String);
 
+impl ToString for Password {
+    fn to_string(&self) -> String {
+        self.0.to_string()
+    }
+}
+
+impl FromStr for Password {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Password(s.to_string()))
+    }
+}
+
 /// Deployment details for a [`Session`].
 ///
 /// Possible fields include: timeouts, key server IPs, PKI information,
 /// preshared keys.
 #[derive(Debug, Clone)]
 pub struct SessionConfig {
-    pub client_config: Config,
-    pub server: KeyMgmtAddress,
+    client_config: Config,
+    server: KeyMgmtAddress,
+}
+
+impl SessionConfig {
+    pub fn new(client_config: Config, server: KeyMgmtAddress) -> Self {
+        Self {
+            client_config,
+            server,
+        }
+    }
 }
 
 impl Default for SessionConfig {
@@ -82,8 +114,8 @@ impl Default for SessionConfig {
 #[derive(Debug)]
 #[allow(unused)]
 pub struct Session {
-    pub config: SessionConfig,
-    pub session_key: [u8; 64],
+    config: SessionConfig,
+    session_key: [u8; 64],
 }
 
 #[allow(unused)]
@@ -94,16 +126,16 @@ impl Session {
     /// Output: If successful, returns an open [`Session`] between the specified [`UserId`]
     /// and the configured key server.
     pub async fn open(
-        user_id: UserId,
-        password: Password,
+        user_id: &UserId,
+        password: &Password,
         config: &SessionConfig,
     ) -> Result<Self, SessionError> {
-        let result = Authenticate {
-            username: user_id.0,
-            password: password.0,
-            server: config.server.clone(),
-        }
-        .run(config.client_config.clone())
+        let result = Self::authenticate(
+            user_id,
+            password,
+            config.server.clone(),
+            config.client_config.clone(),
+        )
         .await;
         return match result {
             Ok(result) => {
@@ -120,6 +152,69 @@ impl Session {
         };
     }
 
+    async fn authenticate(
+        user_id: &UserId,
+        password: &Password,
+        server: KeyMgmtAddress,
+        config: self::Config,
+    ) -> Result<[u8; 64], anyhow::Error> {
+        let mut rng = OsRng;
+
+        // Connect with the server...
+        let (_session_key, chan) = connect(&config, &server)
+            .await
+            .context("Failed to connect to server")?;
+
+        // ...and select the Authenticate session
+        let chan = chan
+            .choose::<3>()
+            .await
+            .context("Failed to select Authenticate session")?;
+
+        let client_login_start_result = match ClientLogin::<OpaqueCipherSuite>::start(
+            &mut rng,
+            password.to_string().as_bytes(),
+        ) {
+            Ok(client_login_start_result) => client_login_start_result,
+            Err(_) => {
+                return Err(anyhow!("could not start client login"));
+            }
+        };
+
+        let chan = chan
+            .send(AuthStart::new(
+                client_login_start_result.message,
+                user_id.clone(),
+            ))
+            .await
+            .context("Failed to send AuthStart")?;
+
+        offer_abort!(in chan as Client);
+
+        let (auth_start_received, chan) = chan
+            .recv()
+            .await
+            .context("Failed to recv AuthStartReceived from server")?;
+
+        let client_login_finish_result = match client_login_start_result.state.finish(
+            password.to_string().as_bytes(),
+            auth_start_received,
+            ClientLoginFinishParameters::default(),
+        ) {
+            Ok(client_login_finish_result) => client_login_finish_result,
+            Err(_) => {
+                return Err(anyhow!("not authenticated"));
+            }
+        };
+
+        chan.send(client_login_finish_result.message)
+            .await
+            .context("Failed to send AuthFinish")?
+            .close();
+
+        Ok(<[u8; 64]>::from(client_login_finish_result.session_key))
+    }
+
     /// Register a new user who has not yet interacted with the service and open
     /// a mutually authenticated session with the server described in the
     /// [`SessionConfig`].
@@ -130,16 +225,16 @@ impl Session {
     /// Output: If successful, returns an open [`Session`] between the specified [`UserId`]
     /// and the configured key server.
     pub async fn register(
-        user_id: UserId,
-        password: Password,
+        user_id: &UserId,
+        password: &Password,
         config: &SessionConfig,
     ) -> Result<Self, SessionError> {
-        let result = Register {
-            username: user_id.0.clone(),
-            password: password.0.clone(),
-            server: config.server.clone(),
-        }
-        .run(config.client_config.clone())
+        let result = Self::do_register(
+            user_id,
+            password,
+            config.server.clone(),
+            config.client_config.clone(),
+        )
         .await;
         match result {
             Ok(_) => {
@@ -152,11 +247,81 @@ impl Session {
         }
     }
 
+    async fn do_register(
+        user_id: &UserId,
+        password: &Password,
+        server: KeyMgmtAddress,
+        config: self::Config,
+    ) -> Result<(), anyhow::Error> {
+        let mut rng = OsRng;
+
+        // Connect with the server...
+        let (_session_key, chan) = connect(&config, &server)
+            .await
+            .context("Failed to connect to server")?;
+
+        // ...and select the Register session
+        let chan = chan
+            .choose::<1>()
+            .await
+            .context("Failed to select Register session")?;
+
+        let client_registration_start_result = match ClientRegistration::<OpaqueCipherSuite>::start(
+            &mut rng,
+            password.to_string().as_bytes(),
+        ) {
+            Ok(client_registration_start_result) => client_registration_start_result,
+            Err(_) => {
+                return Err(anyhow!("could not start client registration"));
+            }
+        };
+
+        let chan = chan
+            .send(RegisterStart::new(
+                client_registration_start_result.message,
+                user_id.clone(),
+            ))
+            .await
+            .context("Failed to send RegisterStart")?;
+
+        offer_abort!(in chan as Client);
+
+        let (register_start_received, chan) = chan
+            .recv()
+            .await
+            .context("Failed to recv RegisterStartReceived from server")?;
+
+        let client_finish_registration_result = match client_registration_start_result.state.finish(
+            &mut rng,
+            password.to_string().as_bytes(),
+            register_start_received,
+            ClientRegistrationFinishParameters::default(),
+        ) {
+            Ok(client_finish_registration_result) => client_finish_registration_result,
+            Err(_) => return Err(anyhow!("could not finish client registration")),
+        };
+
+        chan.send(client_finish_registration_result.message)
+            .await
+            .context("Failed to send RegisterFinish")?
+            .close();
+
+        Ok(())
+    }
+
     /// Close a session.
     ///
     /// Outputs: None, if successful.
     pub fn close(self) -> Result<(), SessionError> {
         todo!()
+    }
+
+    //TODO: remove
+    pub fn new(config: SessionConfig, session_key: [u8; 64]) -> Self {
+        Self {
+            config,
+            session_key,
+        }
     }
 }
 

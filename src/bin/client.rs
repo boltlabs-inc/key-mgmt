@@ -1,7 +1,7 @@
 use anyhow::Context;
 use da_mgmt::client::key_mgmt::Command;
 use da_mgmt::client::{
-    cli::Client::{Authenticate, Create, Register, Retrieve},
+    cli::Client::{Create, Retrieve},
     defaults::config_path,
     Cli, Config,
 };
@@ -18,15 +18,10 @@ pub async fn main_with_cli(cli: Cli) -> Result<(), anyhow::Error> {
 
     match cli.client {
         Create(create) => create.run(config.await?).await,
-        Register(register) => register.run(config.await?).await,
         Retrieve(retrieve) => {
             println!("{:?}", retrieve.run(config.await?).await?);
             Ok(())
         }
-        Authenticate(auth) => match auth.run(config.await?).await {
-            Ok(_) => Ok(()),
-            Err(e) => Err(e),
-        },
     }
 }
 

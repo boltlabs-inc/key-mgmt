@@ -1,43 +1,14 @@
-use crate::config::opaque::OpaqueCipherSuite;
 use crate::{client::Config, protocol, transport::KeyMgmtAddress};
 #[cfg(feature = "allow_explicit_certificate_trust")]
 use anyhow::Context;
 use async_trait::async_trait;
-use opaque_ke::{
-    CredentialFinalization, CredentialRequest, CredentialResponse, RegistrationRequest,
-    RegistrationResponse, RegistrationUpload,
-};
 use serde::{Deserialize, Serialize};
 #[cfg(not(feature = "allow_explicit_certificate_trust"))]
 use tracing::warn;
 use transport::client::{Chan, Client, SessionKey};
 
-mod authenticate;
 mod create;
-mod register;
 mod retrieve;
-
-/// The object that the client sends to the server when registering using OPAQUE
-#[derive(Debug, Serialize, Deserialize)]
-pub struct RegisterStart {
-    pub request: RegistrationRequest<OpaqueCipherSuite>,
-    pub username: String,
-}
-/// The object that the server responds with to the client when ['RegisterStart'] has been received
-pub type RegisterStartReceived = RegistrationResponse<OpaqueCipherSuite>;
-/// The object that the client sends to the server to finish registration using OPAQUE
-pub type RegisterFinish = RegistrationUpload<OpaqueCipherSuite>;
-
-/// The object that the client sends to the server when registering using OPAQUE
-#[derive(Debug, Serialize, Deserialize)]
-pub struct AuthStart {
-    pub request: CredentialRequest<OpaqueCipherSuite>,
-    pub username: String,
-}
-/// The object that the server responds with to the client when ['RegisterStart'] has been received
-pub type AuthStartReceived = CredentialResponse<OpaqueCipherSuite>;
-/// The object that the client sends to the server to finish registration using OPAQUE
-pub type AuthFinish = CredentialFinalization<OpaqueCipherSuite>;
 
 /// The object that the client sends to the server when creating a secret
 #[derive(Debug, Serialize, Deserialize)]

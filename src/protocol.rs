@@ -1,8 +1,9 @@
-use crate::key_mgmt::client::{
-    AuthFinish, AuthStart, AuthStartReceived, CreateSecretRequest, RegisterFinish, RegisterStart,
-    RegisterStartReceived, SecretInfo, SecretRetrieveRequest,
-};
+use crate::key_mgmt::client::{CreateSecretRequest, SecretInfo, SecretRetrieveRequest};
 use dialectic::prelude::*;
+use opaque_ke::{
+    CredentialFinalization, CredentialRequest, CredentialResponse, RegistrationRequest,
+    RegistrationResponse, RegistrationUpload,
+};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use thiserror::Error;
@@ -68,6 +69,54 @@ macro_rules! proceed {
     };
 }
 
+/// The object that the client sends to the server when registering using OPAQUE
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RegisterStart {
+    request: RegistrationRequest<OpaqueCipherSuite>,
+    user_id: UserId,
+}
+
+impl RegisterStart {
+    pub fn new(request: RegistrationRequest<OpaqueCipherSuite>, user_id: UserId) -> Self {
+        Self { request, user_id }
+    }
+    pub fn request(&self) -> &RegistrationRequest<OpaqueCipherSuite> {
+        &self.request
+    }
+    pub fn user_id(&self) -> &UserId {
+        &self.user_id
+    }
+}
+
+/// The object that the server responds with to the client when ['RegisterStart'] has been received
+pub type RegisterStartReceived = RegistrationResponse<OpaqueCipherSuite>;
+/// The object that the client sends to the server to finish registration using OPAQUE
+pub type RegisterFinish = RegistrationUpload<OpaqueCipherSuite>;
+
+/// The object that the client sends to the server when registering using OPAQUE
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AuthStart {
+    request: CredentialRequest<OpaqueCipherSuite>,
+    user_id: UserId,
+}
+
+impl AuthStart {
+    pub fn new(request: CredentialRequest<OpaqueCipherSuite>, user_id: UserId) -> Self {
+        Self { request, user_id }
+    }
+    pub fn request(&self) -> &CredentialRequest<OpaqueCipherSuite> {
+        &self.request
+    }
+    pub fn user_id(&self) -> &UserId {
+        &self.user_id
+    }
+}
+
+/// The object that the server responds with to the client when ['RegisterStart'] has been received
+pub type AuthStartReceived = CredentialResponse<OpaqueCipherSuite>;
+/// The object that the client sends to the server to finish registration using OPAQUE
+pub type AuthFinish = CredentialFinalization<OpaqueCipherSuite>;
+
 /// The two parties in the protocol.
 #[derive(Debug, Clone, Copy, Eq, Ord, PartialEq, PartialOrd, Hash, Serialize, Deserialize)]
 pub enum Party {
@@ -104,6 +153,8 @@ impl Party {
 }
 
 // All protocols are from the perspective of the client.
+use crate::config::opaque::OpaqueCipherSuite;
+use crate::keys::UserId;
 pub use authenticate::Authenticate;
 pub use create::Create;
 pub use register::Register;
@@ -144,8 +195,8 @@ pub mod register {
     /// Possible errors of the protocol
     #[derive(Debug, Clone, Error, Serialize, Deserialize)]
     pub enum Error {
-        #[error("Username already exists")]
-        UsernameAlreadyExists,
+        #[error("User ID already exists")]
+        UserIdAlreadyExists,
     }
 
     /// The actual sessionType for the registration protocol
@@ -154,10 +205,6 @@ pub mod register {
     /// The internals of the registration protocol
     pub type DoRegister = Session! {
         send RegisterStart;
-        RegisterStartReceivedSess;
-    };
-
-    pub type RegisterStartReceivedSess = Session! {
         OfferAbort<RegisterStartReceivedSessNoAbort, Error>;
     };
 
@@ -192,20 +239,13 @@ pub mod authenticate {
     /// Possible errors of the protocol
     #[derive(Debug, Clone, Error, Serialize, Deserialize)]
     pub enum Error {
-        #[error("Username does not exist")]
-        UsernameDoesNotExist,
+        #[error("User ID does not exist")]
+        UserIdDoesNotExist,
     }
 
     /// The actual sessionType for the registration protocol
-    pub type Authenticate = DoAuthenticate;
-
-    /// The internals of the registration protocol
-    pub type DoAuthenticate = Session! {
+    pub type Authenticate = Session! {
         send AuthStart;
-        AuthStartReceivedSess;
-    };
-
-    pub type AuthStartReceivedSess = Session! {
         OfferAbort<AuthStartReceivedSessNoAbort, Error>;
     };
 

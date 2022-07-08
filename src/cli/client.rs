@@ -18,43 +18,13 @@ pub struct Cli {
 #[derive(Debug, StructOpt)]
 pub enum Client {
     Create(Create),
-    Register(Register),
     Retrieve(Retrieve),
-    Authenticate(Authenticate),
 }
 
 /// Create a secret.
 #[derive(Debug, StructOpt)]
 #[non_exhaustive]
 pub struct Create {
-    /// The `keymgmt://` address for the server.
-    pub server: KeyMgmtAddress,
-}
-
-/// Register using OPAQUE.
-#[derive(Debug, StructOpt)]
-#[non_exhaustive]
-pub struct Register {
-    /// The username to register
-    #[structopt(long)]
-    pub username: String,
-    /// The password to register
-    #[structopt(long)]
-    pub password: String,
-    /// The `keymgmt://` address for the server.
-    pub server: KeyMgmtAddress,
-}
-
-/// Authenticate using OPAQUE.
-#[derive(Debug, StructOpt)]
-#[non_exhaustive]
-pub struct Authenticate {
-    /// The username to register
-    #[structopt(long)]
-    pub username: String,
-    /// The password to register
-    #[structopt(long)]
-    pub password: String,
     /// The `keymgmt://` address for the server.
     pub server: KeyMgmtAddress,
 }
