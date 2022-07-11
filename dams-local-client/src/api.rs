@@ -29,8 +29,7 @@ pub struct SessionConfig;
 /// A `Session` is an abstraction over a
 /// communication session between an asset owner and a key server
 /// that provides mutual authentication, confidentiality, and integrity.
-/// An open `Session` is
-/// required to interact with the [`crate::api`] API.
+/// An open `Session` is required to interact with this API.
 ///
 /// A session can be ended manually, or it might time out and require
 /// re-authentication (that is, creation of a new [`Session`]).

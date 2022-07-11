@@ -13,7 +13,7 @@ edition = "2018"
 license = "MIT"
 description = "implementation of a secure key mangement system"
 
-[dependencies]
+[dev-dependencies]
 anyhow = "1"
 dams = { version = "0.1.0", path = "dams" }
 dams-key-server = { version = "0.1.0", path = "dams-key-server" }
