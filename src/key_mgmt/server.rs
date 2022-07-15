@@ -74,7 +74,7 @@ impl Command for Run {
                         let config = config.clone();
 
                         // TODO: permit configuration option to make this deterministic for testing
-                        let rng = StdRng::from_entropy();
+                        let mut rng = StdRng::from_entropy();
 
                         async move {
                             offer!(in chan {
@@ -87,7 +87,7 @@ impl Command for Run {
                                     chan,
                                 ).await?,
                                 1 => Register.run(
-                                    rng,
+                                    &mut rng,
                                     &client,
                                     &config,
                                     &service,
@@ -103,7 +103,7 @@ impl Command for Run {
                                     chan,
                                 ).await?,
                                 3 => Authenticate.run(
-                                    rng,
+                                    &mut rng,
                                     &client,
                                     &config,
                                     &service,

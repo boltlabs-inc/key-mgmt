@@ -7,7 +7,7 @@ use crate::{
 };
 use anyhow::Context;
 use opaque_ke::{ServerLogin, ServerLoginStartParameters};
-use rand::rngs::{OsRng, StdRng};
+use rand::rngs::StdRng;
 use transport::server::{Chan, SessionKey};
 
 pub struct Authenticate;
@@ -15,7 +15,7 @@ pub struct Authenticate;
 impl Authenticate {
     pub async fn run(
         &self,
-        rng: StdRng,
+        rng: &mut StdRng,
         _client: &reqwest::Client,
         _config: &Config,
         service: &Service,
@@ -35,9 +35,8 @@ impl Authenticate {
             Ok(server_registration) => server_registration,
             Err(_) => abort!(in chan return authenticate::Error::UserIdDoesNotExist),
         };
-        let mut rng = OsRng;
         let server_login_start_result = match ServerLogin::start(
-            &mut rng,
+            rng,
             &server_setup,
             Some(server_registration),
             auth_start.request().clone(),

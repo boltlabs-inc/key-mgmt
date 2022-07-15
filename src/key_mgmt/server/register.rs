@@ -16,7 +16,7 @@ pub struct Register;
 impl Register {
     pub async fn run(
         &self,
-        rng: StdRng,
+        rng: &mut StdRng,
         _client: &reqwest::Client,
         _config: &Config,
         service: &Service,

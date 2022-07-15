@@ -17,7 +17,8 @@ use opaque_ke::{
     ClientLogin, ClientLoginFinishParameters, ClientRegistration,
     ClientRegistrationFinishParameters,
 };
-use rand::rngs::OsRng;
+use rand::rngs::StdRng;
+use rand::SeedableRng;
 use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -167,7 +168,7 @@ impl Session {
         server: KeyMgmtAddress,
         config: self::Config,
     ) -> Result<[u8; 64], anyhow::Error> {
-        let mut rng = OsRng;
+        let mut rng = StdRng::from_entropy();
 
         // Connect with the server...
         let (_session_key, chan) = connect(&config, &server)
@@ -237,7 +238,10 @@ impl Session {
         password: &Password,
         config: &SessionConfig,
     ) -> Result<Self, SessionError> {
+        let mut rng = StdRng::from_entropy();
+
         let result = Self::do_register(
+            &mut rng,
             user_id,
             password,
             config.server.clone(),
@@ -256,13 +260,12 @@ impl Session {
     }
 
     async fn do_register(
+        rng: &mut StdRng,
         user_id: &UserId,
         password: &Password,
         server: KeyMgmtAddress,
         config: self::Config,
     ) -> Result<(), anyhow::Error> {
-        let mut rng = OsRng;
-
         // Connect with the server...
         let (_session_key, chan) = connect(&config, &server)
             .await
@@ -275,7 +278,7 @@ impl Session {
             .context("Failed to select Register session")?;
 
         let client_registration_start_result = match ClientRegistration::<OpaqueCipherSuite>::start(
-            &mut rng,
+            rng,
             password.to_string().as_bytes(),
         ) {
             Ok(client_registration_start_result) => client_registration_start_result,
@@ -300,7 +303,7 @@ impl Session {
             .context("Failed to recv RegisterStartReceived from server")?;
 
         let client_finish_registration_result = match client_registration_start_result.state.finish(
-            &mut rng,
+            rng,
             password.to_string().as_bytes(),
             register_start_received,
             ClientRegistrationFinishParameters::default(),

@@ -47,14 +47,14 @@ pub(crate) fn retrieve_opaque(
 
 //TODO: replace with decent and secure storage for server keys #56
 pub(crate) fn create_or_retrieve_server_key_opaque(
-    mut rng: StdRng,
+    rng: &mut StdRng,
     service: &Service,
 ) -> Result<ServerSetup<OpaqueCipherSuite, PrivateKey<Ristretto255>>, Error> {
     let server_key_file = File::open(service.opaque_server_key.clone());
     match server_key_file {
         // Server key file doesn't exist yet, create new
         Err(_) => {
-            let server_setup = ServerSetup::<OpaqueCipherSuite>::new(&mut rng);
+            let server_setup = ServerSetup::<OpaqueCipherSuite>::new(rng);
             std::fs::create_dir_all(
                 &service
                     .opaque_server_key
@@ -91,7 +91,6 @@ mod tests {
     use super::*;
     use crate::server::config::Service;
     use opaque_ke::{ClientRegistration, ClientRegistrationFinishParameters};
-    use rand::rngs::OsRng;
     use rand::SeedableRng;
     use std::env::temp_dir;
     use std::net::{IpAddr, Ipv4Addr};
@@ -99,7 +98,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_store_and_retrieve() -> Result<(), Error> {
-        let rng = StdRng::from_entropy();
+        let mut rng = StdRng::from_entropy();
         let service = &Service {
             address: IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
             port: 0,
@@ -112,9 +111,9 @@ mod tests {
             opaque_path: temp_dir().join("opaque"),
             opaque_server_key: temp_dir().join("opaque/server_setup"),
         };
-        let server_setup = create_or_retrieve_server_key_opaque(rng, service).unwrap();
+        let server_setup = create_or_retrieve_server_key_opaque(&mut rng, service).unwrap();
 
-        let mut rng = OsRng;
+        let mut rng = StdRng::from_entropy();
         let user_id = "testUserId";
         let password = "testPassword";
         let client_registration_start_result =
