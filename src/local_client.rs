@@ -18,7 +18,7 @@ use opaque_ke::{
     ClientRegistrationFinishParameters,
 };
 use rand::rngs::StdRng;
-use rand::SeedableRng;
+use rand::{CryptoRng, RngCore, SeedableRng};
 use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -149,8 +149,8 @@ impl Session {
         let result = Self::authenticate(
             user_id,
             password,
-            config.server.clone(),
-            config.client_config.clone(),
+            &config.server.clone(),
+            &config.client_config.clone(),
         )
         .await;
         return match result {
@@ -171,13 +171,13 @@ impl Session {
     async fn authenticate(
         user_id: &UserId,
         password: &Password,
-        server: KeyMgmtAddress,
-        config: self::Config,
+        server: &KeyMgmtAddress,
+        config: &self::Config,
     ) -> Result<[u8; 64], anyhow::Error> {
         let mut rng = StdRng::from_entropy();
 
         // Connect with the server...
-        let (_session_key, chan) = connect(&config, &server)
+        let (_session_key, chan) = connect(config, server)
             .await
             .context("Failed to connect to server")?;
 
@@ -242,8 +242,8 @@ impl Session {
             &mut rng,
             user_id,
             password,
-            config.server.clone(),
-            config.client_config.clone(),
+            &config.server.clone(),
+            &config.client_config.clone(),
         )
         .await;
         match result {
@@ -257,15 +257,15 @@ impl Session {
         }
     }
 
-    async fn do_register(
-        rng: &mut StdRng,
+    async fn do_register<T: CryptoRng + RngCore>(
+        rng: &mut T,
         user_id: &UserId,
         password: &Password,
-        server: KeyMgmtAddress,
-        config: self::Config,
+        server: &KeyMgmtAddress,
+        config: &self::Config,
     ) -> Result<(), anyhow::Error> {
         // Connect with the server...
-        let (_session_key, chan) = connect(&config, &server)
+        let (_session_key, chan) = connect(config, server)
             .await
             .context("Failed to connect to server")?;
 
