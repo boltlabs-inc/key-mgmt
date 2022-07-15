@@ -145,7 +145,7 @@ enum TestError {
     // #[error("Operation {0:?} not yet implemented")]
     // NotImplemented(Operation),
     #[error(
-        "The error behavior did not satisfy expected behavior {op:?}. Got
+    "The error behavior did not satisfy expected behavior {op:?}. Got
     SERVER OUTPUT:
     {server_errors}
     OPERATION OUTPUT:

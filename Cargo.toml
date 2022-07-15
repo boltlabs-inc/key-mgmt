@@ -4,25 +4,5 @@ members = [
     "dams-local-client",
     "dams-remote-client",
     "dams-key-server",
+    "dams-tests"
 ]
-
-[package]
-name = "key-mgmt"
-version = "0.1.0"
-edition = "2018"
-license = "MIT"
-description = "implementation of a secure key mangement system"
-
-[dev-dependencies]
-anyhow = "1"
-dams = { version = "0.1.0", path = "dams" }
-dams-key-server = { version = "0.1.0", path = "dams-key-server" }
-dams-local-client = { version = "0.1.0", path = "dams-local-client", features=["allow_explicit_certificate_trust"] }
-dams-remote-client = { version = "0.1.0", path = "dams-remote-client" }
-futures = "0"
-structopt = "0"
-thiserror = "1"
-tokio = { version = "1", features = ["full"] }
-tracing = "0"
-tracing-futures = "0"
-tracing-subscriber = { version = "0", features = ["env-filter"] }

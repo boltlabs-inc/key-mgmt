@@ -56,7 +56,7 @@ pub async fn setup() -> ServerFuture {
     let _ = fs::create_dir("tests/gen");
 
     // Create self-signed SSL certificate in the generated directory
-    Command::new("./dev/generate-certificates")
+    Command::new("../dev/generate-certificates")
         .arg("tests/gen")
         .spawn()
         .expect("Failed to generate new certificates");
