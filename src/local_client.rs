@@ -218,10 +218,9 @@ impl Session {
 
         chan.send(client_login_finish_result.message)
             .await
-            .context("Failed to send AuthFinish")?
-            .close();
+            .context("Failed to send AuthFinish")?;
 
-        Ok(<[u8; 64]>::from(client_login_finish_result.session_key))
+        Ok(client_login_finish_result.session_key.into())
     }
 
     /// Register a new user who has not yet interacted with the service and open

@@ -5,7 +5,7 @@ use crate::{
     server::{config::Service, Config},
     timeout::WithTimeout,
 };
-use anyhow::{anyhow, Context};
+use anyhow::Context;
 use opaque_ke::{ServerLogin, ServerLoginStartParameters};
 use rand::rngs::{OsRng, StdRng};
 use transport::server::{Chan, SessionKey};
@@ -45,7 +45,7 @@ impl Authenticate {
             ServerLoginStartParameters::default(),
         ) {
             Ok(server_login_start_result) => server_login_start_result,
-            Err(e) => return Err(anyhow!(e)),
+            Err(_) => abort!(in chan return authenticate::Error::ServerError),
         };
 
         proceed!(in chan);
@@ -55,15 +55,19 @@ impl Authenticate {
             .await
             .context("Couldn't respond with AuthStartReceived")?;
 
-        let (auth_finish, _chan) = chan
+        let (auth_finish, chan) = chan
             .recv()
             .with_timeout(service.message_timeout)
             .await
             .context("Did not receive AuthFinish")??;
 
         match server_login_start_result.state.finish(auth_finish) {
-            Ok(_) => Ok(()),
-            Err(e) => Err(anyhow!(e)),
+            Ok(_) => {
+                proceed!(in chan);
+                chan.close();
+                Ok(())
+            }
+            Err(_) => abort!(in chan return authenticate::Error::CouldNotAuthenticate),
         }
     }
 }

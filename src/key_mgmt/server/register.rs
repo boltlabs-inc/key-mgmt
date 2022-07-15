@@ -58,8 +58,8 @@ impl Register {
             .await
             .context("Did not receive RegisterFinish")??;
 
-        let password_file = ServerRegistration::<OpaqueCipherSuite>::finish(register_finish);
-        store_opaque(service, user_id, &password_file)?;
+        let server_registration = ServerRegistration::<OpaqueCipherSuite>::finish(register_finish);
+        store_opaque(service, user_id, &server_registration)?;
 
         Ok(())
     }

@@ -41,10 +41,8 @@ pub(crate) fn retrieve_opaque(
     let mut contents: GenericArray<u8, ServerRegistrationLen<OpaqueCipherSuite>> =
         GenericArray::default();
     let _ = file.read(&mut contents);
-    match ServerRegistration::<OpaqueCipherSuite>::deserialize(contents.as_slice()) {
-        Ok(server_registration) => Ok(server_registration),
-        Err(_) => Err(anyhow!("couldn't deserialize file")),
-    }
+    ServerRegistration::<OpaqueCipherSuite>::deserialize(contents.as_slice())
+        .map_err(|_| anyhow!("couldn't deserialize file"))
 }
 
 //TODO: replace with decent and secure storage for server keys #56
@@ -54,6 +52,7 @@ pub(crate) fn create_or_retrieve_server_key_opaque(
 ) -> Result<ServerSetup<OpaqueCipherSuite, PrivateKey<Ristretto255>>, Error> {
     let server_key_file = File::open(service.opaque_server_key.clone());
     match server_key_file {
+        // Server key file doesn't exist yet, create new
         Err(_) => {
             let server_setup = ServerSetup::<OpaqueCipherSuite>::new(&mut rng);
             std::fs::create_dir_all(
@@ -72,6 +71,8 @@ pub(crate) fn create_or_retrieve_server_key_opaque(
             .context("could not write file")?;
             Ok(server_setup)
         }
+
+        // Parse server key file
         Ok(mut file) => {
             let mut contents = vec![];
             let _ = file.read_to_end(&mut contents)?;

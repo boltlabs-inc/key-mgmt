@@ -1,5 +1,6 @@
 use crate::key_mgmt::client::{CreateSecretRequest, SecretInfo, SecretRetrieveRequest};
 use dialectic::prelude::*;
+use dialectic::types::Done;
 use opaque_ke::{
     CredentialFinalization, CredentialRequest, CredentialResponse, RegistrationRequest,
     RegistrationResponse, RegistrationUpload,
@@ -241,6 +242,10 @@ pub mod authenticate {
     pub enum Error {
         #[error("User ID does not exist")]
         UserIdDoesNotExist,
+        #[error("The server encountered an unexpected error")]
+        ServerError,
+        #[error("Wrong username or password")]
+        CouldNotAuthenticate,
     }
 
     /// The actual sessionType for the registration protocol
@@ -252,5 +257,6 @@ pub mod authenticate {
     pub type AuthStartReceivedSessNoAbort = Session! {
         recv AuthStartReceived;
         send AuthFinish;
+        OfferAbort<Done, Error>;
     };
 }

@@ -4,6 +4,7 @@ use crate::Operation::{Authenticate, Create, Register, Retrieve};
 use crate::Party::{Client, Server};
 use anyhow::anyhow;
 use common::{get_logs, LogType, Party};
+use da_mgmt::client::Config;
 use da_mgmt::keys::UserId;
 use da_mgmt::local_client::{Password, Session, SessionConfig};
 use da_mgmt::transport::KeyMgmtAddress;
@@ -29,12 +30,12 @@ macro_rules! client_cli {
 #[tokio::test]
 pub async fn integration_tests() {
     let server_future = common::setup().await;
-    let client_config = client::Config::load(common::CLIENT_CONFIG)
+    let client_config = Config::load(common::CLIENT_CONFIG)
         .await
         .expect("Failed to load client config");
 
     // Run every test, printing out details if it fails
-    let tests = tests();
+    let tests = tests(&client_config).await;
     println!("Executing {} tests", tests.len());
     let mut results = Vec::with_capacity(tests.len());
 
@@ -84,7 +85,7 @@ pub async fn integration_tests() {
 /// Get a list of tests to execute.
 /// Assumption: none of these will cause a fatal error to the long-running
 /// processes (server).
-fn tests() -> Vec<Test> {
+async fn tests(client_config: &Config) -> Vec<Test> {
     vec![
         Test {
             name: "Create a secret on the server".to_string(),
@@ -103,6 +104,7 @@ fn tests() -> Vec<Test> {
                     Register(
                         UserId::from_str("sameUser").unwrap(),
                         Password::from_str("testPassword1").unwrap(),
+                        client_config.clone(),
                     ),
                     Outcome {
                         error: None,
@@ -113,6 +115,7 @@ fn tests() -> Vec<Test> {
                     Register(
                         UserId::from_str("sameUser").unwrap(),
                         Password::from_str("testPassword2").unwrap(),
+                        client_config.clone(),
                     ),
                     Outcome {
                         error: Some(Client),
@@ -128,6 +131,7 @@ fn tests() -> Vec<Test> {
                     Register(
                         UserId::from_str("testUser").unwrap(),
                         Password::from_str("testPassword").unwrap(),
+                        client_config.clone(),
                     ),
                     Outcome {
                         error: None,
@@ -138,6 +142,7 @@ fn tests() -> Vec<Test> {
                     Authenticate(
                         UserId::from_str("testUser").unwrap(),
                         Password::from_str("testPassword").unwrap(),
+                        client_config.clone(),
                     ),
                     Outcome {
                         error: None,
@@ -148,10 +153,39 @@ fn tests() -> Vec<Test> {
                     Authenticate(
                         UserId::from_str("testUser").unwrap(),
                         Password::from_str("testPassword").unwrap(),
+                        client_config.clone(),
                     ),
                     Outcome {
                         error: None,
                         expected_error: None,
+                    },
+                ),
+            ],
+        },
+        Test {
+            name: "Register and authenticate with wrong password fails as a client to the server"
+                .to_string(),
+            operations: vec![
+                (
+                    Register(
+                        UserId::from_str("testUser2").unwrap(),
+                        Password::from_str("testPassword2").unwrap(),
+                        client_config.clone(),
+                    ),
+                    Outcome {
+                        error: None,
+                        expected_error: None,
+                    },
+                ),
+                (
+                    Authenticate(
+                        UserId::from_str("testUser2").unwrap(),
+                        Password::from_str("wrongPassword").unwrap(),
+                        client_config.clone(),
+                    ),
+                    Outcome {
+                        error: Some(Client),
+                        expected_error: Some(anyhow!("AuthenticationFailed")),
                     },
                 ),
             ],
@@ -162,6 +196,7 @@ fn tests() -> Vec<Test> {
                 Authenticate(
                     UserId::from_str("unregisteredUser").unwrap(),
                     Password::from_str("testPassword").unwrap(),
+                    client_config.clone(),
                 ),
                 Outcome {
                     error: Some(Client),
@@ -196,36 +231,30 @@ impl Test {
                     let create = client_cli!(Create, vec!["create", "keymgmt://localhost"]);
                     create.run(client_config.clone()).await
                 }
-                Register(user_id, password) => {
-                    let client_config = client::Config::load(common::CLIENT_CONFIG)
-                        .await
-                        .expect("Failed to load client config");
+                Register(user_id, password, client_config) => {
                     let config = SessionConfig::new(
-                        client_config,
+                        client_config.clone(),
                         KeyMgmtAddress::from_str("keymgmt://localhost").unwrap(),
                     );
                     Session::register(user_id, password, &config)
                         .await
                         .map(|_| ())
-                        .map_err(|e| anyhow!(e.to_string()))
+                        .map_err(|e| e.into())
                 }
                 Retrieve => {
                     let retrieve = client_cli!(Retrieve, vec!["retrieve", "keymgmt://localhost"]);
                     retrieve.run(client_config.clone()).await.map(|_| ())
                 }
 
-                Authenticate(user_id, password) => {
-                    let client_config = client::Config::load(common::CLIENT_CONFIG)
-                        .await
-                        .expect("Failed to load client config");
+                Authenticate(user_id, password, client_config) => {
                     let config = SessionConfig::new(
-                        client_config,
+                        client_config.clone(),
                         KeyMgmtAddress::from_str("keymgmt://localhost").unwrap(),
                     );
                     Session::open(user_id, password, &config)
                         .await
                         .map(|_| ())
-                        .map_err(|e| anyhow!(e.to_string()))
+                        .map_err(|e| e.into())
                 }
             };
 
@@ -288,9 +317,9 @@ enum TestError {
 #[derive(Debug)]
 enum Operation {
     Create,
-    Register(UserId, Password),
+    Register(UserId, Password, Config),
     Retrieve,
-    Authenticate(UserId, Password),
+    Authenticate(UserId, Password, Config),
 }
 
 #[derive(Debug)]
