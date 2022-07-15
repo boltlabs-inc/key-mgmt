@@ -121,14 +121,14 @@ mod tests {
         let server_registration_start_result = ServerRegistration::<OpaqueCipherSuite>::start(
             &server_setup,
             client_registration_start_result.message.clone(),
-            user_id.to_string().as_bytes(),
+            user_id.as_bytes(),
         )
         .unwrap();
         let client_finish_registration_result = client_registration_start_result
             .state
             .finish(
                 &mut rng,
-                password.to_string().as_bytes(),
+                password.as_bytes(),
                 server_registration_start_result.message,
                 ClientRegistrationFinishParameters::default(),
             )

@@ -40,7 +40,7 @@ impl Authenticate {
             &server_setup,
             Some(server_registration),
             auth_start.request().clone(),
-            auth_start.user_id().to_string().as_bytes(),
+            auth_start.user_id().as_bytes(),
             ServerLoginStartParameters::default(),
         ) {
             Ok(server_login_start_result) => server_login_start_result,

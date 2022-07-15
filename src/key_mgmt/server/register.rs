@@ -39,8 +39,9 @@ impl Register {
         let server_registration_start_result = ServerRegistration::<OpaqueCipherSuite>::start(
             &server_setup,
             register_start.request().clone(),
-            user_id.to_string().as_bytes(),
-        ).map_err(|_| anyhow!("could not start server registration"))?;
+            user_id.as_bytes(),
+        )
+        .map_err(|_| anyhow!("could not start server registration"))?;
 
         proceed!(in chan);
 

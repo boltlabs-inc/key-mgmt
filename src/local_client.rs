@@ -63,6 +63,12 @@ impl FromStr for Password {
     }
 }
 
+impl Password {
+    pub fn as_bytes(&self) -> &[u8] {
+        self.0.as_bytes()
+    }
+}
+
 /// Deployment details for a [`Session`].
 ///
 /// Possible fields include: timeouts, key server IPs, PKI information,
@@ -181,10 +187,9 @@ impl Session {
             .await
             .context("Failed to select Authenticate session")?;
 
-        let client_login_start_result = ClientLogin::<OpaqueCipherSuite>::start(
-            &mut rng,
-            password.to_string().as_bytes(),
-        ).map_err(|_| anyhow!("could not start client login"))?;
+        let client_login_start_result =
+            ClientLogin::<OpaqueCipherSuite>::start(&mut rng, password.as_bytes())
+                .map_err(|_| anyhow!("could not start client login"))?;
 
         let chan = chan
             .send(AuthStart::new(
@@ -201,11 +206,14 @@ impl Session {
             .await
             .context("Failed to recv AuthStartReceived from server")?;
 
-        let client_login_finish_result = client_login_start_result.state.finish(
-            password.to_string().as_bytes(),
-            auth_start_received,
-            ClientLoginFinishParameters::default(),
-        ).map_err(|_| anyhow!("not authenticated"))?;
+        let client_login_finish_result = client_login_start_result
+            .state
+            .finish(
+                password.as_bytes(),
+                auth_start_received,
+                ClientLoginFinishParameters::default(),
+            )
+            .map_err(|_| anyhow!("not authenticated"))?;
 
         chan.send(client_login_finish_result.message)
             .await
@@ -267,10 +275,9 @@ impl Session {
             .await
             .context("Failed to select Register session")?;
 
-        let client_registration_start_result = ClientRegistration::<OpaqueCipherSuite>::start(
-            rng,
-            password.to_string().as_bytes(),
-        ).map_err(|_| anyhow!("could not start client registration"))?;
+        let client_registration_start_result =
+            ClientRegistration::<OpaqueCipherSuite>::start(rng, password.as_bytes())
+                .map_err(|_| anyhow!("could not start client registration"))?;
 
         let chan = chan
             .send(RegisterStart::new(
@@ -287,12 +294,15 @@ impl Session {
             .await
             .context("Failed to recv RegisterStartReceived from server")?;
 
-        let client_finish_registration_result = client_registration_start_result.state.finish(
-            rng,
-            password.to_string().as_bytes(),
-            register_start_received,
-            ClientRegistrationFinishParameters::default(),
-        ).map_err(|_| anyhow!("could not finish client registration"))?;
+        let client_finish_registration_result = client_registration_start_result
+            .state
+            .finish(
+                rng,
+                password.as_bytes(),
+                register_start_received,
+                ClientRegistrationFinishParameters::default(),
+            )
+            .map_err(|_| anyhow!("could not finish client registration"))?;
 
         chan.send(client_finish_registration_result.message)
             .await
