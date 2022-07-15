@@ -11,7 +11,6 @@ use crate::{
     offer_abort,
     transaction::{TransactionApprovalRequest, TransactionSignature},
 };
-use anyhow::{anyhow, Context};
 use dialectic_reconnect::Backoff;
 use opaque_ke::{
     ClientLogin, ClientLoginFinishParameters, ClientRegistration,
@@ -37,6 +36,14 @@ use tracing::error;
 pub enum SessionError {
     RegistrationFailed,
     AuthenticationFailed,
+    ServerConnectionFailed,
+    LoginStartFailed,
+    SelectAuthenticateFailed,
+    SelectRegisterFailed,
+    AuthStartFailed,
+    RegisterStartFailed,
+    AuthFinishFailed,
+    RegisterFinishFailed,
 }
 
 impl Display for SessionError {
@@ -179,17 +186,17 @@ impl Session {
         // Connect with the server...
         let (_session_key, chan) = connect(config, server)
             .await
-            .context("Failed to connect to server")?;
+            .map_err(|_| SessionError::ServerConnectionFailed)?;
 
         // ...and select the Authenticate session
         let chan = chan
             .choose::<3>()
             .await
-            .context("Failed to select Authenticate session")?;
+            .map_err(|_| SessionError::SelectAuthenticateFailed)?;
 
         let client_login_start_result =
             ClientLogin::<OpaqueCipherSuite>::start(&mut rng, password.as_bytes())
-                .map_err(|_| anyhow!("could not start client login"))?;
+                .map_err(|_| SessionError::LoginStartFailed)?;
 
         let chan = chan
             .send(AuthStart::new(
@@ -197,14 +204,14 @@ impl Session {
                 user_id.clone(),
             ))
             .await
-            .context("Failed to send AuthStart")?;
+            .map_err(|_| SessionError::AuthStartFailed)?;
 
         offer_abort!(in chan as Client);
 
         let (auth_start_received, chan) = chan
             .recv()
             .await
-            .context("Failed to recv AuthStartReceived from server")?;
+            .map_err(|_| SessionError::AuthStartFailed)?;
 
         let client_login_finish_result = client_login_start_result
             .state
@@ -213,11 +220,11 @@ impl Session {
                 auth_start_received,
                 ClientLoginFinishParameters::default(),
             )
-            .map_err(|_| anyhow!("not authenticated"))?;
+            .map_err(|_| SessionError::AuthenticationFailed)?;
 
         chan.send(client_login_finish_result.message)
             .await
-            .context("Failed to send AuthFinish")?;
+            .map_err(|_| SessionError::AuthFinishFailed)?;
 
         Ok(client_login_finish_result.session_key.into())
     }
@@ -267,17 +274,17 @@ impl Session {
         // Connect with the server...
         let (_session_key, chan) = connect(config, server)
             .await
-            .context("Failed to connect to server")?;
+            .map_err(|_| SessionError::ServerConnectionFailed)?;
 
         // ...and select the Register session
         let chan = chan
             .choose::<1>()
             .await
-            .context("Failed to select Register session")?;
+            .map_err(|_| SessionError::SelectRegisterFailed)?;
 
         let client_registration_start_result =
             ClientRegistration::<OpaqueCipherSuite>::start(rng, password.as_bytes())
-                .map_err(|_| anyhow!("could not start client registration"))?;
+                .map_err(|_| SessionError::RegisterStartFailed)?;
 
         let chan = chan
             .send(RegisterStart::new(
@@ -285,14 +292,14 @@ impl Session {
                 user_id.clone(),
             ))
             .await
-            .context("Failed to send RegisterStart")?;
+            .map_err(|_| SessionError::RegisterStartFailed)?;
 
         offer_abort!(in chan as Client);
 
         let (register_start_received, chan) = chan
             .recv()
             .await
-            .context("Failed to recv RegisterStartReceived from server")?;
+            .map_err(|_| SessionError::RegisterStartFailed)?;
 
         let client_finish_registration_result = client_registration_start_result
             .state
@@ -302,11 +309,11 @@ impl Session {
                 register_start_received,
                 ClientRegistrationFinishParameters::default(),
             )
-            .map_err(|_| anyhow!("could not finish client registration"))?;
+            .map_err(|_| SessionError::RegisterFinishFailed)?;
 
         chan.send(client_finish_registration_result.message)
             .await
-            .context("Failed to send RegisterFinish")?
+            .map_err(|_| SessionError::RegisterFinishFailed)?
             .close();
 
         Ok(())
