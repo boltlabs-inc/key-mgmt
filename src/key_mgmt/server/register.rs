@@ -36,14 +36,11 @@ impl Register {
         if retrieve_opaque(service, user_id).is_ok() {
             abort!(in chan return register::Error::UserIdAlreadyExists);
         }
-        let server_registration_start_result = match ServerRegistration::<OpaqueCipherSuite>::start(
+        let server_registration_start_result = ServerRegistration::<OpaqueCipherSuite>::start(
             &server_setup,
             register_start.request().clone(),
             user_id.to_string().as_bytes(),
-        ) {
-            Ok(server_registration_start_result) => server_registration_start_result,
-            Err(_) => return Err(anyhow!("could not start server registration")),
-        };
+        ).map_err(|_| anyhow!("could not start server registration"))?;
 
         proceed!(in chan);
 
