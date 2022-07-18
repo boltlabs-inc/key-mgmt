@@ -1,5 +1,5 @@
+use argon2::Argon2;
 use opaque_ke::key_exchange::tripledh::TripleDh;
-use opaque_ke::ksf::Identity;
 use opaque_ke::{CipherSuite, Ristretto255};
 
 #[allow(dead_code)]
@@ -10,5 +10,5 @@ impl CipherSuite for OpaqueCipherSuite {
     type OprfCs = Ristretto255;
     type KeGroup = Ristretto255;
     type KeyExchange = TripleDh;
-    type Ksf = Identity;
+    type Ksf = Argon2<'static>;
 }
