@@ -16,8 +16,7 @@ use opaque_ke::{
     ClientLogin, ClientLoginFinishParameters, ClientRegistration,
     ClientRegistrationFinishParameters,
 };
-use rand::rngs::StdRng;
-use rand::{CryptoRng, RngCore, SeedableRng};
+use rand::{CryptoRng, RngCore};
 use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -148,16 +147,18 @@ impl Session {
     ///
     /// Output: If successful, returns an open [`Session`] between the specified [`UserId`]
     /// and the configured key server.
-    pub async fn open(
+    pub async fn open<T: CryptoRng + RngCore>(
+        rng: &mut T,
         user_id: &UserId,
         password: &Password,
         config: &SessionConfig,
     ) -> Result<Self, SessionError> {
         let result = Self::authenticate(
+            rng,
             user_id,
             password,
-            &config.server.clone(),
-            &config.client_config.clone(),
+            &config.server,
+            &config.client_config,
         )
         .await;
         return match result {
@@ -175,14 +176,13 @@ impl Session {
         };
     }
 
-    async fn authenticate(
+    async fn authenticate<T: CryptoRng + RngCore>(
+        rng: &mut T,
         user_id: &UserId,
         password: &Password,
         server: &KeyMgmtAddress,
         config: &self::Config,
     ) -> Result<[u8; 64], anyhow::Error> {
-        let mut rng = StdRng::from_entropy();
-
         // Connect with the server...
         let (_session_key, chan) = connect(config, server)
             .await
@@ -195,7 +195,7 @@ impl Session {
             .map_err(|_| SessionError::SelectAuthenticateFailed)?;
 
         let client_login_start_result =
-            ClientLogin::<OpaqueCipherSuite>::start(&mut rng, password.as_bytes())
+            ClientLogin::<OpaqueCipherSuite>::start(rng, password.as_bytes())
                 .map_err(|_| SessionError::LoginStartFailed)?;
 
         let chan = chan
@@ -238,24 +238,23 @@ impl Session {
     ///
     /// Output: If successful, returns an open [`Session`] between the specified [`UserId`]
     /// and the configured key server.
-    pub async fn register(
+    pub async fn register<T: CryptoRng + RngCore>(
+        rng: &mut T,
         user_id: &UserId,
         password: &Password,
         config: &SessionConfig,
     ) -> Result<Self, SessionError> {
-        let mut rng = StdRng::from_entropy();
-
         let result = Self::do_register(
-            &mut rng,
+            rng,
             user_id,
             password,
-            &config.server.clone(),
-            &config.client_config.clone(),
+            &config.server,
+            &config.client_config,
         )
         .await;
         match result {
             Ok(_) => {
-                return Self::open(user_id, password, config).await;
+                return Self::open(rng, user_id, password, config).await;
             }
             Err(e) => {
                 error!("{:?}", e);

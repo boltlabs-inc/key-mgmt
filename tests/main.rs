@@ -9,6 +9,8 @@ use da_mgmt::keys::UserId;
 use da_mgmt::local_client::{Password, Session, SessionConfig};
 use da_mgmt::transport::KeyMgmtAddress;
 use da_mgmt::{client, client::key_mgmt::Command};
+use rand::prelude::StdRng;
+use rand::SeedableRng;
 use std::fs::OpenOptions;
 use std::str::FromStr;
 use structopt::StructOpt;
@@ -33,6 +35,7 @@ pub async fn integration_tests() {
     let client_config = Config::load(common::CLIENT_CONFIG)
         .await
         .expect("Failed to load client config");
+    let mut rng = StdRng::from_entropy();
 
     // Run every test, printing out details if it fails
     let tests = tests().await;
@@ -47,7 +50,7 @@ pub async fn integration_tests() {
         .unwrap_or_else(|e| panic!("Failed to clear error file at start: {:?}", e));
     for test in tests {
         eprintln!("\n\ntest integration_tests::{} ... ", test.name);
-        let result = test.execute(&client_config).await;
+        let result = test.execute(&client_config, &mut rng).await;
         if let Err(error) = &result {
             eprintln!("failed with error: {:?}", error)
         } else {
@@ -216,7 +219,11 @@ struct Test {
 }
 
 impl Test {
-    async fn execute(&self, client_config: &client::Config) -> Result<(), anyhow::Error> {
+    async fn execute(
+        &self,
+        client_config: &client::Config,
+        rng: &mut StdRng,
+    ) -> Result<(), anyhow::Error> {
         for (op, expected_outcome) in &self.operations {
             let outcome = match op {
                 Create => {
@@ -228,7 +235,7 @@ impl Test {
                         client_config.clone(),
                         KeyMgmtAddress::from_str("keymgmt://localhost").unwrap(),
                     );
-                    Session::register(user_id, password, &config)
+                    Session::register(rng, user_id, password, &config)
                         .await
                         .map(|_| ())
                         .map_err(|e| e.into())
@@ -243,7 +250,7 @@ impl Test {
                         client_config.clone(),
                         KeyMgmtAddress::from_str("keymgmt://localhost").unwrap(),
                     );
-                    Session::open(user_id, password, &config)
+                    Session::open(rng, user_id, password, &config)
                         .await
                         .map(|_| ())
                         .map_err(|e| e.into())
