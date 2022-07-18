@@ -81,11 +81,8 @@ impl RegisterStart {
     pub fn new(request: RegistrationRequest<OpaqueCipherSuite>, user_id: UserId) -> Self {
         Self { request, user_id }
     }
-    pub fn request(&self) -> &RegistrationRequest<OpaqueCipherSuite> {
-        &self.request
-    }
-    pub fn user_id(&self) -> &UserId {
-        &self.user_id
+    pub fn into_parts(self) -> (RegistrationRequest<OpaqueCipherSuite>, UserId) {
+        (self.request, self.user_id)
     }
 }
 
@@ -105,11 +102,8 @@ impl AuthStart {
     pub fn new(request: CredentialRequest<OpaqueCipherSuite>, user_id: UserId) -> Self {
         Self { request, user_id }
     }
-    pub fn request(&self) -> &CredentialRequest<OpaqueCipherSuite> {
-        &self.request
-    }
-    pub fn user_id(&self) -> &UserId {
-        &self.user_id
+    pub fn into_parts(self) -> (CredentialRequest<OpaqueCipherSuite>, UserId) {
+        (self.request, self.user_id)
     }
 }
 

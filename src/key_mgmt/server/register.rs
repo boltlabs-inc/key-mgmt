@@ -31,14 +31,14 @@ impl Register {
             .with_timeout(service.message_timeout)
             .await
             .context("Did not receive RegisterStart")??;
+        let (registration_request_message, user_id) = register_start.into_parts();
 
-        let user_id = register_start.user_id();
-        if retrieve_opaque(service, user_id).is_ok() {
+        if retrieve_opaque(service, &user_id).is_ok() {
             abort!(in chan return register::Error::UserIdAlreadyExists);
         }
         let server_registration_start_result = ServerRegistration::<OpaqueCipherSuite>::start(
             &server_setup,
-            register_start.request().clone(),
+            registration_request_message,
             user_id.as_bytes(),
         )
         .map_err(|_| anyhow!("could not start server registration"))?;
@@ -57,7 +57,7 @@ impl Register {
             .context("Did not receive RegisterFinish")??;
 
         let server_registration = ServerRegistration::<OpaqueCipherSuite>::finish(register_finish);
-        store_opaque(service, user_id, &server_registration)?;
+        store_opaque(service, &user_id, &server_registration)?;
 
         Ok(())
     }

@@ -9,10 +9,11 @@ use rand::rngs::StdRng;
 use std::fs::File;
 use std::io::{Read, Write};
 
-// TODO: replace with decent key-value storage #52
+// TODO: replace with decent key-value storage #52.
 
-/// Abstraction of the storage for the opaque authentication information
-/// user_id can be used as key to find the information later during authentication
+/// Abstraction of the storage for the OPAQUE authentication information.
+///
+/// `user_id` is the key under which the [`ServerRegistration`] is stored.
 pub(crate) fn store_opaque(
     service: &Service,
     user_id: &UserId,
@@ -31,8 +32,9 @@ pub(crate) fn store_opaque(
     Ok(())
 }
 
-/// Abstraction to retrieve the opaque authentication information from storage
-/// user_id is the key used to find the information
+/// Abstraction to retrieve the OPAQUE authentication information from storage.
+///
+/// `user_id` is the key under which the [`ServerRegistration`] is stored.
 pub(crate) fn retrieve_opaque(
     service: &Service,
     user_id: &UserId,
@@ -45,12 +47,15 @@ pub(crate) fn retrieve_opaque(
         .map_err(|_| anyhow!("couldn't deserialize file"))
 }
 
-//TODO: replace with decent and secure storage for server keys #56
+/// Retrieves the [`ServerSetup`] used for OPAQUE authentication, creating it if
+/// it doesn't already exist.
+///
+/// TODO: replace with decent and secure storage for server keys #56
 pub(crate) fn create_or_retrieve_server_key_opaque(
     rng: &mut StdRng,
     service: &Service,
 ) -> Result<ServerSetup<OpaqueCipherSuite, PrivateKey<Ristretto255>>, Error> {
-    let server_key_file = File::open(service.opaque_server_key.clone());
+    let server_key_file = File::open(&service.opaque_server_key);
     match server_key_file {
         // Server key file doesn't exist yet, create new
         Err(_) => {
@@ -61,7 +66,7 @@ pub(crate) fn create_or_retrieve_server_key_opaque(
                     .parent()
                     .context("could not create server key file location path")?,
             )?;
-            let mut file = File::create(service.opaque_server_key.clone())
+            let mut file = File::create(&service.opaque_server_key)
                 .context("could not create server key file")?;
             file.write_all(
                 bincode::serialize(&server_setup)
@@ -72,7 +77,7 @@ pub(crate) fn create_or_retrieve_server_key_opaque(
             Ok(server_setup)
         }
 
-        // Parse server key file
+        // Server key file does exist!
         Ok(mut file) => {
             let mut contents = vec![];
             let _ = file.read_to_end(&mut contents)?;
@@ -120,7 +125,7 @@ mod tests {
             ClientRegistration::<OpaqueCipherSuite>::start(&mut rng, password.as_bytes()).unwrap();
         let server_registration_start_result = ServerRegistration::<OpaqueCipherSuite>::start(
             &server_setup,
-            client_registration_start_result.message.clone(),
+            client_registration_start_result.message,
             user_id.as_bytes(),
         )
         .unwrap();

@@ -31,7 +31,8 @@ impl Authenticate {
             .await
             .context("Did not receive RegisterStart")??;
 
-        let server_registration = match retrieve_opaque(service, auth_start.user_id()) {
+        let (credential_request, user_id) = auth_start.into_parts();
+        let server_registration = match retrieve_opaque(service, &user_id) {
             Ok(server_registration) => server_registration,
             Err(_) => abort!(in chan return authenticate::Error::UserIdDoesNotExist),
         };
@@ -39,8 +40,8 @@ impl Authenticate {
             rng,
             &server_setup,
             Some(server_registration),
-            auth_start.request().clone(),
-            auth_start.user_id().as_bytes(),
+            credential_request,
+            user_id.as_bytes(),
             ServerLoginStartParameters::default(),
         ) {
             Ok(server_login_start_result) => server_login_start_result,
