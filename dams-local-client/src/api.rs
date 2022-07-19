@@ -204,7 +204,7 @@ impl Session {
 
         offer_abort!(in chan as Client);
 
-        let (auth_start_received, chan) = chan
+        let (credential_response, chan) = chan
             .recv()
             .await
             .map_err(|_| SessionError::AuthStartFailed)?;
@@ -213,7 +213,7 @@ impl Session {
             .state
             .finish(
                 password.as_bytes(),
-                auth_start_received,
+                credential_response,
                 ClientLoginFinishParameters::default(),
             )
             .map_err(|_| SessionError::AuthenticationFailed)?;
@@ -291,7 +291,7 @@ impl Session {
 
         offer_abort!(in chan as Client);
 
-        let (register_start_received, chan) = chan
+        let (registration_response, chan) = chan
             .recv()
             .await
             .map_err(|_| SessionError::RegisterStartFailed)?;
@@ -301,7 +301,7 @@ impl Session {
             .finish(
                 rng,
                 password.as_bytes(),
-                register_start_received,
+                registration_response,
                 ClientRegistrationFinishParameters::default(),
             )
             .map_err(|_| SessionError::RegisterFinishFailed)?;
