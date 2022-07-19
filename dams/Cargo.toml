@@ -1,0 +1,28 @@
+[package]
+name = "dams"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1"
+async-trait = "0"
+bytes = { version = "1", features = ["serde"] }
+dialectic = { git = "https://github.com/boltlabs-inc/dialectic.git", branch = "main" }
+dialectic-tokio-serde = { git = "https://github.com/boltlabs-inc/dialectic.git", branch = "main" }
+dialectic-tokio-serde-bincode = { git = "https://github.com/boltlabs-inc/dialectic.git", branch = "main" }
+dialectic-reconnect = { features = ["serde", "humantime-serde"], git = "https://github.com/boltlabs-inc/dialectic.git", branch = "main" }
+directories = "3"
+futures = "0"
+http = "0"
+http-serde = "1"
+humantime = "2"
+humantime-serde = "1"
+serde = "1"
+serde_with = "1"
+thiserror = "1"
+tokio = { version = "1", features = ["full"] }
+toml = "0"
+transport = { git = "https://github.com/boltlabs-inc/transport.git", branch = "main", features = ["allow_explicit_certificate_trust"] }
+webpki = "0"

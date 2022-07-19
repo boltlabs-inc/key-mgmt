@@ -1,0 +1,21 @@
+[package]
+name = "dams-tests"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dev-dependencies]
+anyhow = "1"
+dams = { version = "0.1.0", path = "../dams" }
+dams-key-server = { version = "0.1.0", path = "../dams-key-server" }
+dams-local-client = { version = "0.1.0", path = "../dams-local-client", features=["allow_explicit_certificate_trust"] }
+dams-remote-client = { version = "0.1.0", path = "../dams-remote-client" }
+futures = "0"
+structopt = "0"
+thiserror = "1"
+tokio = { version = "1", features = ["full"] }
+tracing = "0"
+tracing-futures = "0"
+tracing-subscriber = { version = "0", features = ["env-filter"] }
+
