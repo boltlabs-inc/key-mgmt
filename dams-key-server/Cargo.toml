@@ -1,0 +1,33 @@
+[package]
+name = "dams-key-server"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "key-server-cli"
+path = "src/bin/main.rs"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1"
+argon2 = "0.4"
+async-trait = "0"
+dams = { version = "0.1.0", path = "../dams" }
+dialectic = { git = "https://github.com/boltlabs-inc/dialectic.git", branch = "main" }
+dialectic-tokio-serde = { git = "https://github.com/boltlabs-inc/dialectic.git", branch = "main" }
+dialectic-tokio-serde-bincode = { git = "https://github.com/boltlabs-inc/dialectic.git", branch = "main" }
+dialectic-reconnect = { features = ["serde", "humantime-serde"], git = "https://github.com/boltlabs-inc/dialectic.git", branch = "main" }
+futures = "0"
+opaque-ke = { version = "2.0.0-pre.3", features = ["argon2"] }
+rand = "0"
+reqwest = "0"
+serde = "1"
+serde_with = "1"
+structopt = "0"
+thiserror = "1"
+tokio = { version = "1", features = ["full"] }
+tracing = "0"
+tracing-futures = "0"
+tracing-subscriber = { version = "0", features = ["env-filter"] }
+transport = { git = "https://github.com/boltlabs-inc/transport.git", branch = "main", features = ["allow_explicit_certificate_trust"] }

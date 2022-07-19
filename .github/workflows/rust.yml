@@ -33,19 +33,19 @@ jobs:
           components: rustfmt, clippy
 
       - name: Format check
-        run: cargo fmt -- --check
+        run: cargo fmt --all -- --check
 
       - name: Clippy lint
-        run: cargo clippy --all-features --all-targets --verbose -- -Dwarnings
+        run: cargo clippy --all-features --all-targets --verbose --workspace -- -Dwarnings
 
       - name: Build
-        run: cargo build --all-features --all-targets --verbose
+        run: cargo build --all-features --all-targets --verbose --workspace
 
       - name: Run all unit + library tests (not doc, integration, benchmark, or example tests)
-        run: cargo test --all-features --lib --bins
+        run: cargo test --all-features --lib --bins --workspace
 
       - name: Run all doctests
-        run: cargo test --all-features --doc --verbose
+        run: cargo test --all-features --doc --verbose --workspace
 
       - name: Build documentation
-        run: RUSTDOCFLAGS="-Dwarnings" cargo doc --all-features --no-deps --verbose
+        run: RUSTDOCFLAGS="-Dwarnings" cargo doc --all-features --no-deps --verbose --workspace
