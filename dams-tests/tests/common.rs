@@ -27,13 +27,16 @@ type ServerFuture = JoinHandle<Result<(), anyhow::Error>>;
 
 /// Set of processes that run during a test.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[allow(unused)]
 pub enum Party {
+    Client,
     Server,
 }
 
 impl Party {
     pub const fn to_str(self) -> &'static str {
         match self {
+            Party::Client => "party: client",
             Party::Server => "party: server",
         }
     }
@@ -52,6 +55,7 @@ macro_rules! server_cli {
 }
 pub(crate) use server_cli;
 
+#[allow(unused)]
 pub async fn setup() -> ServerFuture {
     let _ = fs::create_dir("tests/gen");
 
@@ -110,6 +114,7 @@ pub async fn setup() -> ServerFuture {
     server_handle
 }
 
+#[allow(unused)]
 pub async fn teardown(server_future: ServerFuture) {
     // Ignore the result because we expect it to be an `Expired` error
     let _result = server_future.with_timeout(Duration::from_secs(1)).await;
@@ -142,6 +147,8 @@ async fn server_test_config() -> dams::config::server::Config {
         ("address", SERVER_ADDRESS),
         ("private_key", "localhost.key"),
         ("certificate", "localhost.crt"),
+        ("opaque_path", "tests/gen/opaque"),
+        ("opaque_server_key", "tests/gen/opaque/server_setup"),
     ])
     .into_iter()
     .fold("\n[[service]]".to_string(), |acc, (key, value)| {
@@ -196,6 +203,7 @@ impl LogType {
 }
 
 /// Get any errors from the log file, filtered by party and log type.
+#[allow(unused)]
 pub fn get_logs(log_type: LogType, party: Party) -> Result<String, LogError> {
     let mut file = File::open(ERROR_FILENAME).map_err(LogError::OpenFailed)?;
     let mut logs = String::new();
@@ -214,6 +222,7 @@ pub fn get_logs(log_type: LogType, party: Party) -> Result<String, LogError> {
 ///
 /// This checks the log every 1 second; refactor if greater granularity is
 /// needed.
+#[allow(unused)]
 pub async fn await_log(party: Party, log: TestLogs) -> Result<(), anyhow::Error> {
     loop {
         let result = get_logs(LogType::Info, party);

@@ -45,3 +45,17 @@ impl Config {
         Ok(config)
     }
 }
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            backoff: Backoff::with_delay(Duration::from_secs(1)),
+            connection_timeout: None,
+            max_pending_connection_retries: 4,
+            message_timeout: Duration::from_secs(60),
+            max_message_length: 1024 * 16,
+            max_note_length: 0,
+            trust_certificate: Some(PathBuf::from("tests/gen/localhost.crt")),
+        }
+    }
+}

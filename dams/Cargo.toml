@@ -7,7 +7,9 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1"
+argon2 = "0.4"
 async-trait = "0"
+bincode = "1"
 bytes = { version = "1", features = ["serde"] }
 dialectic = { git = "https://github.com/boltlabs-inc/dialectic.git", branch = "main" }
 dialectic-tokio-serde = { git = "https://github.com/boltlabs-inc/dialectic.git", branch = "main" }
@@ -15,10 +17,13 @@ dialectic-tokio-serde-bincode = { git = "https://github.com/boltlabs-inc/dialect
 dialectic-reconnect = { features = ["serde", "humantime-serde"], git = "https://github.com/boltlabs-inc/dialectic.git", branch = "main" }
 directories = "3"
 futures = "0"
+generic-array = "0"
 http = "0"
 http-serde = "1"
 humantime = "2"
 humantime-serde = "1"
+opaque-ke = { version = "2.0.0-pre.3", features = ["argon2"] }
+rand = "0"
 serde = "1"
 serde_with = "1"
 thiserror = "1"

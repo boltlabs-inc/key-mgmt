@@ -1,8 +1,20 @@
 pub(crate) mod common;
 
+use crate::Operation::{Authenticate, Create, Register, Retrieve};
+use crate::Party::{Client, Server};
+use anyhow::anyhow;
 use common::{get_logs, LogType, Party};
-use dams_local_client::command::Command;
+
+// use da_mgmt::{client, client::key_mgmt::Command};
+use dams::{keys::UserId, transport::KeyMgmtAddress};
+use dams_local_client::{
+    api::{Password, Session, SessionConfig},
+    command::Command,
+};
+use rand::prelude::StdRng;
+use rand::SeedableRng;
 use std::fs::OpenOptions;
+use std::str::FromStr;
 use structopt::StructOpt;
 use thiserror::Error;
 
@@ -25,9 +37,10 @@ pub async fn integration_tests() {
     let client_config = dams::config::client::Config::load(common::CLIENT_CONFIG)
         .await
         .expect("Failed to load client config");
+    let mut rng = StdRng::from_entropy();
 
     // Run every test, printing out details if it fails
-    let tests = tests();
+    let tests = tests().await;
     println!("Executing {} tests", tests.len());
     let mut results = Vec::with_capacity(tests.len());
 
@@ -39,7 +52,7 @@ pub async fn integration_tests() {
         .unwrap_or_else(|e| panic!("Failed to clear error file at start: {:?}", e));
     for test in tests {
         eprintln!("\n\ntest integration_tests::{} ... ", test.name);
-        let result = test.execute(&client_config).await;
+        let result = test.execute(&client_config, &mut rng).await;
         if let Err(error) = &result {
             eprintln!("failed with error: {:?}", error)
         } else {
@@ -77,15 +90,126 @@ pub async fn integration_tests() {
 /// Get a list of tests to execute.
 /// Assumption: none of these will cause a fatal error to the long-running
 /// processes (server).
-fn tests() -> Vec<Test> {
+async fn tests() -> Vec<Test> {
     vec![
         Test {
             name: "Create a secret on the server".to_string(),
-            operations: vec![(Operation::Create, Outcome { error: None })],
+            operations: vec![(
+                Create,
+                Outcome {
+                    error: None,
+                    expected_error: None,
+                },
+            )],
+        },
+        Test {
+            name: "Register the same user twice user".to_string(),
+            operations: vec![
+                (
+                    Register(
+                        UserId::from_str("sameUser").unwrap(),
+                        Password::from_str("testPassword1").unwrap(),
+                    ),
+                    Outcome {
+                        error: None,
+                        expected_error: None,
+                    },
+                ),
+                (
+                    Register(
+                        UserId::from_str("sameUser").unwrap(),
+                        Password::from_str("testPassword2").unwrap(),
+                    ),
+                    Outcome {
+                        error: Some(Client),
+                        expected_error: Some(anyhow!("RegistrationFailed")),
+                    },
+                ),
+            ],
+        },
+        Test {
+            name: "Register and open multiple sessions as a client to the server".to_string(),
+            operations: vec![
+                (
+                    Register(
+                        UserId::from_str("testUser").unwrap(),
+                        Password::from_str("testPassword").unwrap(),
+                    ),
+                    Outcome {
+                        error: None,
+                        expected_error: None,
+                    },
+                ),
+                (
+                    Authenticate(
+                        UserId::from_str("testUser").unwrap(),
+                        Password::from_str("testPassword").unwrap(),
+                    ),
+                    Outcome {
+                        error: None,
+                        expected_error: None,
+                    },
+                ),
+                (
+                    Authenticate(
+                        UserId::from_str("testUser").unwrap(),
+                        Password::from_str("testPassword").unwrap(),
+                    ),
+                    Outcome {
+                        error: None,
+                        expected_error: None,
+                    },
+                ),
+            ],
+        },
+        Test {
+            name: "Register and authenticate with wrong password fails as a client to the server"
+                .to_string(),
+            operations: vec![
+                (
+                    Register(
+                        UserId::from_str("testUser2").unwrap(),
+                        Password::from_str("testPassword2").unwrap(),
+                    ),
+                    Outcome {
+                        error: None,
+                        expected_error: None,
+                    },
+                ),
+                (
+                    Authenticate(
+                        UserId::from_str("testUser2").unwrap(),
+                        Password::from_str("wrongPassword").unwrap(),
+                    ),
+                    Outcome {
+                        error: Some(Client),
+                        expected_error: Some(anyhow!("AuthenticationFailed")),
+                    },
+                ),
+            ],
+        },
+        Test {
+            name: "Authenticate with unregistered user fails".to_string(),
+            operations: vec![(
+                Authenticate(
+                    UserId::from_str("unregisteredUser").unwrap(),
+                    Password::from_str("testPassword").unwrap(),
+                ),
+                Outcome {
+                    error: Some(Client),
+                    expected_error: Some(anyhow!("AuthenticationFailed")),
+                },
+            )],
         },
         Test {
             name: "Retrieve a secret from the server".to_string(),
-            operations: vec![(Operation::Retrieve, Outcome { error: None })],
+            operations: vec![(
+                Retrieve,
+                Outcome {
+                    error: None,
+                    expected_error: None,
+                },
+            )],
         },
     ]
 }
@@ -100,16 +224,38 @@ impl Test {
     async fn execute(
         &self,
         client_config: &dams::config::client::Config,
+        rng: &mut StdRng,
     ) -> Result<(), anyhow::Error> {
         for (op, expected_outcome) in &self.operations {
             let outcome = match op {
-                Operation::Create => {
-                    let est = client_cli!(Create, vec!["create", "keymgmt://localhost"]);
-                    est.run(client_config.clone()).await.map(|_| ())
+                Create => {
+                    let create = client_cli!(Create, vec!["create", "keymgmt://localhost"]);
+                    create.run(client_config.clone()).await
                 }
-                Operation::Retrieve => {
-                    let est = client_cli!(Retrieve, vec!["retrieve", "keymgmt://localhost"]);
-                    est.run(client_config.clone()).await.map(|_| ())
+                Register(user_id, password) => {
+                    let config = SessionConfig::new(
+                        client_config.clone(),
+                        KeyMgmtAddress::from_str("keymgmt://localhost").unwrap(),
+                    );
+                    Session::register(rng, user_id, password, &config)
+                        .await
+                        .map(|_| ())
+                        .map_err(|e| e.into())
+                }
+                Retrieve => {
+                    let retrieve = client_cli!(Retrieve, vec!["retrieve", "keymgmt://localhost"]);
+                    retrieve.run(client_config.clone()).await.map(|_| ())
+                }
+
+                Authenticate(user_id, password) => {
+                    let config = SessionConfig::new(
+                        client_config.clone(),
+                        KeyMgmtAddress::from_str("keymgmt://localhost").unwrap(),
+                    );
+                    Session::open(rng, user_id, password, &config)
+                        .await
+                        .map(|_| ())
+                        .map_err(|e| e.into())
                 }
             };
 
@@ -125,11 +271,21 @@ impl Test {
                 // No party threw an error
                 (None, Ok(_), true) => Ok(()),
                 // Only the active operation threw an error
-                (Some(Party::Server), Err(_), false) => Ok(()),
+                (Some(Server), Err(_), false) => Ok(()),
+                (Some(Client), Err(e), true) => {
+                    assert_eq!(
+                        expected_outcome
+                            .expected_error
+                            .as_ref()
+                            .unwrap_or(&anyhow!(""))
+                            .to_string(),
+                        e.to_string()
+                    );
+                    Ok(())
+                }
 
                 // In any other case, something went wrong. Provide lots of details to diagnose
                 _ => Err(TestError::InvalidErrorBehavior {
-                    op: *op,
                     server_errors,
                     op_error: outcome,
                 }),
@@ -145,14 +301,13 @@ enum TestError {
     // #[error("Operation {0:?} not yet implemented")]
     // NotImplemented(Operation),
     #[error(
-        "The error behavior did not satisfy expected behavior {op:?}. Got
+        "The error behavior did not satisfy expected behavior. Got
     SERVER OUTPUT:
     {server_errors}
     OPERATION OUTPUT:
     {op_error:?}"
     )]
     InvalidErrorBehavior {
-        op: Operation,
         server_errors: String,
         op_error: Result<(), anyhow::Error>,
     },
@@ -160,10 +315,12 @@ enum TestError {
 
 /// Set of operations that can be executed by the test harness
 #[allow(unused)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug)]
 enum Operation {
     Create,
+    Register(UserId, Password),
     Retrieve,
+    Authenticate(UserId, Password),
 }
 
 #[derive(Debug)]
@@ -171,4 +328,5 @@ struct Outcome {
     /// Which process, if any, had an error? Assumes that exactly one party will
     /// error.
     error: Option<Party>,
+    expected_error: Option<anyhow::Error>,
 }
