@@ -5,11 +5,8 @@
 
 use bytes::BytesMut;
 use serde::{Deserialize, Serialize};
+use std::convert::Infallible;
 use std::str::FromStr;
-use thiserror::Error;
-
-#[derive(Debug, Clone, Error, Serialize, Deserialize)]
-pub enum UserError {}
 
 /// Unique ID for a user. Assumption: this will be derived from an ID generated
 /// by the Service Provider.
@@ -23,7 +20,7 @@ impl ToString for UserId {
 }
 
 impl FromStr for UserId {
-    type Err = UserError;
+    type Err = Infallible;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(UserId(s.to_string()))

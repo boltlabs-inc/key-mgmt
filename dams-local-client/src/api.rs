@@ -15,16 +15,13 @@ use dams::{
     transaction::{TransactionApprovalRequest, TransactionSignature},
     transport::KeyMgmtAddress,
 };
-use dialectic_reconnect::Backoff;
 use opaque_ke::{
     ClientLogin, ClientLoginFinishParameters, ClientRegistration,
     ClientRegistrationFinishParameters,
 };
 use rand::{CryptoRng, RngCore};
 use std::fmt::{Display, Formatter};
-use std::path::PathBuf;
 use std::str::FromStr;
-use std::time::Duration;
 use thiserror::Error;
 use tracing::error;
 
@@ -94,15 +91,7 @@ impl SessionConfig {
 impl Default for SessionConfig {
     fn default() -> Self {
         SessionConfig {
-            client_config: Config {
-                backoff: Backoff::with_delay(Duration::from_secs(1)),
-                connection_timeout: None,
-                max_pending_connection_retries: 4,
-                message_timeout: Duration::from_secs(60),
-                max_message_length: 1024 * 16,
-                max_note_length: 0,
-                trust_certificate: Some(PathBuf::from("tests/gen/localhost.crt")),
-            },
+            client_config: Config::default(),
             server: KeyMgmtAddress::from_str("keymgmt://localhost").unwrap(),
         }
     }

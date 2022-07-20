@@ -9,6 +9,7 @@ use crate::defaults::client as defaults;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
+#[non_exhaustive]
 pub struct Config {
     #[serde(default = "defaults::backoff")]
     pub backoff: Backoff,
@@ -42,5 +43,19 @@ impl Config {
             .map(|ref cert_path| config_dir.join(cert_path));
 
         Ok(config)
+    }
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            backoff: Backoff::with_delay(Duration::from_secs(1)),
+            connection_timeout: None,
+            max_pending_connection_retries: 4,
+            message_timeout: Duration::from_secs(60),
+            max_message_length: 1024 * 16,
+            max_note_length: 0,
+            trust_certificate: Some(PathBuf::from("tests/gen/localhost.crt")),
+        }
     }
 }
