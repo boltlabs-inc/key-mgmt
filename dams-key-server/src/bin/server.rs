@@ -15,7 +15,7 @@ pub async fn main_with_cli(cli: Cli, db: Database) -> Result<(), anyhow::Error> 
 
     use cli::Server::*;
     match cli.server {
-        Run(run) => run.run(config.await?).await,
+        Run(run) => run.run(config.await?, db.clone()).await,
     }
 }
 
