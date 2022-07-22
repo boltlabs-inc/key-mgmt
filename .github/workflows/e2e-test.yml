@@ -16,6 +16,9 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Start MongoDB
+        uses: supercharge/mongodb-github-action@1.7.0
+
       - name: Cache
         uses: actions/cache@v2
         with:
