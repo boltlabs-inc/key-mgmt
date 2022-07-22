@@ -3,7 +3,7 @@
 //! Functions in this module are used to perform CRUD operations
 //! on the [`User`] model in the MongoDB database.
 
-use dams::{config::opaque::OpaqueCipherSuite, keys::UserId, models::User};
+use dams::{config::opaque::OpaqueCipherSuite, models::{User, UserId}};
 use mongodb::{
     bson::{doc, oid::ObjectId},
     error::Error,

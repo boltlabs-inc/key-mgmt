@@ -6,7 +6,6 @@
 use crate::config::opaque::OpaqueCipherSuite;
 
 use bytes::BytesMut;
-use mongodb::bson::oid::ObjectId;
 use opaque_ke::ServerRegistration;
 use serde::{Deserialize, Serialize};
 use std::{convert::Infallible, str::FromStr};

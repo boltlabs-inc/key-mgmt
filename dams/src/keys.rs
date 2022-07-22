@@ -7,8 +7,6 @@ use crate::models::UserId;
 
 use bytes::BytesMut;
 use serde::{Deserialize, Serialize};
-use std::convert::Infallible;
-use std::str::FromStr;
 
 /// Universally unique identifier for a key.
 #[allow(unused)]

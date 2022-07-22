@@ -1,5 +1,6 @@
 use dams::blockchain::Blockchain;
-use dams::keys::{KeyId, KeyMaterial, SharedControl, UserId};
+use dams::keys::{KeyId, KeyMaterial, SharedControl};
+use dams::models::UserId;
 use dams::transaction::TransactionApprovalRequest;
 use dams_remote_client::api::*;
 
