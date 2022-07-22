@@ -3,6 +3,7 @@ use async_trait::async_trait;
 use dams::{config::server::Config, protocol::KeyMgmt, TestLogs};
 use dialectic::offer;
 use futures::stream::{FuturesUnordered, StreamExt};
+use mongodb::Database;
 use rand::{rngs::StdRng, SeedableRng};
 use std::sync::Arc;
 use tokio::{signal, sync::broadcast};
@@ -27,15 +28,16 @@ use retrieve::Retrieve;
 #[async_trait]
 pub trait Command {
     /// Run the server
-    async fn run(self, config: Config) -> Result<(), anyhow::Error>;
+    async fn run(self, config: Config, db: Database) -> Result<(), anyhow::Error>;
 }
 
 #[async_trait]
 impl Command for Run {
-    async fn run(self, config: Config) -> Result<(), anyhow::Error> {
+    async fn run(self, config: Config, db: Database) -> Result<(), anyhow::Error> {
         // Share the configuration between all server threads
         let client = reqwest::Client::new();
         let config = config.clone();
+        let db = db.clone();
 
         // Sender and receiver to indicate graceful shutdown should occur
         let (terminate, _) = broadcast::channel(1);
@@ -48,6 +50,7 @@ impl Command for Run {
                 // Clone `Arc`s for the various resources we need in this server
                 let client = client.clone();
                 let config = config.clone();
+                let db = db.clone();
                 let service = Arc::new(service.clone());
                 let mut wait_terminate = terminate.subscribe();
 
@@ -73,6 +76,7 @@ impl Command for Run {
                         let client = client.clone();
                         let service = service.clone();
                         let config = config.clone();
+                        let db = db.clone();
 
                         // TODO: permit configuration option to make this deterministic for testing
                         let mut rng = StdRng::from_entropy();
@@ -88,6 +92,7 @@ impl Command for Run {
                                     chan,
                                 ).await?,
                                 1 => Register.run(
+                                    db,
                                     &mut rng,
                                     &client,
                                     &config,
@@ -104,6 +109,7 @@ impl Command for Run {
                                     chan,
                                 ).await?,
                                 3 => Authenticate.run(
+                                    db,
                                     &mut rng,
                                     &client,
                                     &config,

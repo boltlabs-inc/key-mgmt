@@ -11,6 +11,7 @@ pub mod blockchain;
 pub mod config;
 pub mod defaults;
 pub mod keys;
+pub mod models;
 pub mod opaque_storage;
 pub mod protocol;
 pub mod timeout;
