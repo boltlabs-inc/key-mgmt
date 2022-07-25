@@ -20,7 +20,7 @@ dialectic-tokio-serde-bincode = { git = "https://github.com/boltlabs-inc/dialect
 dialectic-reconnect = { features = ["serde", "humantime-serde"], git = "https://github.com/boltlabs-inc/dialectic.git", branch = "main" }
 dotenv = "0.15.0"
 futures = "0"
-mongodb = "2.1"
+mongodb = "2.3.0"
 opaque-ke = { version = "2.0.0-pre.3", features = ["argon2"] }
 rand = "0"
 reqwest = "0"
