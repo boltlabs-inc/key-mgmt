@@ -9,10 +9,14 @@ use tokio::{signal, sync::broadcast};
 use tracing::{error, info};
 use transport::server::{Chan, Server};
 
+mod authenticate;
 mod create;
+mod register;
 mod retrieve;
 
+use authenticate::Authenticate;
 use create::Create;
+use register::Register;
 use retrieve::Retrieve;
 
 /// A single server-side command, parameterized by the currently loaded
@@ -71,7 +75,7 @@ impl Command for Run {
                         let config = config.clone();
 
                         // TODO: permit configuration option to make this deterministic for testing
-                        let rng = StdRng::from_entropy();
+                        let mut rng = StdRng::from_entropy();
 
                         async move {
                             offer!(in chan {
@@ -83,8 +87,24 @@ impl Command for Run {
                                     session_key,
                                     chan,
                                 ).await?,
-                                1 => Retrieve.run(
+                                1 => Register.run(
+                                    &mut rng,
+                                    &client,
+                                    &config,
+                                    &service,
+                                    session_key,
+                                    chan,
+                                ).await?,
+                                2 => Retrieve.run(
                                     rng,
+                                    &client,
+                                    &config,
+                                    &service,
+                                    session_key,
+                                    chan,
+                                ).await?,
+                                3 => Authenticate.run(
+                                    &mut rng,
                                     &client,
                                     &config,
                                     &service,

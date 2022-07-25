@@ -11,6 +11,7 @@ path = "src/bin/main.rs"
 
 [dependencies]
 anyhow = "1"
+argon2 = "0.4"
 async-trait = "0"
 dams = { version = "0.1.0", path = "../dams" }
 dialectic = { git = "https://github.com/boltlabs-inc/dialectic.git", branch = "main" }
@@ -18,6 +19,7 @@ dialectic-tokio-serde = { git = "https://github.com/boltlabs-inc/dialectic.git",
 dialectic-tokio-serde-bincode = { git = "https://github.com/boltlabs-inc/dialectic.git", branch = "main" }
 dialectic-reconnect = { features = ["serde", "humantime-serde"], git = "https://github.com/boltlabs-inc/dialectic.git", branch = "main" }
 futures = "0"
+opaque-ke = { version = "2.0.0-pre.3", features = ["argon2"] }
 rand = "0"
 reqwest = "0"
 serde = "1"

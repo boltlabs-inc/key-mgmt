@@ -20,7 +20,7 @@ impl Command for Retrieve {
 
         // ...and select the retrieve session
         let chan = chan
-            .choose::<1>()
+            .choose::<2>()
             .await
             .context("Failed to select retrieve secret session")?;
 
