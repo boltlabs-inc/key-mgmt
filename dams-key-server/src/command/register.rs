@@ -20,6 +20,7 @@ use transport::server::{Chan, SessionKey};
 pub struct Register;
 
 impl Register {
+    #[allow(clippy::too_many_arguments)]
     pub async fn run(
         &self,
         db: Database,

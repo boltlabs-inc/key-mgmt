@@ -17,6 +17,7 @@ use transport::server::{Chan, SessionKey};
 pub struct Authenticate;
 
 impl Authenticate {
+    #[allow(clippy::too_many_arguments)]
     pub async fn run(
         &self,
         db: Database,
