@@ -1,5 +1,3 @@
-extern crate dotenv;
-
 use dams_key_server::database;
 use structopt::StructOpt;
 use tracing::error;

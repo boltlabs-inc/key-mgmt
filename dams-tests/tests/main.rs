@@ -1,5 +1,3 @@
-extern crate dotenv;
-
 pub(crate) mod common;
 
 use crate::Operation::{Authenticate, Create, Register, Retrieve};
