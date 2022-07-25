@@ -46,5 +46,5 @@ pub struct Secret {
 pub struct User {
     pub user_id: UserId,
     pub secrets: Vec<Secret>,
-    pub opaque_information: ServerRegistration<OpaqueCipherSuite>,
+    pub server_registration: ServerRegistration<OpaqueCipherSuite>,
 }

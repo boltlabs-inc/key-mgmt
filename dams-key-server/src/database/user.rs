@@ -24,7 +24,7 @@ pub async fn create_user(
     let new_user = User {
         user_id,
         secrets: Vec::new(),
-        opaque_information: server_registration,
+        server_registration,
     };
     let insert_one_res = collection.insert_one(new_user, None).await?;
     Ok(insert_one_res.inserted_id.as_object_id())
