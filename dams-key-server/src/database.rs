@@ -13,6 +13,7 @@ use mongodb::{
 
 use crate::error::DamsServerError;
 
+pub(crate) mod log;
 pub(crate) mod user;
 
 /// Connect to the MongoDB instance and database specified by your environment

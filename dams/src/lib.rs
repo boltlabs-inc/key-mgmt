@@ -12,6 +12,7 @@
 
 use std::fmt;
 
+pub mod audit_log;
 pub mod blockchain;
 pub mod channel;
 pub mod config;

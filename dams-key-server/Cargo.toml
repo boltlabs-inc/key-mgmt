@@ -13,6 +13,7 @@ path = "src/bin/main.rs"
 argon2 = "0.4"
 async-trait = "0.1"
 bincode = "1"
+chrono = "0.4.19"
 dams = { version = "0.1.0", path = "../dams" }
 futures = "0.3"
 hyper = "0.14"
