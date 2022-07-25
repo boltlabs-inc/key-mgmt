@@ -22,6 +22,7 @@ Both clients also include the cryptographic functionality for:
 
     * This server either returns a partial signature, if the signature request meets the designated policy, or returns an appropriate rejection message. 
 
+Refer to the [current design specification](https://github.com/boltlabs-inc/key-mgmt-spec) for the DAMS.
 
 ## Install & Setup
 
@@ -47,7 +48,7 @@ To run all unit and integration tests:
 cargo test --all-features --all-targets
 ```
 
-We practice test-driven development and the test suite should be a close mapping to the functionality we currently implement at any given stage of development.
+We follow test-driven development practices and the test suite should be a close mapping to the functionality we currently implement at any given stage of development.
 
 ## Build documentation
 
@@ -57,4 +58,4 @@ To build the API documentation for the project:
 RUSTDOCFLAGS="-Dwarnings" cargo doc --all-features --no-deps --open
 ```
 
-You can find the API docs in the source of the [local client](https://github.com/boltlabs-inc/key-mgmt/blob/main/src/local_client.rs), [remote client](https://github.com/boltlabs-inc/key-mgmt/blob/main/src/remote_client.rs) and [policy engine](https://github.com/boltlabs-inc/key-mgmt/blob/main/src/policy_engine.rs).
+You can find the API docs in the source of the [local client](dams-local-client/src/api.rs), [remote client](dams-remote-client/src/api.rs), and [policy engine](dams-key-server/src/policy_engine.rs).
