@@ -5,7 +5,7 @@ use crate::Party::{Client, Server};
 use anyhow::anyhow;
 use common::{get_logs, LogType, Party};
 
-use dams::{models::UserId, transport::KeyMgmtAddress};
+use dams::{transport::KeyMgmtAddress, user::UserId};
 use dams_key_server::database;
 use dams_local_client::{
     api::{Password, Session, SessionConfig},

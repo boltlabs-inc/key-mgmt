@@ -1,6 +1,6 @@
 use crate::config::opaque::OpaqueCipherSuite;
 use crate::config::server::Service;
-use crate::models::UserId;
+use crate::user::UserId;
 use anyhow::{anyhow, Context, Error};
 use generic_array::GenericArray;
 use opaque_ke::keypair::PrivateKey;

@@ -3,7 +3,7 @@
 //! Includes basic key types (both standard keys and shares of keys) and identifiers
 //! and modifiers describing access control and custody.
 
-use crate::models::UserId;
+use crate::user::UserId;
 
 use bytes::BytesMut;
 use serde::{Deserialize, Serialize};

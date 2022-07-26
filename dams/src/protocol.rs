@@ -158,7 +158,7 @@ impl Party {
 
 // All protocols are from the perspective of the client.
 use crate::config::opaque::OpaqueCipherSuite;
-use crate::models::UserId;
+use crate::user::UserId;
 pub use authenticate::Authenticate;
 pub use create::Create;
 pub use register::Register;

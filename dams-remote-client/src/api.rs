@@ -6,8 +6,8 @@
 use dams::{
     blockchain::Blockchain,
     keys::{KeyId, KeyInfo, KeyMaterial, UseRestriction},
-    models::UserId,
     transaction::{TransactionApprovalRequest, TransactionSignature},
+    user::UserId,
 };
 use thiserror::Error;
 

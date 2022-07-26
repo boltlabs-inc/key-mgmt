@@ -44,7 +44,24 @@ pub struct Secret {
 /// One user with a set of arbitrary secrets and a [`ServerRegistration`] to authenticate with.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct User {
-    pub user_id: UserId,
-    pub secrets: Vec<Secret>,
-    pub server_registration: ServerRegistration<OpaqueCipherSuite>,
+    user_id: UserId,
+    secrets: Vec<Secret>,
+    server_registration: ServerRegistration<OpaqueCipherSuite>,
+}
+
+impl User {
+    pub fn new(
+        user_id: UserId,
+        server_registration: ServerRegistration<OpaqueCipherSuite>,
+    ) -> Self {
+        User {
+            user_id,
+            secrets: Vec::new(),
+            server_registration,
+        }
+    }
+
+    pub fn server_registration(self) -> ServerRegistration<OpaqueCipherSuite> {
+        self.server_registration
+    }
 }

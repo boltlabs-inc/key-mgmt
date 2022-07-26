@@ -11,12 +11,12 @@ pub mod blockchain;
 pub mod config;
 pub mod defaults;
 pub mod keys;
-pub mod models;
 pub mod opaque_storage;
 pub mod protocol;
 pub mod timeout;
 pub mod transaction;
 pub mod transport;
+pub mod user;
 
 /// Logs used to verify that an operation completed in the integration tests.
 #[derive(Debug)]

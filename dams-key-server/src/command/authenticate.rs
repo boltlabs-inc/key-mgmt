@@ -39,7 +39,7 @@ impl Authenticate {
 
         let (credential_request, user_id) = auth_start.into_parts();
         let server_registration = match User::find_user(&db, user_id.clone()).await? {
-            Some(user) => user.server_registration,
+            Some(user) => user.server_registration(),
             None => abort!(in chan return authenticate::Error::UserIdDoesNotExist),
         };
         let server_login_start_result = match ServerLogin::start(

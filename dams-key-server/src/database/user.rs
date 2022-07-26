@@ -5,7 +5,7 @@
 
 use dams::{
     config::opaque::OpaqueCipherSuite,
-    models::{User, UserId},
+    user::{User, UserId},
 };
 use mongodb::{
     bson::{doc, oid::ObjectId},
@@ -21,11 +21,7 @@ pub async fn create_user(
     server_registration: ServerRegistration<OpaqueCipherSuite>,
 ) -> Result<Option<ObjectId>, Error> {
     let collection = db.collection::<User>("users");
-    let new_user = User {
-        user_id,
-        secrets: Vec::new(),
-        server_registration,
-    };
+    let new_user = User::new(user_id, server_registration);
     let insert_one_res = collection.insert_one(new_user, None).await?;
     Ok(insert_one_res.inserted_id.as_object_id())
 }

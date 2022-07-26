@@ -10,11 +10,11 @@ use dams::{
     blockchain::Blockchain,
     config::{client::Config, opaque::OpaqueCipherSuite},
     keys::{KeyId, KeyInfo, UsePermission, UseRestriction, UserPolicySpecification},
-    models::UserId,
     offer_abort,
     protocol::{AuthStart, Party::Client, RegisterStart},
     transaction::{TransactionApprovalRequest, TransactionSignature},
     transport::KeyMgmtAddress,
+    user::UserId,
 };
 use opaque_ke::{
     ClientLogin, ClientLoginFinishParameters, ClientRegistration,
