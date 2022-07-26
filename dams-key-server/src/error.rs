@@ -1,3 +1,12 @@
+use crate::database::log as Log;
+
+use async_trait::async_trait;
+use dams::{
+    audit_log::{Action, Outcome},
+    crypto::KeyId,
+    user::AccountName,
+};
+use mongodb::Database;
 use thiserror::Error;
 use tonic::Status;
 
@@ -46,5 +55,34 @@ impl From<opaque_ke::errors::ProtocolError> for DamsServerError {
 impl From<DamsServerError> for Status {
     fn from(error: DamsServerError) -> Status {
         Status::internal(error.to_string())
+    }
+}
+
+#[async_trait]
+pub trait LogExt {
+    async fn log(
+        self,
+        db: &Database,
+        actor: &AccountName,
+        secret_id: Option<KeyId>,
+        action: Action,
+    ) -> Self;
+}
+
+#[async_trait]
+impl<T: std::marker::Send> LogExt for Result<T, DamsServerError> {
+    async fn log(
+        self,
+        db: &Database,
+        actor: &AccountName,
+        secret_id: Option<KeyId>,
+        action: Action,
+    ) -> Self {
+        if self.is_err() {
+            Log::create_log_entry(db, actor, secret_id, action, Outcome::Failed).await?;
+        } else {
+            Log::create_log_entry(db, actor, secret_id, action, Outcome::Successful).await?;
+        }
+        self
     }
 }

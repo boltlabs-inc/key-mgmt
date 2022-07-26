@@ -1,6 +1,8 @@
 use crate::{database::user::find_user, error::DamsServerError, server::Context};
 
+use crate::error::LogExt;
 use dams::{
+    audit_log::Action,
     channel::ServerChannel,
     config::opaque::OpaqueCipherSuite,
     opaque_storage::create_or_retrieve_server_key_opaque,
@@ -8,7 +10,7 @@ use dams::{
         authenticate::{client, server},
         Message, MessageStream,
     },
-    user::UserId,
+    user::{AccountName, UserId},
 };
 use opaque_ke::{ServerLogin, ServerLoginStartParameters, ServerLoginStartResult};
 use tokio_stream::wrappers::ReceiverStream;
@@ -26,9 +28,13 @@ impl Authenticate {
         let (mut channel, rx) = ServerChannel::create(request.into_inner());
 
         let _ = tokio::spawn(async move {
-            let (login_start_result, user_id) = authenticate_start(&mut channel, &context).await?;
+            let (login_start_result, user_id, account_name) =
+                authenticate_start(&mut channel, &context).await?;
             authenticate_finish(&mut channel, login_start_result).await?;
-            send_user_id(&mut channel, user_id).await?;
+            send_user_id(&mut channel, user_id)
+                .await
+                .log(&context.db, &account_name, None, Action::Authenticate)
+                .await?;
 
             Ok::<(), DamsServerError>(())
         });
@@ -42,7 +48,14 @@ impl Authenticate {
 async fn authenticate_start(
     channel: &mut ServerChannel,
     context: &Context,
-) -> Result<(ServerLoginStartResult<OpaqueCipherSuite>, UserId), DamsServerError> {
+) -> Result<
+    (
+        ServerLoginStartResult<OpaqueCipherSuite>,
+        UserId,
+        AccountName,
+    ),
+    DamsServerError,
+> {
     // Receive start message from client
     let start_message: client::AuthenticateStart = channel.receive().await?;
 
@@ -79,7 +92,11 @@ async fn authenticate_start(
     // Send response to client
     channel.send(reply).await?;
 
-    Ok((server_login_start_result, user_id))
+    Ok((
+        server_login_start_result,
+        user_id,
+        start_message.account_name,
+    ))
 }
 
 async fn authenticate_finish(
