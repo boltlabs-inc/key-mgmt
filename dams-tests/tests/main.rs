@@ -35,10 +35,9 @@ macro_rules! client_cli {
 pub async fn integration_tests() {
     // Read environment variables from .env file
     dotenv::dotenv().ok();
-    let db = match database::connect_to_mongo().await {
-        Ok(db) => db,
-        Err(_) => panic!("Unable to connect to Mongo"),
-    };
+    let db = database::connect_to_mongo()
+        .await
+        .expect("Unable to connect to Mongo");
     let _ = db.create_collection("users", None).await;
     let server_future = common::setup(db.clone()).await;
     let client_config = dams::config::client::Config::load(common::CLIENT_CONFIG)
