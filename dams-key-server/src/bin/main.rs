@@ -20,9 +20,9 @@ pub async fn main() {
 
     let db = database::connect_to_mongo().await;
 
-    if db.is_ok() {
+    if let Ok(db) = db {
         let result = match Cli::from_args() {
-            Server(cli) => server::main_with_cli(cli, db.unwrap()).await,
+            Server(cli) => server::main_with_cli(cli, db).await,
         };
         if let Err(e) = result {
             error!("{}, caused by: {}", e, e.root_cause());
