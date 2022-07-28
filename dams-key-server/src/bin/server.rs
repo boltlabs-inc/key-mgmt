@@ -15,7 +15,7 @@ pub async fn main_with_cli(cli: Cli, db: Database) -> Result<(), anyhow::Error> 
 
     use cli::Server::*;
     match cli.server {
-        Run(run) => run.run(config.await?, db.clone()).await,
+        Run(run) => run.run(config.await?, db).await,
     }
 }
 
@@ -23,5 +23,5 @@ pub async fn main_with_cli(cli: Cli, db: Database) -> Result<(), anyhow::Error> 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
     let db = database::connect_to_mongo().await?;
-    main_with_cli(Cli::from_args(), db.clone()).await
+    main_with_cli(Cli::from_args(), db).await
 }

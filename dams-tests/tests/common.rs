@@ -82,7 +82,7 @@ pub async fn setup(db: Database) -> ServerFuture {
     #[allow(clippy::infallible_destructuring_match)]
     let run = server_cli!(Run, vec!["run"]);
     let server_handle = tokio::spawn(
-        run.run(server_config, db.clone())
+        run.run(server_config, db)
             .instrument(info_span!(Party::Server.to_str())),
     );
     // Check the logs of server + client for indication of a successful set-up

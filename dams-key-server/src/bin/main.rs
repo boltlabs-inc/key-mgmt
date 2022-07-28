@@ -22,7 +22,7 @@ pub async fn main() {
 
     if db.is_ok() {
         let result = match Cli::from_args() {
-            Server(cli) => server::main_with_cli(cli, db.unwrap().clone()).await,
+            Server(cli) => server::main_with_cli(cli, db.unwrap()).await,
         };
         if let Err(e) = result {
             error!("{}, caused by: {}", e, e.root_cause());

@@ -90,7 +90,7 @@ pub async fn integration_tests() {
     if !errors.is_empty() {
         panic!("Test failed: {:?}", errors);
     } else {
-        common::teardown(server_future, db.clone()).await;
+        common::teardown(server_future, db).await;
     }
 }
 
