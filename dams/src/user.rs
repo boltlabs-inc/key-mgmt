@@ -61,7 +61,7 @@ impl User {
         }
     }
 
-    pub fn server_registration(self) -> ServerRegistration<OpaqueCipherSuite> {
+    pub fn into_server_registration(self) -> ServerRegistration<OpaqueCipherSuite> {
         self.server_registration
     }
 }
