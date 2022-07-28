@@ -41,7 +41,7 @@ impl Register {
             .context("Did not receive RegisterStart")??;
         let (registration_request_message, user_id) = register_start.into_parts();
 
-        if User::find_user(&db, user_id.clone()).await?.is_some() {
+        if User::find_user(&db, &user_id).await?.is_some() {
             abort!(in chan return register::Error::UserIdAlreadyExists);
         };
         let server_registration_start_result = ServerRegistration::<OpaqueCipherSuite>::start(
@@ -65,7 +65,7 @@ impl Register {
             .context("Did not receive RegisterFinish")??;
 
         let server_registration = ServerRegistration::<OpaqueCipherSuite>::finish(register_finish);
-        let _ = User::create_user(&db, user_id, server_registration).await?;
+        let _ = User::create_user(&db, &user_id, server_registration).await?;
 
         Ok(())
     }
