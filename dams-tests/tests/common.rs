@@ -8,6 +8,7 @@ use std::{
 use structopt::StructOpt;
 
 use futures::future;
+use mongodb::Database;
 use thiserror::Error;
 use tokio::{task::JoinHandle, time::Duration};
 use tracing::info_span;
@@ -56,7 +57,7 @@ macro_rules! server_cli {
 pub(crate) use server_cli;
 
 #[allow(unused)]
-pub async fn setup() -> ServerFuture {
+pub async fn setup(db: Database) -> ServerFuture {
     let _ = fs::create_dir("tests/gen");
 
     // Create self-signed SSL certificate in the generated directory
@@ -81,7 +82,7 @@ pub async fn setup() -> ServerFuture {
     #[allow(clippy::infallible_destructuring_match)]
     let run = server_cli!(Run, vec!["run"]);
     let server_handle = tokio::spawn(
-        run.run(server_config)
+        run.run(server_config, db)
             .instrument(info_span!(Party::Server.to_str())),
     );
     // Check the logs of server + client for indication of a successful set-up
@@ -115,12 +116,15 @@ pub async fn setup() -> ServerFuture {
 }
 
 #[allow(unused)]
-pub async fn teardown(server_future: ServerFuture) {
+pub async fn teardown(server_future: ServerFuture, db: Database) {
     // Ignore the result because we expect it to be an `Expired` error
     let _result = server_future.with_timeout(Duration::from_secs(1)).await;
 
     // Delete data from this run
     let _ = fs::remove_dir_all("tests/gen/");
+
+    // Drop the test DB
+    db.drop(None).await;
 }
 
 /// Encode the customizable fields of the keymgmt client Config struct for

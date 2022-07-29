@@ -1,7 +1,8 @@
 use dams::{
     blockchain::Blockchain,
-    keys::{KeyId, SelfCustodial, SharedControl, UserId, UserPolicySpecification},
+    keys::{KeyId, SelfCustodial, SharedControl, UserPolicySpecification},
     transaction::TransactionApprovalRequest,
+    user::UserId,
 };
 use dams_local_client::api::*;
 

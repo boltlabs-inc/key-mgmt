@@ -11,7 +11,9 @@ dams = { version = "0.1.0", path = "../dams" }
 dams-key-server = { version = "0.1.0", path = "../dams-key-server" }
 dams-local-client = { version = "0.1.0", path = "../dams-local-client", features=["allow_explicit_certificate_trust"] }
 dams-remote-client = { version = "0.1.0", path = "../dams-remote-client" }
+dotenv = "0.15.0"
 futures = "0"
+mongodb = "2.3.0"
 rand = "0"
 structopt = "0"
 thiserror = "1"

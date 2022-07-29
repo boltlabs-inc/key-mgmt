@@ -1,3 +1,5 @@
+use crate::database::user as User;
+
 use anyhow::{anyhow, Context};
 use dams::{
     abort,
@@ -5,11 +7,12 @@ use dams::{
         opaque::OpaqueCipherSuite,
         server::{Config, Service},
     },
-    opaque_storage::{create_or_retrieve_server_key_opaque, retrieve_opaque, store_opaque},
+    opaque_storage::create_or_retrieve_server_key_opaque,
     proceed, protocol,
     protocol::register,
     timeout::WithTimeout,
 };
+use mongodb::Database;
 use opaque_ke::ServerRegistration;
 use rand::rngs::StdRng;
 use transport::server::{Chan, SessionKey};
@@ -17,8 +20,10 @@ use transport::server::{Chan, SessionKey};
 pub struct Register;
 
 impl Register {
+    #[allow(clippy::too_many_arguments)]
     pub async fn run(
         &self,
+        db: Database,
         rng: &mut StdRng,
         _client: &reqwest::Client,
         _config: &Config,
@@ -36,9 +41,9 @@ impl Register {
             .context("Did not receive RegisterStart")??;
         let (registration_request_message, user_id) = register_start.into_parts();
 
-        if retrieve_opaque(service, &user_id).is_ok() {
+        if User::find_user(&db, &user_id).await?.is_some() {
             abort!(in chan return register::Error::UserIdAlreadyExists);
-        }
+        };
         let server_registration_start_result = ServerRegistration::<OpaqueCipherSuite>::start(
             &server_setup,
             registration_request_message,
@@ -60,7 +65,7 @@ impl Register {
             .context("Did not receive RegisterFinish")??;
 
         let server_registration = ServerRegistration::<OpaqueCipherSuite>::finish(register_finish);
-        store_opaque(service, &user_id, &server_registration)?;
+        let _ = User::create_user(&db, &user_id, server_registration).await?;
 
         Ok(())
     }

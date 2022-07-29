@@ -5,8 +5,8 @@ use crate::Party::{Client, Server};
 use anyhow::anyhow;
 use common::{get_logs, LogType, Party};
 
-// use da_mgmt::{client, client::key_mgmt::Command};
-use dams::{keys::UserId, transport::KeyMgmtAddress};
+use dams::{transport::KeyMgmtAddress, user::UserId};
+use dams_key_server::database;
 use dams_local_client::{
     api::{Password, Session, SessionConfig},
     command::Command,
@@ -33,7 +33,13 @@ macro_rules! client_cli {
 
 #[tokio::test]
 pub async fn integration_tests() {
-    let server_future = common::setup().await;
+    // Read environment variables from .env file
+    dotenv::dotenv().ok();
+    let db = database::connect_to_mongo()
+        .await
+        .expect("Unable to connect to Mongo");
+    let _ = db.create_collection("users", None).await;
+    let server_future = common::setup(db.clone()).await;
     let client_config = dams::config::client::Config::load(common::CLIENT_CONFIG)
         .await
         .expect("Failed to load client config");
@@ -83,7 +89,7 @@ pub async fn integration_tests() {
     if !errors.is_empty() {
         panic!("Test failed: {:?}", errors);
     } else {
-        common::teardown(server_future).await;
+        common::teardown(server_future, db).await;
     }
 }
 

@@ -1,12 +1,15 @@
+use crate::database::user as User;
+
 use anyhow::Context;
 use dams::{
     abort,
     config::server::{Config, Service},
-    opaque_storage::{create_or_retrieve_server_key_opaque, retrieve_opaque},
+    opaque_storage::create_or_retrieve_server_key_opaque,
     proceed, protocol,
     protocol::authenticate,
     timeout::WithTimeout,
 };
+use mongodb::Database;
 use opaque_ke::{ServerLogin, ServerLoginStartParameters};
 use rand::rngs::StdRng;
 use transport::server::{Chan, SessionKey};
@@ -14,8 +17,10 @@ use transport::server::{Chan, SessionKey};
 pub struct Authenticate;
 
 impl Authenticate {
+    #[allow(clippy::too_many_arguments)]
     pub async fn run(
         &self,
+        db: Database,
         rng: &mut StdRng,
         _client: &reqwest::Client,
         _config: &Config,
@@ -33,9 +38,9 @@ impl Authenticate {
             .context("Did not receive RegisterStart")??;
 
         let (credential_request, user_id) = auth_start.into_parts();
-        let server_registration = match retrieve_opaque(service, &user_id) {
-            Ok(server_registration) => server_registration,
-            Err(_) => abort!(in chan return authenticate::Error::UserIdDoesNotExist),
+        let server_registration = match User::find_user(&db, &user_id).await? {
+            Some(user) => user.into_server_registration(),
+            None => abort!(in chan return authenticate::Error::UserIdDoesNotExist),
         };
         let server_login_start_result = match ServerLogin::start(
             rng,

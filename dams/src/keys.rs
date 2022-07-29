@@ -3,35 +3,10 @@
 //! Includes basic key types (both standard keys and shares of keys) and identifiers
 //! and modifiers describing access control and custody.
 
+use crate::user::UserId;
+
 use bytes::BytesMut;
 use serde::{Deserialize, Serialize};
-use std::convert::Infallible;
-use std::str::FromStr;
-
-/// Unique ID for a user. Assumption: this will be derived from an ID generated
-/// by the Service Provider.
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct UserId(String);
-
-impl ToString for UserId {
-    fn to_string(&self) -> String {
-        self.0.to_string()
-    }
-}
-
-impl FromStr for UserId {
-    type Err = Infallible;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(UserId(s.to_string()))
-    }
-}
-
-impl UserId {
-    pub fn as_bytes(&self) -> &[u8] {
-        self.0.as_bytes()
-    }
-}
 
 /// Universally unique identifier for a key.
 #[allow(unused)]
