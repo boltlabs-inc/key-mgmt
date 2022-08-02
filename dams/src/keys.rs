@@ -27,8 +27,7 @@ pub struct KeyInfo {
     public_key: DigitalAssetPublicKey,
 }
 
-/// Wrapper around [`BytesMut`] to represent key material external to the
-/// system.
+/// Key material that is generated externally to the system.
 ///
 /// TODO #49 (design, implementation): Define key material properly.
 #[derive(Debug, Serialize, Deserialize)]
@@ -36,6 +35,7 @@ pub struct KeyInfo {
 pub struct KeyMaterial {
     key_material: BytesMut,
 }
+
 impl Default for KeyMaterial {
     fn default() -> Self {
         Self {

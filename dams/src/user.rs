@@ -3,9 +3,8 @@
 //! Includes structs for the various models found in the first round of Mongo
 //! integration. This module will likely be split by model into sub-modules.
 
-use crate::config::opaque::OpaqueCipherSuite;
+use crate::{config::opaque::OpaqueCipherSuite, crypto::Secret};
 
-use bytes::BytesMut;
 use opaque_ke::ServerRegistration;
 use serde::{Deserialize, Serialize};
 use std::{convert::Infallible, str::FromStr};
@@ -33,12 +32,6 @@ impl UserId {
     pub fn as_bytes(&self) -> &[u8] {
         self.0.as_bytes()
     }
-}
-
-/// Wrapper around [`BytesMut`] to represent one arbitrary secret.
-#[derive(Debug, Deserialize, Serialize)]
-pub struct Secret {
-    material: BytesMut,
 }
 
 /// One user with a set of arbitrary secrets and a [`ServerRegistration`] to

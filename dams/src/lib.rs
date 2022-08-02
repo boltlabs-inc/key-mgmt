@@ -10,6 +10,7 @@ use std::fmt;
 
 pub mod blockchain;
 pub mod config;
+pub mod crypto;
 pub mod defaults;
 pub mod keys;
 pub mod opaque_storage;
