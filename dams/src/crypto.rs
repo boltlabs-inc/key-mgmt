@@ -23,7 +23,7 @@ impl ExportKey {
     }
 }
 
-/// The master key is a default-length symmetric key for (TODO: encryption
+/// The master key is a default-length symmetric key for (TODO #107: encryption
 /// scheme). It is used to securely encrypt a user's [`StorageKey`].
 #[allow(unused)]
 #[derive(Debug)]
@@ -31,7 +31,8 @@ pub struct MasterKey;
 
 #[allow(unused)]
 impl MasterKey {
-    /// Encrypt the given [`StorageKey`] under an AEAD scheme (TODO: describe).
+    /// Encrypt the given [`StorageKey`] under an AEAD scheme (TODO #107:
+    /// describe).
     ///
     /// TODO: Define encrypted storage key return type.
     pub fn encrypt_storage_key(self, storage_key: StorageKey) {
@@ -42,7 +43,7 @@ impl MasterKey {
 /// A storage key is used to encrypt stored data. It is derived by and only
 /// known to a client.
 ///
-/// A storage key is a default-length symmetric key for (TODO: encryption
+/// A storage key is a default-length symmetric key for (TODO #107: encryption
 /// scheme).
 #[allow(unused)]
 #[derive(Debug)]
@@ -55,7 +56,8 @@ impl StorageKey {
         todo!()
     }
 
-    /// Encrypt the given [`KeyMaterial`] under an AEAD scheme (TODO: describe).
+    /// Encrypt the given [`KeyMaterial`] under an AEAD scheme (TODO #107:
+    /// describe).
     ///
     /// TODO: Define encrypted storage key return type.
     pub fn encrypt_data(self, secret: &Secret) {}
