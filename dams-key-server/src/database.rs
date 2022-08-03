@@ -8,7 +8,8 @@ use std::env;
 
 pub(crate) mod user;
 
-/// Connect to the MongoDB instance and database specified by your environment variables
+/// Connect to the MongoDB instance and database specified by your environment
+/// variables
 pub async fn connect_to_mongo() -> Result<Database, anyhow::Error> {
     let mongodb_url = env::var("MONGODB_URI")?;
     let db_name = env::var("DB_NAME")?;

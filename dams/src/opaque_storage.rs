@@ -1,13 +1,17 @@
-use crate::config::opaque::OpaqueCipherSuite;
-use crate::config::server::Service;
-use crate::user::UserId;
+use crate::{
+    config::{opaque::OpaqueCipherSuite, server::Service},
+    user::UserId,
+};
 use anyhow::{anyhow, Context, Error};
 use generic_array::GenericArray;
-use opaque_ke::keypair::PrivateKey;
-use opaque_ke::{Ristretto255, ServerRegistration, ServerRegistrationLen, ServerSetup};
+use opaque_ke::{
+    keypair::PrivateKey, Ristretto255, ServerRegistration, ServerRegistrationLen, ServerSetup,
+};
 use rand::rngs::StdRng;
-use std::fs::File;
-use std::io::{Read, Write};
+use std::{
+    fs::File,
+    io::{Read, Write},
+};
 
 // TODO: replace with decent key-value storage #52.
 
@@ -97,9 +101,11 @@ mod tests {
     use crate::config::server::Service;
     use opaque_ke::{ClientRegistration, ClientRegistrationFinishParameters};
     use rand::SeedableRng;
-    use std::env::temp_dir;
-    use std::net::{IpAddr, Ipv4Addr};
-    use std::str::FromStr;
+    use std::{
+        env::temp_dir,
+        net::{IpAddr, Ipv4Addr},
+        str::FromStr,
+    };
 
     #[tokio::test]
     async fn test_store_and_retrieve() -> Result<(), Error> {

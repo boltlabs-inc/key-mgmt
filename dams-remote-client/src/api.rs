@@ -14,12 +14,13 @@ use thiserror::Error;
 #[derive(Debug, Error)]
 pub enum Error {}
 
-/// Register a passive user to the service provider authenticated in this session.
+/// Register a passive user to the service provider authenticated in this
+/// session.
 ///
-/// Assumption: a passive user only has [`Passive`][dams::keys::Passive] keys and has
-/// not independently registered with the system, so
-/// the service provider needs to call this function to indicate that they can take
-/// actions on this user's behalf.
+/// Assumption: a passive user only has [`Passive`][dams::keys::Passive] keys
+/// and has not independently registered with the system, so
+/// the service provider needs to call this function to indicate that they can
+/// take actions on this user's behalf.
 ///
 /// Output: none, if successful.
 ///
@@ -59,10 +60,10 @@ pub fn create_passive_digital_asset_key(
 /// In either case, the caller must make the request over an authenticated
 /// session.
 ///
-/// Output: If successful, returns a [`TransactionSignature`] as specified in the
-/// original [`TransactionApprovalRequest`] -- that is, over the
-/// [`Transaction`](dams::transaction::Transaction), and using the key corresponding
-/// to the [`KeyId`].
+/// Output: If successful, returns a [`TransactionSignature`] as specified in
+/// the original [`TransactionApprovalRequest`] -- that is, over the
+/// [`Transaction`](dams::transaction::Transaction), and using the key
+/// corresponding to the [`KeyId`].
 ///
 /// TODO #30 (design, implementation): Pass a session.
 #[allow(unused)]
@@ -77,10 +78,13 @@ pub fn request_transaction_signature(
 /// The key must correspond to a [`Passive`][dams::keys::Passive]
 /// digital asset key.
 ///
-/// Assumption: The [`import_asset_key`] functionality is called by the service provider. This is cryptographically enforced with
-/// an authenticated session between the key server and the service provider. This request will fail otherwise.
+/// Assumption: The [`import_asset_key`] functionality is called by the service
+/// provider. This is cryptographically enforced with an authenticated session
+/// between the key server and the service provider. This request will fail
+/// otherwise.
 ///
-/// Output: If successful, returns the [`KeyInfo`] for the newly imported digital asset key.
+/// Output: If successful, returns the [`KeyInfo`] for the newly imported
+/// digital asset key.
 ///
 /// TODO #30 (design, implementation): Pass a session.
 #[allow(unused)]
@@ -100,9 +104,11 @@ pub fn import_asset_key(
 ///
 /// Assumption: The [`export_asset_key`] functionality is called by the service
 /// provider. This is cryptographically enforced with an authenticated session
-/// between the key server and the service provider. This request will fail otherwise.
+/// between the key server and the service provider. This request will fail
+/// otherwise.
 ///
-/// Output: If successful, returns [`KeyMaterial`] corresponding to the requested key.
+/// Output: If successful, returns [`KeyMaterial`] corresponding to the
+/// requested key.
 ///
 /// TODO #30 (design, implementation): Pass a session.
 #[allow(unused)]
@@ -113,16 +119,16 @@ pub fn export_asset_key(user_id: UserId, key_id: &KeyId) -> Result<KeyMaterial, 
 /// Retrieve the public key info for all keys associated with the specified
 /// user from the key server.
 ///
-/// The [`KeyId`] must correspond to a digital asset key owned by the [`UserId`].
-/// If the key is [`Passive`](dams::keys::Passive), the caller must be the
-/// service provider.
+/// The [`KeyId`] must correspond to a digital asset key owned by the
+/// [`UserId`]. If the key is [`Passive`](dams::keys::Passive), the caller must
+/// be the service provider.
 /// If the key is [`Delegated`](dams::keys::Delegated), the caller must be a
 /// key fiduciary with delegated signing authority for the key.
 /// In either case, the request must be made by the caller over an authenticated
 /// session.
 ///
-/// Output: If successful, returns the [`KeyInfo`] for every key belonging to the
-/// user and delegated (as described) to the caller.
+/// Output: If successful, returns the [`KeyInfo`] for every key belonging to
+/// the user and delegated (as described) to the caller.
 ///
 /// TODO #30 (design, implementation): Pass a session.
 #[allow(unused)]
@@ -133,9 +139,9 @@ pub fn retrieve_public_keys(user_id: UserId) -> Result<Vec<KeyInfo>, Error> {
 /// Retrieve the public key info from the key server for the specified key
 /// associated with the user.
 ///
-/// The [`KeyId`] must correspond to a digital asset key owned by the [`UserId`].
-/// If the key is [`Passive`](dams::keys::Passive), the caller must be the
-/// service provider.
+/// The [`KeyId`] must correspond to a digital asset key owned by the
+/// [`UserId`]. If the key is [`Passive`](dams::keys::Passive), the caller must
+/// be the service provider.
 /// If the key is [`Delegated`](dams::keys::Delegated), the caller must be a
 /// key fiduciary with delegated signing authority for the key.
 /// In either case, the request must be made by the caller over an authenticated
@@ -152,9 +158,9 @@ pub fn retrieve_public_key_by_id(user_id: UserId, key_id: &KeyId) -> Result<KeyI
 /// Retrieve the audit log from the key server for a specified asset owner;
 /// optionally, filter for logs associated with the specified [`KeyId`].
 ///
-/// The [`KeyId`] must correspond to a digital asset key owned by the [`UserId`].
-/// If the key is [`Passive`](dams::keys::Passive), the caller must be the
-/// service provider.
+/// The [`KeyId`] must correspond to a digital asset key owned by the
+/// [`UserId`]. If the key is [`Passive`](dams::keys::Passive), the caller must
+/// be the service provider.
 /// If the key is [`Delegated`](dams::keys::Delegated), the caller must be a
 /// key fiduciary with delegated signing authority for the key.
 /// In either case, the request must be made by the caller over an authenticated

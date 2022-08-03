@@ -1,5 +1,4 @@
-use dialectic::prelude::*;
-use dialectic::types::Done;
+use dialectic::{prelude::*, types::Done};
 use opaque_ke::{
     CredentialFinalization, CredentialRequest, CredentialResponse, RegistrationRequest,
     RegistrationResponse, RegistrationUpload,
@@ -95,9 +94,11 @@ impl RegisterStart {
     }
 }
 
-/// The object that the server responds with to the client when ['RegisterStart'] has been received
+/// The object that the server responds with to the client when
+/// ['RegisterStart'] has been received
 pub type RegisterStartReceived = RegistrationResponse<OpaqueCipherSuite>;
-/// The object that the client sends to the server to finish registration using OPAQUE
+/// The object that the client sends to the server to finish registration using
+/// OPAQUE
 pub type RegisterFinish = RegistrationUpload<OpaqueCipherSuite>;
 
 /// The object that the client sends to the server when registering using OPAQUE
@@ -116,9 +117,11 @@ impl AuthStart {
     }
 }
 
-/// The object that the server responds with to the client when ['RegisterStart'] has been received
+/// The object that the server responds with to the client when
+/// ['RegisterStart'] has been received
 pub type AuthStartReceived = CredentialResponse<OpaqueCipherSuite>;
-/// The object that the client sends to the server to finish registration using OPAQUE
+/// The object that the client sends to the server to finish registration using
+/// OPAQUE
 pub type AuthFinish = CredentialFinalization<OpaqueCipherSuite>;
 
 /// The two parties in the protocol.
@@ -157,8 +160,7 @@ impl Party {
 }
 
 // All protocols are from the perspective of the client.
-use crate::config::opaque::OpaqueCipherSuite;
-use crate::user::UserId;
+use crate::{config::opaque::OpaqueCipherSuite, user::UserId};
 pub use authenticate::Authenticate;
 pub use create::Create;
 pub use register::Register;

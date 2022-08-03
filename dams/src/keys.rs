@@ -1,7 +1,7 @@
 //! Digital asset keys and descriptions.
 //!
-//! Includes basic key types (both standard keys and shares of keys) and identifiers
-//! and modifiers describing access control and custody.
+//! Includes basic key types (both standard keys and shares of keys) and
+//! identifiers and modifiers describing access control and custody.
 
 use crate::user::UserId;
 
@@ -27,7 +27,8 @@ pub struct KeyInfo {
     public_key: DigitalAssetPublicKey,
 }
 
-/// Wrapper around [`BytesMut`] to represent key material external to the system.
+/// Wrapper around [`BytesMut`] to represent key material external to the
+/// system.
 ///
 /// TODO #49 (design, implementation): Define key material properly.
 #[derive(Debug, Serialize, Deserialize)]

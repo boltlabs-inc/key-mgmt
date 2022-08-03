@@ -21,8 +21,10 @@ use opaque_ke::{
     ClientRegistrationFinishParameters,
 };
 use rand::{CryptoRng, RngCore};
-use std::fmt::{Display, Formatter};
-use std::str::FromStr;
+use std::{
+    fmt::{Display, Formatter},
+    str::FromStr,
+};
 use thiserror::Error;
 use tracing::error;
 
@@ -131,8 +133,8 @@ impl Session {
     /// Open a new mutually authenticated session between a previously
     /// registered user and a key server described in the [`SessionConfig`].
     ///
-    /// Output: If successful, returns an open [`Session`] between the specified [`UserId`]
-    /// and the configured key server.
+    /// Output: If successful, returns an open [`Session`] between the specified
+    /// [`UserId`] and the configured key server.
     pub async fn open<T: CryptoRng + RngCore>(
         rng: &mut T,
         user_id: &UserId,
@@ -222,8 +224,8 @@ impl Session {
     /// This only needs to be called once per user; future sessions can be
     /// created with [`Session::open()`].
     ///
-    /// Output: If successful, returns an open [`Session`] between the specified [`UserId`]
-    /// and the configured key server.
+    /// Output: If successful, returns an open [`Session`] between the specified
+    /// [`UserId`] and the configured key server.
     pub async fn register<T: CryptoRng + RngCore>(
         rng: &mut T,
         user_id: &UserId,
@@ -327,8 +329,8 @@ pub enum Error {
 ///
 /// The [`UserId`] must be the same user who opened the [`Session`].
 ///
-/// Output: If successful, returns the [`KeyInfo`] describing the newly created key.
-///
+/// Output: If successful, returns the [`KeyInfo`] describing the newly created
+/// key.
 #[allow(unused)]
 pub fn create_digital_asset_key(
     session: Session,
@@ -371,10 +373,10 @@ pub fn set_user_key_policy(
 /// owner or a key fiduciary. This request will fail if the calling party
 /// is not from one of those entities.
 ///
-/// Output: If successful, returns a [`TransactionSignature`] as specified in the
-/// original [`TransactionApprovalRequest`] -- that is, over the
-/// [`Transaction`](dams::transaction::Transaction), and using the key corresponding
-/// to the [`KeyId`].
+/// Output: If successful, returns a [`TransactionSignature`] as specified in
+/// the original [`TransactionApprovalRequest`] -- that is, over the
+/// [`Transaction`](dams::transaction::Transaction), and using the key
+/// corresponding to the [`KeyId`].
 #[allow(unused)]
 pub fn request_transaction_signature(
     session: Session,
@@ -392,7 +394,8 @@ pub fn request_transaction_signature(
 /// The [`UserId`] must match the asset owner authenticated in the [`Session`].
 /// This function cannot be used to retrieve keys for a different user.
 ///
-/// Output: If successful, returns the [`KeyInfo`] for every key belonging to the user.
+/// Output: If successful, returns the [`KeyInfo`] for every key belonging to
+/// the user.
 #[allow(unused)]
 pub fn retrieve_public_keys(session: Session, user_id: UserId) -> Result<Vec<KeyInfo>, Error> {
     todo!()

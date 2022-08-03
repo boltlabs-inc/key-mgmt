@@ -1,9 +1,12 @@
 use anyhow::Context;
-use dams::config::client::Config;
-use dams::defaults::client::config_path;
-use dams_local_client::cli::Cli;
-use dams_local_client::cli::Client::{Create, Retrieve};
-use dams_local_client::command::Command;
+use dams::{config::client::Config, defaults::client::config_path};
+use dams_local_client::{
+    cli::{
+        Cli,
+        Client::{Create, Retrieve},
+    },
+    command::Command,
+};
 use futures::FutureExt;
 use std::convert::identity;
 use structopt::StructOpt;

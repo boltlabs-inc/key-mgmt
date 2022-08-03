@@ -1,7 +1,7 @@
 //! Models for the first pass of MongoDB integration.
 //!
-//! Includes structs for the various models found in the first round of Mongo integration.
-//! This module will likely be split by model into sub-modules.
+//! Includes structs for the various models found in the first round of Mongo
+//! integration. This module will likely be split by model into sub-modules.
 
 use crate::config::opaque::OpaqueCipherSuite;
 
@@ -41,7 +41,8 @@ pub struct Secret {
     material: BytesMut,
 }
 
-/// One user with a set of arbitrary secrets and a [`ServerRegistration`] to authenticate with.
+/// One user with a set of arbitrary secrets and a [`ServerRegistration`] to
+/// authenticate with.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct User {
     user_id: UserId,

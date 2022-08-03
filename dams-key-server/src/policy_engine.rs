@@ -8,7 +8,8 @@ use thiserror::Error;
 
 /// Configuration for an asset fiduciary.
 ///
-/// This must include public key information that can be used to verify approvals.
+/// This must include public key information that can be used to verify
+/// approvals.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AssetFiduciaryConfig;
 
@@ -17,17 +18,20 @@ pub struct AssetFiduciaryConfig;
 /// The policy engine relies on a fixed set of asset fiduciaries; this set is
 /// specified in the `PolicyEngineConfig`. When a key operation is requested,
 /// the [`PolicyEngine`] asks each asset fiduciary for a corresponding approval
-/// decision. Final approval of the operation by the [`PolicyEngine`] requires receipt
-/// of an approval from each asset fiduciary specified in the policy configuration.
+/// decision. Final approval of the operation by the [`PolicyEngine`] requires
+/// receipt of an approval from each asset fiduciary specified in the policy
+/// configuration.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PolicyEngineConfig {
     /// Indicates whether unilateral control keys are allowed in the system.
     #[serde(default)]
     unilateral_control_allowed: bool,
-    /// The number of [`SelfCustodial`](dams::keys::SelfCustodial) keys each user can create.
+    /// The number of [`SelfCustodial`](dams::keys::SelfCustodial) keys each
+    /// user can create.
     #[serde(default)]
     max_self_custodial: u16,
-    /// The number of [`Delegated`](dams::keys::Delegated) keys each user can create.
+    /// The number of [`Delegated`](dams::keys::Delegated) keys each user can
+    /// create.
     #[serde(default)]
     max_delegated: u16,
     /// The system-wide set of asset fiduciaries.
@@ -56,15 +60,16 @@ impl PolicyEngineConfig {
 ///
 /// This trait describes the interactions between a key server and the policy
 /// engine, but doesn't encompass the entire behavior of a policy engine -- the
-/// policy engine is responsible for all interactions with service providers and asset
-/// fiduciaries.
+/// policy engine is responsible for all interactions with service providers and
+/// asset fiduciaries.
 ///
 /// Assumption: any policy engine implementation will have one or more API
 /// endpoints that correspond to the trait methods. Instantiation of this trait
 /// will call out to the appropriate endpoints, and will handle any retries and
 /// waiting behavior dictated by the external implementation.
 pub trait PolicyEngine {
-    /// Initialize the policy engine interface according to the specified configuration.
+    /// Initialize the policy engine interface according to the specified
+    /// configuration.
     fn initialize(config: PolicyEngineConfig) -> Result<Self, PolicyEngineError>
     where
         Self: Sized;
@@ -89,13 +94,14 @@ pub enum TransactionApprovalDecision {
 
 /// Approval from an asset fiduciary over a [`TransactionApprovalRequest`].
 ///
-/// The set of asset fiduciaries is fixed and defined in the [`PolicyEngineConfig`].
-/// A `FiduciaryApproval` must be tied to a specific asset fiduciary specified in
-/// that configuration.
+/// The set of asset fiduciaries is fixed and defined in the
+/// [`PolicyEngineConfig`]. A `FiduciaryApproval` must be tied to a specific
+/// asset fiduciary specified in that configuration.
 #[derive(Debug)]
 pub struct FiduciaryApproval;
 
-/// Context for why an asset fiduciary rejected a [`TransactionApprovalRequest`].
+/// Context for why an asset fiduciary rejected a
+/// [`TransactionApprovalRequest`].
 #[derive(Debug)]
 pub struct RejectionContext;
 
