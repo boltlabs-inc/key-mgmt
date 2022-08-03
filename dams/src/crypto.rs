@@ -1,14 +1,15 @@
 use bytes::BytesMut;
+use rand::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 
 use crate::{keys::KeyId, user::UserId};
 
-/// Export key is secure key material produced as client output from OPAQUE.
+/// An export key is secure key material produced as client output from OPAQUE.
 ///
 /// This uses standardized naming, but is _not_ directly used as an encryption
 /// key in this system. Instead, it is used to derive a `MasterKey`.
 ///
-/// Implementation note: this is a wrapper around `opaque_ke`'s `export_key`
+/// Implementation note: this will be a wrapper around `opaque_ke`'s `export_key`
 /// field in the
 /// [ClientRegistrationFinishResult](opaque_ke::ClientRegistrationFinishResult)
 /// and corresponding registration result.
@@ -24,7 +25,7 @@ impl ExportKey {
 }
 
 /// The master key is a default-length symmetric key for (TODO #107: encryption
-/// scheme). It is used to securely encrypt a user's [`StorageKey`].
+/// scheme). It is used by the user to securely encrypt their [`StorageKey`].
 #[allow(unused)]
 #[derive(Debug)]
 pub struct MasterKey;
@@ -34,7 +35,7 @@ impl MasterKey {
     /// Encrypt the given [`StorageKey`] under an AEAD scheme (TODO #107:
     /// describe).
     ///
-    /// TODO: Define encrypted storage key return type.
+    /// TODO: Add encrypted storage key return type.
     pub fn encrypt_storage_key(self, storage_key: StorageKey) {
         todo!()
     }
@@ -56,10 +57,10 @@ impl StorageKey {
         todo!()
     }
 
-    /// Encrypt the given [`KeyMaterial`] under an AEAD scheme (TODO #107:
+    /// Encrypt the given [`Secret`] under an AEAD scheme (TODO #107:
     /// describe).
     ///
-    /// TODO: Define encrypted storage key return type.
+    /// TODO: Add encrypted storage key return type.
     pub fn encrypt_data(self, secret: &Secret) {}
 }
 
@@ -76,7 +77,12 @@ pub struct Secret {
 #[allow(unused)]
 impl Secret {
     /// Generate a new secret of length `len`.
-    pub fn generate(len: u32) -> Self {
+    pub fn generate(
+        rng: impl CryptoRng + RngCore,
+        len: u32,
+        user_id: UserId,
+        key_id: KeyId,
+    ) -> Self {
         todo!()
     }
 }
@@ -90,8 +96,10 @@ impl Secret {
 #[allow(unused)]
 #[derive(Debug, Serialize, Deserialize)]
 enum Context {
-    /// Opaque-derived Lock Keeper master key.
+    /// OPAQUE-derived Lock Keeper master key.
     MasterKey,
-    /// Context for a secret stored by the specified under the given [`KeyId`].
-    OwnedSecret(UserId, KeyId),
+    /// Arbitrarily generated Lock Keeper storage key.
+    StorageKey,
+    /// A secret stored by the specified user under the given [`KeyId`].
+    Secret(UserId, KeyId),
 }

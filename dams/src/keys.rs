@@ -6,12 +6,22 @@
 use crate::user::UserId;
 
 use bytes::BytesMut;
+use rand::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 
 /// Universally unique identifier for a key.
 #[allow(unused)]
 #[derive(Debug, Serialize, Deserialize)]
 pub struct KeyId;
+
+#[allow(unused)]
+impl KeyId {
+    /// Generate a new, random `KeyId` for the given [`UserId`].
+    /// This should be called by the key server.
+    fn generate(rng: impl CryptoRng + RngCore, user_id: UserId) -> Self {
+        todo!()
+    }
+}
 
 /// Public key portion of a digital asset key pair.
 #[derive(Debug, Serialize, Deserialize)]
