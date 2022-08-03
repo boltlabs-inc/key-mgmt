@@ -26,9 +26,13 @@ Refer to the [current design specification](https://github.com/boltlabs-inc/key-
 
 ## Install & Setup
 
-You will need a recent version of [stable Rust](https://www.rust-lang.org/) to build the DAMS project. We have tested with 1.59.0.
+### Dependencies:
 
-Once Rust is installed, build the project as follows:
+- A recent version of [stable Rust](https://www.rust-lang.org/) to build the DAMS project. We have tested with 1.59.0.
+- OpenSSL. You should be able to install this using your package manager of choice.
+- [MongoDB](https://www.mongodb.com/try/download/community) is required to run `dams-key-server`. This includes running the integration tests. 
+
+Once the required dependencies are installed, build the project as follows:
 
 ```bash
 cargo build --all-features --all-targets
@@ -42,7 +46,7 @@ To run the doctests locally:
 cargo test --all-features --doc --verbose
 ```
 
-To run all unit and integration tests:
+To run all unit and integration tests (make sure MongoDB is running first):
 
 ```bash
 cargo test --all-features --all-targets
