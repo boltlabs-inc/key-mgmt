@@ -35,7 +35,7 @@ impl MasterKey {
     /// Encrypt the given [`StorageKey`] under an AEAD scheme (TODO #107:
     /// describe).
     ///
-    /// TODO: Add encrypted storage key return type.
+    /// TODO #113: Add encrypted storage key return type.
     pub fn encrypt_storage_key(self, storage_key: StorageKey) {
         todo!()
     }
@@ -60,8 +60,10 @@ impl StorageKey {
     /// Encrypt the given [`Secret`] under an AEAD scheme (TODO #107:
     /// describe).
     ///
-    /// TODO: Add encrypted storage key return type.
-    pub fn encrypt_data(self, secret: &Secret) {}
+    /// TODO #113: Add encrypted storage key return type.
+    pub fn encrypt_data(self, secret: &Secret) {
+        todo!()
+    }
 }
 
 /// An arbitrary secret.
@@ -87,6 +89,17 @@ impl Secret {
     }
 }
 
+#[cfg(test)]
+impl Default for Secret {
+    fn default() -> Self {
+        Secret {
+            material: BytesMut::new(),
+            len: 0,
+            context: Context::Default,
+        }
+    }
+}
+
 /// Context and application specific information used in various cryptographic
 /// protocols. This enum lists the specific contexts that arise throughout the
 /// system.
@@ -102,4 +115,45 @@ enum Context {
     StorageKey,
     /// A secret stored by the specified user under the given [`KeyId`].
     Secret(UserId, KeyId),
+    /// Dummy context for testing.
+    #[cfg(test)]
+    Default,
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    #[should_panic(expected = "not yet implemented")]
+    fn derive_master_key_not_implemented() {
+        let _master_key = ExportKey.derive_master_key();
+    }
+
+    #[test]
+    #[should_panic(expected = "not yet implemented")]
+    fn encrypt_storage_key_not_implemented() {
+        MasterKey.encrypt_storage_key(StorageKey);
+    }
+
+    #[test]
+    #[should_panic(expected = "not yet implemented")]
+    fn storage_key_generation_not_implemented() {
+        let _storage_key = StorageKey::generate();
+    }
+
+    #[test]
+    #[should_panic(expected = "not yet implemented")]
+    fn data_encryption_not_implemented() {
+        let secret = Secret::default();
+        StorageKey.encrypt_data(&secret)
+    }
+
+    #[test]
+    #[should_panic(expected = "not yet implemented")]
+    fn secret_generation_not_implemented() {
+        let thread_rng = rand::thread_rng();
+        let user_id = UserId::default();
+        let _secret = Secret::generate(thread_rng, 32, user_id, KeyId);
+    }
 }

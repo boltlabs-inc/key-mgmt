@@ -167,3 +167,15 @@ impl UseRestriction for SharedControl {}
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Unilateral;
 impl UseRestriction for Unilateral {}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    #[should_panic(expected = "not yet implemented")]
+    fn key_id_generation_not_implemented() {
+        let thread_rng = rand::thread_rng();
+        let _key_id = KeyId::generate(thread_rng, UserId::default());
+    }
+}
