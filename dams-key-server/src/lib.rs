@@ -7,6 +7,6 @@
 
 pub mod cli;
 pub mod command;
-pub mod policy_engine;
-
 pub mod database;
+pub mod policy_engine;
+pub mod server;

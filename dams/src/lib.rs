@@ -20,6 +20,10 @@ pub mod transaction;
 pub mod transport;
 pub mod user;
 
+pub mod dams_rpc {
+    tonic::include_proto!("dams_rpc");
+}
+
 /// Logs used to verify that an operation completed in the integration tests.
 #[derive(Debug)]
 pub enum TestLogs {

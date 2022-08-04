@@ -14,8 +14,10 @@ use opaque_ke::{ServerLogin, ServerLoginStartParameters};
 use rand::rngs::StdRng;
 use transport::server::{Chan, SessionKey};
 
+#[allow(unused)]
 pub struct Authenticate;
 
+#[allow(unused)]
 impl Authenticate {
     #[allow(clippy::too_many_arguments)]
     pub async fn run(

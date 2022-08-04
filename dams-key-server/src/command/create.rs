@@ -7,8 +7,10 @@ use dams::{
 use rand::rngs::StdRng;
 use transport::server::{Chan, SessionKey};
 
+#[allow(unused)]
 pub struct Create;
 
+#[allow(unused)]
 impl Create {
     pub async fn run(
         &self,

@@ -1,0 +1,42 @@
+syntax = "proto3";
+package dams_rpc;
+
+service DamsRpc {
+  rpc Register (stream ClientRegister) returns (stream ServerRegister);
+}
+
+message ClientRegister {
+  oneof step {
+    ClientRegisterStart start = 1;
+    ClientRegisterFinish finish = 2;
+  }
+}
+
+message ClientRegisterStart {
+  // pass user ID and registration-start message from OPAQUE
+  bytes client_register_start_message = 1;
+  bytes user_id = 2;
+}
+
+message ClientRegisterFinish {
+  // pass user ID and registration-finish message from OPAQUE
+  bytes client_register_finish_message = 1;
+  bytes user_id = 2;
+}
+
+message ServerRegister {
+  oneof step {
+    ServerRegisterStart start = 1;
+    ServerRegisterFinish finish = 2;
+  }
+}
+
+message ServerRegisterStart {
+  // Check if user exists and return successful if not
+  bytes server_register_start_message = 1;
+}
+
+message ServerRegisterFinish {
+  // return true if successful
+  bool success = 1;
+}
