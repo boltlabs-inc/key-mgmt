@@ -1,6 +1,7 @@
 use dams::{
     blockchain::Blockchain,
-    keys::{KeyId, SelfCustodial, SharedControl, UserPolicySpecification},
+    crypto::KeyId,
+    keys::{SelfCustodial, SharedControl, UserPolicySpecification},
     transaction::TransactionApprovalRequest,
     user::UserId,
 };

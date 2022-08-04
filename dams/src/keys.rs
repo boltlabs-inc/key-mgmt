@@ -3,25 +3,10 @@
 //! Includes basic key types (both standard keys and shares of keys) and
 //! identifiers and modifiers describing access control and custody.
 
-use crate::user::UserId;
+use crate::{crypto::KeyId, user::UserId};
 
 use bytes::BytesMut;
-use rand::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
-
-/// Universally unique identifier for a key.
-#[allow(unused)]
-#[derive(Debug, Serialize, Deserialize)]
-pub struct KeyId;
-
-#[allow(unused)]
-impl KeyId {
-    /// Generate a new, random `KeyId` for the given [`UserId`].
-    /// This should be called by the key server.
-    fn generate(rng: impl CryptoRng + RngCore, user_id: UserId) -> Self {
-        todo!()
-    }
-}
 
 /// Public key portion of a digital asset key pair.
 #[derive(Debug, Serialize, Deserialize)]
@@ -167,15 +152,3 @@ impl UseRestriction for SharedControl {}
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Unilateral;
 impl UseRestriction for Unilateral {}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    #[should_panic(expected = "not yet implemented")]
-    fn key_id_generation_not_implemented() {
-        let thread_rng = rand::thread_rng();
-        let _key_id = KeyId::generate(thread_rng, UserId::default());
-    }
-}

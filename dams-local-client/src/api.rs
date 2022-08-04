@@ -9,7 +9,8 @@ use crate::command::connect;
 use dams::{
     blockchain::Blockchain,
     config::{client::Config, opaque::OpaqueCipherSuite},
-    keys::{KeyId, KeyInfo, UsePermission, UseRestriction, UserPolicySpecification},
+    crypto::KeyId,
+    keys::{KeyInfo, UsePermission, UseRestriction, UserPolicySpecification},
     offer_abort,
     protocol::{AuthStart, Party::Client, RegisterStart},
     transaction::{TransactionApprovalRequest, TransactionSignature},

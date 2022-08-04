@@ -3,7 +3,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::{keys::KeyId, user::UserId};
+use crate::{crypto::KeyId, user::UserId};
 
 /// A transaction approval request is used to log a request for a
 /// [`TransactionSignature`] under the specified key. The key

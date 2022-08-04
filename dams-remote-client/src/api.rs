@@ -5,7 +5,8 @@
 
 use dams::{
     blockchain::Blockchain,
-    keys::{KeyId, KeyInfo, KeyMaterial, UseRestriction},
+    crypto::KeyId,
+    keys::{KeyInfo, KeyMaterial, UseRestriction},
     transaction::{TransactionApprovalRequest, TransactionSignature},
     user::UserId,
 };
