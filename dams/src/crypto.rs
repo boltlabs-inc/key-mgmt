@@ -95,7 +95,7 @@ impl Default for Secret {
         Secret {
             material: BytesMut::new(),
             len: 0,
-            context: Context::Default,
+            context: Context::Secret(UserId::default(), KeyId),
         }
     }
 }
@@ -115,9 +115,6 @@ enum Context {
     StorageKey,
     /// A secret stored by the specified user under the given [`KeyId`].
     Secret(UserId, KeyId),
-    /// Dummy context for testing.
-    #[cfg(test)]
-    Default,
 }
 
 #[cfg(test)]
