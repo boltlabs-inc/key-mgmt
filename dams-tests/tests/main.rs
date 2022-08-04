@@ -86,10 +86,10 @@ pub async fn integration_tests() {
             }
         }
     }
+
+    common::teardown(server_future, db).await;
     if !errors.is_empty() {
         panic!("Test failed: {:?}", errors);
-    } else {
-        common::teardown(server_future, db).await;
     }
 }
 
