@@ -5,7 +5,7 @@
 
 use crate::{crypto::KeyId, user::UserId};
 
-use bytes::BytesMut;
+use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 
 /// Public key portion of a digital asset key pair.
@@ -28,13 +28,13 @@ pub struct KeyInfo {
 #[derive(Debug, Serialize, Deserialize)]
 #[allow(unused)]
 pub struct KeyMaterial {
-    key_material: BytesMut,
+    key_material: Bytes,
 }
 
 impl Default for KeyMaterial {
     fn default() -> Self {
         Self {
-            key_material: BytesMut::with_capacity(32),
+            key_material: Bytes::new(),
         }
     }
 }
