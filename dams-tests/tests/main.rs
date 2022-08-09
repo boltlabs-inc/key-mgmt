@@ -1,7 +1,9 @@
 pub(crate) mod common;
 
-use crate::Operation::{Authenticate, Create, Register, Retrieve};
-use crate::Party::{Client, Server};
+use crate::{
+    Operation::{Authenticate, Create, Register, Retrieve},
+    Party::{Client, Server},
+};
 use anyhow::anyhow;
 use common::{get_logs, LogType, Party};
 
@@ -11,10 +13,8 @@ use dams_local_client::{
     api::{Password, Session, SessionConfig},
     command::Command,
 };
-use rand::prelude::StdRng;
-use rand::SeedableRng;
-use std::fs::OpenOptions;
-use std::str::FromStr;
+use rand::{prelude::StdRng, SeedableRng};
+use std::{fs::OpenOptions, str::FromStr};
 use structopt::StructOpt;
 use thiserror::Error;
 

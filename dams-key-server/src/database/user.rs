@@ -14,7 +14,8 @@ use mongodb::{
 };
 use opaque_ke::ServerRegistration;
 
-/// Create a new [`User`] with their authentication information and insert it into the MongoDB database.
+/// Create a new [`User`] with their authentication information and insert it
+/// into the MongoDB database.
 pub async fn create_user(
     db: &Database,
     user_id: &UserId,
@@ -26,7 +27,8 @@ pub async fn create_user(
     Ok(insert_one_res.inserted_id.as_object_id())
 }
 
-/// Find a [`User`] by their `user_id`. This is different from the Mongo-assigned `_id` field.
+/// Find a [`User`] by their `user_id`. This is different from the
+/// Mongo-assigned `_id` field.
 pub async fn find_user(db: &Database, user_id: &UserId) -> Result<Option<User>, Error> {
     let collection = db.collection::<User>("users");
     let query = doc! {"user_id": user_id.to_string()};

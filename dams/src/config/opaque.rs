@@ -1,6 +1,5 @@
 use argon2::Argon2;
-use opaque_ke::key_exchange::tripledh::TripleDh;
-use opaque_ke::{CipherSuite, Ristretto255};
+use opaque_ke::{key_exchange::tripledh::TripleDh, CipherSuite, Ristretto255};
 
 #[allow(dead_code)]
 #[derive(Debug)]
