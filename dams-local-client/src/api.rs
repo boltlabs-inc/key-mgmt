@@ -11,15 +11,19 @@ use dams::{
     config::{client::Config, opaque::OpaqueCipherSuite},
     crypto::KeyId,
     keys::{KeyInfo, UsePermission, UseRestriction, UserPolicySpecification},
+    dams_rpc::{
+        client_register::Step, dams_rpc_client::DamsRpcClient, server_register::Step as ServerStep,
+        ClientRegister, ClientRegisterFinish, ClientRegisterStart, ServerRegisterStart, ServerRegisterFinish,
+    },
     offer_abort,
-    protocol::{AuthStart, Party::Client, RegisterStart},
+    protocol::{AuthStart, Party::Client},
     transaction::{TransactionApprovalRequest, TransactionSignature},
     transport::KeyMgmtAddress,
     user::UserId,
 };
 use opaque_ke::{
     ClientLogin, ClientLoginFinishParameters, ClientRegistration,
-    ClientRegistrationFinishParameters,
+    ClientRegistrationFinishParameters, RegistrationResponse,
 };
 use rand::{CryptoRng, RngCore};
 use std::{
@@ -27,6 +31,9 @@ use std::{
     str::FromStr,
 };
 use thiserror::Error;
+use tokio::sync::mpsc;
+use tokio_stream::{wrappers::ReceiverStream, StreamExt};
+use tonic::{transport::Channel, Response, Status};
 use tracing::error;
 
 #[derive(Debug, Error)]
@@ -228,12 +235,14 @@ impl Session {
     /// Output: If successful, returns an open [`Session`] between the specified
     /// [`UserId`] and the configured key server.
     pub async fn register<T: CryptoRng + RngCore>(
+        client: &mut DamsRpcClient<Channel>,
         rng: &mut T,
         user_id: &UserId,
         password: &Password,
         config: &SessionConfig,
     ) -> Result<Self, SessionError> {
         let result = Self::do_register(
+            client,
             rng,
             user_id,
             password,
@@ -251,58 +260,76 @@ impl Session {
     }
 
     async fn do_register<T: CryptoRng + RngCore>(
+        client: &mut DamsRpcClient<Channel>,
         rng: &mut T,
         user_id: &UserId,
         password: &Password,
         server: &KeyMgmtAddress,
         config: &self::Config,
-    ) -> Result<(), anyhow::Error> {
-        // Connect with the server...
-        let (_session_key, chan) = connect(config, server)
-            .await
-            .map_err(|_| SessionError::ServerConnectionFailed)?;
+    ) -> Result<Response<ServerRegisterFinish>, Status> {
+        // Create channel to send messages to server after connection is established via RPC
+        let (tx, rx) = mpsc::channel(2);
+        let stream = ReceiverStream::new(rx);
 
-        // ...and select the Register session
-        let chan = chan
-            .choose::<1>()
-            .await
-            .map_err(|_| SessionError::SelectRegisterFailed)?;
+        // Server returns its own channel that is uses to send responses
+        let mut server_response = client.register(stream).await?.into_inner();
 
         let client_registration_start_result =
             ClientRegistration::<OpaqueCipherSuite>::start(rng, password.as_bytes())
-                .map_err(|_| SessionError::RegisterStartFailed)?;
+                .map_err(|_| Status::aborted("RegistrationStart failed"))?;
 
-        let chan = chan
-            .send(RegisterStart::new(
-                client_registration_start_result.message,
-                user_id.clone(),
-            ))
+        // Send start message to server
+        let client_registration_start_message: Vec<u8> =
+            bincode::serialize(&client_registration_start_result.message)
+                .map_err(|_| Status::aborted("Unable to serialize client message"))?;
+        let register_start =
+            Self::client_register_start(client_registration_start_message, user_id);
+        tx.send(register_start)
             .await
-            .map_err(|_| SessionError::RegisterStartFailed)?;
+            .expect("Handle weird error type");
 
-        offer_abort!(in chan as Client);
+        let server_register_start_result = match server_response.next().await {
+            Some(Ok(res)) => Self::unwrap_server_start_step(res.step)?,
+            Some(Err(e)) => return Err(e),
+            None => return Err(Status::invalid_argument("No message received")),
+        };
 
-        let (registration_response, chan) = chan
-            .recv()
-            .await
-            .map_err(|_| SessionError::RegisterStartFailed)?;
+        let server_register_start_message: RegistrationResponse<OpaqueCipherSuite> =
+            bincode::deserialize(&server_register_start_result.server_register_start_message[..])
+                .map_err(|_| Status::aborted("Unable to deserialize server message"))?;
 
         let client_finish_registration_result = client_registration_start_result
             .state
             .finish(
                 rng,
                 password.as_bytes(),
-                registration_response,
+                server_register_start_message,
                 ClientRegistrationFinishParameters::default(),
             )
-            .map_err(|_| SessionError::RegisterFinishFailed)?;
+            .map_err(|_| Status::aborted("RegistrationFinish failed"))?;
 
-        chan.send(client_finish_registration_result.message)
+        let client_finish_registration_message: Vec<u8> =
+            bincode::serialize(&client_finish_registration_result.message)
+                .map_err(|_| Status::aborted("Unable to serialize client message"))?;
+        let register_finish =
+            Self::client_register_finish(client_finish_registration_message, user_id);
+        tx.send(register_finish)
             .await
-            .map_err(|_| SessionError::RegisterFinishFailed)?
-            .close();
+            .expect("Handle weird error type");
 
-        Ok(())
+        // Handle finish message
+        let server_register_finish_result = server_response.next().await;
+        match server_register_finish_result {
+            Some(Ok(result)) => match result.step {
+                Some(ServerStep::Finish(finish_response)) => Ok(Response::new(finish_response)),
+                Some(ServerStep::Start(_)) => {
+                    Err(Status::invalid_argument("Message received out of order"))
+                }
+                None => Err(Status::invalid_argument("No message received")),
+            },
+            Some(Err(e)) => Err(e),
+            None => Err(Status::invalid_argument("No message received")),
+        }
     }
 
     /// Close a session.
@@ -310,6 +337,35 @@ impl Session {
     /// Outputs: None, if successful.
     pub fn close(self) -> Result<(), SessionError> {
         todo!()
+    }
+
+    // Helper functions
+    fn client_register_start(message: Vec<u8>, user_id: &UserId) -> ClientRegister {
+        ClientRegister {
+            step: Some(Step::Start(ClientRegisterStart {
+                client_register_start_message: message,
+                user_id: user_id.as_bytes().to_vec(),
+            })),
+        }
+    }
+
+    fn client_register_finish(message: Vec<u8>, user_id: &UserId) -> ClientRegister {
+        ClientRegister {
+            step: Some(Step::Finish(ClientRegisterFinish {
+                client_register_finish_message: message,
+                user_id: user_id.as_bytes().to_vec(),
+            })),
+        }
+    }
+
+    fn unwrap_server_start_step(step: Option<ServerStep>) -> Result<ServerRegisterStart, Status> {
+        match step {
+            Some(ServerStep::Start(start_message)) => Ok(start_message),
+            Some(ServerStep::Finish(_)) => {
+                Err(Status::invalid_argument("Message received out of order"))
+            }
+            None => Err(Status::invalid_argument("No message received")),
+        }
     }
 }
 
