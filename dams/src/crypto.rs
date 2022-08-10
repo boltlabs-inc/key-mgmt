@@ -4,6 +4,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::user::UserId;
 
+mod register;
+
 /// An export key is secure key material produced as client output from OPAQUE.
 ///
 /// This uses standardized naming, but is _not_ directly used as an encryption
@@ -24,7 +26,8 @@ pub struct OpaqueExportKey;
 
 impl OpaqueExportKey {
     /// Derive a [`MasterKey`] from the export key.
-    pub fn derive_master_key(&self) -> MasterKey {
+    #[allow(unused)]
+    fn derive_master_key(&self) -> MasterKey {
         todo!()
     }
 }
@@ -38,7 +41,7 @@ impl OpaqueExportKey {
 /// calling application.
 #[allow(unused)]
 #[derive(Debug)]
-pub struct MasterKey;
+struct MasterKey;
 
 #[allow(unused)]
 impl MasterKey {
@@ -65,7 +68,7 @@ pub struct StorageKey;
 #[allow(unused)]
 impl StorageKey {
     /// Generate a new 32-byte [`StorageKey`].
-    pub fn generate() -> Self {
+    fn generate() -> Self {
         todo!()
     }
 
@@ -73,7 +76,7 @@ impl StorageKey {
     /// describe).
     ///
     /// TODO #113: Add encrypted storage key return type.
-    pub fn encrypt_data(self, secret: &Secret) {
+    fn encrypt_data(self, secret: &Secret) {
         todo!()
     }
 }
