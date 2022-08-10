@@ -1,5 +1,4 @@
 use crate::database::user as User;
-use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 
 use dams::{
@@ -10,7 +9,6 @@ use dams::{
         ServerRegisterStart,
     },
     opaque_storage::create_or_retrieve_server_key_opaque,
-    user::UserId,
 };
 use mongodb::Database;
 use opaque_ke::{
@@ -33,18 +31,21 @@ impl Register {
         &self,
         request: Request<tonic::Streaming<ClientRegister>>,
         db: &Database,
-        rng: &Arc<Mutex<StdRng>>,
+        rng: Arc<Mutex<StdRng>>,
         service: &Service,
     ) -> Result<Response<RegisterStream>, Status> {
         let (tx, rx) = mpsc::channel(2);
         let mut stream = request.into_inner();
 
         // Get server key for OPAQUE
-        let mut rng = rng
-            .lock()
-            .map_err(|_| Status::unavailable("Unable to access RNG"))?;
-        let server_setup = create_or_retrieve_server_key_opaque(&mut rng, service)
-            .map_err(|_| Status::aborted("could not find/create server key"))?;
+        let server_setup = {
+            let mut rng = rng
+                .lock()
+                .map_err(|_| Status::unavailable("Unable to access RNG"))?;
+
+            create_or_retrieve_server_key_opaque(&mut rng, service)
+                .map_err(|_| Status::aborted("could not find/create server key"))?
+        };
 
         // Clone db outside of thread to prevent lifetime errors
         let db = db.clone();
@@ -57,7 +58,8 @@ impl Register {
 
                 let start_message = Self::unwrap_client_start_step(message.step)?;
                 let response = Self::handle_register_start(&db, start_message, &server_setup).await;
-                let _ = tx.send(response)
+                let _ = tx
+                    .send(response)
                     .await
                     .map_err(|_| Status::aborted("Handle weird error type"));
             }
@@ -68,7 +70,8 @@ impl Register {
 
                 let finish_message = Self::unwrap_client_finish_step(message.step)?;
                 let response = Self::handle_register_finish(&db, finish_message).await;
-                let _ = tx.send(response)
+                let _ = tx
+                    .send(response)
                     .await
                     .map_err(|_| Status::aborted("Handle weird error type"));
             }
@@ -99,12 +102,7 @@ impl Register {
         server_setup: &ServerSetup<OpaqueCipherSuite, PrivateKey<Ristretto255>>,
     ) -> Result<ServerRegister, Status> {
         // Convert user_id from message to str and then to UserId
-        let uid = UserId::from_str(
-            std::str::from_utf8(&message.user_id)
-                .map_err(|_| Status::aborted("Unable to convert to UserID"))?,
-        )
-        .map_err(|_| Status::aborted("Unable to convert to UserID"))?;
-
+        let uid = super::user_id_from_message(&message.user_id)?;
         let registration_request_message: RegistrationRequest<OpaqueCipherSuite> =
             bincode::deserialize(&message.client_register_start_message[..])
                 .map_err(|_| Status::aborted("Unable to deserialize client message"))?;
@@ -151,11 +149,7 @@ impl Register {
         message: ClientRegisterFinish,
     ) -> Result<ServerRegister, Status> {
         // Convert user_id from message to str and then to UserId
-        let uid = UserId::from_str(
-            std::str::from_utf8(&message.user_id)
-                .map_err(|_| Status::aborted("Unable to convert to UserID"))?,
-        )
-        .map_err(|_| Status::aborted("Unable to convert to UserID"))?;
+        let uid = super::user_id_from_message(&message.user_id)?;
 
         // deserialize client message into RegistrationUpload OPAQUE type
         let register_finish: RegistrationUpload<OpaqueCipherSuite> =

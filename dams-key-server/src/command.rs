@@ -10,10 +10,21 @@
 // use tracing::{error, info};
 // use transport::server::{Chan, Server};
 
-mod authenticate;
+use dams::user::UserId;
+use std::str::FromStr;
+use tonic::Status;
+
+pub mod authenticate;
 mod create;
 pub mod register;
 mod retrieve;
+
+fn user_id_from_message(message: &Vec<u8>) -> Result<UserId, Status> {
+    UserId::from_str(
+        std::str::from_utf8(message).map_err(|_| Status::aborted("Unable to convert to UserID"))?,
+    )
+    .map_err(|_| Status::aborted("Unable to convert to UserID"))
+}
 
 // use authenticate::Authenticate;
 // use create::Create;

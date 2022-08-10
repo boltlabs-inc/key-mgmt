@@ -5,7 +5,7 @@ use dams::{
     config::server::{Config, Service},
     dams_rpc::{
         dams_rpc_server::{DamsRpc, DamsRpcServer},
-        ClientRegister,
+        ClientAuthenticate, ClientRegister,
     },
     defaults::server::config_path,
 };
@@ -43,13 +43,23 @@ impl DamsKeyServer {
 #[tonic::async_trait]
 impl DamsRpc for DamsKeyServer {
     type RegisterStream = command::register::RegisterStream;
+    type AuthenticateStream = command::authenticate::AuthenticateStream;
 
     async fn register(
         &self,
         request: Request<tonic::Streaming<ClientRegister>>,
     ) -> Result<Response<Self::RegisterStream>, Status> {
         command::register::Register
-            .run(request, &self.db, &self.rng, &self.service)
+            .run(request, &self.db, self.rng.clone(), &self.service)
+            .await
+    }
+
+    async fn authenticate(
+        &self,
+        request: Request<tonic::Streaming<ClientAuthenticate>>,
+    ) -> Result<Response<Self::AuthenticateStream>, Status> {
+        command::authenticate::Authenticate
+            .run(request, &self.db, self.rng.clone(), &self.service)
             .await
     }
 }
