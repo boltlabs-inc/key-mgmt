@@ -9,7 +9,7 @@ pub mod client;
 /// An export key is secure key material produced as client output from OPAQUE.
 ///
 /// This uses standardized naming, but is _not_ directly used as an encryption
-/// key in this system. Instead, the client uses it to derive a [`MasterKey`].
+/// key in this system. Instead, the client uses it to derive a master key.
 ///
 /// This key should not be stored or saved beyond the lifetime of a single
 /// authentication session.
