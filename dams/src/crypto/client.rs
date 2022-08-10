@@ -1,10 +1,14 @@
+//! Wrapper functions around client-side cryptography.
+//!
+//! Each operation in this module is part of one or more workflows.
+
 use crate::crypto::{OpaqueExportKey, StorageKey};
 
 use rand::{CryptoRng, RngCore};
 
-/// Create an encrypted storage key. This is part of the registration flow and is executed
-/// after completing the OPAQUE registration session with the server.
-/// This key should be sent to the server for storage.
+/// Create an encrypted storage key. This is part of the registration flow and
+/// is executed after completing the OPAQUE registration session with the
+/// server. This key should be sent to the server for storage.
 ///
 /// This must be run by the client.
 /// It takes the following steps:
@@ -19,8 +23,8 @@ pub fn create_and_encrypt_storage_key(rng: impl CryptoRng + RngCore, export_key:
     todo!()
 }
 
-/// Decrypt a storage key. This should be run as part of the subprotocol to retrieve a storage
-/// key from the server.
+/// Decrypt a storage key. This should be run as part of the subprotocol to
+/// retrieve a storage key from the server.
 ///
 /// This must be run by the client. It takes the following steps:
 /// 1. Derive a master key from the [`OpaqueExportKey`]
@@ -33,7 +37,8 @@ pub fn decrypt_storage_key(export_key: OpaqueExportKey) -> StorageKey {
     todo!()
 }
 
-/// Create and encrypt a new [`Secret`](super::Secret). This is part of the generate a new secret flow.
+/// Create and encrypt a new [`Secret`](super::Secret). This is part of the
+/// generate a new secret flow.
 ///
 /// This must be run by the client. It takes the following steps:
 /// 1. Generates a new [`Secret`](super::Secret)
