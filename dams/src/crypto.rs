@@ -112,23 +112,8 @@ pub struct Secret {
 #[allow(unused)]
 impl Secret {
     /// Generate a new secret of length `len`.
-    pub fn generate(
-        rng: impl CryptoRng + RngCore,
-        len: u32,
-        user_id: UserId,
-        key_id: KeyId,
-    ) -> Self {
+    fn generate(rng: impl CryptoRng + RngCore, len: u32, user_id: UserId, key_id: KeyId) -> Self {
         todo!()
-    }
-}
-
-#[cfg(test)]
-impl Default for Secret {
-    fn default() -> Self {
-        Secret {
-            material: Bytes::new(),
-            context: Context::Secret(UserId::default(), KeyId),
-        }
     }
 }
 
@@ -174,7 +159,9 @@ mod test {
     #[test]
     #[should_panic(expected = "not yet implemented")]
     fn data_encryption_not_implemented() {
-        let secret = Secret::default();
+        let thread_rng = rand::thread_rng();
+        let user_id = UserId::default();
+        let secret = Secret::generate(thread_rng, 32, user_id, KeyId);
         StorageKey.encrypt_data(&secret)
     }
 
