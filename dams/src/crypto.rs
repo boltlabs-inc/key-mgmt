@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::user::UserId;
 
-mod register;
+pub mod client;
 
 /// An export key is secure key material produced as client output from OPAQUE.
 ///
