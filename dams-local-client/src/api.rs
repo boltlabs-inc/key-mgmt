@@ -150,7 +150,7 @@ impl Session {
             &config.client_config,
         )
         .await;
-        return match result {
+        match result {
             Ok(result) => {
                 let session = Session {
                     config: config.clone(),
@@ -162,7 +162,7 @@ impl Session {
                 error!("{:?}", e);
                 Err(SessionError::AuthenticationFailed)
             }
-        };
+        }
     }
 
     async fn authenticate<T: CryptoRng + RngCore>(
@@ -242,9 +242,7 @@ impl Session {
         )
         .await;
         match result {
-            Ok(_) => {
-                return Self::open(rng, user_id, password, config).await;
-            }
+            Ok(_) => Self::open(rng, user_id, password, config).await,
             Err(e) => {
                 error!("{:?}", e);
                 Err(SessionError::RegistrationFailed)

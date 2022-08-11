@@ -25,17 +25,19 @@ jobs:
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
 
+      # Install nightly toolchain
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          profile: minimal
+          components: rustfmt
+
       # Install stable toolchain
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           components: clippy
-
-      # Install nightly toolchain
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          components: rustfmt
+          default: true
 
       - name: Format check
         run: cargo +nightly fmt --all -- --check
