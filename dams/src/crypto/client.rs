@@ -37,11 +37,11 @@ pub fn decrypt_storage_key(export_key: OpaqueExportKey) -> StorageKey {
     todo!()
 }
 
-/// Create and encrypt a new [`Secret`](super::Secret). This is part of the
+/// Create and encrypt a new secret. This is part of the
 /// generate a new secret flow.
 ///
 /// This must be run by the client. It takes the following steps:
-/// 1. Generates a new [`Secret`](super::Secret)
+/// 1. Generates a new secret
 /// 2. Encrypt it under the [`StorageKey`]
 ///
 /// TODO #113: Add encrypted secret return type.

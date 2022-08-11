@@ -87,7 +87,7 @@ impl StorageKey {
     }
 }
 
-/// Universally unique identifier for a [`Secret`].
+/// Universally unique identifier for a secret.
 #[allow(unused)]
 #[derive(Debug, Serialize, Deserialize)]
 pub struct KeyId;
