@@ -121,8 +121,7 @@ impl Authenticate {
             None => return Err(Status::already_exists("UserId already exists")),
         };
         let credential_request: CredentialRequest<OpaqueCipherSuite> =
-            bincode::deserialize(&message.client_authenticate_start_message[..])
-                .map_err(|_| Status::aborted("Unable to deserialize client message"))?;
+            dams::deserialize_from_bytes(&message.client_authenticate_start_message[..])?;
 
         let server_login_start_result = {
             let mut local_rng = rng
@@ -142,9 +141,8 @@ impl Authenticate {
             }
         };
 
-        let server_authenticate_start_message: Vec<u8> =
-            bincode::serialize(&server_login_start_result.message)
-                .map_err(|_| Status::aborted("Unable to serialize server message"))?;
+        let server_authenticate_start_message =
+            dams::serialize_to_bytes(&server_login_start_result.message)?;
         let reply = ServerAuthenticate {
             step: Some(ServerStep::Start(ServerAuthenticateStart {
                 server_authenticate_start_message,
@@ -178,9 +176,7 @@ impl Authenticate {
         };
         // deserialize client message into RegistrationUpload OPAQUE type
         let auth_finish: CredentialFinalization<OpaqueCipherSuite> =
-            bincode::deserialize(&message.client_authenticate_finish_message[..])
-                .map_err(|_| Status::aborted("Unable to deserialize client message"))?;
-
+            dams::deserialize_from_bytes(&message.client_authenticate_finish_message[..])?;
         match server_login_result.state.finish(auth_finish) {
             Ok(_) => {
                 let reply = ServerAuthenticate {

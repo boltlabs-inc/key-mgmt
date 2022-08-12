@@ -197,9 +197,8 @@ impl Session {
                 .map_err(|_| Status::aborted("LoginStartFailed"))?;
 
         // Send start message to server
-        let client_authenticate_start_message: Vec<u8> =
-            bincode::serialize(&client_login_start_result.message)
-                .map_err(|_| Status::aborted("Unable to serialize client message"))?;
+        let client_authenticate_start_message =
+            dams::serialize_to_bytes(&client_login_start_result.message)?;
         let authenticate_start =
             Self::client_authenticate_start(client_authenticate_start_message, user_id);
         tx.send(authenticate_start)
@@ -212,10 +211,10 @@ impl Session {
             None => return Err(Status::invalid_argument("No message received")),
         };
 
-        let credential_response: CredentialResponse<OpaqueCipherSuite> = bincode::deserialize(
-            &server_authenticate_start_result.server_authenticate_start_message[..],
-        )
-        .map_err(|_| Status::aborted("Unable to deserialize server message"))?;
+        let credential_response: CredentialResponse<OpaqueCipherSuite> =
+            dams::deserialize_from_bytes(
+                &server_authenticate_start_result.server_authenticate_start_message[..],
+            )?;
 
         let client_login_finish_result = client_login_start_result
             .state
@@ -226,9 +225,8 @@ impl Session {
             )
             .map_err(|_| Status::unauthenticated("Authentication failed"))?;
 
-        let client_login_finish_message: Vec<u8> =
-            bincode::serialize(&client_login_finish_result.message)
-                .map_err(|_| Status::aborted("Unable to serialize client message"))?;
+        let client_login_finish_message =
+            dams::serialize_to_bytes(&client_login_finish_result.message)?;
         let authenticate_finish =
             Self::client_authenticate_finish(client_login_finish_message, user_id);
         tx.send(authenticate_finish)
@@ -307,9 +305,8 @@ impl Session {
                 .map_err(|_| Status::aborted("RegistrationStart failed"))?;
 
         // Send start message to server
-        let client_registration_start_message: Vec<u8> =
-            bincode::serialize(&client_registration_start_result.message)
-                .map_err(|_| Status::aborted("Unable to serialize client message"))?;
+        let client_registration_start_message =
+            dams::serialize_to_bytes(&client_registration_start_result.message)?;
         let register_start =
             Self::client_register_start(client_registration_start_message, user_id);
         tx.send(register_start)
@@ -323,9 +320,9 @@ impl Session {
         };
 
         let server_register_start_message: RegistrationResponse<OpaqueCipherSuite> =
-            bincode::deserialize(&server_register_start_result.server_register_start_message[..])
-                .map_err(|_| Status::aborted("Unable to deserialize server message"))?;
-
+            dams::deserialize_from_bytes(
+                &server_register_start_result.server_register_start_message[..],
+            )?;
         let client_finish_registration_result = client_registration_start_result
             .state
             .finish(
@@ -336,9 +333,8 @@ impl Session {
             )
             .map_err(|_| Status::aborted("RegistrationFinish failed"))?;
 
-        let client_finish_registration_message: Vec<u8> =
-            bincode::serialize(&client_finish_registration_result.message)
-                .map_err(|_| Status::aborted("Unable to serialize client message"))?;
+        let client_finish_registration_message =
+            dams::serialize_to_bytes(&client_finish_registration_result.message)?;
         let register_finish =
             Self::client_register_finish(client_finish_registration_message, user_id);
         tx.send(register_finish)

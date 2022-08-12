@@ -104,9 +104,7 @@ impl Register {
         // Convert user_id from message to str and then to UserId
         let uid = super::user_id_from_message(&message.user_id)?;
         let registration_request_message: RegistrationRequest<OpaqueCipherSuite> =
-            bincode::deserialize(&message.client_register_start_message[..])
-                .map_err(|_| Status::aborted("Unable to deserialize client message"))?;
-
+            dams::deserialize_from_bytes(&message.client_register_start_message[..])?;
         if User::find_user(db, &uid)
             .await
             .map_err(|_| Status::aborted("MongoDB error"))?
@@ -122,9 +120,8 @@ impl Register {
             )
             .map_err(|_| Status::aborted("Could not start server registration"))?;
 
-            let server_register_start_message: Vec<u8> =
-                bincode::serialize(&server_registration_start_result.message)
-                    .map_err(|_| Status::aborted("Unable to serialize server message"))?;
+            let server_register_start_message =
+                dams::serialize_to_bytes(&server_registration_start_result.message)?;
             let reply = ServerRegister {
                 step: Some(ServerStep::Start(ServerRegisterStart {
                     server_register_start_message,
@@ -153,9 +150,7 @@ impl Register {
 
         // deserialize client message into RegistrationUpload OPAQUE type
         let register_finish: RegistrationUpload<OpaqueCipherSuite> =
-            bincode::deserialize(&message.client_register_finish_message[..])
-                .map_err(|_| Status::aborted("Unable to deserialize client message"))?;
-
+            dams::deserialize_from_bytes(&message.client_register_finish_message[..])?;
         // run the finish step for OPAQUE
         let server_registration = ServerRegistration::<OpaqueCipherSuite>::finish(register_finish);
         // add the new user to the DB

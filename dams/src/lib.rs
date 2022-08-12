@@ -6,7 +6,9 @@
 #![warn(unused)]
 #![forbid(rustdoc::broken_intra_doc_links)]
 
+use serde::{Deserialize, Serialize};
 use std::fmt;
+use tonic::Status;
 
 pub mod blockchain;
 pub mod config;
@@ -42,4 +44,16 @@ impl fmt::Display for TestLogs {
             }
         )
     }
+}
+
+pub fn deserialize_from_bytes<'a, T: Deserialize<'a>>(message: &'a [u8]) -> Result<T, Status> {
+    let deserialized: T = bincode::deserialize(message)
+        .map_err(|_| Status::aborted("Unable to deserialize message"))?;
+    Ok(deserialized)
+}
+
+pub fn serialize_to_bytes<T: Serialize>(message: &T) -> Result<Vec<u8>, Status> {
+    let serialized: Vec<u8> =
+        bincode::serialize(message).map_err(|_| Status::aborted("Unable to serialize message"))?;
+    Ok(serialized)
 }
