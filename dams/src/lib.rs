@@ -20,6 +20,7 @@ pub mod transaction;
 pub mod transport;
 pub mod user;
 
+#[allow(clippy::all)]
 pub mod dams_rpc {
     tonic::include_proto!("dams_rpc");
 }
