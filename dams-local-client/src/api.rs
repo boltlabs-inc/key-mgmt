@@ -10,7 +10,6 @@ use dams::{
     blockchain::Blockchain,
     config::{client::Config, opaque::OpaqueCipherSuite},
     crypto::KeyId,
-    keys::{KeyInfo, UsePermission, UseRestriction, UserPolicySpecification},
     dams_rpc::{
         client_authenticate::Step as AuthenticateStep, client_register::Step as RegisterStep,
         dams_rpc_client::DamsRpcClient, server_authenticate::Step as ServerAuthenticateStep,
@@ -18,6 +17,7 @@ use dams::{
         ClientAuthenticateStart, ClientRegister, ClientRegisterFinish, ClientRegisterStart,
         ServerAuthenticateStart, ServerRegisterFinish, ServerRegisterStart,
     },
+    keys::{KeyInfo, UsePermission, UseRestriction, UserPolicySpecification},
     transaction::{TransactionApprovalRequest, TransactionSignature},
     transport::KeyMgmtAddress,
     user::UserId,
@@ -184,7 +184,8 @@ impl Session {
         server: &KeyMgmtAddress,
         config: &self::Config,
     ) -> Result<[u8; 64], Status> {
-        // Create channel to send messages to server after connection is established via RPC
+        // Create channel to send messages to server after connection is established via
+        // RPC
         let (tx, rx) = mpsc::channel(2);
         let stream = ReceiverStream::new(rx);
 
@@ -277,9 +278,7 @@ impl Session {
         )
         .await;
         match result {
-            Ok(_) => {
-                return Self::open(client, rng, user_id, password, config).await;
-            }
+            Ok(_) => Self::open(client, rng, user_id, password, config).await,
             Err(e) => {
                 error!("{:?}", e);
                 Err(SessionError::RegistrationFailed)
@@ -295,7 +294,8 @@ impl Session {
         server: &KeyMgmtAddress,
         config: &self::Config,
     ) -> Result<Response<ServerRegisterFinish>, Status> {
-        // Create channel to send messages to server after connection is established via RPC
+        // Create channel to send messages to server after connection is established via
+        // RPC
         let (tx, rx) = mpsc::channel(2);
         let stream = ReceiverStream::new(rx);
 

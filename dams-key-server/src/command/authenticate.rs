@@ -10,9 +10,8 @@ use dams::{
     opaque_storage::create_or_retrieve_server_key_opaque,
 };
 use mongodb::Database;
-use opaque_ke::keypair::PrivateKey;
 use opaque_ke::{
-    CredentialFinalization, CredentialRequest, Ristretto255, ServerLogin,
+    keypair::PrivateKey, CredentialFinalization, CredentialRequest, Ristretto255, ServerLogin,
     ServerLoginStartParameters, ServerLoginStartResult, ServerSetup,
 };
 use rand::rngs::StdRng;
@@ -53,7 +52,7 @@ impl Authenticate {
 
         // Clone db outside of thread to prevent lifetime errors
         let db = db.clone();
-        let server_setup = server_setup.clone();
+        // let server_setup = server_setup.clone();
 
         let _ = tokio::spawn(async move {
             let mut server_login_result: Option<ServerLoginStartResult<OpaqueCipherSuite>> = None;
@@ -114,7 +113,7 @@ impl Authenticate {
         // Convert user_id from message to str and then to UserId
         let uid = super::user_id_from_message(&message.user_id)?;
 
-        let server_registration = match User::find_user(&db, &uid)
+        let server_registration = match User::find_user(db, &uid)
             .await
             .map_err(|_| Status::aborted("MongoDB error"))?
         {

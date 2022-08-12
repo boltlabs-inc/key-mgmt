@@ -71,8 +71,8 @@ pub async fn start_tonic_server(config: Config) -> Result<(), anyhow::Error> {
     let db = database::connect_to_mongo().await?;
 
     let dams_rpc_server = DamsKeyServer::new(db, config);
-    let addr = dams_rpc_server.service.address.clone();
-    let port = dams_rpc_server.service.port.clone();
+    let addr = dams_rpc_server.service.address;
+    let port = dams_rpc_server.service.port;
     info!("{}", TestLogs::ServerSpawned(addr.to_string()));
     Server::builder()
         .add_service(DamsRpcServer::new(dams_rpc_server))

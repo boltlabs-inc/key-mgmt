@@ -49,7 +49,7 @@ impl Register {
 
         // Clone db outside of thread to prevent lifetime errors
         let db = db.clone();
-        let server_setup = server_setup.clone();
+        // let server_setup = server_setup.clone();
 
         let _ = tokio::spawn(async move {
             // Process start step
@@ -107,7 +107,7 @@ impl Register {
             bincode::deserialize(&message.client_register_start_message[..])
                 .map_err(|_| Status::aborted("Unable to deserialize client message"))?;
 
-        if User::find_user(&db, &uid)
+        if User::find_user(db, &uid)
             .await
             .map_err(|_| Status::aborted("MongoDB error"))?
             .is_some()

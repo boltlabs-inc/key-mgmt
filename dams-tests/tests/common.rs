@@ -5,15 +5,13 @@ use std::{
     process::Command,
     sync::Mutex,
 };
-use std::future::Future;
-use anyhow::Error;
 
 use futures::future;
 use mongodb::Database;
 use thiserror::Error;
 use tokio::{task::JoinHandle, time::Duration};
 use tracing::info_span;
-use tracing_futures::{Instrument, Instrumented};
+use tracing_futures::Instrument;
 
 use dams::{timeout::WithTimeout, TestLogs};
 
@@ -69,7 +67,7 @@ pub async fn setup(db: Database) -> ServerFuture {
     #[allow(clippy::infallible_destructuring_match)]
     let server_handle = tokio::spawn(
         dams_key_server::server::start_tonic_server(server_config)
-            .instrument(info_span!(Party::Server.to_str()))
+            .instrument(info_span!(Party::Server.to_str())),
     );
     // Check the logs of server + client for indication of a successful set-up
     // Note: hard-coded to match the 2-service server with default port.
