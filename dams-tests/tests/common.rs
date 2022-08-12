@@ -5,23 +5,23 @@ use std::{
     process::Command,
     sync::Mutex,
 };
-use structopt::StructOpt;
+use std::future::Future;
+use anyhow::Error;
 
 use futures::future;
 use mongodb::Database;
 use thiserror::Error;
 use tokio::{task::JoinHandle, time::Duration};
 use tracing::info_span;
-use tracing_futures::Instrument;
+use tracing_futures::{Instrument, Instrumented};
 
 use dams::{timeout::WithTimeout, TestLogs};
-use dams_key_server::command::Command as _;
 
 pub const CLIENT_CONFIG: &str = "tests/gen/TestClient.toml";
 pub const SERVER_CONFIG: &str = "tests/gen/TestServer.toml";
 pub const ERROR_FILENAME: &str = "tests/gen/errors.log";
 
-const SERVER_ADDRESS: &str = "127.0.0.1";
+pub const SERVER_ADDRESS: &str = "127.0.0.1";
 
 /// Give a name to the slightly annoying type of the joined server futures
 type ServerFuture = JoinHandle<Result<(), anyhow::Error>>;
@@ -42,19 +42,6 @@ impl Party {
         }
     }
 }
-
-/// Form a server CLI request. These cannot be constructed directly because the
-/// CLI types are non-exhaustive.
-macro_rules! server_cli {
-    ($cli:ident, $args:expr) => {
-        match ::dams_key_server::cli::Server::from_iter(
-            ::std::iter::once("key-server-cli").chain($args),
-        ) {
-            ::dams_key_server::cli::Server::$cli(result) => result,
-        }
-    };
-}
-pub(crate) use server_cli;
 
 #[allow(unused)]
 pub async fn setup(db: Database) -> ServerFuture {
@@ -80,16 +67,15 @@ pub async fn setup(db: Database) -> ServerFuture {
 
     // Form the server run request and execute
     #[allow(clippy::infallible_destructuring_match)]
-    let run = server_cli!(Run, vec!["run"]);
     let server_handle = tokio::spawn(
-        run.run(server_config, db)
-            .instrument(info_span!(Party::Server.to_str())),
+        dams_key_server::server::start_tonic_server(server_config)
+            .instrument(info_span!(Party::Server.to_str()))
     );
     // Check the logs of server + client for indication of a successful set-up
     // Note: hard-coded to match the 2-service server with default port.
     let checks = vec![await_log(
         Party::Server,
-        TestLogs::ServerSpawned(SERVER_ADDRESS.to_string() + ":1113"),
+        TestLogs::ServerSpawned(SERVER_ADDRESS.to_string()),
     )];
 
     // Wait up to 30sec for the servers to set up or fail

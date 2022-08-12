@@ -1,35 +1,19 @@
 pub(crate) mod common;
 
 use crate::{
-    Operation::{Authenticate, Create, Register, Retrieve},
+    Operation::{Authenticate, Register},
     Party::{Client, Server},
 };
 use anyhow::anyhow;
 use common::{get_logs, LogType, Party};
 
-use dams::{transport::KeyMgmtAddress, user::UserId};
+use dams::{dams_rpc::dams_rpc_client::DamsRpcClient, transport::KeyMgmtAddress, user::UserId};
 use dams_key_server::database;
-use dams_local_client::{
-    api::{Password, Session, SessionConfig},
-    command::Command,
-};
+use dams_local_client::api::{Password, Session, SessionConfig};
 use rand::{prelude::StdRng, SeedableRng};
 use std::{fs::OpenOptions, str::FromStr};
-use structopt::StructOpt;
 use thiserror::Error;
-
-/// Form a client CLI request. These cannot be constructed directly because the
-/// CLI types are non-exhaustive.
-macro_rules! client_cli {
-    ($cli:ident, $args:expr) => {
-        match ::dams_local_client::cli::Client::from_iter(
-            ::std::iter::once("local-client-cli").chain($args),
-        ) {
-            ::dams_local_client::cli::Client::$cli(result) => result,
-            _ => panic!("Failed to parse client CLI"),
-        }
-    };
-}
+use tonic::transport::Channel;
 
 #[tokio::test]
 pub async fn integration_tests() {
@@ -50,6 +34,10 @@ pub async fn integration_tests() {
     println!("Executing {} tests", tests.len());
     let mut results = Vec::with_capacity(tests.len());
 
+    let mut client =
+        dams_local_client::api::connect(format!("http://{}:1113", common::SERVER_ADDRESS))
+            .await
+            .expect("Could not return a client");
     // Clear error log
     OpenOptions::new()
         .write(true)
@@ -58,7 +46,7 @@ pub async fn integration_tests() {
         .unwrap_or_else(|e| panic!("Failed to clear error file at start: {:?}", e));
     for test in tests {
         eprintln!("\n\ntest integration_tests::{} ... ", test.name);
-        let result = test.execute(&client_config, &mut rng).await;
+        let result = test.execute(&mut client, &client_config, &mut rng).await;
         if let Err(error) = &result {
             eprintln!("failed with error: {:?}", error)
         } else {
@@ -98,16 +86,6 @@ pub async fn integration_tests() {
 /// processes (server).
 async fn tests() -> Vec<Test> {
     vec![
-        Test {
-            name: "Create a secret on the server".to_string(),
-            operations: vec![(
-                Create,
-                Outcome {
-                    error: None,
-                    expected_error: None,
-                },
-            )],
-        },
         Test {
             name: "Register the same user twice user".to_string(),
             operations: vec![
@@ -207,16 +185,6 @@ async fn tests() -> Vec<Test> {
                 },
             )],
         },
-        Test {
-            name: "Retrieve a secret from the server".to_string(),
-            operations: vec![(
-                Retrieve,
-                Outcome {
-                    error: None,
-                    expected_error: None,
-                },
-            )],
-        },
     ]
 }
 
@@ -229,36 +197,28 @@ struct Test {
 impl Test {
     async fn execute(
         &self,
+        client: &mut DamsRpcClient<Channel>,
         client_config: &dams::config::client::Config,
         rng: &mut StdRng,
     ) -> Result<(), anyhow::Error> {
         for (op, expected_outcome) in &self.operations {
-            let outcome = match op {
-                Create => {
-                    let create = client_cli!(Create, vec!["create", "keymgmt://localhost"]);
-                    create.run(client_config.clone()).await
-                }
+            let outcome: Result<(), anyhow::Error> = match op {
                 Register(user_id, password) => {
                     let config = SessionConfig::new(
                         client_config.clone(),
                         KeyMgmtAddress::from_str("keymgmt://localhost").unwrap(),
                     );
-                    Session::register(rng, user_id, password, &config)
+                    Session::register(client, rng, user_id, password, &config)
                         .await
                         .map(|_| ())
                         .map_err(|e| e.into())
                 }
-                Retrieve => {
-                    let retrieve = client_cli!(Retrieve, vec!["retrieve", "keymgmt://localhost"]);
-                    retrieve.run(client_config.clone()).await.map(|_| ())
-                }
-
                 Authenticate(user_id, password) => {
                     let config = SessionConfig::new(
                         client_config.clone(),
                         KeyMgmtAddress::from_str("keymgmt://localhost").unwrap(),
                     );
-                    Session::open(rng, user_id, password, &config)
+                    Session::open(client, rng, user_id, password, &config)
                         .await
                         .map(|_| ())
                         .map_err(|e| e.into())
@@ -323,9 +283,7 @@ enum TestError {
 #[allow(unused)]
 #[derive(Debug)]
 enum Operation {
-    Create,
     Register(UserId, Password),
-    Retrieve,
     Authenticate(UserId, Password),
 }
 

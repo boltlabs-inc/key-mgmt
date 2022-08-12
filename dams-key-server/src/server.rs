@@ -8,15 +8,18 @@ use dams::{
         ClientAuthenticate, ClientRegister,
     },
     defaults::server::config_path,
+    TestLogs,
 };
 use futures::FutureExt;
 use mongodb::Database;
 use rand::{rngs::StdRng, SeedableRng};
 use std::{
     convert::identity,
+    net::SocketAddr,
     sync::{Arc, Mutex},
 };
 use tonic::{transport::Server, Request, Response, Status};
+use tracing::info;
 
 #[allow(unused)]
 #[derive(Debug)]
@@ -64,21 +67,25 @@ impl DamsRpc for DamsKeyServer {
     }
 }
 
+pub async fn start_tonic_server(config: Config) -> Result<(), anyhow::Error> {
+    let db = database::connect_to_mongo().await?;
+
+    let dams_rpc_server = DamsKeyServer::new(db, config);
+    let addr = dams_rpc_server.service.address.clone();
+    let port = dams_rpc_server.service.port.clone();
+    info!("{}", TestLogs::ServerSpawned(addr.to_string()));
+    Server::builder()
+        .add_service(DamsRpcServer::new(dams_rpc_server))
+        .serve(SocketAddr::new(addr, port))
+        .await
+        .map_err(|_| anyhow!("Cannot start server"))
+}
+
 pub async fn main_with_cli(cli: Cli) -> Result<(), anyhow::Error> {
     let config_path = cli.config.ok_or_else(config_path).or_else(identity)?;
     let config = Config::load(&config_path).map(|result| {
         result
             .with_context(|| format!("Could not load server configuration from {:?}", config_path))
     });
-
-    let db = database::connect_to_mongo().await?;
-
-    let dams_rpc_server = DamsKeyServer::new(db, config.await?);
-    let addr = "[::1]:50051".parse()?;
-
-    Server::builder()
-        .add_service(DamsRpcServer::new(dams_rpc_server))
-        .serve(addr)
-        .await
-        .map_err(|_| anyhow!("Cannot start server"))
+    start_tonic_server(config.await?).await
 }

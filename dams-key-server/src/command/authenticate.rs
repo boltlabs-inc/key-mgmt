@@ -76,8 +76,7 @@ impl Authenticate {
 
                 let finish_message = Self::unwrap_client_finish_step(message.step)?;
                 let response =
-                    Self::handle_authenticate_finish(finish_message, server_login_result)
-                        .await;
+                    Self::handle_authenticate_finish(finish_message, server_login_result).await;
                 let _ = tx
                     .send(response)
                     .await

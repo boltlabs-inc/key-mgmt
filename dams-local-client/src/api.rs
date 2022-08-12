@@ -5,6 +5,7 @@
 //! the asset owner provides should be passed directly to this API without being
 //! sent to a separate machine.
 
+use anyhow::anyhow;
 use dams::{
     blockchain::Blockchain,
     config::{client::Config, opaque::OpaqueCipherSuite},
@@ -438,6 +439,15 @@ pub enum Error {
 
     #[error("The request was rejected")]
     TransactionApprovalRequestFailed,
+}
+
+/// Connect to the gRPC client and return it to the client app.
+///
+/// The returned client should be passed to the remaining API functions.
+pub async fn connect(address: String) -> Result<DamsRpcClient<Channel>, anyhow::Error> {
+    DamsRpcClient::connect(address)
+        .await
+        .map_err(|_| anyhow!("Could not connect to server"))
 }
 
 /// Generate a new, distributed digital asset key with the given use
