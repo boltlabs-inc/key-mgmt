@@ -78,6 +78,12 @@ where
     }
 }
 
+impl Encrypted<Secret> {
+    pub fn decrypt_secret(self, _storage_key: StorageKey) -> Secret {
+        todo!()
+    }
+}
+
 /// An export key is secure key material produced as client output from OPAQUE.
 ///
 /// This uses standardized naming, but is _not_ directly used as an encryption
