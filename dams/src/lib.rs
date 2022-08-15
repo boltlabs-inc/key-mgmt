@@ -1,5 +1,10 @@
-//! This crate is an implementation of a local client to a key management
-//! system.
+//! Cryptography, protocols, and other shared types and context used by multiple
+//! entities in the Lock Keeper digital asset management system.
+//!
+//! ⚠️ __Usage__: This crate should _not_ be used directly by developers outside
+//! of Bolt Labs. It is designed as a dependency for other crates in the
+//! ecosystem, including `dams-key-server`, `dams-local-client`, and
+//! `dams-remote-client`.
 #![warn(missing_debug_implementations)]
 #![warn(unused_results)]
 #![warn(future_incompatible)]
