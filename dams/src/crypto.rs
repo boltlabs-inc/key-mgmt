@@ -15,6 +15,10 @@ use crate::user::UserId;
 
 pub mod client;
 
+/// Errors that arise in the cryptography module.
+///
+/// Implementation note: this is not necessarily exhaustive yet - more variants
+/// may be added as the module is implemented.
 #[derive(Debug, Clone, Copy, Error)]
 pub enum CryptoError {
     #[error("Failed to decrypt ciphertext and/or authenticate associated data")]
@@ -42,11 +46,7 @@ impl Default for AssociatedData {
 /// change.
 #[allow(unused)]
 #[derive(Debug, Clone)]
-pub struct Encrypted<T>
-where
-    T: From<Bytes>,
-    Bytes: From<T>,
-{
+pub struct Encrypted<T> {
     ciphertext: Bytes,
     associated_data: AssociatedData,
     original_type: PhantomData<T>,
@@ -149,18 +149,6 @@ impl StorageKey {
     }
 }
 
-impl From<Bytes> for StorageKey {
-    fn from(_: Bytes) -> Self {
-        todo!()
-    }
-}
-
-impl From<StorageKey> for Bytes {
-    fn from(_: StorageKey) -> Self {
-        todo!()
-    }
-}
-
 /// Universally unique identifier for a secret.
 #[allow(unused)]
 #[derive(Debug, Serialize, Deserialize)]
@@ -189,18 +177,6 @@ pub struct Secret {
 impl Secret {
     /// Generate a new secret of length `len`.
     fn generate(rng: impl CryptoRng + RngCore, len: u32, user_id: UserId, key_id: KeyId) -> Self {
-        todo!()
-    }
-}
-
-impl From<Bytes> for Secret {
-    fn from(_: Bytes) -> Self {
-        todo!()
-    }
-}
-
-impl From<Secret> for Bytes {
-    fn from(_: Secret) -> Self {
         todo!()
     }
 }
