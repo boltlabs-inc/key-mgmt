@@ -4,13 +4,79 @@
 //! transformations between them. The [`client`] submodule provides wrappers
 //! around larger blocks of client-side cryptography.
 
+use std::marker::PhantomData;
+
 use bytes::Bytes;
 use rand::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
 use crate::user::UserId;
 
 pub mod client;
+
+#[derive(Debug, Clone, Copy, Error)]
+pub enum CryptoError {
+    #[error("Failed to decrypt ciphertext and/or authenticate associated data")]
+    DecryptionFailed,
+}
+
+/// The associated data and additional context used in [`Encrypted`] AEAD
+/// ciphertexts and (TODO #130: HKDF) key derivations.
+#[derive(Debug, Clone)]
+struct AssociatedData(String);
+
+impl Default for AssociatedData {
+    fn default() -> Self {
+        Self(String::from(
+            "Version 0.1: Arbitrary secrets proof of concept. ",
+        ))
+    }
+}
+
+/// A ciphertext representing an object of type `T`, encrypted under (TODO #107:
+/// encryption scheme).
+///
+/// Implementation note: there may be additional fields in this struct (e.g. an
+/// authentication blob separate from the ciphertext), or the types might
+/// change.
+#[allow(unused)]
+#[derive(Debug, Clone)]
+struct Encrypted<T>
+where
+    T: From<Bytes>,
+    Bytes: From<T>,
+{
+    ciphertext: Bytes,
+    associated_data: AssociatedData,
+    original_type: PhantomData<T>,
+}
+
+/// A well-formed symmetric encryption key for the (TODO #107: specify
+/// encryption scheme) authenticated encryption with associated data (AEAD)
+/// scheme.
+#[derive(Debug, Clone)]
+struct AeadKey;
+
+#[allow(unused)]
+impl<T> Encrypted<T>
+where
+    T: From<Bytes>,
+    Bytes: From<T>,
+{
+    /// Encrypt the `T` under the [`AeadKey`] with the [`AssociatedData`].
+    fn encrypt(object: T, associated_data: &AssociatedData, aead_key: &AeadKey) -> Encrypted<T> {
+        todo!()
+    }
+
+    /// Decrypt the ciphertext to a `T`.
+    ///
+    /// Raises a [`CryptoError::DecryptionFailed`] if decryption fails or if the
+    /// associated data fails to authenticate.
+    fn decrypt(self, aead_key: &AeadKey) -> Result<T, CryptoError> {
+        todo!()
+    }
+}
 
 /// An export key is secure key material produced as client output from OPAQUE.
 ///
