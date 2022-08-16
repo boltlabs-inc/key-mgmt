@@ -66,7 +66,7 @@ impl Authenticate {
                 let _ = tx
                     .send(response.result)
                     .await
-                    .map_err(|_| Status::aborted("Handle weird error type"));
+                    .map_err(|e| Status::aborted(e.to_string()));
             }
 
             // Process finish step
@@ -79,7 +79,7 @@ impl Authenticate {
                 let _ = tx
                     .send(response)
                     .await
-                    .map_err(|_| Status::aborted("Handle weird error type"));
+                    .map_err(|e| Status::aborted(e.to_string()));
             }
 
             Ok::<(), Status>(())

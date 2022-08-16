@@ -231,7 +231,7 @@ impl Session {
             Self::client_authenticate_finish(client_login_finish_message, user_id);
         tx.send(authenticate_finish)
             .await
-            .expect("Handle weird error type");
+            .map_err(|e| Status::aborted(e.to_string()))?;
 
         // Handle finish message
         let server_authenticate_finish_result = server_response.next().await;
@@ -311,7 +311,7 @@ impl Session {
             Self::client_register_start(client_registration_start_message, user_id);
         tx.send(register_start)
             .await
-            .expect("Handle weird error type");
+            .map_err(|e| Status::aborted(e.to_string()))?;
 
         let server_register_start_result = match server_response.next().await {
             Some(Ok(res)) => Self::unwrap_server_start_register(res.step)?,
@@ -339,7 +339,7 @@ impl Session {
             Self::client_register_finish(client_finish_registration_message, user_id);
         tx.send(register_finish)
             .await
-            .expect("Handle weird error type");
+            .map_err(|e| Status::aborted(e.to_string()))?;
 
         // Handle finish message
         let server_register_finish_result = server_response.next().await;
