@@ -206,10 +206,10 @@ impl Session {
             .map_err(|_| Status::aborted("Could not send message to server"))?;
 
         let server_authenticate_start_result = match server_response.next().await {
-            Some(Ok(res)) => Self::unwrap_server_start_authenticate(res.step)?,
-            Some(Err(e)) => return Err(e),
-            None => return Err(Status::invalid_argument("No message received")),
-        };
+            Some(Ok(res)) => Self::unwrap_server_start_authenticate(res.step),
+            Some(Err(e)) => Err(e),
+            None => Err(Status::invalid_argument("No message received")),
+        }?;
 
         let credential_response: CredentialResponse<OpaqueCipherSuite> =
             dams::deserialize_from_bytes(
@@ -314,10 +314,10 @@ impl Session {
             .map_err(|e| Status::aborted(e.to_string()))?;
 
         let server_register_start_result = match server_response.next().await {
-            Some(Ok(res)) => Self::unwrap_server_start_register(res.step)?,
-            Some(Err(e)) => return Err(e),
-            None => return Err(Status::invalid_argument("No message received")),
-        };
+            Some(Ok(res)) => Self::unwrap_server_start_register(res.step),
+            Some(Err(e)) => Err(e),
+            None => Err(Status::invalid_argument("No message received")),
+        }?;
 
         let server_register_start_message: RegistrationResponse<OpaqueCipherSuite> =
             dams::deserialize_from_bytes(

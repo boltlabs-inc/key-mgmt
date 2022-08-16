@@ -81,7 +81,7 @@ pub async fn start_tonic_server(config: Config) -> Result<(), anyhow::Error> {
         .add_service(DamsRpcServer::new(dams_rpc_server))
         .serve(SocketAddr::new(addr, port))
         .await
-        .map_err(|_| anyhow!("Cannot start server"))
+        .map_err(|e| anyhow!("Cannot start server: {:?}", e))
 }
 
 pub async fn main_with_cli(cli: Cli) -> Result<(), anyhow::Error> {

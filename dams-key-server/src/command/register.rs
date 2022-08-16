@@ -58,10 +58,9 @@ impl Register {
 
                 let start_message = Self::unwrap_client_start_step(message.step)?;
                 let response = Self::handle_register_start(&db, start_message, &server_setup).await;
-                let _ = tx
-                    .send(response)
+                tx.send(response)
                     .await
-                    .map_err(|e| Status::aborted(e.to_string()));
+                    .map_err(|e| Status::aborted(e.to_string()))?;
             }
 
             // Process finish step
@@ -70,10 +69,9 @@ impl Register {
 
                 let finish_message = Self::unwrap_client_finish_step(message.step)?;
                 let response = Self::handle_register_finish(&db, finish_message).await;
-                let _ = tx
-                    .send(response)
+                tx.send(response)
                     .await
-                    .map_err(|e| Status::aborted(e.to_string()));
+                    .map_err(|e| Status::aborted(e.to_string()))?;
             }
 
             Ok::<(), Status>(())

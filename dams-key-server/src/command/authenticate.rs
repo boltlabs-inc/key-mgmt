@@ -75,10 +75,9 @@ impl Authenticate {
                 let finish_message = Self::unwrap_client_finish_step(message.step)?;
                 let response =
                     Self::handle_authenticate_finish(finish_message, server_login_result).await;
-                let _ = tx
-                    .send(response)
+                tx.send(response)
                     .await
-                    .map_err(|e| Status::aborted(e.to_string()));
+                    .map_err(|e| Status::aborted(e.to_string()))?;
             }
 
             Ok::<(), Status>(())
@@ -117,7 +116,7 @@ impl Authenticate {
             .map_err(|_| Status::aborted("MongoDB error"))?
         {
             Some(user) => user.into_server_registration(),
-            None => return Err(Status::already_exists("UserId already exists")),
+            None => return Err(Status::aborted("UserId does not exist")),
         };
         let credential_request: CredentialRequest<OpaqueCipherSuite> =
             dams::deserialize_from_bytes(&message.client_authenticate_start_message[..])?;
@@ -169,10 +168,8 @@ impl Authenticate {
         message: ClientAuthenticateFinish,
         server_login_result: Option<ServerLoginStartResult<OpaqueCipherSuite>>,
     ) -> Result<ServerAuthenticate, Status> {
-        let server_login_result = match server_login_result {
-            Some(res) => res,
-            None => return Err(Status::aborted("No login result found")),
-        };
+        let server_login_result =
+            server_login_result.ok_or_else(|| Status::aborted("No login result found"))?;
         // deserialize client message into RegistrationUpload OPAQUE type
         let auth_finish: CredentialFinalization<OpaqueCipherSuite> =
             dams::deserialize_from_bytes(&message.client_authenticate_finish_message[..])?;
