@@ -52,7 +52,6 @@ impl Authenticate {
 
         // Clone db outside of thread to prevent lifetime errors
         let db = db.clone();
-        // let server_setup = server_setup.clone();
 
         let _ = tokio::spawn(async move {
             let mut server_login_result: Option<ServerLoginStartResult<OpaqueCipherSuite>> = None;
@@ -111,6 +110,8 @@ impl Authenticate {
         // Convert user_id from message to str and then to UserId
         let uid = super::user_id_from_message(&message.user_id)?;
 
+        // Check that user with corresponding UserId exists and get their
+        // server_registration
         let server_registration = match User::find_user(db, &uid)
             .await
             .map_err(|_| Status::aborted("MongoDB error"))?
@@ -146,6 +147,8 @@ impl Authenticate {
                 server_authenticate_start_message,
             })),
         };
+        // Wrap reply in AuthStartResult so we can return the server_login_start_result
+        // as well
         Ok(AuthStartResult {
             result: Ok(reply),
             server_message: server_login_start_result,

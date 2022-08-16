@@ -49,7 +49,6 @@ impl Register {
 
         // Clone db outside of thread to prevent lifetime errors
         let db = db.clone();
-        // let server_setup = server_setup.clone();
 
         let _ = tokio::spawn(async move {
             // Process start step
@@ -103,6 +102,7 @@ impl Register {
         let uid = super::user_id_from_message(&message.user_id)?;
         let registration_request_message: RegistrationRequest<OpaqueCipherSuite> =
             dams::deserialize_from_bytes(&message.client_register_start_message[..])?;
+        // Abort registration if UserId already exists
         if User::find_user(db, &uid)
             .await
             .map_err(|_| Status::aborted("MongoDB error"))?
@@ -110,7 +110,7 @@ impl Register {
         {
             Err(Status::already_exists("UserID already exists"))
         } else {
-            // registration can continue if user ID doesn't exist yet
+            // Registration can continue if user ID doesn't exist yet
             let server_registration_start_result = ServerRegistration::<OpaqueCipherSuite>::start(
                 server_setup,
                 registration_request_message,

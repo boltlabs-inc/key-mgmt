@@ -162,7 +162,6 @@ impl Session {
         .await;
         match result {
             Ok(result) => {
-                // TODO: unwrap bytes from result and put here?
                 let session = Session {
                     config: config.clone(),
                     session_key: result,
