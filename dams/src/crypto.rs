@@ -126,8 +126,8 @@ impl OpaqueExportKey {
     }
 }
 
-/// The master key is a default-length symmetric key for (TODO #107: encryption
-/// scheme).
+/// The master key is a default-length symmetric key for an AEAD (TODO #107:
+/// encryption scheme).
 ///
 /// It is used by the client to securely encrypt their [`StorageKey`]. It should
 /// not be stored or saved beyond the lifetime of a single authentication
