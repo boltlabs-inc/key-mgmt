@@ -9,7 +9,7 @@ use rand::{CryptoRng, RngCore};
 use super::{Encrypted, Secret};
 
 /// Create an encrypted storage key. This is part of the registration flow and
-/// is executed after completing the OPAQUE registration session with the
+/// is executed during a registration session with the
 /// server. This key should be sent to the server for storage.
 ///
 /// This must be run by the client.
@@ -26,21 +26,6 @@ pub fn create_and_encrypt_storage_key(
     todo!()
 }
 
-/// Decrypt a storage key. This should be run as part of the subprotocol to
-/// retrieve a storage key from the server.
-///
-/// This must be run by the client. It takes the following steps:
-/// 1. Derive a master key from the [`OpaqueExportKey`]
-/// 2. Decrypt the encrypted storage key using the master key
-/// 3. Return the decrypted [`StorageKey`]
-#[allow(unused)]
-pub fn decrypt_storage_key(
-    export_key: OpaqueExportKey,
-    encrypted_storage_key: Encrypted<StorageKey>,
-) -> StorageKey {
-    todo!()
-}
-
 /// Create and encrypt a new secret. This is part of the
 /// generate a new secret flow.
 ///
@@ -53,4 +38,23 @@ pub fn create_and_encrypt_secret(
     storage_key: StorageKey,
 ) -> Encrypted<Secret> {
     todo!()
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    #[should_panic(expected = "not yet implemented")]
+    fn create_and_encrypt_storage_key_not_implemented() {
+        let rng = rand::thread_rng();
+        let _ = create_and_encrypt_storage_key(rng, OpaqueExportKey);
+    }
+
+    #[test]
+    #[should_panic(expected = "not yet implemented")]
+    fn create_and_encrypt_secret_not_implemented() {
+        let rng = rand::thread_rng();
+        let _ = create_and_encrypt_secret(rng, StorageKey);
+    }
 }
