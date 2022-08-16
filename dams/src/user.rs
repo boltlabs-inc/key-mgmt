@@ -37,6 +37,10 @@ impl UserId {
     pub fn as_bytes(&self) -> &[u8] {
         self.0.as_ref()
     }
+
+    pub(crate) fn len(&self) -> usize {
+        self.0.len()
+    }
 }
 
 /// Account name used as human-memorable identifier for a user during OPAQUE.

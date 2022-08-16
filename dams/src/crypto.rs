@@ -18,7 +18,7 @@ use generic_array::{
 use hkdf::Hkdf;
 use rand::{CryptoRng, Rng, RngCore};
 use serde::{Deserialize, Serialize};
-use sha3::Sha3_256;
+use sha3::{Digest, Sha3_256};
 use std::{iter, marker::PhantomData};
 use thiserror::Error;
 use tracing::error;
@@ -386,16 +386,40 @@ impl TryFrom<Vec<u8>> for StorageKey {
 
 /// Universally unique identifier for a secret.
 #[allow(unused)]
-#[derive(Debug, Serialize, Deserialize)]
-pub struct KeyId;
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub struct KeyId(Box<[u8; 32]>);
 
 #[allow(unused)]
 impl KeyId {
     /// Generate a new, random `KeyId` for the given [`UserId`].
     ///
     /// This is called by the key server.
-    fn generate(rng: impl CryptoRng + RngCore, user_id: UserId) -> Self {
-        todo!()
+    fn generate(rng: &mut (impl CryptoRng + RngCore), user_id: &UserId) -> Self {
+        const RANDOM_LEN: usize = 32;
+        let mut randomness = [0; RANDOM_LEN];
+        rng.fill_bytes(&mut randomness);
+        let domain_separator = b"Lock Keeper key ID";
+
+        let mut hasher = Sha3_256::new();
+        let bytes = hasher
+            .chain_update(domain_separator.len().to_be_bytes())
+            .chain_update(domain_separator)
+            .chain_update([user_id.len() as u8])
+            .chain_update(user_id.as_bytes())
+            .chain_update([RANDOM_LEN as u8])
+            .chain_update(randomness)
+            .finalize();
+
+        // Truncate to 32 bytes, then convert into a 32-byte array.
+        // This `unwrap` is safe because the lengths are hardcoded.
+        Self(Box::new(
+            bytes
+                .into_iter()
+                .take(32)
+                .collect::<Vec<u8>>()
+                .try_into()
+                .unwrap(),
+        ))
     }
 }
 
@@ -660,10 +684,34 @@ mod test {
     }
 
     #[test]
-    #[should_panic(expected = "not yet implemented")]
-    fn key_id_generation_not_implemented() {
-        let thread_rng = rand::thread_rng();
-        let _key_id = KeyId::generate(thread_rng, UserId::default());
+    fn key_id_generation_produces_unique_ids() {
+        let mut rng = rand::thread_rng();
+        let mut uniq = HashSet::new();
+        let user_id = UserId::new(&mut rng).unwrap();
+
+        // Create 1000 key IDs; make sure they're unique
+        // by putting them into a set. Insert will return false if a secret
+        // already exists in the set.
+        assert!((0..1000)
+            .map(|_| KeyId::generate(&mut rng, &user_id))
+            .all(|key_id| uniq.insert(key_id)))
+    }
+
+    #[test]
+    fn key_id_generation_incorporates_user_id() {
+        let mut rng = rand::thread_rng();
+        let mut uniq = HashSet::new();
+        let seed = b"a terrible seed for testing keys";
+
+        // The bad RNG will produce the same randomness for every call to generate.
+        // But the key IDs are still unique!
+        assert!((0..1000)
+            .map(|_| {
+                let user_id = UserId::new(&mut rng).unwrap();
+                let mut bad_rng = StdRng::from_seed(*seed);
+                KeyId::generate(&mut bad_rng, &user_id)
+            })
+            .all(|key_id| uniq.insert(key_id)))
     }
 
     /// Generates random bytes, encrypts them, and returns them along with the
@@ -814,6 +862,8 @@ mod test {
     fn create_and_encrypt_secret_not_implemented() {
         let mut rng = rand::thread_rng();
         let storage_key = StorageKey::generate(&mut rng);
-        let _ = storage_key.create_and_encrypt_secret(&mut rng, &UserId::default(), &KeyId);
+        // TODO #134: use proper gen function
+        let key_id = KeyId(Box::new([0; 32]));
+        let _ = storage_key.create_and_encrypt_secret(&mut rng, &UserId::default(), &key_id);
     }
 }

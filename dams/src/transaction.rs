@@ -31,18 +31,6 @@ pub struct TransactionApprovalRequest {
     transaction: Transaction,
 }
 
-impl Default for TransactionApprovalRequest {
-    fn default() -> Self {
-        Self {
-            key_id: KeyId,
-            user_id: UserId::default(),
-            asset_id: AssetId,
-            tar_id: TarId,
-            transaction: Transaction,
-        }
-    }
-}
-
 /// Unique ID for a [`TransactionApprovalRequest`].
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct TarId;
