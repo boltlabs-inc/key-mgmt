@@ -63,10 +63,9 @@ impl Authenticate {
                 let response =
                     Self::handle_authenticate_start(&db, start_message, rng, &server_setup).await?;
                 server_login_result = Some(response.server_message);
-                let _ = tx
-                    .send(response.result)
+                tx.send(response.result)
                     .await
-                    .map_err(|e| Status::aborted(e.to_string()));
+                    .map_err(|e| Status::aborted(e.to_string()))?;
             }
 
             // Process finish step

@@ -31,15 +31,18 @@ pub struct DamsKeyServer {
 }
 
 impl DamsKeyServer {
-    pub fn new(db: Database, config: Config) -> Self {
-        let service = config.services.get(0).unwrap();
+    pub fn new(db: Database, config: Config) -> Result<Self, anyhow::Error> {
+        let service = config
+            .services
+            .get(0)
+            .ok_or_else(|| anyhow!("Could not get service."))?;
         let rng = StdRng::from_entropy();
-        Self {
+        Ok(Self {
             db,
             config: config.clone(),
             service: service.clone(),
             rng: Arc::new(Mutex::new(rng)),
-        }
+        })
     }
 }
 
@@ -70,7 +73,7 @@ impl DamsRpc for DamsKeyServer {
 pub async fn start_tonic_server(config: Config) -> Result<(), anyhow::Error> {
     let db = database::connect_to_mongo().await?;
 
-    let dams_rpc_server = DamsKeyServer::new(db, config);
+    let dams_rpc_server = DamsKeyServer::new(db, config)?;
     let addr = dams_rpc_server.service.address;
     let port = dams_rpc_server.service.port;
     info!("{}", TestLogs::ServerSpawned(addr.to_string()));
