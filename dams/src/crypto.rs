@@ -4,9 +4,10 @@
 //! transformations between them. The [`client`] submodule provides wrappers
 //! around larger blocks of client-side cryptography.
 
-use std::marker::PhantomData;
+use std::{marker::PhantomData, string::FromUtf8Error};
 
 use bytes::Bytes;
+use chacha20poly1305::{ChaCha20Poly1305, KeyInit};
 use rand::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -27,12 +28,25 @@ pub enum CryptoError {
 
 /// The associated data used in [`Encrypted`] AEAD
 /// ciphertexts and (TODO #130: HKDF) key derivations.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 struct AssociatedData(String);
 
 impl Default for AssociatedData {
     fn default() -> Self {
         Self(String::from("Version 0.1. "))
+    }
+}
+
+impl TryFrom<Vec<u8>> for AssociatedData {
+    type Error = FromUtf8Error;
+    fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
+        Ok(Self(String::from_utf8(bytes)?))
+    }
+}
+
+impl From<&AssociatedData> for Vec<u8> {
+    fn from(associated_data: &AssociatedData) -> Self {
+        associated_data.0.as_bytes().to_vec()
     }
 }
 
@@ -52,16 +66,26 @@ pub struct Encrypted<T> {
 /// A well-formed symmetric encryption key for the  authenticated encryption
 /// with associated data (AEAD) scheme (TODO #107: specify encryption scheme).
 #[derive(Debug, Clone)]
-struct EncryptionKey;
+struct EncryptionKey(chacha20poly1305::Key);
+
+#[allow(unused)]
+impl EncryptionKey {
+    /// Generate a new ChaCha20Poly1305 encryption key using their generation
+    /// function.
+    fn new(rng: &mut (impl CryptoRng + RngCore)) -> Self {
+        Self(ChaCha20Poly1305::generate_key(rng))
+    }
+}
 
 #[allow(unused)]
 impl<T> Encrypted<T>
 where
-    T: From<Bytes>,
-    Bytes: From<T>,
+    T: From<Vec<u8>>,
+    Vec<u8>: From<T>,
 {
     /// Encrypt the `T` under the [`AeadKey`] with the [`AssociatedData`].
     fn encrypt(
+        rng: &mut (impl CryptoRng + RngCore),
         enc_key: &EncryptionKey,
         object: T,
         associated_data: &AssociatedData,
@@ -210,6 +234,25 @@ mod test {
     use super::*;
 
     #[test]
+    fn associated_data_to_vec_u8_conversion_works() {
+        let test_strings = [
+            "A random string to test conversion",
+            "",
+            "0123456789",
+            "the quick brown fox jumps over the lazy dog",
+            "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG",
+        ];
+
+        for test in test_strings {
+            let data = AssociatedData(test.to_string());
+            let data_vec: Vec<u8> = (&data).into();
+            let output_data: AssociatedData = data_vec.try_into().unwrap();
+
+            assert_eq!(data, output_data)
+        }
+    }
+
+    #[test]
     #[should_panic(expected = "not yet implemented")]
     fn derive_master_key_not_implemented() {
         let _master_key = OpaqueExportKey.derive_master_key();
@@ -254,19 +297,26 @@ mod test {
     #[test]
     #[should_panic(expected = "not yet implemented")]
     fn encryption_not_implemented() {
-        let bytes = Bytes::default();
-        let _encrypted = Encrypted::encrypt(&EncryptionKey, bytes, &AssociatedData::default());
+        let bytes = Vec::default();
+        let enc_key = EncryptionKey::new(&mut rand::thread_rng());
+        let _encrypted = Encrypted::encrypt(
+            &mut rand::thread_rng(),
+            &enc_key,
+            bytes,
+            &AssociatedData::default(),
+        );
     }
 
     #[test]
     #[should_panic(expected = "not yet implemented")]
     fn decryption_not_implemented() {
-        let encrypted_bytes: Encrypted<Bytes> = Encrypted {
+        let encrypted_bytes: Encrypted<Vec<u8>> = Encrypted {
             ciphertext: Bytes::default(),
             associated_data: AssociatedData::default(),
             original_type: PhantomData,
         };
-        let _decrypted = encrypted_bytes.decrypt(&EncryptionKey);
+        let enc_key = EncryptionKey::new(&mut rand::thread_rng());
+        let _decrypted = encrypted_bytes.decrypt(&enc_key);
     }
 
     #[test]
