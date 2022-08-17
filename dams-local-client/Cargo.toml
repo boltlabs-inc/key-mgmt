@@ -3,9 +3,6 @@ name = "dams-local-client"
 version = "0.1.0"
 edition = "2021"
 
-[[bin]]
-name = "local-client-cli"
-path = "src/bin/main.rs"
 
 [features]
 allow_explicit_certificate_trust = []
