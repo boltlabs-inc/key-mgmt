@@ -7,7 +7,10 @@
 use std::{marker::PhantomData, string::FromUtf8Error};
 
 use bytes::Bytes;
-use chacha20poly1305::{ChaCha20Poly1305, KeyInit};
+use chacha20poly1305::{
+    aead::{Aead, Payload},
+    AeadCore, ChaCha20Poly1305, KeyInit,
+};
 use rand::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -22,6 +25,8 @@ pub mod client;
 /// may be added as the module is implemented.
 #[derive(Debug, Clone, Copy, Error)]
 pub enum CryptoError {
+    #[error("Encryption failed")]
+    EncryptionFailed,
     #[error("Decryption failed")]
     DecryptionFailed,
 }
@@ -58,7 +63,7 @@ impl From<&AssociatedData> for Vec<u8> {
 #[allow(unused)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Encrypted<T> {
-    ciphertext: Bytes,
+    ciphertext: Vec<u8>,
     associated_data: AssociatedData,
     original_type: PhantomData<T>,
 }
@@ -89,8 +94,25 @@ where
         enc_key: &EncryptionKey,
         object: T,
         associated_data: &AssociatedData,
-    ) -> Encrypted<T> {
-        todo!()
+    ) -> Result<Encrypted<T>, CryptoError> {
+        let cipher = ChaCha20Poly1305::new(&enc_key.0);
+        let nonce = ChaCha20Poly1305::generate_nonce(rng);
+
+        let ad_vec: Vec<u8> = associated_data.into();
+
+        let payload = Payload {
+            msg: &Vec::from(object),
+            aad: &ad_vec,
+        };
+        let ciphertext = cipher
+            .encrypt(&nonce, payload)
+            .map_err(|_| CryptoError::EncryptionFailed)?;
+
+        Ok(Self {
+            ciphertext,
+            associated_data: associated_data.clone(),
+            original_type: PhantomData,
+        })
     }
 
     /// Decrypt the ciphertext to a `T`.
@@ -232,6 +254,7 @@ impl Secret {
 #[cfg(test)]
 mod test {
     use super::*;
+    use rand::Rng;
 
     #[test]
     fn associated_data_to_vec_u8_conversion_works() {
@@ -295,23 +318,30 @@ mod test {
     }
 
     #[test]
-    #[should_panic(expected = "not yet implemented")]
-    fn encryption_not_implemented() {
-        let bytes = Vec::default();
-        let enc_key = EncryptionKey::new(&mut rand::thread_rng());
-        let _encrypted = Encrypted::encrypt(
+    fn encryption_not_obviously_broken() {
+        let mut thread_rng = rand::thread_rng();
+        let bytes = Vec::from_iter(
+            std::iter::repeat_with(|| thread_rng.gen())
+                .take(64)
+                .collect::<Vec<u8>>(),
+        );
+        let enc_key = EncryptionKey::new(&mut thread_rng);
+        let encrypted = Encrypted::encrypt(
             &mut rand::thread_rng(),
             &enc_key,
-            bytes,
+            bytes.clone(),
             &AssociatedData::default(),
-        );
+        )
+        .unwrap();
+
+        assert_ne!(bytes, encrypted.ciphertext);
     }
 
     #[test]
     #[should_panic(expected = "not yet implemented")]
     fn decryption_not_implemented() {
         let encrypted_bytes: Encrypted<Vec<u8>> = Encrypted {
-            ciphertext: Bytes::default(),
+            ciphertext: Vec::default(),
             associated_data: AssociatedData::default(),
             original_type: PhantomData,
         };
@@ -323,7 +353,7 @@ mod test {
     #[should_panic(expected = "not yet implemented")]
     fn decrypt_storage_key_not_implemented() {
         let storage_key = Encrypted {
-            ciphertext: Bytes::default(),
+            ciphertext: Vec::default(),
             associated_data: AssociatedData::default(),
             original_type: PhantomData,
         };
@@ -334,7 +364,7 @@ mod test {
     #[should_panic(expected = "not yet implemented")]
     fn decrypt_secret_not_implemented() {
         let encrypted_secret = Encrypted {
-            ciphertext: Bytes::default(),
+            ciphertext: Vec::default(),
             associated_data: AssociatedData::default(),
             original_type: PhantomData,
         };
