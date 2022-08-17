@@ -24,7 +24,7 @@ pub enum Error {}
 ///
 /// TODO #30 (design, implementation): Pass a session.
 #[allow(unused)]
-pub fn register_passive_user(user_id: UserId) -> Result<(), Error> {
+pub fn register_user(user_id: UserId) -> Result<(), Error> {
     todo!()
 }
 
@@ -38,7 +38,7 @@ pub fn register_passive_user(user_id: UserId) -> Result<(), Error> {
 ///
 /// TODO #30 (design, implementation): Pass a session.
 #[allow(unused)]
-pub fn create_passive_digital_asset_key(
+pub fn create_key(
     user_id: UserId,
     blockchain: Blockchain,
     restriction: impl UseRestriction,
@@ -65,7 +65,7 @@ pub fn create_passive_digital_asset_key(
 ///
 /// TODO #30 (design, implementation): Pass a session.
 #[allow(unused)]
-pub fn request_transaction_signature(
+pub fn sign_transaction(
     transaction_approval_request: TransactionApprovalRequest,
 ) -> Result<TransactionSignature, Error> {
     todo!()
@@ -83,7 +83,7 @@ pub fn request_transaction_signature(
 ///
 /// TODO #30 (design, implementation): Pass a session.
 #[allow(unused)]
-pub fn import_asset_key(
+pub fn import_key(
     user_id: UserId,
     key_material: KeyMaterial,
     blockchain: Blockchain,
@@ -105,7 +105,7 @@ pub fn import_asset_key(
 ///
 /// TODO #30 (design, implementation): Pass a session.
 #[allow(unused)]
-pub fn export_asset_key(user_id: UserId, key_id: &KeyId) -> Result<KeyMaterial, Error> {
+pub fn export_key(user_id: UserId, key_id: &KeyId) -> Result<KeyMaterial, Error> {
     todo!()
 }
 
@@ -125,7 +125,7 @@ pub fn export_asset_key(user_id: UserId, key_id: &KeyId) -> Result<KeyMaterial, 
 ///
 /// TODO #30 (design, implementation): Pass a session.
 #[allow(unused)]
-pub fn retrieve_public_keys(user_id: UserId) -> Result<Vec<KeyInfo>, Error> {
+pub fn get_keys(user_id: UserId) -> Result<Vec<KeyInfo>, Error> {
     todo!()
 }
 
@@ -144,7 +144,7 @@ pub fn retrieve_public_keys(user_id: UserId) -> Result<Vec<KeyInfo>, Error> {
 ///
 /// TODO #30 (design, implementation): Pass a session.
 #[allow(unused)]
-pub fn retrieve_public_key_by_id(user_id: UserId, key_id: &KeyId) -> Result<KeyInfo, Error> {
+pub fn get_key_by_id(user_id: UserId, key_id: &KeyId) -> Result<KeyInfo, Error> {
     todo!()
 }
 
@@ -169,6 +169,6 @@ pub fn retrieve_public_key_by_id(user_id: UserId, key_id: &KeyId) -> Result<KeyI
 ///
 /// TODO #30 (design, implementation): Pass a session.
 #[allow(unused)]
-pub fn retrieve_audit_log(user_id: UserId, key_id: Option<&KeyId>) -> Result<String, Error> {
+pub fn get_log(user_id: UserId, key_id: Option<&KeyId>) -> Result<String, Error> {
     todo!()
 }
