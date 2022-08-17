@@ -62,9 +62,9 @@ where
 {
     /// Encrypt the `T` under the [`AeadKey`] with the [`AssociatedData`].
     fn encrypt(
+        enc_key: &EncryptionKey,
         object: T,
         associated_data: &AssociatedData,
-        enc_key: &EncryptionKey,
     ) -> Encrypted<T> {
         todo!()
     }
@@ -255,7 +255,7 @@ mod test {
     #[should_panic(expected = "not yet implemented")]
     fn encryption_not_implemented() {
         let bytes = Bytes::default();
-        let _encrypted = Encrypted::encrypt(bytes, &AssociatedData::default(), &EncryptionKey);
+        let _encrypted = Encrypted::encrypt(&EncryptionKey, bytes, &AssociatedData::default());
     }
 
     #[test]
