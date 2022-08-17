@@ -6,7 +6,7 @@
 use crate::constants;
 use dams::{
     config::opaque::OpaqueCipherSuite,
-    user::{User, UserId},
+    user::{AccountName, User, UserId},
 };
 use mongodb::{
     bson::{doc, oid::ObjectId},
@@ -20,10 +20,11 @@ use opaque_ke::ServerRegistration;
 pub async fn create_user(
     db: &Database,
     user_id: &UserId,
+    account_name: &AccountName,
     server_registration: ServerRegistration<OpaqueCipherSuite>,
 ) -> Result<Option<ObjectId>, Error> {
     let collection = db.collection::<User>(constants::USERS);
-    let new_user = User::new(user_id.clone(), server_registration);
+    let new_user = User::new(user_id.clone(), account_name.clone(), server_registration);
     let insert_one_res = collection.insert_one(new_user, None).await?;
     Ok(insert_one_res.inserted_id.as_object_id())
 }
