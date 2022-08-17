@@ -76,7 +76,7 @@ pub fn sign_transaction(
 /// The key must correspond to a [`Passive`][dams::keys::Passive]
 /// digital asset key.
 ///
-/// Assumption: The [`import_asset_key`] functionality is called by the service provider. This is cryptographically enforced with
+/// Assumption: The [`import_key`] functionality is called by the service provider. This is cryptographically enforced with
 /// an authenticated session between the key server and the service provider. This request will fail otherwise.
 ///
 /// Output: If successful, returns the [`KeyInfo`] for the newly imported digital asset key.
@@ -97,7 +97,7 @@ pub fn import_key(
 /// The [`KeyId`] must correspond to a [`Passive`][dams::keys::Passive]
 /// digital asset key.
 ///
-/// Assumption: The [`export_asset_key`] functionality is called by the service
+/// Assumption: The [`export_key`] functionality is called by the service
 /// provider. This is cryptographically enforced with an authenticated session
 /// between the key server and the service provider. This request will fail otherwise.
 ///
