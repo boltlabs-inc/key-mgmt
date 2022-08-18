@@ -1,4 +1,4 @@
-use crate::database::user as User;
+use crate::{constants, database::user as User};
 
 use dams::{
     config::{opaque::OpaqueCipherSuite, server::Service},
@@ -39,7 +39,7 @@ impl Authenticate {
         rng: Arc<Mutex<StdRng>>,
         service: &Service,
     ) -> Result<Response<AuthenticateStream>, Status> {
-        let (tx, rx) = mpsc::channel(2);
+        let (tx, rx) = mpsc::channel(constants::BUFFER);
         let mut stream = request.into_inner();
 
         let server_setup = {

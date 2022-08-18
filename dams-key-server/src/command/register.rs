@@ -1,4 +1,4 @@
-use crate::database::user as User;
+use crate::{constants, database::user as User};
 use std::sync::{Arc, Mutex};
 
 use dams::{
@@ -34,7 +34,7 @@ impl Register {
         rng: Arc<Mutex<StdRng>>,
         service: &Service,
     ) -> Result<Response<RegisterStream>, Status> {
-        let (tx, rx) = mpsc::channel(2);
+        let (tx, rx) = mpsc::channel(constants::BUFFER);
         let mut stream = request.into_inner();
 
         // Get server key for OPAQUE
