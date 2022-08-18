@@ -65,6 +65,7 @@ impl From<&AssociatedData> for Vec<u8> {
 pub struct Encrypted<T> {
     ciphertext: Vec<u8>,
     associated_data: AssociatedData,
+    nonce: chacha20poly1305::Nonce,
     original_type: PhantomData<T>,
 }
 
@@ -95,15 +96,18 @@ where
         object: T,
         associated_data: &AssociatedData,
     ) -> Result<Encrypted<T>, CryptoError> {
+        // Set up cipher with key
         let cipher = ChaCha20Poly1305::new(&enc_key.0);
+
+        // Format inputs for encryption
         let nonce = ChaCha20Poly1305::generate_nonce(rng);
-
         let ad_vec: Vec<u8> = associated_data.into();
-
         let payload = Payload {
             msg: &Vec::from(object),
             aad: &ad_vec,
         };
+
+        // Encrypt!
         let ciphertext = cipher
             .encrypt(&nonce, payload)
             .map_err(|_| CryptoError::EncryptionFailed)?;
@@ -111,6 +115,7 @@ where
         Ok(Self {
             ciphertext,
             associated_data: associated_data.clone(),
+            nonce,
             original_type: PhantomData,
         })
     }
@@ -119,7 +124,22 @@ where
     ///
     /// Raises a [`CryptoError::DecryptionFailed`] if decryption fails.
     fn decrypt(self, enc_key: &EncryptionKey) -> Result<T, CryptoError> {
-        todo!()
+        // Set up cipher with key
+        let cipher = ChaCha20Poly1305::new(&enc_key.0);
+
+        // Format ciphertext and associated data
+        let ad_vec: Vec<u8> = (&self.associated_data).into();
+        let payload = Payload {
+            msg: self.ciphertext.as_ref(),
+            aad: &ad_vec,
+        };
+
+        // Decrypt!
+        let plaintext = cipher
+            .decrypt(&self.nonce, payload)
+            .map_err(|_| CryptoError::DecryptionFailed)?;
+
+        Ok(plaintext.into())
     }
 }
 
@@ -254,7 +274,7 @@ impl Secret {
 #[cfg(test)]
 mod test {
     use super::*;
-    use rand::Rng;
+    use rand::{rngs::ThreadRng, Rng};
 
     #[test]
     fn associated_data_to_vec_u8_conversion_works() {
@@ -317,36 +337,59 @@ mod test {
         let _key_id = KeyId::generate(thread_rng, UserId::default());
     }
 
-    #[test]
-    fn encryption_not_obviously_broken() {
-        let mut thread_rng = rand::thread_rng();
-        let bytes = Vec::from_iter(
-            std::iter::repeat_with(|| thread_rng.gen())
+    fn random_bytes(rng: &mut ThreadRng) -> Vec<u8> {
+        Vec::from_iter(
+            std::iter::repeat_with(|| rng.gen())
                 .take(64)
                 .collect::<Vec<u8>>(),
-        );
-        let enc_key = EncryptionKey::new(&mut thread_rng);
-        let encrypted = Encrypted::encrypt(
-            &mut rand::thread_rng(),
+        )
+    }
+
+    /// Generates random bytes, encrypts them, and returns them along with the
+    /// key used for encryption.
+    fn encrypt_random_bytes() -> (Vec<u8>, Encrypted<Vec<u8>>, EncryptionKey) {
+        let mut rng = rand::thread_rng();
+        let bytes = random_bytes(&mut rng);
+        let enc_key = EncryptionKey::new(&mut rng);
+        let encrypted_bytes = Encrypted::encrypt(
+            &mut rng,
             &enc_key,
             bytes.clone(),
             &AssociatedData::default(),
         )
         .unwrap();
 
-        assert_ne!(bytes, encrypted.ciphertext);
+        (bytes, encrypted_bytes, enc_key)
     }
 
     #[test]
-    #[should_panic(expected = "not yet implemented")]
-    fn decryption_not_implemented() {
-        let encrypted_bytes: Encrypted<Vec<u8>> = Encrypted {
-            ciphertext: Vec::default(),
-            associated_data: AssociatedData::default(),
-            original_type: PhantomData,
-        };
-        let enc_key = EncryptionKey::new(&mut rand::thread_rng());
-        let _decrypted = encrypted_bytes.decrypt(&enc_key);
+    fn encryption_not_obviously_broken() {
+        let (bytes, encrypted_bytes, _) = encrypt_random_bytes();
+        assert_ne!(bytes, encrypted_bytes.ciphertext);
+    }
+
+    #[test]
+    fn decryption_works() {
+        let (bytes, encrypted_bytes, enc_key) = encrypt_random_bytes();
+        let decrypted_bytes = encrypted_bytes.decrypt(&enc_key).unwrap();
+
+        assert_eq!(bytes, decrypted_bytes);
+    }
+
+    #[test]
+    fn decryption_fails_with_wrong_key() {
+        let (_, encrypted_bytes, _) = encrypt_random_bytes();
+        let wrong_key = EncryptionKey::new(&mut rand::thread_rng());
+
+        assert!(encrypted_bytes.decrypt(&wrong_key).is_err());
+    }
+
+    #[test]
+    fn decryption_fails_with_wrong_associated_data() {
+        let (_, mut encrypted_bytes, enc_key) = encrypt_random_bytes();
+        encrypted_bytes.associated_data = AssociatedData("Here is some incorrect data".to_string());
+
+        assert!(encrypted_bytes.decrypt(&enc_key).is_err())
     }
 
     #[test]
@@ -355,6 +398,7 @@ mod test {
         let storage_key = Encrypted {
             ciphertext: Vec::default(),
             associated_data: AssociatedData::default(),
+            nonce: chacha20poly1305::Nonce::default(),
             original_type: PhantomData,
         };
         let _key = storage_key.decrypt_storage_key(OpaqueExportKey);
@@ -366,6 +410,7 @@ mod test {
         let encrypted_secret = Encrypted {
             ciphertext: Vec::default(),
             associated_data: AssociatedData::default(),
+            nonce: chacha20poly1305::Nonce::default(),
             original_type: PhantomData,
         };
         let _secret = encrypted_secret.decrypt_secret(StorageKey);
