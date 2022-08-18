@@ -30,7 +30,8 @@ Refer to the [current design specification](https://github.com/boltlabs-inc/key-
 
 - A recent version of [stable Rust](https://www.rust-lang.org/) to build the DAMS project. We have tested with 1.59.0.
 - OpenSSL. You should be able to install this using your package manager of choice.
-- [MongoDB](https://www.mongodb.com/try/download/community) is required to run `dams-key-server`. This includes running the integration tests. 
+- [MongoDB](https://www.mongodb.com/try/download/community) is required to run `dams-key-server`. This includes running the integration tests.
+- `protoc` is required to build .proto files. It can be installed using `brew` for MacOS or `apt install` for Linux. Further instructions [here](https://grpc.io/docs/protoc-installation/).
 
 Once the required dependencies are installed, build the project as follows:
 

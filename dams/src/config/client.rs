@@ -1,4 +1,3 @@
-use dialectic_reconnect::Backoff;
 use serde::{Deserialize, Serialize};
 use std::{
     path::{Path, PathBuf},
@@ -11,8 +10,6 @@ use crate::defaults::client as defaults;
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 #[non_exhaustive]
 pub struct Config {
-    #[serde(default = "defaults::backoff")]
-    pub backoff: Backoff,
     #[serde(with = "humantime_serde", default = "defaults::connection_timeout")]
     pub connection_timeout: Option<Duration>,
     #[serde(default = "defaults::max_pending_connection_retries")]
@@ -49,7 +46,6 @@ impl Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            backoff: Backoff::with_delay(Duration::from_secs(1)),
             connection_timeout: None,
             max_pending_connection_retries: 4,
             message_timeout: Duration::from_secs(60),

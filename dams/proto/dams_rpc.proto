@@ -1,0 +1,79 @@
+syntax = "proto3";
+package dams_rpc;
+
+service DamsRpc {
+  rpc Register (stream ClientRegister) returns (stream ServerRegister);
+  rpc Authenticate (stream ClientAuthenticate) returns (stream ServerAuthenticate);
+}
+
+message ClientRegister {
+  oneof step {
+    ClientRegisterStart start = 1;
+    ClientRegisterFinish finish = 2;
+  }
+}
+
+message ClientRegisterStart {
+  // pass user ID and registration-start message from OPAQUE
+  bytes client_register_start_message = 1;
+  bytes user_id = 2;
+}
+
+message ClientRegisterFinish {
+  // pass user ID and registration-finish message from OPAQUE
+  bytes client_register_finish_message = 1;
+  bytes user_id = 2;
+}
+
+message ServerRegister {
+  oneof step {
+    ServerRegisterStart start = 1;
+    ServerRegisterFinish finish = 2;
+  }
+}
+
+message ServerRegisterStart {
+  // Check if user exists and return successful if not
+  bytes server_register_start_message = 1;
+}
+
+message ServerRegisterFinish {
+  // return true if successful
+  bool success = 1;
+}
+
+message ClientAuthenticate {
+  oneof step {
+    ClientAuthenticateStart start = 1;
+    ClientAuthenticateFinish finish = 2;
+  }
+}
+
+message ClientAuthenticateStart {
+  // pass user ID and registration-start message from OPAQUE
+  bytes client_authenticate_start_message = 1;
+  bytes user_id = 2;
+}
+
+message ClientAuthenticateFinish {
+  // pass user ID and registration-finish message from OPAQUE
+  bytes client_authenticate_finish_message = 1;
+  bytes user_id = 2;
+}
+
+message ServerAuthenticate {
+  oneof step {
+    ServerAuthenticateStart start = 1;
+    ServerAuthenticateFinish finish = 2;
+  }
+}
+
+message ServerAuthenticateStart {
+  // Check if user exists and return successful if not
+  bytes server_authenticate_start_message = 1;
+}
+
+message ServerAuthenticateFinish {
+  // return true if successful
+  bool success = 1;
+}

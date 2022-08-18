@@ -3,9 +3,6 @@ name = "dams-local-client"
 version = "0.1.0"
 edition = "2021"
 
-[[bin]]
-name = "local-client-cli"
-path = "src/bin/main.rs"
 
 [features]
 allow_explicit_certificate_trust = []
@@ -16,20 +13,19 @@ allow_explicit_certificate_trust = []
 anyhow = "1"
 argon2 = "0.4"
 async-trait = "0"
+bincode = "1"
 dams = { version = "0.1.0", path = "../dams" }
-dialectic = { git = "https://github.com/boltlabs-inc/dialectic.git", branch = "main" }
-dialectic-tokio-serde = { git = "https://github.com/boltlabs-inc/dialectic.git", branch = "main" }
-dialectic-tokio-serde-bincode = { git = "https://github.com/boltlabs-inc/dialectic.git", branch = "main" }
-dialectic-reconnect = { features = ["serde", "humantime-serde"], git = "https://github.com/boltlabs-inc/dialectic.git", branch = "main" }
 futures = "0"
 opaque-ke = { version = "2.0.0-pre.3", features = ["argon2"] }
+prost = "0.11.0"
 rand = "0"
 serde = "1"
 serde_with = "1"
 structopt = "0"
 thiserror = "1"
 tokio = { version = "1", features = ["full"] }
+tokio-stream = "0.1"
+tonic = "0.8.0"
 tracing = "0"
 tracing-futures = "0"
 tracing-subscriber = { version = "0", features = ["env-filter"] }
-transport = { git = "https://github.com/boltlabs-inc/transport.git", branch = "main", features = ["allow_explicit_certificate_trust"] }
