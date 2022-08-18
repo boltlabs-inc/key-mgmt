@@ -280,7 +280,7 @@ impl Secret {
 #[cfg(test)]
 mod test {
     use super::*;
-    use rand::{rngs::ThreadRng, Rng};
+    use rand::Rng;
 
     #[test]
     fn associated_data_to_vec_u8_conversion_works() {
@@ -295,9 +295,14 @@ mod test {
         for test in test_strings {
             let data = AssociatedData(test.to_string());
             let data_vec: Vec<u8> = (&data).into();
+
+            // make sure the from functions behave the same for references and values
+            assert!(Vec::<u8>::from(data.clone()) == data_vec);
+
             let output_data: AssociatedData = data_vec.try_into().unwrap();
 
-            assert_eq!(data, output_data)
+            // make sure converting to & from Vec<u8> gives the same result
+            assert_eq!(data, output_data);
         }
     }
 
@@ -343,19 +348,11 @@ mod test {
         let _key_id = KeyId::generate(thread_rng, UserId::default());
     }
 
-    fn random_bytes(rng: &mut ThreadRng) -> Vec<u8> {
-        Vec::from_iter(
-            std::iter::repeat_with(|| rng.gen())
-                .take(64)
-                .collect::<Vec<u8>>(),
-        )
-    }
-
     /// Generates random bytes, encrypts them, and returns them along with the
     /// key used for encryption.
     fn encrypt_random_bytes() -> (Vec<u8>, Encrypted<Vec<u8>>, EncryptionKey) {
         let mut rng = rand::thread_rng();
-        let bytes = random_bytes(&mut rng);
+        let bytes: Vec<u8> = std::iter::repeat_with(|| rng.gen()).take(64).collect();
         let enc_key = EncryptionKey::new(&mut rng);
         let encrypted_bytes = Encrypted::encrypt(
             &mut rng,
