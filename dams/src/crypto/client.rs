@@ -16,7 +16,8 @@ use super::{Encrypted, Secret};
 /// It takes the following steps:
 /// 1. Derive a master key from the [`OpaqueExportKey`]
 /// 2. Generate a new [`StorageKey`] to encrypt stored data with
-/// 3. Encrypt the storage key with the master key
+/// 3. Encrypt the storage key under the master key, using the ChaCha20Poly1305
+/// AEAD scheme
 /// 4. Return the encrypted storage key
 #[allow(unused)]
 pub fn create_and_encrypt_storage_key(
@@ -31,7 +32,8 @@ pub fn create_and_encrypt_storage_key(
 ///
 /// This must be run by the client. It takes the following steps:
 /// 1. Generates a new secret
-/// 2. Encrypt it under the [`StorageKey`]
+/// 2. Encrypt it under the [`StorageKey`], using the ChaCha20Poly1305 AEAD
+/// scheme
 #[allow(unused)]
 pub fn create_and_encrypt_secret(
     rng: impl CryptoRng + RngCore,
