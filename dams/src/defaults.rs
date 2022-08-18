@@ -1,4 +1,3 @@
-use dialectic_reconnect::Backoff;
 use directories::ProjectDirs;
 use std::{
     net::{IpAddr, Ipv4Addr},
@@ -57,10 +56,6 @@ pub mod client {
     use super::*;
 
     pub use super::shared::*;
-
-    pub fn backoff() -> Backoff {
-        Backoff::with_delay(Duration::from_secs(1))
-    }
 
     pub const fn connection_timeout() -> Option<Duration> {
         Some(Duration::from_secs(60))

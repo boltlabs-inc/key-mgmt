@@ -16,10 +16,8 @@ pub mod crypto;
 pub mod defaults;
 pub mod keys;
 pub mod opaque_storage;
-pub mod protocol;
 pub mod timeout;
 pub mod transaction;
-pub mod transport;
 pub mod user;
 
 #[allow(clippy::all)]

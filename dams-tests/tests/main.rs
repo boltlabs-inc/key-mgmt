@@ -7,7 +7,7 @@ use crate::{
 use anyhow::anyhow;
 use common::{get_logs, LogType, Party};
 
-use dams::{dams_rpc::dams_rpc_client::DamsRpcClient, transport::KeyMgmtAddress, user::UserId};
+use dams::{dams_rpc::dams_rpc_client::DamsRpcClient, user::UserId};
 use dams_key_server::database;
 use dams_local_client::api::{Password, Session, SessionConfig};
 use rand::{prelude::StdRng, SeedableRng};
@@ -204,20 +204,14 @@ impl Test {
         for (op, expected_outcome) in &self.operations {
             let outcome: Result<(), anyhow::Error> = match op {
                 Register(user_id, password) => {
-                    let config = SessionConfig::new(
-                        client_config.clone(),
-                        KeyMgmtAddress::from_str("keymgmt://localhost").unwrap(),
-                    );
+                    let config = SessionConfig::new(client_config.clone());
                     Session::register(client, rng, user_id, password, &config)
                         .await
                         .map(|_| ())
                         .map_err(|e| e.into())
                 }
                 Authenticate(user_id, password) => {
-                    let config = SessionConfig::new(
-                        client_config.clone(),
-                        KeyMgmtAddress::from_str("keymgmt://localhost").unwrap(),
-                    );
+                    let config = SessionConfig::new(client_config.clone());
                     Session::open(client, rng, user_id, password, &config)
                         .await
                         .map(|_| ())

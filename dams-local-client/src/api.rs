@@ -19,7 +19,6 @@ use dams::{
     },
     keys::{KeyInfo, UsePermission, UseRestriction, UserPolicySpecification},
     transaction::{TransactionApprovalRequest, TransactionSignature},
-    transport::KeyMgmtAddress,
     user::UserId,
 };
 use opaque_ke::{
@@ -85,27 +84,14 @@ impl Password {
 ///
 /// Possible fields include: timeouts, key server IPs, PKI information,
 /// preshared keys.
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct SessionConfig {
     client_config: Config,
-    server: KeyMgmtAddress,
 }
 
 impl SessionConfig {
-    pub fn new(client_config: Config, server: KeyMgmtAddress) -> Self {
-        Self {
-            client_config,
-            server,
-        }
-    }
-}
-
-impl Default for SessionConfig {
-    fn default() -> Self {
-        SessionConfig {
-            client_config: Config::default(),
-            server: KeyMgmtAddress::from_str("keymgmt://localhost").unwrap(),
-        }
+    pub fn new(client_config: Config) -> Self {
+        Self { client_config }
     }
 }
 
@@ -151,15 +137,8 @@ impl Session {
         password: &Password,
         config: &SessionConfig,
     ) -> Result<Self, SessionError> {
-        let result = Self::authenticate(
-            client,
-            rng,
-            user_id,
-            password,
-            &config.server,
-            &config.client_config,
-        )
-        .await;
+        let result =
+            Self::authenticate(client, rng, user_id, password, &config.client_config).await;
         match result {
             Ok(result) => {
                 let session = Session {
@@ -180,7 +159,6 @@ impl Session {
         rng: &mut T,
         user_id: &UserId,
         password: &Password,
-        server: &KeyMgmtAddress,
         config: &self::Config,
     ) -> Result<[u8; 64], Status> {
         // Create channel to send messages to server after connection is established via
@@ -265,15 +243,7 @@ impl Session {
         password: &Password,
         config: &SessionConfig,
     ) -> Result<Self, SessionError> {
-        let result = Self::do_register(
-            client,
-            rng,
-            user_id,
-            password,
-            &config.server,
-            &config.client_config,
-        )
-        .await;
+        let result = Self::do_register(client, rng, user_id, password, &config.client_config).await;
         match result {
             Ok(_) => Self::open(client, rng, user_id, password, config).await,
             Err(e) => {
@@ -288,7 +258,6 @@ impl Session {
         rng: &mut T,
         user_id: &UserId,
         password: &Password,
-        server: &KeyMgmtAddress,
         config: &self::Config,
     ) -> Result<Response<ServerRegisterFinish>, Status> {
         // Create channel to send messages to server after connection is established via
