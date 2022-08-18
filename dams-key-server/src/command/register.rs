@@ -152,9 +152,10 @@ impl Register {
         // run the finish step for OPAQUE
         let server_registration = ServerRegistration::<OpaqueCipherSuite>::finish(register_finish);
         // add the new user to the DB
-        let _ = User::create_user(db, &uid, server_registration)
+        let _object_id = User::create_user(db, &uid, server_registration)
             .await
-            .map_err(|_| Status::aborted("Unable to create user"));
+            .map_err(|_| Status::aborted("Unable to create user"))?
+            .ok_or_else(|| Status::aborted("Invalid ObjectId for new user"))?;
 
         // reply with the success:true if successful
         let reply = ServerRegister {
