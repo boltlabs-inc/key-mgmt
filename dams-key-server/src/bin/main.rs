@@ -18,6 +18,6 @@ pub async fn main() {
         Server(cli) => server::main_with_cli(cli).await,
     };
     if let Err(e) = result {
-        error!("{}, caused by: {}", e, e.root_cause());
+        error!("{}", e);
     }
 }

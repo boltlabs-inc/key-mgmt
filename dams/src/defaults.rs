@@ -5,9 +5,10 @@ use std::{
     time::Duration,
 };
 
-fn project_dirs() -> Result<ProjectDirs, anyhow::Error> {
-    ProjectDirs::from("", shared::ORGANIZATION, shared::APPLICATION)
-        .ok_or_else(|| anyhow::anyhow!("Could not open user's home directory"))
+use crate::error::DamsError;
+
+fn project_dirs() -> Result<ProjectDirs, DamsError> {
+    ProjectDirs::from("", shared::ORGANIZATION, shared::APPLICATION).ok_or(DamsError::ProjectDirs)
 }
 
 pub(crate) mod shared {
@@ -47,7 +48,7 @@ pub mod server {
 
     pub const CONFIG_FILE: &str = "Server.toml";
 
-    pub fn config_path() -> Result<PathBuf, anyhow::Error> {
+    pub fn config_path() -> Result<PathBuf, DamsError> {
         Ok(project_dirs()?.config_dir().join(CONFIG_FILE))
     }
 }
@@ -63,7 +64,7 @@ pub mod client {
 
     pub const CONFIG_FILE: &str = "Client.toml";
 
-    pub fn config_path() -> Result<PathBuf, anyhow::Error> {
+    pub fn config_path() -> Result<PathBuf, DamsError> {
         Ok(project_dirs()?.config_dir().join(CONFIG_FILE))
     }
 

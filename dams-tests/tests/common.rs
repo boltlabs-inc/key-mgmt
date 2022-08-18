@@ -2,13 +2,13 @@ use std::{
     collections::HashMap,
     fs::{self, File},
     io::{Read, Write},
+    path::Path,
     process::Command,
     sync::Mutex,
 };
 
 use futures::future;
 use mongodb::Database;
-use thiserror::Error;
 use tokio::{task::JoinHandle, time::Duration};
 use tracing::info_span;
 use tracing_futures::Instrument;
@@ -22,7 +22,7 @@ pub const ERROR_FILENAME: &str = "tests/gen/errors.log";
 pub const SERVER_ADDRESS: &str = "127.0.0.1";
 
 /// Give a name to the slightly annoying type of the joined server futures
-type ServerFuture = JoinHandle<Result<(), anyhow::Error>>;
+type ServerFuture = JoinHandle<Result<(), dams_key_server::DamsServerError>>;
 
 /// Set of processes that run during a test.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -79,18 +79,16 @@ pub async fn setup(db: Database, server_config: dams::config::server::Config) ->
         .await
     {
         Err(_) => panic!("Server setup timed out"),
-        Ok(results) => {
-            match results
-                .into_iter()
-                .collect::<Result<Vec<()>, anyhow::Error>>()
-            {
-                Ok(_) => {}
-                Err(err) => panic!(
-                    "Failed to read logs while waiting for servers to set up: {:?}",
-                    err
-                ),
-            }
-        }
+        Ok(results) => match results
+            .into_iter()
+            .collect::<Result<Vec<()>, anyhow::Error>>()
+        {
+            Ok(_) => {}
+            Err(err) => panic!(
+                "Failed to read logs while waiting for servers to set up: {:?}",
+                err
+            ),
+        },
     }
 
     server_handle
@@ -127,7 +125,11 @@ async fn client_test_config() -> dams::config::client::Config {
 /// Encode the customizable fields of the keymgmt server Config struct for
 /// testing.
 pub async fn server_test_config() -> dams::config::server::Config {
-    fs::create_dir("tests/gen").expect("Unable to create directory tests/gen");
+    let gen_path = Path::new("tests/gen");
+    if !gen_path.exists() {
+        fs::create_dir(gen_path).expect("Unable to create directory tests/gen");
+    }
+
     // Format service string and database string into full config
     let config_str = format!(
         r#"
@@ -164,15 +166,6 @@ fn write_config_file(path: &str, contents: String) {
         .unwrap_or_else(|_| panic!("Failed to write to config file: {}", path));
 }
 
-#[derive(Debug, Error)]
-#[allow(unused)]
-pub enum LogError {
-    #[error("Failed to open log file: {0}")]
-    OpenFailed(std::io::Error),
-    #[error("Failed to read contents of file: {0}")]
-    ReadFailed(std::io::Error),
-}
-
 #[allow(unused)]
 #[derive(Debug, Clone, Copy)]
 pub enum LogType {
@@ -194,11 +187,10 @@ impl LogType {
 
 /// Get any errors from the log file, filtered by party and log type.
 #[allow(unused)]
-pub fn get_logs(log_type: LogType, party: Party) -> Result<String, LogError> {
-    let mut file = File::open(ERROR_FILENAME).map_err(LogError::OpenFailed)?;
+pub fn get_logs(log_type: LogType, party: Party) -> Result<String, anyhow::Error> {
+    let mut file = File::open(ERROR_FILENAME)?;
     let mut logs = String::new();
-    file.read_to_string(&mut logs)
-        .map_err(LogError::ReadFailed)?;
+    file.read_to_string(&mut logs)?;
 
     Ok(logs
         .lines()

@@ -11,16 +11,16 @@ use opaque_ke::{
 use rand::{CryptoRng, RngCore};
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
-use tonic::{transport::Channel, Response, Status};
+use tonic::{transport::Channel, Response};
 
-use super::Password;
+use crate::{api::Password, error::DamsClientError};
 
 pub(crate) async fn handle<T: CryptoRng + RngCore>(
     client: &mut DamsRpcClient<Channel>,
     rng: &mut T,
     user_id: &UserId,
     password: &Password,
-) -> Result<Response<server::RegisterFinish>, Status> {
+) -> Result<Response<server::RegisterFinish>, DamsClientError> {
     // Create channel to send messages to server
     let (tx, rx) = mpsc::channel(2);
     let stream = ReceiverStream::new(rx);
@@ -45,10 +45,9 @@ async fn register_start<T: CryptoRng + RngCore>(
     rng: &mut T,
     user_id: &UserId,
     password: &Password,
-) -> Result<ClientRegistrationStartResult<OpaqueCipherSuite>, Status> {
+) -> Result<ClientRegistrationStartResult<OpaqueCipherSuite>, DamsClientError> {
     let client_registration_start_result =
-        ClientRegistration::<OpaqueCipherSuite>::start(rng, password.as_bytes())
-            .map_err(|_| Status::aborted("RegistrationStart failed"))?;
+        ClientRegistration::<OpaqueCipherSuite>::start(rng, password.as_bytes())?;
 
     let response = client::RegisterStart {
         registration_request: client_registration_start_result.message.clone(),
@@ -66,18 +65,15 @@ async fn register_finish<T: CryptoRng + RngCore>(
     user_id: &UserId,
     password: &Password,
     client_start_result: ClientRegistrationStartResult<OpaqueCipherSuite>,
-) -> Result<server::RegisterFinish, Status> {
+) -> Result<server::RegisterFinish, DamsClientError> {
     let server_start_result: server::RegisterStart = channel.receive().await?;
 
-    let client_finish_registration_result = client_start_result
-        .state
-        .finish(
-            rng,
-            password.as_bytes(),
-            server_start_result.registration_response,
-            ClientRegistrationFinishParameters::default(),
-        )
-        .map_err(|_| Status::aborted("RegistrationFinish failed"))?;
+    let client_finish_registration_result = client_start_result.state.finish(
+        rng,
+        password.as_bytes(),
+        server_start_result.registration_response,
+        ClientRegistrationFinishParameters::default(),
+    )?;
 
     let response = client::RegisterFinish {
         registration_upload: client_finish_registration_result.message,

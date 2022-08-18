@@ -4,7 +4,7 @@ use std::{
     time::Duration,
 };
 
-use crate::defaults::client as defaults;
+use crate::{defaults::client as defaults, error::DamsError};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
@@ -25,7 +25,7 @@ pub struct Config {
 }
 
 impl Config {
-    pub async fn load(config_path: impl AsRef<Path>) -> Result<Config, anyhow::Error> {
+    pub async fn load(config_path: impl AsRef<Path>) -> Result<Config, DamsError> {
         let mut config: Config = toml::from_str(&tokio::fs::read_to_string(&config_path).await?)?;
 
         // Directory containing the configuration path

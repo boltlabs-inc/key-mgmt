@@ -3,11 +3,11 @@
 //! Includes structs for the various models found in the first round of Mongo
 //! integration. This module will likely be split by model into sub-modules.
 
-use crate::{config::opaque::OpaqueCipherSuite, crypto::Secret};
+use crate::{config::opaque::OpaqueCipherSuite, crypto::Secret, DamsError};
 
 use opaque_ke::ServerRegistration;
 use serde::{Deserialize, Serialize};
-use std::{convert::Infallible, str::FromStr};
+use std::str::FromStr;
 
 /// Unique ID for a user. Assumption: this will be derived from an ID generated
 /// by the Service Provider.
@@ -21,7 +21,7 @@ impl ToString for UserId {
 }
 
 impl FromStr for UserId {
-    type Err = Infallible;
+    type Err = DamsError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(UserId(s.to_string()))

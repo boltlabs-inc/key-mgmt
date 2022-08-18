@@ -11,16 +11,16 @@ use opaque_ke::{
 use rand::{CryptoRng, RngCore};
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
-use tonic::{transport::Channel, Status};
+use tonic::transport::Channel;
 
-use super::Password;
+use crate::{api::Password, error::DamsClientError};
 
 pub(crate) async fn handle<T: CryptoRng + RngCore>(
     client: &mut DamsRpcClient<Channel>,
     rng: &mut T,
     user_id: &UserId,
     password: &Password,
-) -> Result<[u8; 64], Status> {
+) -> Result<[u8; 64], DamsClientError> {
     // Create channel to send messages to server after connection is established via
     // RPC
     let (tx, rx) = mpsc::channel(2);
@@ -32,8 +32,7 @@ pub(crate) async fn handle<T: CryptoRng + RngCore>(
     let mut channel = ClientChannel::create(tx, server_response);
 
     let client_login_start_result =
-        ClientLogin::<OpaqueCipherSuite>::start(rng, password.as_bytes())
-            .map_err(|_| Status::aborted("LoginStartFailed"))?;
+        ClientLogin::<OpaqueCipherSuite>::start(rng, password.as_bytes())?;
 
     // Handle start step
     let server_start_result =
@@ -56,14 +55,15 @@ async fn authenticate_start(
     channel: &mut ClientChannel,
     client_login_start_result: &ClientLoginStartResult<OpaqueCipherSuite>,
     user_id: &UserId,
-) -> Result<server::AuthenticateStart, Status> {
+) -> Result<server::AuthenticateStart, DamsClientError> {
     let reply = client::AuthenticateStart {
         credential_request: client_login_start_result.message.clone(),
         user_id: user_id.clone(),
     };
 
     channel.send(reply).await?;
-    channel.receive().await
+
+    Ok(channel.receive().await?)
 }
 
 async fn authenticate_finish(
@@ -72,15 +72,12 @@ async fn authenticate_finish(
     password: &Password,
     client_start_result: ClientLoginStartResult<OpaqueCipherSuite>,
     server_start_result: server::AuthenticateStart,
-) -> Result<ClientLoginFinishResult<OpaqueCipherSuite>, Status> {
-    let client_login_finish_result = client_start_result
-        .state
-        .finish(
-            password.as_bytes(),
-            server_start_result.credential_response,
-            ClientLoginFinishParameters::default(),
-        )
-        .map_err(|_| Status::unauthenticated("Authentication failed"))?;
+) -> Result<ClientLoginFinishResult<OpaqueCipherSuite>, DamsClientError> {
+    let client_login_finish_result = client_start_result.state.finish(
+        password.as_bytes(),
+        server_start_result.credential_response,
+        ClientLoginFinishParameters::default(),
+    )?;
 
     let reply = client::AuthenticateFinish {
         credential_finalization: client_login_finish_result.message.clone(),
@@ -94,6 +91,6 @@ async fn authenticate_finish(
     if server_finish.success {
         Ok(client_login_finish_result)
     } else {
-        Err(Status::internal("Server returned failure"))
+        Err(DamsClientError::ServerReturnedFailure)
     }
 }

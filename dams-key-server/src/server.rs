@@ -1,6 +1,5 @@
-use crate::{cli::Cli, command, database};
+use crate::{cli::Cli, command, database, error::DamsServerError};
 
-use anyhow::{anyhow, Context as ErrorContext};
 use dams::{
     config::server::{Config, Service},
     dams_rpc::dams_rpc_server::{DamsRpc, DamsRpcServer},
@@ -8,18 +7,11 @@ use dams::{
     types::Message,
     TestLogs,
 };
-use futures::{
-    stream::{FuturesUnordered, StreamExt},
-    FutureExt,
-};
+use futures::stream::{FuturesUnordered, StreamExt};
 use mongodb::Database;
 use rand::{rngs::StdRng, SeedableRng};
-use std::{
-    convert::identity,
-    net::SocketAddr,
-    sync::{Arc, Mutex},
-};
-use tokio::signal;
+use std::{convert::identity, net::SocketAddr, sync::Arc};
+use tokio::{signal, sync::Mutex};
 use tonic::{transport::Server, Request, Response, Status};
 use tracing::{error, info};
 
@@ -33,7 +25,11 @@ pub struct DamsKeyServer {
 }
 
 impl DamsKeyServer {
-    pub fn new(db: Database, config: Config, service: Arc<Service>) -> Result<Self, anyhow::Error> {
+    pub fn new(
+        db: Database,
+        config: Config,
+        service: Arc<Service>,
+    ) -> Result<Self, DamsServerError> {
         let rng = StdRng::from_entropy();
 
         Ok(Self {
@@ -69,22 +65,22 @@ impl DamsRpc for DamsKeyServer {
         &self,
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::RegisterStream>, Status> {
-        command::register::Register
+        Ok(command::register::Register
             .run(request, self.context())
-            .await
+            .await?)
     }
 
     async fn authenticate(
         &self,
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::AuthenticateStream>, Status> {
-        command::authenticate::Authenticate
+        Ok(command::authenticate::Authenticate
             .run(request, self.context())
-            .await
+            .await?)
     }
 }
 
-pub async fn start_tonic_server(config: Config) -> Result<(), anyhow::Error> {
+pub async fn start_tonic_server(config: Config) -> Result<(), DamsServerError> {
     let db =
         database::connect_to_mongo(&config.database.mongodb_uri, &config.database.db_name).await?;
     // Collect the futures for the result of running each specified server
@@ -105,10 +101,9 @@ pub async fn start_tonic_server(config: Config) -> Result<(), anyhow::Error> {
                 Server::builder()
                     .add_service(DamsRpcServer::new(dams_rpc_server))
                     .serve(SocketAddr::new(addr, port))
-                    .await
-                    .map_err(|e| anyhow!("Cannot start server: {:?}", e))?;
+                    .await?;
 
-                Ok::<_, anyhow::Error>(())
+                Ok::<_, DamsServerError>(())
             }
         })
         .collect();
@@ -126,11 +121,8 @@ pub async fn start_tonic_server(config: Config) -> Result<(), anyhow::Error> {
     Ok(())
 }
 
-pub async fn main_with_cli(cli: Cli) -> Result<(), anyhow::Error> {
+pub async fn main_with_cli(cli: Cli) -> Result<(), DamsServerError> {
     let config_path = cli.config.ok_or_else(config_path).or_else(identity)?;
-    let config = Config::load(&config_path).map(|result| {
-        result
-            .with_context(|| format!("Could not load server configuration from {:?}", config_path))
-    });
-    start_tonic_server(config.await?).await
+    let config = Config::load(&config_path).await?;
+    start_tonic_server(config).await
 }
