@@ -1,191 +1,126 @@
-use crate::{constants, database::user as User};
+use crate::{database::user as User, server::Context};
 
 use dams::{
-    config::{opaque::OpaqueCipherSuite, server::Service},
-    dams_rpc::{
-        client_authenticate::Step as ClientStep, server_authenticate::Step as ServerStep,
-        ClientAuthenticate, ClientAuthenticateFinish, ClientAuthenticateStart, ServerAuthenticate,
-        ServerAuthenticateFinish, ServerAuthenticateStart,
-    },
+    channel::ServerChannel,
+    config::opaque::OpaqueCipherSuite,
     opaque_storage::create_or_retrieve_server_key_opaque,
+    types::{
+        authenticate::{client, server},
+        Message, MessageStream,
+    },
 };
-use mongodb::Database;
 use opaque_ke::{
-    keypair::PrivateKey, CredentialFinalization, CredentialRequest, Ristretto255, ServerLogin,
-    ServerLoginStartParameters, ServerLoginStartResult, ServerSetup,
+    CredentialFinalization, CredentialRequest, ServerLogin, ServerLoginStartParameters,
+    ServerLoginStartResult,
 };
-use rand::rngs::StdRng;
-use std::sync::{Arc, Mutex};
-use tokio::sync::mpsc;
-use tokio_stream::{wrappers::ReceiverStream, StreamExt};
+use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status};
-
-struct AuthStartResult {
-    result: Result<ServerAuthenticate, Status>,
-    server_message: ServerLoginStartResult<OpaqueCipherSuite>,
-}
 
 #[derive(Debug)]
 pub struct Authenticate;
 
-pub type AuthenticateStream = ReceiverStream<Result<ServerAuthenticate, Status>>;
-
 impl Authenticate {
-    #[allow(clippy::too_many_arguments)]
     pub async fn run(
         &self,
-        request: Request<tonic::Streaming<ClientAuthenticate>>,
-        db: &Database,
-        rng: Arc<Mutex<StdRng>>,
-        service: &Service,
-    ) -> Result<Response<AuthenticateStream>, Status> {
-        let (tx, rx) = mpsc::channel(constants::BUFFER);
-        let mut stream = request.into_inner();
-
-        let server_setup = {
-            let mut local_rng = rng
-                .lock()
-                .map_err(|_| Status::unavailable("Unable to access RNG"))?;
-            create_or_retrieve_server_key_opaque(&mut local_rng, service)
-                .map_err(|_| Status::aborted("could not find/create server key"))?
-        };
-
-        // Clone db outside of thread to prevent lifetime errors
-        let db = db.clone();
+        request: Request<tonic::Streaming<Message>>,
+        context: Context,
+    ) -> Result<Response<MessageStream>, Status> {
+        let (mut channel, rx) = ServerChannel::create(request.into_inner());
 
         let _ = tokio::spawn(async move {
-            let mut server_login_result: Option<ServerLoginStartResult<OpaqueCipherSuite>> = None;
-            // Process start step
-            if let Some(message) = stream.next().await {
-                let message = message?;
-                let start_message = Self::unwrap_client_start_step(message.step)?;
-                let response =
-                    Self::handle_authenticate_start(&db, start_message, rng, &server_setup).await?;
-                server_login_result = Some(response.server_message);
-                tx.send(response.result)
-                    .await
-                    .map_err(|e| Status::aborted(e.to_string()))?;
-            }
-
-            // Process finish step
-            if let Some(message) = stream.next().await {
-                let message = message?;
-
-                let finish_message = Self::unwrap_client_finish_step(message.step)?;
-                let response =
-                    Self::handle_authenticate_finish(finish_message, server_login_result).await;
-                tx.send(response)
-                    .await
-                    .map_err(|e| Status::aborted(e.to_string()))?;
-            }
+            let login_start_result = authenticate_start(&mut channel, &context).await?;
+            authenticate_finish(&mut channel, login_start_result).await?;
 
             Ok::<(), Status>(())
         });
 
         Ok(Response::new(ReceiverStream::new(rx)))
     }
+}
 
-    /*
-     * Helper functions to clean up message ordering
-     */
+/// Returns the server-side start message along with a login result that will be
+/// used in the finish step.
+async fn authenticate_start(
+    channel: &mut ServerChannel,
+    context: &Context,
+) -> Result<ServerLoginStartResult<OpaqueCipherSuite>, Status> {
+    // Receive start message from client
+    let start_message: client::AuthenticateStart = channel.receive().await?;
 
-    fn unwrap_client_start_step(
-        step: Option<ClientStep>,
-    ) -> Result<ClientAuthenticateStart, Status> {
-        match step {
-            Some(ClientStep::Start(start_message)) => Ok(start_message),
-            Some(ClientStep::Finish(_)) => {
-                Err(Status::invalid_argument("Message received out of order"))
-            }
-            None => Err(Status::invalid_argument("No message received")),
+    let server_setup = {
+        let mut local_rng = context
+            .rng
+            .lock()
+            .map_err(|_| Status::unavailable("Unable to access RNG"))?;
+        create_or_retrieve_server_key_opaque(&mut local_rng, &context.service)
+            .map_err(|_| Status::aborted("could not find/create server key"))?
+    };
+
+    // Convert user_id from message to str and then to UserId
+    let uid = super::user_id_from_message(&start_message.user_id)?;
+
+    // Check that user with corresponding UserId exists and get their
+    // server_registration
+    let server_registration = match User::find_user(&context.db, &uid)
+        .await
+        .map_err(|_| Status::aborted("MongoDB error"))?
+    {
+        Some(user) => user.into_server_registration(),
+        None => return Err(Status::aborted("UserId does not exist")),
+    };
+    let credential_request: CredentialRequest<OpaqueCipherSuite> =
+        dams::deserialize_from_bytes(&start_message.message)?;
+
+    let server_login_start_result = {
+        let mut local_rng = context
+            .rng
+            .lock()
+            .map_err(|_| Status::unavailable("Unable to access RNG"))?;
+
+        match ServerLogin::start(
+            &mut *local_rng,
+            &server_setup,
+            Some(server_registration),
+            credential_request,
+            uid.as_bytes(),
+            ServerLoginStartParameters::default(),
+        ) {
+            Ok(server_login_start_result) => server_login_start_result,
+            Err(_) => return Err(Status::aborted("Server error")),
         }
-    }
+    };
 
-    async fn handle_authenticate_start(
-        db: &Database,
-        message: ClientAuthenticateStart,
-        rng: Arc<Mutex<StdRng>>,
-        server_setup: &ServerSetup<OpaqueCipherSuite, PrivateKey<Ristretto255>>,
-    ) -> Result<AuthStartResult, Status> {
-        // Convert user_id from message to str and then to UserId
-        let uid = super::user_id_from_message(&message.user_id)?;
+    let server_authenticate_start_message =
+        dams::serialize_to_bytes(&server_login_start_result.message)?;
 
-        // Check that user with corresponding UserId exists and get their
-        // server_registration
-        let server_registration = match User::find_user(db, &uid)
-            .await
-            .map_err(|_| Status::aborted("MongoDB error"))?
-        {
-            Some(user) => user.into_server_registration(),
-            None => return Err(Status::aborted("UserId does not exist")),
-        };
-        let credential_request: CredentialRequest<OpaqueCipherSuite> =
-            dams::deserialize_from_bytes(&message.client_authenticate_start_message[..])?;
+    let reply = server::AuthenticateStart {
+        message: server_authenticate_start_message,
+    };
 
-        let server_login_start_result = {
-            let mut local_rng = rng
-                .lock()
-                .map_err(|_| Status::unavailable("Unable to access RNG"))?;
+    // Send response to client
+    channel.send(reply).await?;
 
-            match ServerLogin::start(
-                &mut *local_rng,
-                server_setup,
-                Some(server_registration),
-                credential_request,
-                uid.as_bytes(),
-                ServerLoginStartParameters::default(),
-            ) {
-                Ok(server_login_start_result) => server_login_start_result,
-                Err(_) => return Err(Status::aborted("Server error")),
-            }
-        };
+    Ok(server_login_start_result)
+}
 
-        let server_authenticate_start_message =
-            dams::serialize_to_bytes(&server_login_start_result.message)?;
-        let reply = ServerAuthenticate {
-            step: Some(ServerStep::Start(ServerAuthenticateStart {
-                server_authenticate_start_message,
-            })),
-        };
-        // Wrap reply in AuthStartResult so we can return the server_login_start_result
-        // as well
-        Ok(AuthStartResult {
-            result: Ok(reply),
-            server_message: server_login_start_result,
-        })
-    }
+async fn authenticate_finish(
+    channel: &mut ServerChannel,
+    start_result: ServerLoginStartResult<OpaqueCipherSuite>,
+) -> Result<(), Status> {
+    // Receive finish message from client
+    let finish_message: client::AuthenticateFinish = channel.receive().await?;
 
-    fn unwrap_client_finish_step(
-        step: Option<ClientStep>,
-    ) -> Result<ClientAuthenticateFinish, Status> {
-        match step {
-            Some(ClientStep::Start(_)) => {
-                Err(Status::invalid_argument("Message received out of order"))
-            }
-            Some(ClientStep::Finish(finish_message)) => Ok(finish_message),
-            None => Err(Status::invalid_argument("No message received")),
+    // deserialize client message into RegistrationUpload OPAQUE type
+    let auth_finish: CredentialFinalization<OpaqueCipherSuite> =
+        dams::deserialize_from_bytes(&finish_message.message)?;
+
+    match start_result.state.finish(auth_finish) {
+        Ok(_) => {
+            let reply = server::AuthenticateFinish { success: true };
+            // Send response to client
+            channel.send(reply).await?;
+            Ok(())
         }
-    }
-
-    async fn handle_authenticate_finish(
-        message: ClientAuthenticateFinish,
-        server_login_result: Option<ServerLoginStartResult<OpaqueCipherSuite>>,
-    ) -> Result<ServerAuthenticate, Status> {
-        let server_login_result =
-            server_login_result.ok_or_else(|| Status::aborted("No login result found"))?;
-        // deserialize client message into RegistrationUpload OPAQUE type
-        let auth_finish: CredentialFinalization<OpaqueCipherSuite> =
-            dams::deserialize_from_bytes(&message.client_authenticate_finish_message[..])?;
-        match server_login_result.state.finish(auth_finish) {
-            Ok(_) => {
-                let reply = ServerAuthenticate {
-                    step: Some(ServerStep::Finish(ServerAuthenticateFinish {
-                        success: true,
-                    })),
-                };
-                Ok(reply)
-            }
-            Err(_) => Err(Status::unauthenticated("Could not authenticate")),
-        }
+        Err(_) => Err(Status::unauthenticated("Could not authenticate")),
     }
 }

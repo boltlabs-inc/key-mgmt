@@ -5,25 +5,17 @@
 //! the asset owner provides should be passed directly to this API without being
 //! sent to a separate machine.
 
+mod authenticate;
+mod register;
+
 use anyhow::anyhow;
 use dams::{
     blockchain::Blockchain,
-    config::{client::Config, opaque::OpaqueCipherSuite},
     crypto::KeyId,
-    dams_rpc::{
-        client_authenticate::Step as AuthenticateStep, client_register::Step as RegisterStep,
-        dams_rpc_client::DamsRpcClient, server_authenticate::Step as ServerAuthenticateStep,
-        server_register::Step as ServerRegisterStep, ClientAuthenticate, ClientAuthenticateFinish,
-        ClientAuthenticateStart, ClientRegister, ClientRegisterFinish, ClientRegisterStart,
-        ServerAuthenticateStart, ServerRegisterFinish, ServerRegisterStart,
-    },
+    dams_rpc::dams_rpc_client::DamsRpcClient,
     keys::{KeyInfo, UsePermission, UseRestriction, UserPolicySpecification},
     transaction::{TransactionApprovalRequest, TransactionSignature},
     user::UserId,
-};
-use opaque_ke::{
-    ClientLogin, ClientLoginFinishParameters, ClientRegistration,
-    ClientRegistrationFinishParameters, CredentialResponse, RegistrationResponse,
 };
 use rand::{CryptoRng, RngCore};
 use std::{
@@ -31,9 +23,7 @@ use std::{
     str::FromStr,
 };
 use thiserror::Error;
-use tokio::sync::mpsc;
-use tokio_stream::{wrappers::ReceiverStream, StreamExt};
-use tonic::{transport::Channel, Response, Status};
+use tonic::{transport::Channel, Status};
 use tracing::error;
 
 #[derive(Debug, Error)]
@@ -80,21 +70,6 @@ impl Password {
     }
 }
 
-/// Deployment details for a [`Session`].
-///
-/// Possible fields include: timeouts, key server IPs, PKI information,
-/// preshared keys.
-#[derive(Debug, Default, Clone)]
-pub struct SessionConfig {
-    client_config: Config,
-}
-
-impl SessionConfig {
-    pub fn new(client_config: Config) -> Self {
-        Self { client_config }
-    }
-}
-
 /// A `Session` is an abstraction over a
 /// communication session between an asset owner and a key server
 /// that provides mutual authentication, confidentiality, and integrity.
@@ -103,21 +78,16 @@ impl SessionConfig {
 /// A session can be ended manually, or it might time out and require
 /// re-authentication (that is, creation of a new [`Session`]).
 ///
-/// Full details about the `Session`, such as the identity of the key
-/// server, are described in the [`SessionConfig`].
-///
 /// TODO #30: This abstraction needs a lot of design attention.
 #[derive(Debug)]
 #[allow(unused)]
 pub struct Session {
-    config: SessionConfig,
     session_key: [u8; 64],
 }
 
 impl Default for Session {
     fn default() -> Self {
         Session {
-            config: SessionConfig::default(),
             session_key: [0; 64],
         }
     }
@@ -126,7 +96,7 @@ impl Default for Session {
 #[allow(unused)]
 impl Session {
     /// Open a new mutually authenticated session between a previously
-    /// registered user and a key server described in the [`SessionConfig`].
+    /// registered user and a key server.
     ///
     /// Output: If successful, returns an open [`Session`] between the specified
     /// [`UserId`] and the configured key server.
@@ -135,14 +105,11 @@ impl Session {
         rng: &mut T,
         user_id: &UserId,
         password: &Password,
-        config: &SessionConfig,
     ) -> Result<Self, SessionError> {
-        let result =
-            Self::authenticate(client, rng, user_id, password, &config.client_config).await;
+        let result = Self::authenticate(client, rng, user_id, password).await;
         match result {
             Ok(result) => {
                 let session = Session {
-                    config: config.clone(),
                     session_key: result,
                 };
                 Ok(session)
@@ -159,77 +126,12 @@ impl Session {
         rng: &mut T,
         user_id: &UserId,
         password: &Password,
-        config: &self::Config,
     ) -> Result<[u8; 64], Status> {
-        // Create channel to send messages to server after connection is established via
-        // RPC
-        let (tx, rx) = mpsc::channel(2);
-        let stream = ReceiverStream::new(rx);
-
-        // Server returns its own channel that is uses to send responses
-        let mut server_response = client.authenticate(stream).await?.into_inner();
-
-        let client_login_start_result =
-            ClientLogin::<OpaqueCipherSuite>::start(rng, password.as_bytes())
-                .map_err(|_| Status::aborted("LoginStartFailed"))?;
-
-        // Send start message to server
-        let client_authenticate_start_message =
-            dams::serialize_to_bytes(&client_login_start_result.message)?;
-        let authenticate_start =
-            Self::client_authenticate_start(client_authenticate_start_message, user_id);
-        tx.send(authenticate_start)
-            .await
-            .map_err(|_| Status::aborted("Could not send message to server"))?;
-
-        let server_authenticate_start_result = match server_response.next().await {
-            Some(Ok(res)) => Self::unwrap_server_start_authenticate(res.step),
-            Some(Err(e)) => Err(e),
-            None => Err(Status::invalid_argument("No message received")),
-        }?;
-
-        let credential_response: CredentialResponse<OpaqueCipherSuite> =
-            dams::deserialize_from_bytes(
-                &server_authenticate_start_result.server_authenticate_start_message[..],
-            )?;
-
-        let client_login_finish_result = client_login_start_result
-            .state
-            .finish(
-                password.as_bytes(),
-                credential_response,
-                ClientLoginFinishParameters::default(),
-            )
-            .map_err(|_| Status::unauthenticated("Authentication failed"))?;
-
-        let client_login_finish_message =
-            dams::serialize_to_bytes(&client_login_finish_result.message)?;
-        let authenticate_finish =
-            Self::client_authenticate_finish(client_login_finish_message, user_id);
-        tx.send(authenticate_finish)
-            .await
-            .map_err(|e| Status::aborted(e.to_string()))?;
-
-        // Handle finish message
-        let server_authenticate_finish_result = server_response.next().await;
-        match server_authenticate_finish_result {
-            Some(Ok(result)) => match result.step {
-                Some(ServerAuthenticateStep::Finish(finish_response)) => {
-                    Ok(client_login_finish_result.session_key.into())
-                }
-                Some(ServerAuthenticateStep::Start(_)) => {
-                    Err(Status::invalid_argument("Message received out of order"))
-                }
-                None => Err(Status::invalid_argument("No message received")),
-            },
-            Some(Err(e)) => Err(e),
-            None => Err(Status::invalid_argument("No message received")),
-        }
+        authenticate::handle(client, rng, user_id, password).await
     }
 
     /// Register a new user who has not yet interacted with the service and open
-    /// a mutually authenticated session with the server described in the
-    /// [`SessionConfig`].
+    /// a mutually authenticated session with the server.
     ///
     /// This only needs to be called once per user; future sessions can be
     /// created with [`Session::open()`].
@@ -241,88 +143,14 @@ impl Session {
         rng: &mut T,
         user_id: &UserId,
         password: &Password,
-        config: &SessionConfig,
     ) -> Result<Self, SessionError> {
-        let result = Self::do_register(client, rng, user_id, password, &config.client_config).await;
+        let result = register::handle(client, rng, user_id, password).await;
         match result {
-            Ok(_) => Self::open(client, rng, user_id, password, config).await,
+            Ok(_) => Self::open(client, rng, user_id, password).await,
             Err(e) => {
                 error!("{:?}", e);
                 Err(SessionError::RegistrationFailed)
             }
-        }
-    }
-
-    async fn do_register<T: CryptoRng + RngCore>(
-        client: &mut DamsRpcClient<Channel>,
-        rng: &mut T,
-        user_id: &UserId,
-        password: &Password,
-        config: &self::Config,
-    ) -> Result<Response<ServerRegisterFinish>, Status> {
-        // Create channel to send messages to server after connection is established via
-        // RPC
-        let (tx, rx) = mpsc::channel(2);
-        let stream = ReceiverStream::new(rx);
-
-        // Server returns its own channel that is uses to send responses
-        let mut server_response = client.register(stream).await?.into_inner();
-
-        let client_registration_start_result =
-            ClientRegistration::<OpaqueCipherSuite>::start(rng, password.as_bytes())
-                .map_err(|_| Status::aborted("RegistrationStart failed"))?;
-
-        // Send start message to server
-        let client_registration_start_message =
-            dams::serialize_to_bytes(&client_registration_start_result.message)?;
-        let register_start =
-            Self::client_register_start(client_registration_start_message, user_id);
-        tx.send(register_start)
-            .await
-            .map_err(|e| Status::aborted(e.to_string()))?;
-
-        let server_register_start_result = match server_response.next().await {
-            Some(Ok(res)) => Self::unwrap_server_start_register(res.step),
-            Some(Err(e)) => Err(e),
-            None => Err(Status::invalid_argument("No message received")),
-        }?;
-
-        let server_register_start_message: RegistrationResponse<OpaqueCipherSuite> =
-            dams::deserialize_from_bytes(
-                &server_register_start_result.server_register_start_message[..],
-            )?;
-        let client_finish_registration_result = client_registration_start_result
-            .state
-            .finish(
-                rng,
-                password.as_bytes(),
-                server_register_start_message,
-                ClientRegistrationFinishParameters::default(),
-            )
-            .map_err(|_| Status::aborted("RegistrationFinish failed"))?;
-
-        let client_finish_registration_message =
-            dams::serialize_to_bytes(&client_finish_registration_result.message)?;
-        let register_finish =
-            Self::client_register_finish(client_finish_registration_message, user_id);
-        tx.send(register_finish)
-            .await
-            .map_err(|e| Status::aborted(e.to_string()))?;
-
-        // Handle finish message
-        let server_register_finish_result = server_response.next().await;
-        match server_register_finish_result {
-            Some(Ok(result)) => match result.step {
-                Some(ServerRegisterStep::Finish(finish_response)) => {
-                    Ok(Response::new(finish_response))
-                }
-                Some(ServerRegisterStep::Start(_)) => {
-                    Err(Status::invalid_argument("Message received out of order"))
-                }
-                None => Err(Status::invalid_argument("No message received")),
-            },
-            Some(Err(e)) => Err(e),
-            None => Err(Status::invalid_argument("No message received")),
         }
     }
 
@@ -331,67 +159,6 @@ impl Session {
     /// Outputs: None, if successful.
     pub fn close(self) -> Result<(), SessionError> {
         todo!()
-    }
-
-    // Helper functions
-    fn client_register_start(message: Vec<u8>, user_id: &UserId) -> ClientRegister {
-        ClientRegister {
-            step: Some(RegisterStep::Start(ClientRegisterStart {
-                client_register_start_message: message,
-                user_id: user_id.as_bytes().to_vec(),
-            })),
-        }
-    }
-
-    fn client_register_finish(message: Vec<u8>, user_id: &UserId) -> ClientRegister {
-        ClientRegister {
-            step: Some(RegisterStep::Finish(ClientRegisterFinish {
-                client_register_finish_message: message,
-                user_id: user_id.as_bytes().to_vec(),
-            })),
-        }
-    }
-
-    fn unwrap_server_start_register(
-        step: Option<ServerRegisterStep>,
-    ) -> Result<ServerRegisterStart, Status> {
-        match step {
-            Some(ServerRegisterStep::Start(start_message)) => Ok(start_message),
-            Some(ServerRegisterStep::Finish(_)) => {
-                Err(Status::invalid_argument("Message received out of order"))
-            }
-            None => Err(Status::invalid_argument("No message received")),
-        }
-    }
-
-    fn client_authenticate_start(message: Vec<u8>, user_id: &UserId) -> ClientAuthenticate {
-        ClientAuthenticate {
-            step: Some(AuthenticateStep::Start(ClientAuthenticateStart {
-                client_authenticate_start_message: message,
-                user_id: user_id.as_bytes().to_vec(),
-            })),
-        }
-    }
-
-    fn client_authenticate_finish(message: Vec<u8>, user_id: &UserId) -> ClientAuthenticate {
-        ClientAuthenticate {
-            step: Some(AuthenticateStep::Finish(ClientAuthenticateFinish {
-                client_authenticate_finish_message: message,
-                user_id: user_id.as_bytes().to_vec(),
-            })),
-        }
-    }
-
-    fn unwrap_server_start_authenticate(
-        step: Option<ServerAuthenticateStep>,
-    ) -> Result<ServerAuthenticateStart, Status> {
-        match step {
-            Some(ServerAuthenticateStep::Start(start_message)) => Ok(start_message),
-            Some(ServerAuthenticateStep::Finish(_)) => {
-                Err(Status::invalid_argument("Message received out of order"))
-            }
-            None => Err(Status::invalid_argument("No message received")),
-        }
     }
 }
 

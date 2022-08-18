@@ -8,7 +8,7 @@ use anyhow::anyhow;
 use common::{get_logs, LogType, Party};
 
 use dams::{dams_rpc::dams_rpc_client::DamsRpcClient, user::UserId};
-use dams_client::api::{Password, Session, SessionConfig};
+use dams_client::api::{Password, Session};
 use dams_key_server::database;
 use rand::{prelude::StdRng, SeedableRng};
 use std::{fs::OpenOptions, str::FromStr};
@@ -24,9 +24,6 @@ pub async fn integration_tests() {
         .expect("Unable to connect to Mongo");
     let _ = db.create_collection("users", None).await;
     let server_future = common::setup(db.clone()).await;
-    let client_config = dams::config::client::Config::load(common::CLIENT_CONFIG)
-        .await
-        .expect("Failed to load client config");
     let mut rng = StdRng::from_entropy();
 
     // Run every test, printing out details if it fails
@@ -45,7 +42,7 @@ pub async fn integration_tests() {
         .unwrap_or_else(|e| panic!("Failed to clear error file at start: {:?}", e));
     for test in tests {
         eprintln!("\n\ntest integration_tests::{} ... ", test.name);
-        let result = test.execute(&mut client, &client_config, &mut rng).await;
+        let result = test.execute(&mut client, &mut rng).await;
         if let Err(error) = &result {
             eprintln!("failed with error: {:?}", error)
         } else {
@@ -197,25 +194,18 @@ impl Test {
     async fn execute(
         &self,
         client: &mut DamsRpcClient<Channel>,
-        client_config: &dams::config::client::Config,
         rng: &mut StdRng,
     ) -> Result<(), anyhow::Error> {
         for (op, expected_outcome) in &self.operations {
             let outcome: Result<(), anyhow::Error> = match op {
-                Register(user_id, password) => {
-                    let config = SessionConfig::new(client_config.clone());
-                    Session::register(client, rng, user_id, password, &config)
-                        .await
-                        .map(|_| ())
-                        .map_err(|e| e.into())
-                }
-                Authenticate(user_id, password) => {
-                    let config = SessionConfig::new(client_config.clone());
-                    Session::open(client, rng, user_id, password, &config)
-                        .await
-                        .map(|_| ())
-                        .map_err(|e| e.into())
-                }
+                Register(user_id, password) => Session::register(client, rng, user_id, password)
+                    .await
+                    .map(|_| ())
+                    .map_err(|e| e.into()),
+                Authenticate(user_id, password) => Session::open(client, rng, user_id, password)
+                    .await
+                    .map(|_| ())
+                    .map_err(|e| e.into()),
             };
 
             // Get error logs for each party - we make the following assumptions:
