@@ -6,8 +6,8 @@ The DAMS helps people store, retrieve and use the private keys associated with t
 
 The DAMS aims to provide a flexible system of components for managing digital assets and composed of the following:
 
-* A **local** and **remote client library**: The *local client* allows a user to generate and store a secret key in a distributed way, across multiple servers, and provides generic functionality for requesting a signature under the stored key, and reconstructs a full signature from a set of partial signatures. The *remote client* provides functionality to support key delegation for automated key use flows whereby users do not actively participate in transaction signing. <br/>
-Both clients also include the cryptographic functionality for:
+* A **client library**: The *client* allows a user to generate and store a secret key in a distributed way, across multiple servers, and provides generic functionality for requesting a signature under the stored key, and reconstructs a full signature from a set of partial signatures. <br/>
+The client also includes the cryptographic functionality for:
   * authentication,
   * networking with servers,
   * integration as a self-contained library.
@@ -63,4 +63,4 @@ To build the API documentation for the project:
 RUSTDOCFLAGS="-Dwarnings" cargo doc --all-features --no-deps --open
 ```
 
-You can find the API docs in the source of the [local client](dams-local-client/src/api.rs), [remote client](dams-remote-client/src/api.rs), and [policy engine](dams-key-server/src/policy_engine.rs).
+You can find the API docs in the source of the [client](dams-client/src/api.rs) and [policy engine](dams-key-server/src/policy_engine.rs).

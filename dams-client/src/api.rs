@@ -1,4 +1,4 @@
-//! Full implementation of the public API for the DAMS local client library.
+//! Full implementation of the public API for the DAMS client library.
 //!
 //! This API is designed for use with a local client application - that is, an
 //! application running directly on the device of an asset owner. The inputs
