@@ -37,14 +37,14 @@ fn sign_transaction_not_implemented() {
 
 #[test]
 #[should_panic(expected = "not yet implemented")]
-fn get_keys_not_implemented() {
-    let _result = get_keys(UserId);
+fn get_pub_keys_not_implemented() {
+    let _result = get_pub_keys(UserId);
 }
 
 #[test]
 #[should_panic(expected = "not yet implemented")]
-fn get_key_by_id_not_implemented() {
-    let _result = get_key_by_id(UserId, &KeyId);
+fn get_pub_key_by_id_not_implemented() {
+    let _result = get_pub_key_by_id(UserId, &KeyId);
 }
 
 #[test]

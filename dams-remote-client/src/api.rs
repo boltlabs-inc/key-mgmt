@@ -125,7 +125,7 @@ pub fn export_key(user_id: UserId, key_id: &KeyId) -> Result<KeyMaterial, Error>
 ///
 /// TODO #30 (design, implementation): Pass a session.
 #[allow(unused)]
-pub fn get_keys(user_id: UserId) -> Result<Vec<KeyInfo>, Error> {
+pub fn get_pub_keys(user_id: UserId) -> Result<Vec<KeyInfo>, Error> {
     todo!()
 }
 
@@ -144,7 +144,7 @@ pub fn get_keys(user_id: UserId) -> Result<Vec<KeyInfo>, Error> {
 ///
 /// TODO #30 (design, implementation): Pass a session.
 #[allow(unused)]
-pub fn get_key_by_id(user_id: UserId, key_id: &KeyId) -> Result<KeyInfo, Error> {
+pub fn get_pub_key_by_id(user_id: UserId, key_id: &KeyId) -> Result<KeyInfo, Error> {
     todo!()
 }
 
