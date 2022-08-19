@@ -26,7 +26,7 @@ const SERVER_ADDRESS: &str = "127.0.0.1";
 type ServerFuture = JoinHandle<Result<(), anyhow::Error>>;
 
 /// Set of processes that run during a test.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Party {
     Server,
 }
