@@ -9,7 +9,7 @@ use dams::{
     },
 };
 use tokio_stream::wrappers::ReceiverStream;
-use tonic::{Request, Response, Status};
+use tonic::{Request, Response};
 
 #[derive(Debug)]
 pub struct Generate;
@@ -28,7 +28,7 @@ impl Generate {
             // Store step: receive ciphertext from client and store in DB
             store(&mut channel, &context, key_id).await?;
 
-            Ok::<(), Status>(())
+            Ok::<(), DamsServerError>(())
         });
 
         Ok(Response::new(ReceiverStream::new(rx)))

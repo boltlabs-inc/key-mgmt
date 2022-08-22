@@ -1,7 +1,7 @@
 use crate::DamsClientError;
 use dams::{
     channel::ClientChannel,
-    crypto::{KeyId, StorageKey},
+    crypto::{KeyId, OpaqueExportKey, StorageKey},
     dams_rpc::dams_rpc_client::DamsRpcClient,
     types::generate::{client, server},
     user::UserId,
@@ -11,20 +11,14 @@ use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{transport::Channel, Status};
 
-const SECRET_LENGTH: u32 = 32;
-
-#[allow(unused)]
-async fn retrieve_storage_key() -> StorageKey {
-    todo!()
-}
-
 pub(crate) async fn handle<T: CryptoRng + RngCore>(
     client: &mut DamsRpcClient<Channel>,
     rng: &mut T,
     user_id: &UserId,
+    export_key: OpaqueExportKey,
 ) -> Result<KeyId, DamsClientError> {
     // Retrieve the storage key
-    let storage_key = retrieve_storage_key().await;
+    let storage_key = super::retrieve_storage_key(client, export_key, user_id).await?;
 
     // Create channel to send messages to server
     let (tx, rx) = mpsc::channel(2);

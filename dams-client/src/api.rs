@@ -9,7 +9,7 @@ pub(crate) mod authenticate;
 pub(crate) mod create_storage_key;
 pub(crate) mod register;
 
-pub mod generate;
+pub mod arbitrary_secrets;
 
 use crate::DamsClientError;
 use dams::{
