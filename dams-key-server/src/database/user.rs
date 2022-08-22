@@ -6,14 +6,15 @@
 use crate::{constants, DamsServerError};
 use dams::{
     config::opaque::OpaqueCipherSuite,
-    crypto::{Encrypted, StorageKey},
-    user::{AccountName, User, UserId},
+    crypto::{Encrypted, KeyId, Secret, StorageKey},
+    user::{AccountName, StoredSecret, User, UserId},
 };
 use mongodb::{
     bson::{doc, oid::ObjectId},
     Database,
 };
 use opaque_ke::ServerRegistration;
+use tonic::Status;
 
 pub const ACCOUNT_NAME: &str = "account_name";
 pub const STORAGE_KEY: &str = "storage_key";
@@ -72,6 +73,25 @@ pub async fn delete_user(db: &Database, user_id: &UserId) -> Result<(), DamsServ
     } else {
         Ok(())
     }
+}
+
+/// Add a [`StoredSecret`] to a [`User`]'s list of arbitrary secrets
+pub async fn add_user_secret(
+    db: &Database,
+    user_id: &UserId,
+    secret: Encrypted<Secret>,
+    key_id: KeyId,
+) -> Result<(), Status> {
+    let collection = db.collection::<User>(constants::USERS);
+    let query = doc! { USER_ID: user_id.to_string() };
+    let mut user = collection
+        .find_one(query, None)
+        .await
+        .map_err(|_| Status::aborted("MongoDB error in add_user_secret()"))?
+        .ok_or_else(|| Status::aborted("User not found"))?;
+    let stored_secret = StoredSecret::new(secret, key_id);
+    user.add_secret(stored_secret);
+    Ok(())
 }
 
 /// Set the `storage_key` field for the [`User`] associated with a given
