@@ -8,8 +8,8 @@ use anyhow::anyhow;
 use common::{get_logs, LogType, Party};
 
 use dams::{dams_rpc::dams_rpc_client::DamsRpcClient, user::UserId};
+use dams_client::api::{Password, Session, SessionConfig};
 use dams_key_server::database;
-use dams_local_client::api::{Password, Session, SessionConfig};
 use rand::{prelude::StdRng, SeedableRng};
 use std::{fs::OpenOptions, str::FromStr};
 use thiserror::Error;
@@ -34,10 +34,9 @@ pub async fn integration_tests() {
     println!("Executing {} tests", tests.len());
     let mut results = Vec::with_capacity(tests.len());
 
-    let mut client =
-        dams_local_client::api::connect(format!("http://{}:1113", common::SERVER_ADDRESS))
-            .await
-            .expect("Could not return a client");
+    let mut client = dams_client::api::connect(format!("http://{}:1113", common::SERVER_ADDRESS))
+        .await
+        .expect("Could not return a client");
     // Clear error log
     OpenOptions::new()
         .write(true)

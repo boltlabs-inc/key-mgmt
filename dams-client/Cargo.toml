@@ -1,5 +1,5 @@
 [package]
-name = "dams-local-client"
+name = "dams-client"
 version = "0.1.0"
 edition = "2021"
 

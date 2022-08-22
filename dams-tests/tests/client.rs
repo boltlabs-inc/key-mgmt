@@ -5,7 +5,7 @@ use dams::{
     transaction::TransactionApprovalRequest,
     user::UserId,
 };
-use dams_local_client::api::*;
+use dams_client::api::*;
 
 #[test]
 #[should_panic(expected = "not yet implemented")]

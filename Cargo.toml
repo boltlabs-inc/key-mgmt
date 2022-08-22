@@ -1,8 +1,7 @@
 [workspace]
 members = [
     "dams",
-    "dams-local-client",
-    "dams-remote-client",
+    "dams-client",
     "dams-key-server",
     "dams-tests"
 ]

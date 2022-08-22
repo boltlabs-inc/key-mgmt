@@ -3,8 +3,7 @@
 //!
 //! ⚠️ __Usage__: This crate should _not_ be used directly by developers outside
 //! of Bolt Labs. It is designed as a dependency for other crates in the
-//! ecosystem, including `dams-key-server`, `dams-local-client`, and
-//! `dams-remote-client`.
+//! ecosystem, including `dams-key-server` and `dams-client`.
 #![warn(missing_debug_implementations)]
 #![warn(unused_results)]
 #![warn(future_incompatible)]
