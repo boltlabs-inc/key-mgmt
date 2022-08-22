@@ -276,11 +276,13 @@ impl Secret {
 
 #[cfg(test)]
 mod test {
+    use std::collections::HashSet;
+
     use super::*;
     use rand::Rng;
 
     #[test]
-    fn associated_data_to_vec_u8_conversion_works() {
+    fn associated_data_to_vec_u8_conversion_works() -> Result<(), FromUtf8Error> {
         let test_strings = [
             "A random string to test conversion",
             "",
@@ -293,11 +295,13 @@ mod test {
             let data = AssociatedData(test.to_string());
 
             let data_vec: Vec<u8> = data.clone().into();
-            let output_data: AssociatedData = data_vec.try_into().unwrap();
+            let output_data: AssociatedData = data_vec.try_into()?;
 
             // make sure converting to & from Vec<u8> gives the same result
             assert_eq!(data, output_data);
         }
+
+        Ok(())
     }
 
     #[test]
@@ -344,49 +348,99 @@ mod test {
 
     /// Generates random bytes, encrypts them, and returns them along with the
     /// key used for encryption.
-    fn encrypt_random_bytes() -> (Vec<u8>, Encrypted<Vec<u8>>, EncryptionKey) {
-        let mut rng = rand::thread_rng();
+    fn encrypt_random_bytes(
+        rng: &mut (impl CryptoRng + RngCore),
+    ) -> (Vec<u8>, Encrypted<Vec<u8>>, EncryptionKey) {
         let bytes: Vec<u8> = std::iter::repeat_with(|| rng.gen()).take(64).collect();
-        let enc_key = EncryptionKey::new(&mut rng);
-        let encrypted_bytes = Encrypted::encrypt(
-            &mut rng,
-            &enc_key,
-            bytes.clone(),
-            &AssociatedData::default(),
-        )
-        .unwrap();
+        let enc_key = EncryptionKey::new(rng);
+        let encrypted_bytes =
+            Encrypted::encrypt(rng, &enc_key, bytes.clone(), &AssociatedData::default()).unwrap();
 
         (bytes, encrypted_bytes, enc_key)
     }
 
     #[test]
-    fn encryption_not_obviously_broken() {
-        let (bytes, encrypted_bytes, _) = encrypt_random_bytes();
-        assert_ne!(bytes, encrypted_bytes.ciphertext);
+    fn encryption_decryption_works() -> Result<(), CryptoError> {
+        let mut rng = rand::thread_rng();
+        for _ in 0..100 {
+            let (bytes, encrypted_bytes, enc_key) = encrypt_random_bytes(&mut rng);
+
+            // Make sure encryption isn't obviously broken.
+            assert_ne!(bytes, encrypted_bytes.ciphertext);
+
+            // Make sure encrypted object includes the expected associated data.
+            let expected_aad = AssociatedData::default();
+            assert_eq!(expected_aad, encrypted_bytes.associated_data);
+
+            let decrypted_bytes = encrypted_bytes.decrypt(&enc_key)?;
+            // Make sure decryption works
+            assert_eq!(bytes, decrypted_bytes);
+        }
+
+        Ok(())
     }
 
     #[test]
-    fn decryption_works() {
-        let (bytes, encrypted_bytes, enc_key) = encrypt_random_bytes();
-        let decrypted_bytes = encrypted_bytes.decrypt(&enc_key).unwrap();
+    fn encryption_produces_unique_nonces() {
+        let mut rng = rand::thread_rng();
+        let mut uniq = HashSet::new();
 
-        assert_eq!(bytes, decrypted_bytes);
+        // Create 1000 ciphertexts; pull out the nonces; make sure they're unique by
+        // putting them into a set. Insert will return false if a nonce already
+        // exists in the set.
+        assert!((0..1000)
+            .map(|_| encrypt_random_bytes(&mut rng).1.nonce)
+            .all(|nonce| uniq.insert(nonce)))
+    }
+
+    #[test]
+    fn decryption_fails_with_wrong_nonce() {
+        let mut rng = rand::thread_rng();
+        for _ in 0..100 {
+            let (_, mut encrypted_bytes, enc_key) = encrypt_random_bytes(&mut rng);
+            encrypted_bytes.nonce = ChaCha20Poly1305::generate_nonce(&mut rng);
+            assert!(encrypted_bytes.decrypt(&enc_key).is_err());
+        }
     }
 
     #[test]
     fn decryption_fails_with_wrong_key() {
-        let (_, encrypted_bytes, _) = encrypt_random_bytes();
-        let wrong_key = EncryptionKey::new(&mut rand::thread_rng());
+        let mut rng = rand::thread_rng();
+        for _ in 0..100 {
+            let (_, encrypted_bytes, _) = encrypt_random_bytes(&mut rng);
+            let wrong_key = EncryptionKey::new(&mut rand::thread_rng());
 
-        assert!(encrypted_bytes.decrypt(&wrong_key).is_err());
+            assert!(encrypted_bytes.decrypt(&wrong_key).is_err());
+        }
     }
 
     #[test]
     fn decryption_fails_with_wrong_associated_data() {
-        let (_, mut encrypted_bytes, enc_key) = encrypt_random_bytes();
+        let mut rng = rand::thread_rng();
+        let (_, mut encrypted_bytes, enc_key) = encrypt_random_bytes(&mut rng);
         encrypted_bytes.associated_data = AssociatedData("Here is some incorrect data".to_string());
 
         assert!(encrypted_bytes.decrypt(&enc_key).is_err())
+    }
+
+    #[test]
+    fn decryption_fails_with_tweaked_ciphertext() {
+        let mut rng = rand::thread_rng();
+
+        for _ in 0..100 {
+            let (_, mut encrypted_bytes, enc_key) = encrypt_random_bytes(&mut rng);
+            encrypted_bytes.ciphertext[0] &= 1;
+            assert!(encrypted_bytes.decrypt(&enc_key).is_err());
+
+            let (_, mut encrypted_bytes, enc_key) = encrypt_random_bytes(&mut rng);
+            let len = encrypted_bytes.ciphertext.len();
+            encrypted_bytes.ciphertext[len - 1] &= 1;
+            assert!(encrypted_bytes.decrypt(&enc_key).is_err());
+
+            let (_, mut encrypted_bytes, enc_key) = encrypt_random_bytes(&mut rng);
+            encrypted_bytes.ciphertext[len / 2] &= 1;
+            assert!(encrypted_bytes.decrypt(&enc_key).is_err());
+        }
     }
 
     #[test]
