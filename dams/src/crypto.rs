@@ -11,8 +11,11 @@ use chacha20poly1305::{
     aead::{Aead, Payload},
     AeadCore, ChaCha20Poly1305, KeyInit,
 };
+use generic_array::{typenum::U32, GenericArray};
+use hkdf::Hkdf;
 use rand::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
+use sha3::Sha3_256;
 use thiserror::Error;
 
 use crate::user::UserId;
@@ -185,12 +188,20 @@ impl Encrypted<StorageKey> {
 /// and corresponding registration result.
 #[allow(unused)]
 #[derive(Debug)]
-pub struct OpaqueExportKey;
+pub struct OpaqueExportKey(GenericArray<u8, U32>);
+
+#[cfg(test)]
+impl Default for OpaqueExportKey {
+    fn default() -> Self {
+        Self(GenericArray::default())
+    }
+}
 
 impl OpaqueExportKey {
     /// Derive a [`MasterKey`] from the export key.
     #[allow(unused)]
     fn derive_master_key(&self) -> MasterKey {
+        let hk = Hkdf::<Sha3_256>::new(None, &self.0);
         todo!()
     }
 }
@@ -204,7 +215,7 @@ impl OpaqueExportKey {
 /// passed out to the local calling application.
 #[allow(unused)]
 #[derive(Debug)]
-struct MasterKey;
+struct MasterKey(EncryptionKey);
 
 #[allow(unused)]
 impl MasterKey {
@@ -307,13 +318,15 @@ mod test {
     #[test]
     #[should_panic(expected = "not yet implemented")]
     fn derive_master_key_not_implemented() {
-        let _master_key = OpaqueExportKey.derive_master_key();
+        let _master_key = OpaqueExportKey::default().derive_master_key();
     }
 
     #[test]
     #[should_panic(expected = "not yet implemented")]
     fn encrypt_storage_key_not_implemented() {
-        let _encrypted_storage_key = MasterKey.encrypt_storage_key(StorageKey);
+        let mut rng = rand::thread_rng();
+        let master_key = MasterKey(EncryptionKey::new(&mut rng));
+        let _encrypted_storage_key = master_key.encrypt_storage_key(StorageKey);
     }
 
     #[test]
@@ -452,7 +465,7 @@ mod test {
             nonce: chacha20poly1305::Nonce::default(),
             original_type: PhantomData,
         };
-        let _key = storage_key.decrypt_storage_key(OpaqueExportKey);
+        let _key = storage_key.decrypt_storage_key(OpaqueExportKey::default());
     }
 
     #[test]

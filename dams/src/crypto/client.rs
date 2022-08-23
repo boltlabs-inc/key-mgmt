@@ -48,7 +48,8 @@ mod test {
     #[should_panic(expected = "not yet implemented")]
     fn create_and_encrypt_storage_key_not_implemented() {
         let rng = rand::thread_rng();
-        let _ = create_and_encrypt_storage_key(rng, OpaqueExportKey);
+        let export_key = OpaqueExportKey::default();
+        let _ = create_and_encrypt_storage_key(rng, export_key);
     }
 
     #[test]
