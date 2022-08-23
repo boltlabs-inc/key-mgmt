@@ -16,8 +16,8 @@ fn close_session_not_implemented() {
 
 #[test]
 #[should_panic(expected = "not yet implemented")]
-fn create_digital_asset_key_not_implemented() {
-    let _result = create_digital_asset_key(
+fn create_key_not_implemented() {
+    let _result = create_key(
         Session::default(),
         UserId::default(),
         Blockchain::EVM,
@@ -39,25 +39,25 @@ fn set_user_key_policy_not_implemented() {
 
 #[test]
 #[should_panic(expected = "not yet implemented")]
-fn request_transaction_signature_not_implemented() {
+fn sign_transaction_not_implemented() {
     let tar = TransactionApprovalRequest::default();
-    let _result = request_transaction_signature(Session::default(), tar);
+    let _result = sign_transaction(Session::default(), tar);
 }
 
 #[test]
 #[should_panic(expected = "not yet implemented")]
-fn retrieve_public_keys_not_implemented() {
-    let _result = retrieve_public_keys(Session::default(), UserId::default());
+fn get_pub_keys_not_implemented() {
+    let _result = get_pub_keys(Session::default(), UserId::default());
 }
 
 #[test]
 #[should_panic(expected = "not yet implemented")]
-fn retrieve_public_key_by_id_not_implemented() {
-    let _result = retrieve_public_key_by_id(Session::default(), UserId::default(), &KeyId);
+fn get_pub_key_by_id_not_implemented() {
+    let _result = get_pub_key_by_id(Session::default(), UserId::default(), &KeyId);
 }
 
 #[test]
 #[should_panic(expected = "not yet implemented")]
-fn retrieve_audit_log_not_implemented() {
-    let _result = retrieve_audit_log(Session::default(), UserId::default(), None);
+fn get_log_not_implemented() {
+    let _result = get_log(Session::default(), UserId::default(), None);
 }

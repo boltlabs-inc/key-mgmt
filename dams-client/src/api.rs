@@ -189,7 +189,7 @@ pub async fn connect(address: String) -> Result<DamsRpcClient<Channel>, anyhow::
 /// Output: If successful, returns the [`KeyInfo`] describing the newly created
 /// key.
 #[allow(unused)]
-pub fn create_digital_asset_key(
+pub fn create_key(
     session: Session,
     user_id: UserId,
     blockchain: Blockchain,
@@ -235,7 +235,7 @@ pub fn set_user_key_policy(
 /// [`Transaction`](dams::transaction::Transaction), and using the key
 /// corresponding to the [`KeyId`].
 #[allow(unused)]
-pub fn request_transaction_signature(
+pub fn sign_transaction(
     session: Session,
     transaction_approval_request: TransactionApprovalRequest,
 ) -> Result<TransactionSignature, Error> {
@@ -254,7 +254,7 @@ pub fn request_transaction_signature(
 /// Output: If successful, returns the [`KeyInfo`] for every key belonging to
 /// the user.
 #[allow(unused)]
-pub fn retrieve_public_keys(session: Session, user_id: UserId) -> Result<Vec<KeyInfo>, Error> {
+pub fn get_pub_keys(session: Session, user_id: UserId) -> Result<Vec<KeyInfo>, Error> {
     todo!()
 }
 
@@ -269,7 +269,7 @@ pub fn retrieve_public_keys(session: Session, user_id: UserId) -> Result<Vec<Key
 ///
 /// Output: If successful, returns the [`KeyInfo`] for the requested key.
 #[allow(unused)]
-pub fn retrieve_public_key_by_id(
+pub fn get_pub_key_by_id(
     session: Session,
     user_id: UserId,
     key_id: &KeyId,
@@ -292,10 +292,6 @@ pub fn retrieve_public_key_by_id(
 ///
 /// Output: if successful, returns a [`String`] representation of the logs.
 #[allow(unused)]
-pub fn retrieve_audit_log(
-    session: Session,
-    user_id: UserId,
-    key_id: Option<&KeyId>,
-) -> Result<String, Error> {
+pub fn get_log(session: Session, user_id: UserId, key_id: Option<&KeyId>) -> Result<String, Error> {
     todo!()
 }
