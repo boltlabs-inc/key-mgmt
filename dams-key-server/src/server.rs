@@ -1,13 +1,11 @@
 use crate::{cli::Cli, command, database};
 
-use anyhow::{anyhow, Context};
+use anyhow::{anyhow, Context as ErrorContext};
 use dams::{
     config::server::{Config, Service},
-    dams_rpc::{
-        dams_rpc_server::{DamsRpc, DamsRpcServer},
-        ClientAuthenticate, ClientRegister,
-    },
+    dams_rpc::dams_rpc_server::{DamsRpc, DamsRpcServer},
     defaults::server::config_path,
+    types::Message,
     TestLogs,
 };
 use futures::FutureExt;
@@ -24,9 +22,9 @@ use tracing::info;
 #[allow(unused)]
 #[derive(Debug)]
 pub struct DamsKeyServer {
-    db: Database,
     config: Config,
-    service: Service,
+    db: Arc<Database>,
+    service: Arc<Service>,
     rng: Arc<Mutex<StdRng>>,
 }
 
@@ -37,35 +35,51 @@ impl DamsKeyServer {
             .get(0)
             .ok_or_else(|| anyhow!("Could not get service."))?;
         let rng = StdRng::from_entropy();
+
         Ok(Self {
-            db,
             config: config.clone(),
-            service: service.clone(),
+            db: Arc::new(db),
+            service: Arc::new(service.clone()),
             rng: Arc::new(Mutex::new(rng)),
         })
     }
+
+    pub fn context(&self) -> Context {
+        Context {
+            db: self.db.clone(),
+            service: self.service.clone(),
+            rng: self.rng.clone(),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct Context {
+    pub db: Arc<Database>,
+    pub service: Arc<Service>,
+    pub rng: Arc<Mutex<StdRng>>,
 }
 
 #[tonic::async_trait]
 impl DamsRpc for DamsKeyServer {
-    type RegisterStream = command::register::RegisterStream;
-    type AuthenticateStream = command::authenticate::AuthenticateStream;
+    type RegisterStream = dams::types::MessageStream;
+    type AuthenticateStream = dams::types::MessageStream;
 
     async fn register(
         &self,
-        request: Request<tonic::Streaming<ClientRegister>>,
+        request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::RegisterStream>, Status> {
         command::register::Register
-            .run(request, &self.db, self.rng.clone(), &self.service)
+            .run(request, self.context())
             .await
     }
 
     async fn authenticate(
         &self,
-        request: Request<tonic::Streaming<ClientAuthenticate>>,
+        request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::AuthenticateStream>, Status> {
         command::authenticate::Authenticate
-            .run(request, &self.db, self.rng.clone(), &self.service)
+            .run(request, self.context())
             .await
     }
 }

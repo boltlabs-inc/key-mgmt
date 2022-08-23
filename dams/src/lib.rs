@@ -15,6 +15,7 @@ use std::fmt;
 use tonic::Status;
 
 pub mod blockchain;
+pub mod channel;
 pub mod config;
 pub mod crypto;
 pub mod defaults;
@@ -22,6 +23,7 @@ pub mod keys;
 pub mod opaque_storage;
 pub mod timeout;
 pub mod transaction;
+pub mod types;
 pub mod user;
 
 #[allow(clippy::all)]
@@ -58,4 +60,33 @@ pub fn serialize_to_bytes<T: Serialize>(message: &T) -> Result<Vec<u8>, Status> 
     let serialized: Vec<u8> =
         bincode::serialize(message).map_err(|_| Status::aborted("Unable to serialize message"))?;
     Ok(serialized)
+}
+
+/// Generates `TryFrom` implementations to and from the `Message` type for a
+/// given list of types.
+#[macro_export]
+macro_rules! impl_message_conversion {
+    ($($message_type:ty),+) => {
+        $(
+            impl TryFrom<$crate::types::Message> for $message_type {
+                type Error = tonic::Status;
+
+                fn try_from(value: $crate::types::Message) -> Result<Self, Self::Error> {
+                    bincode::deserialize(&value.content)
+                        .map_err(|e| tonic::Status::internal(e.to_string()))
+                }
+            }
+
+            impl TryFrom<$message_type> for $crate::types::Message {
+                type Error = tonic::Status;
+
+                fn try_from(value: $message_type) -> Result<Self, Self::Error> {
+                    let content = bincode::serialize(&value)
+                        .map_err(|e| tonic::Status::internal(e.to_string()))?;
+
+                    Ok($crate::types::Message { content })
+                }
+            }
+        )+
+    };
 }
