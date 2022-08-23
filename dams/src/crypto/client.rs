@@ -20,7 +20,7 @@ use super::{Encrypted, Secret};
 /// 4. Return the encrypted storage key
 #[allow(unused)]
 pub fn create_and_encrypt_storage_key(
-    rng: impl CryptoRng + RngCore,
+    rng: &mut (impl CryptoRng + RngCore),
     export_key: OpaqueExportKey,
 ) -> Encrypted<StorageKey> {
     todo!()
@@ -34,7 +34,7 @@ pub fn create_and_encrypt_storage_key(
 /// 2. Encrypt it under the [`StorageKey`], using an AEAD scheme
 #[allow(unused)]
 pub fn create_and_encrypt_secret(
-    rng: impl CryptoRng + RngCore,
+    rng: &mut (impl CryptoRng + RngCore),
     storage_key: StorageKey,
 ) -> Encrypted<Secret> {
     todo!()
@@ -43,19 +43,20 @@ pub fn create_and_encrypt_secret(
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::crypto::test::export_key;
 
     #[test]
     #[should_panic(expected = "not yet implemented")]
     fn create_and_encrypt_storage_key_not_implemented() {
-        let rng = rand::thread_rng();
-        let export_key = OpaqueExportKey::default();
-        let _ = create_and_encrypt_storage_key(rng, export_key);
+        let mut rng = rand::thread_rng();
+        let export_key = export_key(&mut rng);
+        let _ = create_and_encrypt_storage_key(&mut rng, export_key);
     }
 
     #[test]
     #[should_panic(expected = "not yet implemented")]
     fn create_and_encrypt_secret_not_implemented() {
-        let rng = rand::thread_rng();
-        let _ = create_and_encrypt_secret(rng, StorageKey);
+        let mut rng = rand::thread_rng();
+        let _ = create_and_encrypt_secret(&mut rng, StorageKey);
     }
 }

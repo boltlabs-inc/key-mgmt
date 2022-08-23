@@ -60,6 +60,12 @@ impl From<AssociatedData> for Vec<u8> {
     }
 }
 
+impl<'a> From<&'a AssociatedData> for &'a [u8] {
+    fn from(associated_data: &'a AssociatedData) -> Self {
+        associated_data.0.as_bytes()
+    }
+}
+
 impl AssociatedData {
     fn new() -> Self {
         Self::default()
@@ -73,7 +79,7 @@ impl AssociatedData {
         self.with_str("ChaCha20Poly1305 with 96-bit nonce.")
     }
 
-    fn with_hkdf_parmaters(self) -> Self {
+    fn with_hkdf_parameters(self) -> Self {
         self.with_str("HMAC-based extract-and-expand key derivation function using SHA3-256")
     }
 }
@@ -111,13 +117,6 @@ impl EncryptionKey {
             associated_data: AssociatedData::new().with_aead_parameters(),
         }
     }
-
-    fn from_bytes(bytes: [u8; 32], associated_data: AssociatedData) -> Self {
-        Self {
-            key: bytes.into(),
-            associated_data: associated_data.with_aead_parameters(),
-        }
-    }
 }
 
 #[allow(unused)]
@@ -141,10 +140,9 @@ where
         let cipher = ChaCha20Poly1305::new(&enc_key.key);
 
         // Format plaintext and associated data
-        let ad_vec: Vec<u8> = associated_data.clone().into();
         let payload = Payload {
             msg: &Vec::from(object),
-            aad: &ad_vec,
+            aad: associated_data.into(),
         };
 
         // Encrypt!
@@ -225,13 +223,6 @@ impl Encrypted<StorageKey> {
 #[derive(Debug)]
 pub struct OpaqueExportKey(GenericArray<u8, U32>);
 
-#[cfg(test)]
-impl Default for OpaqueExportKey {
-    fn default() -> Self {
-        Self(GenericArray::default())
-    }
-}
-
 impl OpaqueExportKey {
     /// Derive a [`MasterKey`] from the export key.
     #[allow(unused)]
@@ -239,18 +230,16 @@ impl OpaqueExportKey {
         let hk = Hkdf::<Sha3_256>::new(None, &self.0);
         let associated_data = AssociatedData::new()
             .with_str("OPAQUE-derived Lock Keeper master key")
-            .with_hkdf_parmaters();
-
-        let ad_vec: Vec<u8> = associated_data.clone().into();
+            .with_hkdf_parameters();
 
         let mut master_key_material = [0u8; 32];
-        hk.expand(&ad_vec, &mut master_key_material)
+        hk.expand((&associated_data).into(), &mut master_key_material)
             .map_err(CryptoError::KeyDerivationFailed)?;
 
-        Ok(MasterKey(EncryptionKey::from_bytes(
-            master_key_material,
+        Ok(MasterKey(EncryptionKey {
+            key: master_key_material.into(),
             associated_data,
-        )))
+        }))
     }
 }
 
@@ -363,10 +352,21 @@ mod test {
         Ok(())
     }
 
+    // In practice, an export key will be a pseudorandom output form OPAQUE.
+    // Instead, we'll use the encryption key generation function to simulate the
+    // same thing.
+    pub(crate) fn export_key(rng: &mut (impl CryptoRng + RngCore)) -> OpaqueExportKey {
+        OpaqueExportKey(EncryptionKey::new(rng).key)
+    }
+
     #[test]
-    #[should_panic(expected = "not yet implemented")]
-    fn derive_master_key_not_implemented() {
-        let _master_key = OpaqueExportKey::default().derive_master_key();
+    fn derive_master_key_not_obviously_broken() {
+        let mut rng = rand::thread_rng();
+        let export_key = export_key(&mut rng);
+        let master_key = export_key.derive_master_key().unwrap();
+
+        // make sure the master key isn't the same as the export key
+        assert!(master_key.0.key != export_key.0)
     }
 
     #[test]
@@ -513,7 +513,7 @@ mod test {
             nonce: chacha20poly1305::Nonce::default(),
             original_type: PhantomData,
         };
-        let _key = storage_key.decrypt_storage_key(OpaqueExportKey::default());
+        let _key = storage_key.decrypt_storage_key(export_key(&mut rand::thread_rng()));
     }
 
     #[test]
