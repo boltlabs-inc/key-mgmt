@@ -8,7 +8,10 @@ use dams::{
     types::Message,
     TestLogs,
 };
-use futures::FutureExt;
+use futures::{
+    stream::{FuturesUnordered, StreamExt},
+    FutureExt,
+};
 use mongodb::Database;
 use rand::{rngs::StdRng, SeedableRng};
 use std::{
@@ -16,8 +19,9 @@ use std::{
     net::SocketAddr,
     sync::{Arc, Mutex},
 };
+use tokio::signal;
 use tonic::{transport::Server, Request, Response, Status};
-use tracing::info;
+use tracing::{error, info};
 
 #[allow(unused)]
 #[derive(Debug)]
@@ -29,17 +33,13 @@ pub struct DamsKeyServer {
 }
 
 impl DamsKeyServer {
-    pub fn new(db: Database, config: Config) -> Result<Self, anyhow::Error> {
-        let service = config
-            .services
-            .get(0)
-            .ok_or_else(|| anyhow!("Could not get service."))?;
+    pub fn new(db: Database, config: Config, service: Arc<Service>) -> Result<Self, anyhow::Error> {
         let rng = StdRng::from_entropy();
 
         Ok(Self {
             config: config.clone(),
             db: Arc::new(db),
-            service: Arc::new(service.clone()),
+            service,
             rng: Arc::new(Mutex::new(rng)),
         })
     }
@@ -87,16 +87,43 @@ impl DamsRpc for DamsKeyServer {
 pub async fn start_tonic_server(config: Config) -> Result<(), anyhow::Error> {
     let db =
         database::connect_to_mongo(&config.database.mongodb_uri, &config.database.db_name).await?;
+    // Collect the futures for the result of running each specified server
+    let mut server_futures: FuturesUnordered<_> = config
+        .services
+        .iter()
+        .map(|service| {
+            // Clone `Arc`s for the various resources we need in this server
+            let config = config.clone();
+            let db = db.clone();
+            let service = Arc::new(service.clone());
 
-    let dams_rpc_server = DamsKeyServer::new(db, config)?;
-    let addr = dams_rpc_server.service.address;
-    let port = dams_rpc_server.service.port;
-    info!("{}", TestLogs::ServerSpawned(format!("{}:{}", addr.to_string(), port.to_string())));
-    Server::builder()
-        .add_service(DamsRpcServer::new(dams_rpc_server))
-        .serve(SocketAddr::new(addr, port))
-        .await
-        .map_err(|e| anyhow!("Cannot start server: {:?}", e))
+            async move {
+                let dams_rpc_server = DamsKeyServer::new(db, config, service)?;
+                let addr = dams_rpc_server.service.address;
+                let port = dams_rpc_server.service.port;
+                info!("{}", TestLogs::ServerSpawned(format!("{}:{}", addr.to_string(), port.to_string())));
+                Server::builder()
+                    .add_service(DamsRpcServer::new(dams_rpc_server))
+                    .serve(SocketAddr::new(addr, port))
+                    .await
+                    .map_err(|e| anyhow!("Cannot start server: {:?}", e))?;
+
+                Ok::<_, anyhow::Error>(())
+            }
+        })
+        .collect();
+
+    // Wait for the server to finish
+    tokio::select! {
+        _ = signal::ctrl_c() => info!("Terminated by user"),
+        Some(Err(e)) = server_futures.next() => {
+            error!("Error: {}", e);
+        },
+        else => {
+            info!("Shutting down...")
+        }
+    }
+    Ok(())
 }
 
 pub async fn main_with_cli(cli: Cli) -> Result<(), anyhow::Error> {
