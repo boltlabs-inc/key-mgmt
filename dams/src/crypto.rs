@@ -6,14 +6,13 @@
 
 use std::{marker::PhantomData, string::FromUtf8Error};
 
-use bytes::Bytes;
 use chacha20poly1305::{
     aead::{Aead, Payload},
     AeadCore, ChaCha20Poly1305, KeyInit,
 };
 use generic_array::{typenum::U32, GenericArray};
 use hkdf::Hkdf;
-use rand::{CryptoRng, RngCore};
+use rand::{CryptoRng, Rng, RngCore};
 use serde::{Deserialize, Serialize};
 use sha3::Sha3_256;
 use thiserror::Error;
@@ -311,7 +310,7 @@ impl KeyId {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Secret {
     /// The actual bytes of secret material.
-    material: Bytes,
+    material: Vec<u8>,
     /// Additional context about the secret.
     associated_data: AssociatedData,
 }
@@ -319,8 +318,15 @@ pub struct Secret {
 #[allow(unused)]
 impl Secret {
     /// Generate a new secret of length `len`.
-    fn generate(rng: impl CryptoRng + RngCore, len: u32, user_id: UserId, key_id: KeyId) -> Self {
-        todo!()
+    fn generate(
+        rng: &mut (impl CryptoRng + RngCore),
+        len: usize,
+        associated_data: AssociatedData,
+    ) -> Self {
+        Self {
+            material: std::iter::repeat_with(|| rng.gen()).take(len).collect(),
+            associated_data,
+        }
     }
 }
 
@@ -415,18 +421,55 @@ mod test {
     #[test]
     #[should_panic(expected = "not yet implemented")]
     fn data_encryption_not_implemented() {
-        let thread_rng = rand::thread_rng();
-        let user_id = UserId::default();
-        let secret = Secret::generate(thread_rng, 32, user_id, KeyId);
+        let secret = Secret {
+            material: Vec::default(),
+            associated_data: AssociatedData::default(),
+        };
         let _encrypted_secret = StorageKey.encrypt_data(&secret);
     }
 
     #[test]
-    #[should_panic(expected = "not yet implemented")]
-    fn secret_generation_not_implemented() {
-        let thread_rng = rand::thread_rng();
-        let user_id = UserId::default();
-        let _secret = Secret::generate(thread_rng, 32, user_id, KeyId);
+    fn secret_generation_produces_unique_secrets() {
+        let mut rng = rand::thread_rng();
+        let mut uniq = HashSet::new();
+
+        // Create 1000 secrets; pull out the secret material; make sure they're unique
+        // by putting them into a set. Insert will return false if a secret
+        // already exists in the set.
+        assert!((0..1000)
+            .map(|_| Secret::generate(&mut rng, 32, AssociatedData::default()).material)
+            .all(|nonce| uniq.insert(nonce)))
+    }
+
+    #[test]
+    fn secret_generation_length_specification_works() {
+        let mut rng = rand::thread_rng();
+        // Make secrets of length 0 to 1000. Check that the length of the generated
+        // secret matches the expected length.
+        assert!((0..1000)
+            .map(|len| (
+                len,
+                Secret::generate(&mut rng, len, AssociatedData::default())
+                    .material
+                    .len()
+            ))
+            .all(|(expected, actual)| expected == actual))
+    }
+
+    #[test]
+    fn secret_associated_data_matches_expected() {
+        let mut rng = rand::thread_rng();
+
+        // in the default case
+        let secret = Secret::generate(&mut rng, 32, AssociatedData::default());
+        assert_eq!(secret.associated_data, AssociatedData::default());
+
+        // in the non-default case
+        let complicated_ad = AssociatedData(
+            "here is a long, complex string\nfor testing. with details!".to_string(),
+        );
+        let secret = Secret::generate(&mut rng, 32, complicated_ad.clone());
+        assert_eq!(secret.associated_data, complicated_ad);
     }
 
     #[test]

@@ -2,11 +2,14 @@
 //!
 //! Each operation in this module is part of one or more workflows.
 
-use crate::crypto::{OpaqueExportKey, StorageKey};
+use crate::{
+    crypto::{OpaqueExportKey, StorageKey},
+    user::UserId,
+};
 
 use rand::{CryptoRng, RngCore};
 
-use super::{Encrypted, Secret};
+use super::{Encrypted, KeyId, Secret};
 
 /// Create an encrypted storage key. This is part of the registration flow and
 /// is executed during a registration session with the
@@ -35,6 +38,8 @@ pub fn create_and_encrypt_storage_key(
 #[allow(unused)]
 pub fn create_and_encrypt_secret(
     rng: &mut (impl CryptoRng + RngCore),
+    user_id: &UserId,
+    key_id: &KeyId,
     storage_key: StorageKey,
 ) -> Encrypted<Secret> {
     todo!()
@@ -43,7 +48,7 @@ pub fn create_and_encrypt_secret(
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::crypto::test::create_test_export_key;
+    use crate::crypto::{test::create_test_export_key, KeyId};
 
     #[test]
     #[should_panic(expected = "not yet implemented")]
@@ -57,6 +62,6 @@ mod test {
     #[should_panic(expected = "not yet implemented")]
     fn create_and_encrypt_secret_not_implemented() {
         let mut rng = rand::thread_rng();
-        let _ = create_and_encrypt_secret(&mut rng, StorageKey);
+        let _ = create_and_encrypt_secret(&mut rng, &UserId::default(), &KeyId, StorageKey);
     }
 }
