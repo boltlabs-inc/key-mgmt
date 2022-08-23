@@ -41,7 +41,7 @@ struct AssociatedData(String);
 
 impl Default for AssociatedData {
     fn default() -> Self {
-        Self(String::from("Version 0.1. "))
+        Self(String::from("Version 0.1."))
     }
 }
 
@@ -55,6 +55,24 @@ impl TryFrom<Vec<u8>> for AssociatedData {
 impl From<AssociatedData> for Vec<u8> {
     fn from(associated_data: AssociatedData) -> Self {
         associated_data.0.into_bytes()
+    }
+}
+
+impl AssociatedData {
+    fn new() -> Self {
+        Self::default()
+    }
+
+    fn with_str(self, ad: &str) -> Self {
+        AssociatedData(format!("{}\n{}", self.0, ad))
+    }
+
+    fn with_aead_parameters(self) -> Self {
+        self.with_str("ChaCha20Poly1305 with 96-bit nonce.")
+    }
+
+    fn with_hkdf_parmaters(self) -> Self {
+        self.with_str("HMAC-based extract-and-expand key derivation function using SHA3-256")
     }
 }
 
@@ -75,13 +93,28 @@ pub struct Encrypted<T> {
 
 /// A well-formed symmetric encryption key for an AEAD scheme.
 #[derive(Debug, Clone)]
-struct EncryptionKey(chacha20poly1305::Key);
+struct EncryptionKey {
+    key: chacha20poly1305::Key,
+
+    #[allow(unused)]
+    associated_data: AssociatedData,
+}
 
 #[allow(unused)]
 impl EncryptionKey {
     /// Generate a new symmetric AEAD encryption key from scratch.
     fn new(rng: &mut (impl CryptoRng + RngCore)) -> Self {
-        Self(ChaCha20Poly1305::generate_key(rng))
+        Self {
+            key: ChaCha20Poly1305::generate_key(rng),
+            associated_data: AssociatedData::new().with_aead_parameters(),
+        }
+    }
+
+    fn from_bytes(bytes: [u8; 32], associated_data: AssociatedData) -> Self {
+        Self {
+            key: bytes.into(),
+            associated_data: associated_data.with_aead_parameters(),
+        }
     }
 }
 
@@ -103,7 +136,7 @@ where
         associated_data: &AssociatedData,
     ) -> Result<Encrypted<T>, CryptoError> {
         // Set up cipher with key
-        let cipher = ChaCha20Poly1305::new(&enc_key.0);
+        let cipher = ChaCha20Poly1305::new(&enc_key.key);
 
         // Format plaintext and associated data
         let ad_vec: Vec<u8> = associated_data.clone().into();
@@ -131,7 +164,7 @@ where
     /// Raises a [`CryptoError::DecryptionFailed`] if decryption fails.
     fn decrypt(self, enc_key: &EncryptionKey) -> Result<T, CryptoError> {
         // Set up cipher with key
-        let cipher = ChaCha20Poly1305::new(&enc_key.0);
+        let cipher = ChaCha20Poly1305::new(&enc_key.key);
 
         // Format ciphertext and associated data
         let ad_vec: Vec<u8> = self.associated_data.into();
@@ -202,7 +235,20 @@ impl OpaqueExportKey {
     #[allow(unused)]
     fn derive_master_key(&self) -> MasterKey {
         let hk = Hkdf::<Sha3_256>::new(None, &self.0);
-        todo!()
+        let associated_data = AssociatedData::new()
+            .with_str("OPAQUE-derived Lock Keeper master key")
+            .with_hkdf_parmaters();
+
+        let ad_vec: Vec<u8> = associated_data.clone().into();
+
+        let mut master_key_material = [0u8; 32];
+        hk.expand(&ad_vec, &mut master_key_material)
+            .expect("Impossible - hardcoded output lengths shouldn't collide");
+
+        MasterKey(EncryptionKey::from_bytes(
+            master_key_material,
+            associated_data,
+        ))
     }
 }
 
