@@ -85,12 +85,13 @@ impl DamsRpc for DamsKeyServer {
 }
 
 pub async fn start_tonic_server(config: Config) -> Result<(), anyhow::Error> {
-    let db = database::connect_to_mongo().await?;
+    let db =
+        database::connect_to_mongo(&config.database.mongodb_uri, &config.database.db_name).await?;
 
     let dams_rpc_server = DamsKeyServer::new(db, config)?;
     let addr = dams_rpc_server.service.address;
     let port = dams_rpc_server.service.port;
-    info!("{}", TestLogs::ServerSpawned(addr.to_string()));
+    info!("{}", TestLogs::ServerSpawned(format!("{}:{}", addr.to_string(), port.to_string())));
     Server::builder()
         .add_service(DamsRpcServer::new(dams_rpc_server))
         .serve(SocketAddr::new(addr, port))

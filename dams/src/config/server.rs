@@ -13,6 +13,15 @@ use crate::defaults::server as defaults;
 pub struct Config {
     #[serde(rename = "service")]
     pub services: Vec<Service>,
+    pub database: DatabaseSpec,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
+#[non_exhaustive]
+pub struct DatabaseSpec {
+    pub mongodb_uri: String,
+    pub db_name: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
