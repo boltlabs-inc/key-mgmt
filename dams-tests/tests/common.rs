@@ -70,7 +70,7 @@ pub async fn setup(db: Database, server_config: dams::config::server::Config) ->
     // Note: hard-coded to match the 2-service server with default port.
     let checks = vec![await_log(
         Party::Server,
-        TestLogs::ServerSpawned(SERVER_ADDRESS.to_string() + ":1113"),
+        TestLogs::ServerSpawned(format!("{}:1113", SERVER_ADDRESS)),
     )];
 
     // Wait up to 30sec for the servers to set up or fail
@@ -129,7 +129,8 @@ async fn client_test_config() -> dams::config::client::Config {
 pub async fn server_test_config() -> dams::config::server::Config {
     fs::create_dir("tests/gen").expect("Unable to create directory tests/gen");
     // Format service string and database string into full config
-    let config_str = format!(r#"
+    let config_str = format!(
+        r#"
         [[service]]
         address = "{}"
         port = 1113
@@ -141,7 +142,9 @@ pub async fn server_test_config() -> dams::config::server::Config {
         [database]
         mongodb_uri = "mongodb://localhost:27017"
         db_name = "dams-test-db"
-    "#, SERVER_ADDRESS);
+    "#,
+        SERVER_ADDRESS
+    );
     write_config_file(SERVER_CONFIG, config_str);
 
     dams::config::server::Config::load(SERVER_CONFIG)
