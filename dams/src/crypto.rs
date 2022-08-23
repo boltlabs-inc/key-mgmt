@@ -32,6 +32,8 @@ pub enum CryptoError {
     EncryptionFailed,
     #[error("Decryption failed")]
     DecryptionFailed,
+    #[error("Key derivation failed: {0}")]
+    KeyDerivationFailed(hkdf::InvalidLength),
 }
 
 /// The associated data used in [`Encrypted`] AEAD ciphertexts and (TODO #130:
@@ -233,7 +235,7 @@ impl Default for OpaqueExportKey {
 impl OpaqueExportKey {
     /// Derive a [`MasterKey`] from the export key.
     #[allow(unused)]
-    fn derive_master_key(&self) -> MasterKey {
+    fn derive_master_key(&self) -> Result<MasterKey, CryptoError> {
         let hk = Hkdf::<Sha3_256>::new(None, &self.0);
         let associated_data = AssociatedData::new()
             .with_str("OPAQUE-derived Lock Keeper master key")
@@ -243,12 +245,12 @@ impl OpaqueExportKey {
 
         let mut master_key_material = [0u8; 32];
         hk.expand(&ad_vec, &mut master_key_material)
-            .expect("Impossible - hardcoded output lengths shouldn't collide");
+            .map_err(CryptoError::KeyDerivationFailed)?;
 
-        MasterKey(EncryptionKey::from_bytes(
+        Ok(MasterKey(EncryptionKey::from_bytes(
             master_key_material,
             associated_data,
-        ))
+        )))
     }
 }
 
