@@ -429,16 +429,16 @@ mod test {
 
         for _ in 0..100 {
             let (_, mut encrypted_bytes, enc_key) = encrypt_random_bytes(&mut rng);
-            encrypted_bytes.ciphertext[0] &= 1;
+            encrypted_bytes.ciphertext[0] ^= 1;
             assert!(encrypted_bytes.decrypt(&enc_key).is_err());
 
             let (_, mut encrypted_bytes, enc_key) = encrypt_random_bytes(&mut rng);
             let len = encrypted_bytes.ciphertext.len();
-            encrypted_bytes.ciphertext[len - 1] &= 1;
+            encrypted_bytes.ciphertext[len - 1] ^= 1;
             assert!(encrypted_bytes.decrypt(&enc_key).is_err());
 
             let (_, mut encrypted_bytes, enc_key) = encrypt_random_bytes(&mut rng);
-            encrypted_bytes.ciphertext[len / 2] &= 1;
+            encrypted_bytes.ciphertext[len / 2] ^= 1;
             assert!(encrypted_bytes.decrypt(&enc_key).is_err());
         }
     }
