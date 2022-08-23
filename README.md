@@ -47,13 +47,28 @@ To run the doctests locally:
 cargo test --all-features --doc --verbose
 ```
 
-To run all unit and integration tests (make sure MongoDB is running first):
+To run all unit and integration tests:
 
+- Start MongoDB in one terminal window (see the [MongoDB docs](https://www.mongodb.com/docs/manual/reference/configuration-options/) for default mongod.conf paths based on your OS):
+```bash
+mongod --config {path_to_mongod.conf}
+```
+
+- Open another terminal window, navigate to this repo and run:
 ```bash
 cargo test --all-features --all-targets
 ```
 
 We follow test-driven development practices and the test suite should be a close mapping to the functionality we currently implement at any given stage of development.
+
+## Running the server locally
+
+To run the server locally, make sure MongoDB is running as above and then run:
+```bash
+cargo run --bin key-server-cli server --config {path_to_server_config} run
+```
+
+There is an example server config file, `dev/Server.toml`. This will start the server on two endpoints, one for IPv4 and one for IPv6, and contains information to connect to a local instance of MongoDB.
 
 ## Build documentation
 
