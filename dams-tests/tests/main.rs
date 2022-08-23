@@ -31,7 +31,7 @@ pub async fn integration_tests() {
     println!("Executing {} tests", tests.len());
     let mut results = Vec::with_capacity(tests.len());
 
-    let mut client = dams_client::api::connect(format!("http://{}:1113", common::SERVER_ADDRESS))
+    let mut client = dams_client::api::connect(format!("https://{}:1113", common::SERVER_ADDRESS))
         .await
         .expect("Could not return a client");
     // Clear error log
