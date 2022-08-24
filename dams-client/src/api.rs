@@ -47,35 +47,32 @@ impl Password {
     }
 }
 
-/// A `Session` is an abstraction over a
-/// communication session between an asset owner and a key server
-/// that provides mutual authentication, confidentiality, and integrity.
-/// An open `Session` is required to interact with this API.
-///
-/// A session can be ended manually, or it might time out and require
-/// re-authentication (that is, creation of a new [`Session`]).
+/// A `DamsClient` is an abstraction over client operations. It is used
+/// to hold state, common infrastructure, and a `tonic` client object.
+/// Authenticating to the DAMS returns a `DamsClient`, and this object
+/// must be passed to the remaining API functions.
 ///
 /// TODO #30: This abstraction needs a lot of design attention.
 #[derive(Debug)]
 #[allow(unused)]
-pub struct Session {
+pub struct DamsClient {
     session_key: [u8; 64],
 }
 
-impl Default for Session {
+impl Default for DamsClient {
     fn default() -> Self {
-        Session {
+        DamsClient {
             session_key: [0; 64],
         }
     }
 }
 
 #[allow(unused)]
-impl Session {
+impl DamsClient {
     /// Open a new mutually authenticated session between a previously
     /// registered user and a key server.
     ///
-    /// Output: If successful, returns an open [`Session`] between the specified
+    /// Output: If successful, returns an open [`DamsClient`] between the specified
     /// [`UserId`] and the configured key server.
     pub async fn open<T: CryptoRng + RngCore>(
         client: &mut DamsRpcClient<Channel>,
@@ -86,7 +83,7 @@ impl Session {
         let result = Self::authenticate(client, rng, user_id, password).await;
         match result {
             Ok(result) => {
-                let session = Session {
+                let session = DamsClient {
                     session_key: result,
                 };
                 Ok(session)
@@ -111,9 +108,9 @@ impl Session {
     /// a mutually authenticated session with the server.
     ///
     /// This only needs to be called once per user; future sessions can be
-    /// created with [`Session::open()`].
+    /// created with [`DamsClient::open()`].
     ///
-    /// Output: If successful, returns an open [`Session`] between the specified
+    /// Output: If successful, returns an open [`DamsClient`] between the specified
     /// [`UserId`] and the configured key server.
     pub async fn register<T: CryptoRng + RngCore>(
         client: &mut DamsRpcClient<Channel>,
@@ -161,7 +158,7 @@ pub async fn connect(address: String) -> Result<DamsRpcClient<Channel>, DamsClie
 /// key.
 #[allow(unused)]
 pub fn create_digital_asset_key(
-    session: Session,
+    session: DamsClient,
     user_id: UserId,
     blockchain: Blockchain,
     permission: impl UsePermission,
@@ -181,7 +178,7 @@ pub fn create_digital_asset_key(
 /// Output: None, if successful.
 #[allow(unused)]
 pub fn set_user_key_policy(
-    session: Session,
+    session: DamsClient,
     user_id: UserId,
     key_id: KeyId,
     user_policy: UserPolicySpecification,
@@ -207,7 +204,7 @@ pub fn set_user_key_policy(
 /// corresponding to the [`KeyId`].
 #[allow(unused)]
 pub fn request_transaction_signature(
-    session: Session,
+    session: DamsClient,
     transaction_approval_request: TransactionApprovalRequest,
 ) -> Result<TransactionSignature, DamsClientError> {
     todo!()
@@ -226,7 +223,7 @@ pub fn request_transaction_signature(
 /// the user.
 #[allow(unused)]
 pub fn retrieve_public_keys(
-    session: Session,
+    session: DamsClient,
     user_id: UserId,
 ) -> Result<Vec<KeyInfo>, DamsClientError> {
     todo!()
@@ -244,7 +241,7 @@ pub fn retrieve_public_keys(
 /// Output: If successful, returns the [`KeyInfo`] for the requested key.
 #[allow(unused)]
 pub fn retrieve_public_key_by_id(
-    session: Session,
+    session: DamsClient,
     user_id: UserId,
     key_id: &KeyId,
 ) -> Result<KeyInfo, DamsClientError> {
@@ -267,7 +264,7 @@ pub fn retrieve_public_key_by_id(
 /// Output: if successful, returns a [`String`] representation of the logs.
 #[allow(unused)]
 pub fn retrieve_audit_log(
-    session: Session,
+    session: DamsClient,
     user_id: UserId,
     key_id: Option<&KeyId>,
 ) -> Result<String, DamsClientError> {

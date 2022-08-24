@@ -8,7 +8,7 @@ use common::{get_logs, LogType, Party};
 
 use dams::{dams_rpc::dams_rpc_client::DamsRpcClient, user::UserId};
 use dams_client::{
-    api::{Password, Session},
+    api::{DamsClient, Password, Session},
     DamsClientError,
 };
 use dams_key_server::database;
@@ -203,11 +203,11 @@ impl Test {
     ) -> Result<(), anyhow::Error> {
         for (op, expected_outcome) in &self.operations {
             let outcome: Result<(), anyhow::Error> = match op {
-                Register(user_id, password) => Session::register(client, rng, user_id, password)
+                Register(user_id, password) => DamsClient::register(client, rng, user_id, password)
                     .await
                     .map(|_| ())
                     .map_err(|e| e.into()),
-                Authenticate(user_id, password) => Session::open(client, rng, user_id, password)
+                Authenticate(user_id, password) => DamsClient::open(client, rng, user_id, password)
                     .await
                     .map(|_| ())
                     .map_err(|e| e.into()),
