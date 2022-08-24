@@ -43,13 +43,13 @@ pub fn create_and_encrypt_secret(
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::crypto::test::export_key;
+    use crate::crypto::test::create_test_export_key;
 
     #[test]
     #[should_panic(expected = "not yet implemented")]
     fn create_and_encrypt_storage_key_not_implemented() {
         let mut rng = rand::thread_rng();
-        let export_key = export_key(&mut rng);
+        let export_key = create_test_export_key(&mut rng);
         let _ = create_and_encrypt_storage_key(&mut rng, export_key);
     }
 

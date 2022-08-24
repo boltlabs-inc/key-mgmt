@@ -17,6 +17,7 @@ use rand::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 use sha3::Sha3_256;
 use thiserror::Error;
+use tracing::error;
 
 use crate::user::UserId;
 
@@ -74,14 +75,6 @@ impl AssociatedData {
     fn with_str(self, ad: &str) -> Self {
         AssociatedData(format!("{}\n{}", self.0, ad))
     }
-
-    fn with_aead_parameters(self) -> Self {
-        self.with_str("ChaCha20Poly1305 with 96-bit nonce.")
-    }
-
-    fn with_hkdf_parameters(self) -> Self {
-        self.with_str("HMAC-based extract-and-expand key derivation function using SHA3-256")
-    }
 }
 
 /// A ciphertext representing an object of type `T`, encrypted under the
@@ -100,7 +93,7 @@ pub struct Encrypted<T> {
 }
 
 /// A well-formed symmetric encryption key for an AEAD scheme.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 struct EncryptionKey {
     key: chacha20poly1305::Key,
 
@@ -114,7 +107,7 @@ impl EncryptionKey {
     fn new(rng: &mut (impl CryptoRng + RngCore)) -> Self {
         Self {
             key: ChaCha20Poly1305::generate_key(rng),
-            associated_data: AssociatedData::new().with_aead_parameters(),
+            associated_data: AssociatedData::new().with_str("ChaCha20Poly1305 with 96-bit nonce."),
         }
     }
 }
@@ -220,21 +213,30 @@ impl Encrypted<StorageKey> {
 /// [ClientRegistrationFinishResult](opaque_ke::ClientRegistrationFinishResult)
 /// and corresponding registration result.
 #[allow(unused)]
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct OpaqueExportKey(GenericArray<u8, U32>);
 
 impl OpaqueExportKey {
-    /// Derive a [`MasterKey`] from the export key.
+    /// Derive a uniformly distributed secret [`MasterKey`] using the export key
+    /// as input key material.
     #[allow(unused)]
     fn derive_master_key(&self) -> Result<MasterKey, CryptoError> {
-        let hk = Hkdf::<Sha3_256>::new(None, &self.0);
-        let associated_data = AssociatedData::new()
-            .with_str("OPAQUE-derived Lock Keeper master key")
-            .with_hkdf_parameters();
-
+        let associated_data =
+            AssociatedData::new().with_str("OPAQUE-derived Lock Keeper master key");
         let mut master_key_material = [0u8; 32];
-        hk.expand((&associated_data).into(), &mut master_key_material)
-            .map_err(CryptoError::KeyDerivationFailed)?;
+
+        // Derive `master_key_material` from HKDF with no salt, the
+        // `OpaqueExportKey` as input key material, and the associated data as
+        // extra info.
+        Hkdf::<Sha3_256>::new(None, &self.0)
+            .expand((&associated_data).into(), &mut master_key_material)
+            // This should never cause an error because we've hardcoded the length of the master key
+            // material and the export key length to both be 32, and length mismatch is the only
+            // documented cause of an `expand` failure.
+            .map_err(|e| {
+                error!("HKDF failed unexpectedly. {:?}", e);
+                CryptoError::KeyDerivationFailed(e)
+            })?;
 
         Ok(MasterKey(EncryptionKey {
             key: master_key_material.into(),
@@ -251,7 +253,7 @@ impl OpaqueExportKey {
 /// single authentication session. It should never be sent to the server or
 /// passed out to the local calling application.
 #[allow(unused)]
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 struct MasterKey(EncryptionKey);
 
 #[allow(unused)]
@@ -352,21 +354,48 @@ mod test {
         Ok(())
     }
 
-    // In practice, an export key will be a pseudorandom output form OPAQUE.
+    // In practice, an export key will be a pseudorandom output from OPAQUE.
     // Instead, we'll use the encryption key generation function to simulate the
     // same thing.
-    pub(crate) fn export_key(rng: &mut (impl CryptoRng + RngCore)) -> OpaqueExportKey {
+    pub(crate) fn create_test_export_key(rng: &mut (impl CryptoRng + RngCore)) -> OpaqueExportKey {
         OpaqueExportKey(EncryptionKey::new(rng).key)
     }
 
     #[test]
     fn derive_master_key_not_obviously_broken() {
         let mut rng = rand::thread_rng();
-        let export_key = export_key(&mut rng);
+        let export_key = create_test_export_key(&mut rng);
         let master_key = export_key.derive_master_key().unwrap();
 
-        // make sure the master key isn't the same as the export key
-        assert!(master_key.0.key != export_key.0)
+        // Make sure the master key isn't the same as the export key.
+        assert_ne!(master_key.0.key, export_key.0);
+
+        // Make sure the master key isn't all 0s.
+        assert_ne!(master_key.0.key, [0; 32].into());
+
+        // Make sure that using different context doesn't give the same key.
+        let mut bad_mk = [0; 32];
+        let bad_ad = AssociatedData::new().with_str("here is my testing context");
+        Hkdf::<Sha3_256>::new(None, &export_key.0)
+            .expand((&bad_ad).into(), &mut bad_mk)
+            .unwrap();
+
+        assert_ne!(master_key.0.key, bad_mk.into());
+    }
+
+    #[test]
+    fn master_key_depends_on_export_key() {
+        let mut rng = rand::thread_rng();
+        let export1 = create_test_export_key(&mut (rng));
+        let export2 = create_test_export_key(&mut (rng));
+
+        // Different export keys...
+        assert_ne!(export1, export2);
+        // ...implies different master keys.
+        assert_ne!(
+            export1.derive_master_key().unwrap(),
+            export2.derive_master_key().unwrap()
+        );
     }
 
     #[test]
@@ -428,6 +457,7 @@ mod test {
 
             // Make sure encryption isn't obviously broken.
             assert_ne!(bytes, encrypted_bytes.ciphertext);
+            assert_ne!(Vec::from([0; 32]), encrypted_bytes.ciphertext);
 
             // Make sure encrypted object includes the expected associated data.
             let expected_aad = AssociatedData::default();
@@ -513,7 +543,7 @@ mod test {
             nonce: chacha20poly1305::Nonce::default(),
             original_type: PhantomData,
         };
-        let _key = storage_key.decrypt_storage_key(export_key(&mut rand::thread_rng()));
+        let _key = storage_key.decrypt_storage_key(create_test_export_key(&mut rand::thread_rng()));
     }
 
     #[test]
