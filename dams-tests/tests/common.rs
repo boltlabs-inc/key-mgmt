@@ -50,9 +50,6 @@ pub async fn setup(_db: Database, server_config: dams::config::server::Config) -
         .expect("Failed to generate new certificates");
     tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
 
-    // write config options for each party
-    let _client_config = client_test_config().await;
-
     // set up tracing for all log messages
     tracing_subscriber::fmt()
         .with_writer(Mutex::new(
@@ -107,8 +104,9 @@ pub async fn teardown(server_future: ServerFuture, db: Database) {
 
 /// Encode the customizable fields of the keymgmt client Config struct for
 /// testing.
-async fn client_test_config() -> dams::config::client::Config {
+pub async fn client_test_config() -> dams::config::client::Config {
     let config_str = r#"
+        server_location = "https://127.0.0.1:1113"
         trust_certificate = "tests/gen/localhost.crt"
     "#;
 

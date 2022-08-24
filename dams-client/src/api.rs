@@ -10,6 +10,7 @@ mod register;
 
 use dams::{
     blockchain::Blockchain,
+    config::client::Config,
     crypto::KeyId,
     dams_rpc::dams_rpc_client::DamsRpcClient,
     keys::{KeyInfo, UsePermission, UseRestriction, UserPolicySpecification},
@@ -57,34 +58,54 @@ impl Password {
 #[allow(unused)]
 pub struct DamsClient {
     session_key: [u8; 64],
-}
-
-impl Default for DamsClient {
-    fn default() -> Self {
-        DamsClient {
-            session_key: [0; 64],
-        }
-    }
+    config: Config,
+    tonic_client: DamsRpcClient<Channel>,
 }
 
 #[allow(unused)]
 impl DamsClient {
+    /// Connect to the gRPC client and return it to the client app.
+    ///
+    /// The returned client should be stored as part of the [`DamsClient`]
+    /// state.
+    async fn connect(address: String) -> Result<DamsRpcClient<Channel>, DamsClientError> {
+        if address.starts_with("https:") {
+            Ok(DamsRpcClient::connect(address).await?)
+        } else {
+            Err(DamsClientError::HttpNotAllowed)
+        }
+    }
+
     /// Open a new mutually authenticated session between a previously
     /// registered user and a key server.
     ///
-    /// Output: If successful, returns an open [`DamsClient`] between the specified
-    /// [`UserId`] and the configured key server.
+    /// Output: If successful, returns a [`DamsClient`] holding a
+    /// `tonic`client object, a session key, and configuration information.
     pub async fn open<T: CryptoRng + RngCore>(
-        client: &mut DamsRpcClient<Channel>,
         rng: &mut T,
         user_id: &UserId,
         password: &Password,
+        config: &Config,
     ) -> Result<Self, DamsClientError> {
-        let result = Self::authenticate(client, rng, user_id, password).await;
+        let server_location = config.server_location.as_str();
+        let mut client = Self::connect(server_location.to_string()).await?;
+        Self::authenticate(client, rng, user_id, password, config).await
+    }
+
+    async fn authenticate<T: CryptoRng + RngCore>(
+        mut client: DamsRpcClient<Channel>,
+        rng: &mut T,
+        user_id: &UserId,
+        password: &Password,
+        config: &Config,
+    ) -> Result<Self, DamsClientError> {
+        let result = authenticate::handle(&mut client, rng, user_id, password).await;
         match result {
             Ok(result) => {
                 let session = DamsClient {
                     session_key: result,
+                    config: config.clone(),
+                    tonic_client: client,
                 };
                 Ok(session)
             }
@@ -95,32 +116,25 @@ impl DamsClient {
         }
     }
 
-    async fn authenticate<T: CryptoRng + RngCore>(
-        client: &mut DamsRpcClient<Channel>,
-        rng: &mut T,
-        user_id: &UserId,
-        password: &Password,
-    ) -> Result<[u8; 64], DamsClientError> {
-        authenticate::handle(client, rng, user_id, password).await
-    }
-
     /// Register a new user who has not yet interacted with the service and open
     /// a mutually authenticated session with the server.
     ///
     /// This only needs to be called once per user; future sessions can be
     /// created with [`DamsClient::open()`].
     ///
-    /// Output: If successful, returns an open [`DamsClient`] between the specified
-    /// [`UserId`] and the configured key server.
+    /// Output: If successful, returns a [`DamsClient`] holding a
+    /// `tonic`client object, a session key, and configuration information.
     pub async fn register<T: CryptoRng + RngCore>(
-        client: &mut DamsRpcClient<Channel>,
         rng: &mut T,
         user_id: &UserId,
         password: &Password,
+        config: &Config,
     ) -> Result<Self, DamsClientError> {
-        let result = register::handle(client, rng, user_id, password).await;
+        let server_location = config.server_location.as_str();
+        let mut client = Self::connect(server_location.to_string()).await?;
+        let result = register::handle(&mut client, rng, user_id, password).await;
         match result {
-            Ok(_) => Self::open(client, rng, user_id, password).await,
+            Ok(_) => Self::authenticate(client, rng, user_id, password, config).await,
             Err(e) => {
                 error!("{:?}", e);
                 Err(DamsClientError::RegistrationFailed)
@@ -136,19 +150,6 @@ impl DamsClient {
     }
 }
 
-/// Connect to the gRPC client and return it to the client app.
-///
-/// The returned client should be passed to the remaining API functions.
-pub async fn connect(address: String) -> Result<DamsRpcClient<Channel>, DamsClientError> {
-    // TODO #174 (design, implementation): determine whether the https link
-    // is secure before passing to tonic
-    if address.starts_with("https:") {
-        Ok(DamsRpcClient::connect(address).await?)
-    } else {
-        Err(DamsClientError::HttpNotAllowed)
-    }
-}
-
 /// Generate a new, distributed digital asset key with the given use
 /// parameters for the [`UserId`], and compatible with the specified blockchain.
 ///
@@ -156,9 +157,10 @@ pub async fn connect(address: String) -> Result<DamsRpcClient<Channel>, DamsClie
 ///
 /// Output: If successful, returns the [`KeyInfo`] describing the newly created
 /// key.
+///
+/// TODO #172: pass a DamsClient
 #[allow(unused)]
 pub fn create_digital_asset_key(
-    session: DamsClient,
     user_id: UserId,
     blockchain: Blockchain,
     permission: impl UsePermission,
@@ -176,9 +178,10 @@ pub fn create_digital_asset_key(
 /// match the user authenticated in the [`Session`].
 ///
 /// Output: None, if successful.
+///
+/// TODO #172: pass a DamsClient
 #[allow(unused)]
 pub fn set_user_key_policy(
-    session: DamsClient,
     user_id: UserId,
     key_id: KeyId,
     user_policy: UserPolicySpecification,
@@ -202,9 +205,10 @@ pub fn set_user_key_policy(
 /// the original [`TransactionApprovalRequest`] -- that is, over the
 /// [`Transaction`](dams::transaction::Transaction), and using the key
 /// corresponding to the [`KeyId`].
+///
+/// TODO #172: pass a DamsClient
 #[allow(unused)]
 pub fn request_transaction_signature(
-    session: DamsClient,
     transaction_approval_request: TransactionApprovalRequest,
 ) -> Result<TransactionSignature, DamsClientError> {
     todo!()
@@ -221,11 +225,10 @@ pub fn request_transaction_signature(
 ///
 /// Output: If successful, returns the [`KeyInfo`] for every key belonging to
 /// the user.
+///
+/// TODO #172: pass a DamsClient
 #[allow(unused)]
-pub fn retrieve_public_keys(
-    session: DamsClient,
-    user_id: UserId,
-) -> Result<Vec<KeyInfo>, DamsClientError> {
+pub fn retrieve_public_keys(user_id: UserId) -> Result<Vec<KeyInfo>, DamsClientError> {
     todo!()
 }
 
@@ -239,9 +242,10 @@ pub fn retrieve_public_keys(
 /// and the [`KeyId`] must correspond to a key owned by the [`UserId`].
 ///
 /// Output: If successful, returns the [`KeyInfo`] for the requested key.
+///
+/// TODO #172: pass a DamsClient
 #[allow(unused)]
 pub fn retrieve_public_key_by_id(
-    session: DamsClient,
     user_id: UserId,
     key_id: &KeyId,
 ) -> Result<KeyInfo, DamsClientError> {
@@ -262,9 +266,10 @@ pub fn retrieve_public_key_by_id(
 /// [`UserId`].
 ///
 /// Output: if successful, returns a [`String`] representation of the logs.
+///
+/// TODO #172: pass a DamsClient
 #[allow(unused)]
 pub fn retrieve_audit_log(
-    session: DamsClient,
     user_id: UserId,
     key_id: Option<&KeyId>,
 ) -> Result<String, DamsClientError> {
