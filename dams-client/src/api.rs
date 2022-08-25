@@ -176,9 +176,17 @@ pub enum Error {
 ///
 /// The returned client should be passed to the remaining API functions.
 pub async fn connect(address: String) -> Result<DamsRpcClient<Channel>, anyhow::Error> {
-    DamsRpcClient::connect(address)
-        .await
-        .map_err(|_| anyhow!("Could not connect to server"))
+    // TODO #174 (design, implementation): determine whether the https link
+    // is secure before passing to tonic
+    if address.starts_with("https:") {
+        DamsRpcClient::connect(address)
+            .await
+            .map_err(|_| anyhow!("Could not connect to server"))
+    } else {
+        Err(anyhow!(
+            "Tried to connect to a server without an https link"
+        ))
+    }
 }
 
 /// Generate a new, distributed digital asset key with the given use

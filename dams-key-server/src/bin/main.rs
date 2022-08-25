@@ -12,7 +12,6 @@ pub enum Cli {
 
 #[tokio::main]
 pub async fn main() {
-    dotenv::dotenv().ok();
     let filter = EnvFilter::try_new("info,sqlx::query=warn").unwrap();
     tracing_subscriber::fmt().with_env_filter(filter).init();
     let result = match Cli::from_args() {

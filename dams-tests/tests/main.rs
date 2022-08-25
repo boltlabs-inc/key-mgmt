@@ -18,12 +18,15 @@ use tonic::transport::Channel;
 #[tokio::test]
 pub async fn integration_tests() {
     // Read environment variables from .env file
-    dotenv::dotenv().ok();
-    let db = database::connect_to_mongo()
-        .await
-        .expect("Unable to connect to Mongo");
+    let server_config = common::server_test_config().await;
+    let db = database::connect_to_mongo(
+        &server_config.database.mongodb_uri,
+        &server_config.database.db_name,
+    )
+    .await
+    .expect("Unable to connect to Mongo");
     let _ = db.create_collection("users", None).await;
-    let server_future = common::setup(db.clone()).await;
+    let server_future = common::setup(db.clone(), server_config).await;
     let mut rng = StdRng::from_entropy();
 
     // Run every test, printing out details if it fails
@@ -31,7 +34,7 @@ pub async fn integration_tests() {
     println!("Executing {} tests", tests.len());
     let mut results = Vec::with_capacity(tests.len());
 
-    let mut client = dams_client::api::connect(format!("http://{}:1113", common::SERVER_ADDRESS))
+    let mut client = dams_client::api::connect(format!("https://{}:1113", common::SERVER_ADDRESS))
         .await
         .expect("Could not return a client");
     // Clear error log

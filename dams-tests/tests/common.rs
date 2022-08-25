@@ -42,9 +42,7 @@ impl Party {
 }
 
 #[allow(unused)]
-pub async fn setup(db: Database) -> ServerFuture {
-    let _ = fs::create_dir("tests/gen");
-
+pub async fn setup(db: Database, server_config: dams::config::server::Config) -> ServerFuture {
     // Create self-signed SSL certificate in the generated directory
     Command::new("../dev/generate-certificates")
         .arg("tests/gen")
@@ -54,7 +52,6 @@ pub async fn setup(db: Database) -> ServerFuture {
 
     // write config options for each party
     let _client_config = client_test_config().await;
-    let server_config = server_test_config().await;
 
     // set up tracing for all log messages
     tracing_subscriber::fmt()
@@ -73,7 +70,7 @@ pub async fn setup(db: Database) -> ServerFuture {
     // Note: hard-coded to match the 2-service server with default port.
     let checks = vec![await_log(
         Party::Server,
-        TestLogs::ServerSpawned(SERVER_ADDRESS.to_string()),
+        TestLogs::ServerSpawned(format!("{}:1113", SERVER_ADDRESS)),
     )];
 
     // Wait up to 30sec for the servers to set up or fail
@@ -129,21 +126,26 @@ async fn client_test_config() -> dams::config::client::Config {
 
 /// Encode the customizable fields of the keymgmt server Config struct for
 /// testing.
-async fn server_test_config() -> dams::config::server::Config {
-    // Helper to write out the service for the server service addresses
-    let services = HashMap::from([
-        ("address", SERVER_ADDRESS),
-        ("private_key", "localhost.key"),
-        ("certificate", "localhost.crt"),
-        ("opaque_path", "tests/gen/opaque"),
-        ("opaque_server_key", "tests/gen/opaque/server_setup"),
-    ])
-    .into_iter()
-    .fold("\n[[service]]".to_string(), |acc, (key, value)| {
-        format!("{}\n{} = \"{}\"", acc, key, value)
-    });
+pub async fn server_test_config() -> dams::config::server::Config {
+    fs::create_dir("tests/gen").expect("Unable to create directory tests/gen");
+    // Format service string and database string into full config
+    let config_str = format!(
+        r#"
+        [[service]]
+        address = "{}"
+        port = 1113
+        private_key = "localhost.key"
+        certificate = "localhost.crt"
+        opaque_path = "tests/gen/opaque"
+        opaque_server_key = "tests/gen/opaque/server_setup"
 
-    write_config_file(SERVER_CONFIG, services.to_string());
+        [database]
+        mongodb_uri = "mongodb://localhost:27017"
+        db_name = "dams-test-db"
+    "#,
+        SERVER_ADDRESS
+    );
+    write_config_file(SERVER_CONFIG, config_str);
 
     dams::config::server::Config::load(SERVER_CONFIG)
         .await
