@@ -1,8 +1,8 @@
 //! Application-specific cryptographic types and operations.
 //!
 //! Defines and implements keys and secret types, and the appropriate
-//! transformations between them. The [`client`] submodule provides wrappers
-//! around larger blocks of client-side cryptography.
+//! transformations between them. Public functions here are mostly wrappers
+//! around multiple low-level cryptographic steps.
 
 use std::{marker::PhantomData, string::FromUtf8Error};
 
@@ -19,8 +19,6 @@ use thiserror::Error;
 use tracing::error;
 
 use crate::user::UserId;
-
-pub mod client;
 
 /// Errors that arise in the cryptography module.
 ///
@@ -242,6 +240,24 @@ impl OpaqueExportKey {
             associated_data,
         }))
     }
+
+    /// Create an encrypted storage key. This is part of the registration flow
+    /// and is executed during a registration session with the
+    /// server. This key should be sent to the server for storage.
+    ///
+    /// This must be run by the client.
+    /// It takes the following steps:
+    /// 1. Derive a master key from the [`OpaqueExportKey`]
+    /// 2. Generate a new [`StorageKey`] to encrypt stored data with
+    /// 3. Encrypt the storage key under the master key, using an AEAD scheme
+    /// 4. Return the encrypted storage key
+    #[allow(unused)]
+    pub fn create_and_encrypt_storage_key(
+        self,
+        rng: &mut (impl CryptoRng + RngCore),
+    ) -> Encrypted<StorageKey> {
+        todo!()
+    }
 }
 
 /// The master key is a default-length symmetric encryption key for an
@@ -285,6 +301,22 @@ impl StorageKey {
     /// Encrypt the given [`Secret`] under the [`StorageKey`], using the
     /// AEAD scheme.
     fn encrypt_data(self, secret: &Secret) -> Encrypted<Secret> {
+        todo!()
+    }
+
+    /// Create and encrypt a new secret. This is part of the
+    /// generate a new secret flow.
+    ///
+    /// This must be run by the client. It takes the following steps:
+    /// 1. Generates a new secret
+    /// 2. Encrypt it under the [`StorageKey`], using an AEAD scheme
+    #[allow(unused)]
+    pub fn create_and_encrypt_secret(
+        self,
+        rng: &mut (impl CryptoRng + RngCore),
+        user_id: &UserId,
+        key_id: &KeyId,
+    ) -> Encrypted<Secret> {
         todo!()
     }
 }
@@ -363,7 +395,7 @@ mod test {
     // In practice, an export key will be a pseudorandom output from OPAQUE.
     // Instead, we'll use the encryption key generation function to simulate the
     // same thing.
-    pub(crate) fn create_test_export_key(rng: &mut (impl CryptoRng + RngCore)) -> OpaqueExportKey {
+    fn create_test_export_key(rng: &mut (impl CryptoRng + RngCore)) -> OpaqueExportKey {
         OpaqueExportKey(EncryptionKey::new(rng).key)
     }
 
@@ -599,5 +631,20 @@ mod test {
             original_type: PhantomData,
         };
         let _secret = encrypted_secret.decrypt_secret(StorageKey);
+    }
+
+    #[test]
+    #[should_panic(expected = "not yet implemented")]
+    fn create_and_encrypt_storage_key_not_implemented() {
+        let mut rng = rand::thread_rng();
+        let export_key = create_test_export_key(&mut rng);
+        let _ = export_key.create_and_encrypt_storage_key(&mut rng);
+    }
+
+    #[test]
+    #[should_panic(expected = "not yet implemented")]
+    fn create_and_encrypt_secret_not_implemented() {
+        let mut rng = rand::thread_rng();
+        let _ = StorageKey.create_and_encrypt_secret(&mut rng, &UserId::default(), &KeyId);
     }
 }
