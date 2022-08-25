@@ -9,7 +9,7 @@ use dams::{
         Message, MessageStream,
     },
 };
-use opaque_ke::{RegistrationRequest, RegistrationUpload, ServerRegistration};
+use opaque_ke::ServerRegistration;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status};
 
@@ -50,13 +50,8 @@ async fn register_start(channel: &mut ServerChannel, context: &Context) -> Resul
             .map_err(|_| Status::aborted("could not find/create server key"))?
     };
 
-    // Convert user_id from message to str and then to UserId
-    let uid = super::user_id_from_message(&start_message.user_id)?;
-    let registration_request_message: RegistrationRequest<OpaqueCipherSuite> =
-        dams::deserialize_from_bytes(&start_message.message)?;
-
     // Abort registration if UserId already exists
-    if User::find_user(&context.db, &uid)
+    if User::find_user(&context.db, &start_message.user_id)
         .await
         .map_err(|_| Status::aborted("MongoDB error"))?
         .is_some()
@@ -66,15 +61,13 @@ async fn register_start(channel: &mut ServerChannel, context: &Context) -> Resul
         // Registration can continue if user ID doesn't exist yet
         let server_registration_start_result = ServerRegistration::<OpaqueCipherSuite>::start(
             &server_setup,
-            registration_request_message,
-            uid.as_bytes(),
+            start_message.registration_request,
+            start_message.user_id.as_bytes(),
         )
         .map_err(|_| Status::aborted("Could not start server registration"))?;
 
-        let server_register_start_message =
-            dams::serialize_to_bytes(&server_registration_start_result.message)?;
         let reply = server::RegisterStart {
-            message: server_register_start_message,
+            registration_response: server_registration_start_result.message,
         };
 
         // Send response to client
@@ -88,18 +81,12 @@ async fn register_finish(channel: &mut ServerChannel, context: &Context) -> Resu
     // Receive finish message from client
     let finish_message: client::RegisterFinish = channel.receive().await?;
 
-    // Convert user_id from message to str and then to UserId
-    let uid = super::user_id_from_message(&finish_message.user_id)?;
-
-    // deserialize client message into RegistrationUpload OPAQUE type
-    let register_finish: RegistrationUpload<OpaqueCipherSuite> =
-        dams::deserialize_from_bytes(&finish_message.message)?;
-
     // run the finish step for OPAQUE
-    let server_registration = ServerRegistration::<OpaqueCipherSuite>::finish(register_finish);
+    let server_registration =
+        ServerRegistration::<OpaqueCipherSuite>::finish(finish_message.registration_upload);
 
     // add the new user to the DB
-    let _object_id = User::create_user(&context.db, &uid, server_registration)
+    let _object_id = User::create_user(&context.db, &finish_message.user_id, server_registration)
         .await
         .map_err(|_| Status::aborted("Unable to create user"))?
         .ok_or_else(|| Status::aborted("Invalid ObjectId for new user"))?;

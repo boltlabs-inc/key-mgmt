@@ -7,7 +7,6 @@ use dams::{
 };
 use opaque_ke::{
     ClientLogin, ClientLoginFinishParameters, ClientLoginFinishResult, ClientLoginStartResult,
-    CredentialResponse,
 };
 use rand::{CryptoRng, RngCore};
 use tokio::sync::mpsc;
@@ -58,17 +57,12 @@ async fn authenticate_start(
     client_login_start_result: &ClientLoginStartResult<OpaqueCipherSuite>,
     user_id: &UserId,
 ) -> Result<server::AuthenticateStart, Status> {
-    // Send start message to server
-    let client_authenticate_start_message =
-        dams::serialize_to_bytes(&client_login_start_result.message)?;
-
     let reply = client::AuthenticateStart {
-        message: client_authenticate_start_message,
-        user_id: user_id.as_bytes().to_vec(),
+        credential_request: client_login_start_result.message.clone(),
+        user_id: user_id.clone(),
     };
 
     channel.send(reply).await?;
-
     channel.receive().await
 }
 
@@ -79,24 +73,18 @@ async fn authenticate_finish(
     client_start_result: ClientLoginStartResult<OpaqueCipherSuite>,
     server_start_result: server::AuthenticateStart,
 ) -> Result<ClientLoginFinishResult<OpaqueCipherSuite>, Status> {
-    let credential_response: CredentialResponse<OpaqueCipherSuite> =
-        dams::deserialize_from_bytes(&server_start_result.message)?;
-
     let client_login_finish_result = client_start_result
         .state
         .finish(
             password.as_bytes(),
-            credential_response,
+            server_start_result.credential_response,
             ClientLoginFinishParameters::default(),
         )
         .map_err(|_| Status::unauthenticated("Authentication failed"))?;
 
-    let client_login_finish_message =
-        dams::serialize_to_bytes(&client_login_finish_result.message)?;
-
     let reply = client::AuthenticateFinish {
-        message: client_login_finish_message,
-        user_id: user_id.as_bytes().to_vec(),
+        credential_finalization: client_login_finish_result.message.clone(),
+        user_id: user_id.clone(),
     };
 
     channel.send(reply).await?;

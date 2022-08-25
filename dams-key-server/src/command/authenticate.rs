@@ -9,10 +9,7 @@ use dams::{
         Message, MessageStream,
     },
 };
-use opaque_ke::{
-    CredentialFinalization, CredentialRequest, ServerLogin, ServerLoginStartParameters,
-    ServerLoginStartResult,
-};
+use opaque_ke::{ServerLogin, ServerLoginStartParameters, ServerLoginStartResult};
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status};
 
@@ -56,20 +53,15 @@ async fn authenticate_start(
             .map_err(|_| Status::aborted("could not find/create server key"))?
     };
 
-    // Convert user_id from message to str and then to UserId
-    let uid = super::user_id_from_message(&start_message.user_id)?;
-
     // Check that user with corresponding UserId exists and get their
     // server_registration
-    let server_registration = match User::find_user(&context.db, &uid)
+    let server_registration = match User::find_user(&context.db, &start_message.user_id)
         .await
         .map_err(|_| Status::aborted("MongoDB error"))?
     {
         Some(user) => user.into_server_registration(),
         None => return Err(Status::aborted("UserId does not exist")),
     };
-    let credential_request: CredentialRequest<OpaqueCipherSuite> =
-        dams::deserialize_from_bytes(&start_message.message)?;
 
     let server_login_start_result = {
         let mut local_rng = context
@@ -81,8 +73,8 @@ async fn authenticate_start(
             &mut *local_rng,
             &server_setup,
             Some(server_registration),
-            credential_request,
-            uid.as_bytes(),
+            start_message.credential_request,
+            start_message.user_id.as_bytes(),
             ServerLoginStartParameters::default(),
         ) {
             Ok(server_login_start_result) => server_login_start_result,
@@ -90,11 +82,8 @@ async fn authenticate_start(
         }
     };
 
-    let server_authenticate_start_message =
-        dams::serialize_to_bytes(&server_login_start_result.message)?;
-
     let reply = server::AuthenticateStart {
-        message: server_authenticate_start_message,
+        credential_response: server_login_start_result.message.clone(),
     };
 
     // Send response to client
@@ -110,11 +99,10 @@ async fn authenticate_finish(
     // Receive finish message from client
     let finish_message: client::AuthenticateFinish = channel.receive().await?;
 
-    // deserialize client message into RegistrationUpload OPAQUE type
-    let auth_finish: CredentialFinalization<OpaqueCipherSuite> =
-        dams::deserialize_from_bytes(&finish_message.message)?;
-
-    match start_result.state.finish(auth_finish) {
+    match start_result
+        .state
+        .finish(finish_message.credential_finalization)
+    {
         Ok(_) => {
             let reply = server::AuthenticateFinish { success: true };
             // Send response to client
