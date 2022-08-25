@@ -1,32 +1,34 @@
 pub mod client {
-    use crate::impl_message_conversion;
+    use crate::{config::opaque::OpaqueCipherSuite, impl_message_conversion, user::UserId};
+    use opaque_ke::{RegistrationRequest, RegistrationUpload};
     use serde::{Deserialize, Serialize};
 
     #[derive(Debug, Deserialize, Serialize)]
     /// pass user ID and registration-start message from OPAQUE
     pub struct RegisterStart {
-        pub message: Vec<u8>,
-        pub user_id: Vec<u8>,
+        pub registration_request: RegistrationRequest<OpaqueCipherSuite>,
+        pub user_id: UserId,
     }
 
     #[derive(Debug, Deserialize, Serialize)]
     /// pass user ID and registration-finish message from OPAQUE
     pub struct RegisterFinish {
-        pub message: Vec<u8>,
-        pub user_id: Vec<u8>,
+        pub registration_upload: RegistrationUpload<OpaqueCipherSuite>,
+        pub user_id: UserId,
     }
 
     impl_message_conversion!(RegisterStart, RegisterFinish);
 }
 
 pub mod server {
-    use crate::impl_message_conversion;
+    use crate::{config::opaque::OpaqueCipherSuite, impl_message_conversion};
+    use opaque_ke::RegistrationResponse;
     use serde::{Deserialize, Serialize};
 
     #[derive(Debug, Deserialize, Serialize)]
     /// Check if user exists and return successful if not
     pub struct RegisterStart {
-        pub message: Vec<u8>,
+        pub registration_response: RegistrationResponse<OpaqueCipherSuite>,
     }
 
     #[derive(Debug, Deserialize, Serialize)]

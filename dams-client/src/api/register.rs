@@ -7,7 +7,6 @@ use dams::{
 };
 use opaque_ke::{
     ClientRegistration, ClientRegistrationFinishParameters, ClientRegistrationStartResult,
-    RegistrationResponse,
 };
 use rand::{CryptoRng, RngCore};
 use tokio::sync::mpsc;
@@ -51,12 +50,9 @@ async fn register_start<T: CryptoRng + RngCore>(
         ClientRegistration::<OpaqueCipherSuite>::start(rng, password.as_bytes())
             .map_err(|_| Status::aborted("RegistrationStart failed"))?;
 
-    // Send start message to server
-    let message = dams::serialize_to_bytes(&client_registration_start_result.message)?;
-
     let response = client::RegisterStart {
-        message,
-        user_id: user_id.as_bytes().to_vec(),
+        registration_request: client_registration_start_result.message.clone(),
+        user_id: user_id.clone(),
     };
 
     channel.send(response).await?;
@@ -73,25 +69,19 @@ async fn register_finish<T: CryptoRng + RngCore>(
 ) -> Result<server::RegisterFinish, Status> {
     let server_start_result: server::RegisterStart = channel.receive().await?;
 
-    let server_register_start_message: RegistrationResponse<OpaqueCipherSuite> =
-        dams::deserialize_from_bytes(&server_start_result.message)?;
-
     let client_finish_registration_result = client_start_result
         .state
         .finish(
             rng,
             password.as_bytes(),
-            server_register_start_message,
+            server_start_result.registration_response,
             ClientRegistrationFinishParameters::default(),
         )
         .map_err(|_| Status::aborted("RegistrationFinish failed"))?;
 
-    let client_finish_registration_message =
-        dams::serialize_to_bytes(&client_finish_registration_result.message)?;
-
     let response = client::RegisterFinish {
-        message: client_finish_registration_message,
-        user_id: user_id.as_bytes().to_vec(),
+        registration_upload: client_finish_registration_result.message,
+        user_id: user_id.clone(),
     };
     channel.send(response).await?;
 
