@@ -10,6 +10,7 @@ mod register;
 
 use dams::{
     blockchain::Blockchain,
+    channel::ClientChannel,
     config::client::Config,
     crypto::KeyId,
     dams_rpc::dams_rpc_client::DamsRpcClient,
@@ -19,6 +20,8 @@ use dams::{
 };
 use rand::{CryptoRng, RngCore};
 use std::str::FromStr;
+use tokio::sync::mpsc;
+use tokio_stream::wrappers::ReceiverStream;
 use tonic::transport::Channel;
 use tracing::error;
 
@@ -62,6 +65,12 @@ pub struct DamsClient {
     tonic_client: DamsRpcClient<Channel>,
 }
 
+/// Options for actions the client can take.
+pub(crate) enum ClientAction {
+    Register,
+    Authenticate,
+}
+
 #[allow(unused)]
 impl DamsClient {
     /// Connect to the gRPC client and return it to the client app.
@@ -99,7 +108,9 @@ impl DamsClient {
         password: &Password,
         config: &Config,
     ) -> Result<Self, DamsClientError> {
-        let result = authenticate::handle(&mut client, rng, user_id, password).await;
+        let mut client_channel =
+            Self::create_channel(&mut client, ClientAction::Authenticate).await?;
+        let result = authenticate::handle(client_channel, rng, user_id, password).await;
         match result {
             Ok(result) => {
                 let session = DamsClient {
@@ -132,7 +143,8 @@ impl DamsClient {
     ) -> Result<Self, DamsClientError> {
         let server_location = config.server_location.as_str();
         let mut client = Self::connect(server_location.to_string()).await?;
-        let result = register::handle(&mut client, rng, user_id, password).await;
+        let mut client_channel = Self::create_channel(&mut client, ClientAction::Register).await?;
+        let result = register::handle(client_channel, rng, user_id, password).await;
         match result {
             Ok(_) => Self::authenticate(client, rng, user_id, password, config).await,
             Err(e) => {
@@ -140,6 +152,28 @@ impl DamsClient {
                 Err(DamsClientError::RegistrationFailed)
             }
         }
+    }
+
+    /// Helper to create the appropriate [`ClientChannel`] to send to tonic
+    /// handler functions based on the client's action.
+    pub(crate) async fn create_channel(
+        client: &mut DamsRpcClient<Channel>,
+        action: ClientAction,
+    ) -> Result<ClientChannel, DamsClientError> {
+        // Create channel to send messages to server after connection is established via
+        // RPC
+        let (tx, rx) = mpsc::channel(2);
+        let stream = ReceiverStream::new(rx);
+
+        // Server returns its own channel that is uses to send responses
+        let server_response = match action {
+            ClientAction::Register => client.register(stream).await,
+            ClientAction::Authenticate => client.authenticate(stream).await,
+        }?
+        .into_inner();
+
+        let mut channel = ClientChannel::create(tx, server_response);
+        Ok(channel)
     }
 
     /// Close a session.

@@ -1,7 +1,6 @@
 use dams::{
     channel::ClientChannel,
     config::opaque::OpaqueCipherSuite,
-    dams_rpc::dams_rpc_client::DamsRpcClient,
     types::register::{client, server},
     user::UserId,
 };
@@ -9,27 +8,16 @@ use opaque_ke::{
     ClientRegistration, ClientRegistrationFinishParameters, ClientRegistrationStartResult,
 };
 use rand::{CryptoRng, RngCore};
-use tokio::sync::mpsc;
-use tokio_stream::wrappers::ReceiverStream;
-use tonic::{transport::Channel, Response};
+use tonic::Response;
 
 use crate::{api::Password, error::DamsClientError};
 
 pub(crate) async fn handle<T: CryptoRng + RngCore>(
-    client: &mut DamsRpcClient<Channel>,
+    mut channel: ClientChannel,
     rng: &mut T,
     user_id: &UserId,
     password: &Password,
 ) -> Result<Response<server::RegisterFinish>, DamsClientError> {
-    // Create channel to send messages to server
-    let (tx, rx) = mpsc::channel(2);
-    let stream = ReceiverStream::new(rx);
-
-    // Server returns its own channel that is uses to send responses
-    let server_receiver = client.register(stream).await?.into_inner();
-
-    let mut channel = ClientChannel::create(tx, server_receiver);
-
     // Handle start step
     let client_start_result = register_start(&mut channel, rng, user_id, password).await?;
 
