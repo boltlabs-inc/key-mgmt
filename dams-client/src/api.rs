@@ -187,7 +187,7 @@ impl DamsClient {
 /// Generate a new, distributed digital asset key with the given use
 /// parameters for the [`UserId`], and compatible with the specified blockchain.
 ///
-/// The [`UserId`] must be the same user who opened the [`Session`].
+/// The [`UserId`] must be the same user who opened the [`DamsClient`].
 ///
 /// Output: If successful, returns the [`KeyInfo`] describing the newly created
 /// key.
@@ -209,7 +209,7 @@ pub fn create_digital_asset_key(
 /// [`SelfCustodial`](dams::keys::SelfCustodial) and
 /// [`Delegated`](dams::keys::Delegated) key types. The [`KeyId`] must
 /// correspond to a key owned by the [`UserId`], and the [`UserId`] must
-/// match the user authenticated in the [`Session`].
+/// match the user authenticated in the [`DamsClient`].
 ///
 /// Output: None, if successful.
 ///
@@ -227,11 +227,11 @@ pub fn set_user_key_policy(
 ///
 /// Among the parameters in the [`TransactionApprovalRequest`], the [`KeyId`]
 /// must correspond to a key owned by the [`UserId`], and the [`UserId`] must
-/// match the user authenticated in the [`Session`].
+/// match the user authenticated in the [`DamsClient`].
 ///
 /// Assumption: A [`TransactionApprovalRequest`] originates either with the
 /// asset owner or a key fiduciary. This is cryptographically enforced with
-/// an authenticated [`Session`] between the key server and one of the asset
+/// an authenticated [`DamsClient`] between the key server and one of the asset
 /// owner or a key fiduciary. This request will fail if the calling party
 /// is not from one of those entities.
 ///
@@ -254,8 +254,9 @@ pub fn request_transaction_signature(
 /// Implementation note: this material may be cached and retrieved from a
 /// machine other than the key server.
 ///
-/// The [`UserId`] must match the asset owner authenticated in the [`Session`].
-/// This function cannot be used to retrieve keys for a different user.
+/// The [`UserId`] must match the asset owner authenticated in the
+/// [`DamsClient`]. This function cannot be used to retrieve keys for a
+/// different user.
 ///
 /// Output: If successful, returns the [`KeyInfo`] for every key belonging to
 /// the user.
@@ -272,8 +273,9 @@ pub fn retrieve_public_keys(user_id: UserId) -> Result<Vec<KeyInfo>, DamsClientE
 /// Implementation note: this material may be cached and retrieved from a
 /// machine other than the key server.
 ///
-/// The [`UserId`] must match the asset owner authenticated in the [`Session`],
-/// and the [`KeyId`] must correspond to a key owned by the [`UserId`].
+/// The [`UserId`] must match the asset owner authenticated in the
+/// [`DamsClient`], and the [`KeyId`] must correspond to a key owned by the
+/// [`UserId`].
 ///
 /// Output: If successful, returns the [`KeyInfo`] for the requested key.
 ///
@@ -295,9 +297,9 @@ pub fn retrieve_public_key_by_id(
 /// rejection from each key server, the policy engine, and each asset fiduciary
 /// (if relevant), and any other relevant details.
 ///
-/// The [`UserId`] must match the asset owner authenticated in the [`Session`],
-/// and if specified, the [`KeyId`] must correspond to a key owned by the
-/// [`UserId`].
+/// The [`UserId`] must match the asset owner authenticated in the
+/// [`DamsClient`], and if specified, the [`KeyId`] must correspond to a key
+/// owned by the [`UserId`].
 ///
 /// Output: if successful, returns a [`String`] representation of the logs.
 ///
