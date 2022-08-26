@@ -38,12 +38,3 @@ pub async fn find_user(db: &Database, account_name: &AccountName) -> Result<Opti
     let user = collection.find_one(query, None).await?;
     Ok(user)
 }
-
-/// Find a [`User`] by their machine-readable [`UserId`]. This is different from
-/// the Mongo-assigned `_id` field.
-pub async fn find_user_by_id(db: &Database, user_id: &UserId) -> Result<Option<User>, Error> {
-    let collection = db.collection::<User>(constants::USERS);
-    let query = doc! {"user_id": user_id.to_string()};
-    let user = collection.find_one(query, None).await?;
-    Ok(user)
-}

@@ -1,5 +1,5 @@
 pub mod client {
-    use crate::{config::opaque::OpaqueCipherSuite, impl_message_conversion, user::UserId};
+    use crate::{config::opaque::OpaqueCipherSuite, impl_message_conversion, user::AccountName};
     use opaque_ke::{CredentialFinalization, CredentialRequest};
     use serde::{Deserialize, Serialize};
 
@@ -7,14 +7,14 @@ pub mod client {
     /// pass user ID and registration-start message from OPAQUE
     pub struct AuthenticateStart {
         pub credential_request: CredentialRequest<OpaqueCipherSuite>,
-        pub user_id: UserId,
+        pub account_name: AccountName,
     }
 
     #[derive(Debug, Deserialize, Serialize)]
     /// pass user ID and registration-finish message from OPAQUE
     pub struct AuthenticateFinish {
         pub credential_finalization: CredentialFinalization<OpaqueCipherSuite>,
-        pub user_id: UserId,
+        pub account_name: AccountName,
     }
 
     impl_message_conversion!(AuthenticateStart, AuthenticateFinish);

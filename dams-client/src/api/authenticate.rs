@@ -5,7 +5,7 @@ use dams::{
     channel::ClientChannel,
     config::opaque::OpaqueCipherSuite,
     types::authenticate::{client, server},
-    user::UserId,
+    user::AccountName,
 };
 use opaque_ke::{
     ClientLogin, ClientLoginFinishParameters, ClientLoginFinishResult, ClientLoginStartResult,
@@ -16,7 +16,7 @@ impl DamsClient {
     pub(crate) async fn handle_authentication<T: CryptoRng + RngCore>(
         mut channel: ClientChannel,
         rng: &mut T,
-        user_id: &UserId,
+        account_name: &AccountName,
         password: &Password,
     ) -> Result<[u8; 64], DamsClientError> {
         let client_login_start_result =
@@ -24,12 +24,12 @@ impl DamsClient {
 
         // Handle start step
         let server_start_result =
-            authenticate_start(&mut channel, &client_login_start_result, user_id).await?;
+            authenticate_start(&mut channel, &client_login_start_result, account_name).await?;
 
         // Handle finish step
         let client_login_finish_result = authenticate_finish(
             &mut channel,
-            user_id,
+            account_name,
             password,
             client_login_start_result,
             server_start_result,
@@ -43,11 +43,11 @@ impl DamsClient {
 async fn authenticate_start(
     channel: &mut ClientChannel,
     client_login_start_result: &ClientLoginStartResult<OpaqueCipherSuite>,
-    user_id: &UserId,
+    account_name: &AccountName,
 ) -> Result<server::AuthenticateStart, DamsClientError> {
     let reply = client::AuthenticateStart {
         credential_request: client_login_start_result.message.clone(),
-        user_id: user_id.clone(),
+        account_name: account_name.clone(),
     };
 
     channel.send(reply).await?;
@@ -57,7 +57,7 @@ async fn authenticate_start(
 
 async fn authenticate_finish(
     channel: &mut ClientChannel,
-    user_id: &UserId,
+    account_name: &AccountName,
     password: &Password,
     client_start_result: ClientLoginStartResult<OpaqueCipherSuite>,
     server_start_result: server::AuthenticateStart,
@@ -70,7 +70,7 @@ async fn authenticate_finish(
 
     let reply = client::AuthenticateFinish {
         credential_finalization: client_login_finish_result.message.clone(),
-        user_id: user_id.clone(),
+        account_name: account_name.clone(),
     };
 
     channel.send(reply).await?;

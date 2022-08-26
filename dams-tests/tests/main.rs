@@ -6,14 +6,26 @@ use crate::{
 };
 use common::{get_logs, LogType, Party};
 
-use dams::{config::client::Config, user::UserId};
+use dams::{config::client::Config, user::AccountName};
 use dams_client::{client::Password, DamsClient, DamsClientError};
 use dams_key_server::database;
-use std::{fs::OpenOptions, str::FromStr};
+use std::{
+    fs::{
+        OpenOptions, {self},
+    },
+    path::Path,
+    str::FromStr,
+};
 use thiserror::Error;
 
 #[tokio::test]
 pub async fn integration_tests() {
+    // Clean up any leftover data and create new directory for generated files.
+    let gen_path = Path::new("tests/gen");
+    if !gen_path.exists() {
+        fs::create_dir(gen_path).expect("Unable to create directory tests/gen");
+    }
+
     // Read environment variables from .env file
     let server_config = common::server_test_config().await;
     let db = database::connect_to_mongo(
@@ -83,7 +95,7 @@ async fn tests() -> Vec<Test> {
             operations: vec![
                 (
                     Register(
-                        UserId::from_str("sameUser").unwrap(),
+                        AccountName::from_str("sameUser").unwrap(),
                         Password::from_str("testPassword1").unwrap(),
                     ),
                     Outcome {
@@ -93,7 +105,7 @@ async fn tests() -> Vec<Test> {
                 ),
                 (
                     Register(
-                        UserId::from_str("sameUser").unwrap(),
+                        AccountName::from_str("sameUser").unwrap(),
                         Password::from_str("testPassword2").unwrap(),
                     ),
                     Outcome {
@@ -108,7 +120,7 @@ async fn tests() -> Vec<Test> {
             operations: vec![
                 (
                     Register(
-                        UserId::from_str("testUser").unwrap(),
+                        AccountName::from_str("testUser").unwrap(),
                         Password::from_str("testPassword").unwrap(),
                     ),
                     Outcome {
@@ -118,7 +130,7 @@ async fn tests() -> Vec<Test> {
                 ),
                 (
                     Authenticate(
-                        UserId::from_str("testUser").unwrap(),
+                        AccountName::from_str("testUser").unwrap(),
                         Password::from_str("testPassword").unwrap(),
                     ),
                     Outcome {
@@ -128,7 +140,7 @@ async fn tests() -> Vec<Test> {
                 ),
                 (
                     Authenticate(
-                        UserId::from_str("testUser").unwrap(),
+                        AccountName::from_str("testUser").unwrap(),
                         Password::from_str("testPassword").unwrap(),
                     ),
                     Outcome {
@@ -144,7 +156,7 @@ async fn tests() -> Vec<Test> {
             operations: vec![
                 (
                     Register(
-                        UserId::from_str("testUser2").unwrap(),
+                        AccountName::from_str("testUser2").unwrap(),
                         Password::from_str("testPassword2").unwrap(),
                     ),
                     Outcome {
@@ -154,7 +166,7 @@ async fn tests() -> Vec<Test> {
                 ),
                 (
                     Authenticate(
-                        UserId::from_str("testUser2").unwrap(),
+                        AccountName::from_str("testUser2").unwrap(),
                         Password::from_str("wrongPassword").unwrap(),
                     ),
                     Outcome {
@@ -168,7 +180,7 @@ async fn tests() -> Vec<Test> {
             name: "Authenticate with unregistered user fails".to_string(),
             operations: vec![(
                 Authenticate(
-                    UserId::from_str("unregisteredUser").unwrap(),
+                    AccountName::from_str("unregisteredUser").unwrap(),
                     Password::from_str("testPassword").unwrap(),
                 ),
                 Outcome {
@@ -190,12 +202,14 @@ impl Test {
     async fn execute(&self, config: &Config) -> Result<(), anyhow::Error> {
         for (op, expected_outcome) in &self.operations {
             let outcome: Result<(), anyhow::Error> = match op {
-                Register(user_id, password) => DamsClient::register(user_id, password, config)
-                    .await
-                    .map(|_| ())
-                    .map_err(|e| e.into()),
-                Authenticate(user_id, password) => {
-                    DamsClient::authenticated_client(user_id, password, config)
+                Register(account_name, password) => {
+                    DamsClient::register(account_name, password, config)
+                        .await
+                        .map(|_| ())
+                        .map_err(|e| e.into())
+                }
+                Authenticate(account_name, password) => {
+                    DamsClient::authenticated_client(account_name, password, config)
                         .await
                         .map(|_| ())
                         .map_err(|e| e.into())
@@ -260,8 +274,8 @@ enum TestError {
 #[allow(unused)]
 #[derive(Debug)]
 enum Operation {
-    Register(UserId, Password),
-    Authenticate(UserId, Password),
+    Register(AccountName, Password),
+    Authenticate(AccountName, Password),
 }
 
 #[derive(Debug)]

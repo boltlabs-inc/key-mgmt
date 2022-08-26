@@ -57,6 +57,7 @@ pub struct DamsClient {
     config: Config,
     tonic_client: DamsRpcClient<Channel>,
     rng: Arc<Mutex<StdRng>>,
+    user_id: UserId,
 }
 
 /// Options for actions the client can take.
@@ -67,6 +68,11 @@ pub(crate) enum ClientAction {
 
 #[allow(unused)]
 impl DamsClient {
+    // Get [`UserId`] for the authenticated client.
+    pub fn user_id(&self) -> &UserId {
+        &self.user_id
+    }
+
     /// Create a `tonic` client object and return it to the client app.
     ///
     /// The returned client should be stored as part of the [`DamsClient`]
@@ -83,33 +89,37 @@ impl DamsClient {
     ///
     /// Output: If successful, returns a [`DamsClient`].
     pub async fn authenticated_client(
-        user_id: &UserId,
+        account_name: &AccountName,
         password: &Password,
         config: &Config,
     ) -> Result<Self, DamsClientError> {
         let mut rng = StdRng::from_entropy();
         let server_location = config.server_location()?;
         let mut client = Self::connect(server_location).await?;
-        Self::authenticate(client, rng, user_id, password, config).await
+        Self::authenticate(client, rng, account_name, password, config).await
     }
 
     async fn authenticate(
         mut client: DamsRpcClient<Channel>,
         mut rng: StdRng,
-        user_id: &UserId,
+        account_name: &AccountName,
         password: &Password,
         config: &Config,
     ) -> Result<Self, DamsClientError> {
         let mut client_channel =
             Self::create_channel(&mut client, ClientAction::Authenticate).await?;
-        let result = Self::handle_authentication(client_channel, &mut rng, user_id, password).await;
+        let result =
+            Self::handle_authentication(client_channel, &mut rng, account_name, password).await;
         match result {
             Ok(result) => {
+                // TODO: receive User ID over authenticated channel (under session_key)
+                let user_id = todo!();
                 let session = DamsClient {
                     session_key: result,
                     config: config.clone(),
                     tonic_client: client,
                     rng: Arc::new(Mutex::new(rng)),
+                    user_id,
                 };
                 Ok(session)
             }
@@ -138,16 +148,7 @@ impl DamsClient {
         let result =
             Self::handle_registration(client_channel, &mut rng, account_name, password).await;
         match result {
-            Ok(response) => {
-                Self::authenticate(
-                    client,
-                    rng,
-                    &response.into_inner().user_id,
-                    password,
-                    config,
-                )
-                .await
-            }
+            Ok(response) => Self::authenticate(client, rng, account_name, password, config).await,
             Err(e) => {
                 error!("{:?}", e);
                 Err(DamsClientError::RegistrationFailed)

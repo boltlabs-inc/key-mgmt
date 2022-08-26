@@ -52,7 +52,7 @@ async fn authenticate_start(
     // Check that user with corresponding UserId exists and get their
     // server_registration
     let server_registration =
-        match User::find_user_by_id(&context.db, &start_message.user_id).await? {
+        match User::find_user(&context.db, &start_message.account_name).await? {
             Some(user) => user.into_server_registration(),
             None => return Err(DamsServerError::UserIdDoesNotExist),
         };
@@ -65,7 +65,7 @@ async fn authenticate_start(
             &server_setup,
             Some(server_registration),
             start_message.credential_request,
-            start_message.user_id.as_bytes(),
+            start_message.account_name.as_bytes(),
             ServerLoginStartParameters::default(),
         )?
     };

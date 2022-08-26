@@ -3,13 +3,12 @@
 //! Includes structs for the various models found in the first round of Mongo
 //! integration. This module will likely be split by model into sub-modules.
 
-use std::fmt::Display;
-
 use crate::{config::opaque::OpaqueCipherSuite, crypto::Secret};
 
 use opaque_ke::ServerRegistration;
 use rand::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
+use std::{convert::Infallible, fmt::Display, str::FromStr};
 
 /// Unique ID for a user. Assumption: this will be derived from an ID generated
 /// by the Service Provider.
@@ -42,6 +41,14 @@ pub struct AccountName(String);
 impl Display for AccountName {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&self.0)
+    }
+}
+
+impl FromStr for AccountName {
+    type Err = Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(s.to_string()))
     }
 }
 
