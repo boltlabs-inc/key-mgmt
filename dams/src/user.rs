@@ -3,7 +3,7 @@
 //! Includes structs for the various models found in the first round of Mongo
 //! integration. This module will likely be split by model into sub-modules.
 
-use std::fmt::{Display, Write};
+use std::fmt::Display;
 
 use crate::{config::opaque::OpaqueCipherSuite, crypto::Secret};
 
@@ -25,6 +25,7 @@ impl Display for UserId {
 impl UserId {
     pub fn new(rng: &mut (impl CryptoRng + RngCore)) -> Self {
         let mut id = [0_u8; 16];
+        // TODO: this can panic
         rng.fill_bytes(&mut id);
         Self(Box::new(id))
     }
@@ -37,6 +38,18 @@ impl UserId {
 /// Account name used as human-memorable identifier for a user during OPAQUE.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AccountName(String);
+
+impl Display for AccountName {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+impl AccountName {
+    pub fn as_bytes(&self) -> &[u8] {
+        self.0.as_bytes()
+    }
+}
 
 /// One user with a set of arbitrary secrets and a [`ServerRegistration`] to
 /// authenticate with.

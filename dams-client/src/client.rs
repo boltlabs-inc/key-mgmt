@@ -2,8 +2,10 @@
 
 use crate::DamsClientError;
 use dams::{
-    channel::ClientChannel, config::client::Config, dams_rpc::dams_rpc_client::DamsRpcClient,
-    user::UserId,
+    channel::ClientChannel,
+    config::client::Config,
+    dams_rpc::dams_rpc_client::DamsRpcClient,
+    user::{AccountName, UserId},
 };
 use http::uri::Scheme;
 use rand::{rngs::StdRng, SeedableRng};
@@ -125,7 +127,7 @@ impl DamsClient {
     ///
     /// Output: If successful, returns a [`DamsClient`].
     pub async fn register(
-        user_id: &UserId,
+        account_name: &AccountName,
         password: &Password,
         config: &Config,
     ) -> Result<Self, DamsClientError> {
@@ -133,9 +135,19 @@ impl DamsClient {
         let server_location = config.server_location()?;
         let mut client = Self::connect(server_location).await?;
         let mut client_channel = Self::create_channel(&mut client, ClientAction::Register).await?;
-        let result = Self::handle_registration(client_channel, &mut rng, user_id, password).await;
+        let result =
+            Self::handle_registration(client_channel, &mut rng, account_name, password).await;
         match result {
-            Ok(_) => Self::authenticate(client, rng, user_id, password, config).await,
+            Ok(response) => {
+                Self::authenticate(
+                    client,
+                    rng,
+                    &response.into_inner().user_id,
+                    password,
+                    config,
+                )
+                .await
+            }
             Err(e) => {
                 error!("{:?}", e);
                 Err(DamsClientError::RegistrationFailed)

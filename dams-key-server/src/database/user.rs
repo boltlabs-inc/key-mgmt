@@ -17,6 +17,8 @@ use opaque_ke::ServerRegistration;
 
 /// Create a new [`User`] with their authentication information and insert it
 /// into the MongoDB database.
+///
+/// TODO: add constraint that user id and account name are both unique.
 pub async fn create_user(
     db: &Database,
     user_id: &UserId,
@@ -29,9 +31,17 @@ pub async fn create_user(
     Ok(insert_one_res.inserted_id.as_object_id())
 }
 
-/// Find a [`User`] by their `user_id`. This is different from the
-/// Mongo-assigned `_id` field.
-pub async fn find_user(db: &Database, user_id: &UserId) -> Result<Option<User>, Error> {
+/// Find a [`User`] by their human-readable [`AccountName`].
+pub async fn find_user(db: &Database, account_name: &AccountName) -> Result<Option<User>, Error> {
+    let collection = db.collection::<User>(constants::USERS);
+    let query = doc! {"account_name": account_name.to_string()};
+    let user = collection.find_one(query, None).await?;
+    Ok(user)
+}
+
+/// Find a [`User`] by their machine-readable [`UserId`]. This is different from
+/// the Mongo-assigned `_id` field.
+pub async fn find_user_by_id(db: &Database, user_id: &UserId) -> Result<Option<User>, Error> {
     let collection = db.collection::<User>(constants::USERS);
     let query = doc! {"user_id": user_id.to_string()};
     let user = collection.find_one(query, None).await?;

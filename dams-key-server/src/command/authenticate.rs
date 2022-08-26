@@ -51,10 +51,11 @@ async fn authenticate_start(
 
     // Check that user with corresponding UserId exists and get their
     // server_registration
-    let server_registration = match User::find_user(&context.db, &start_message.user_id).await? {
-        Some(user) => user.into_server_registration(),
-        None => return Err(DamsServerError::UserIdDoesNotExist),
-    };
+    let server_registration =
+        match User::find_user_by_id(&context.db, &start_message.user_id).await? {
+            Some(user) => user.into_server_registration(),
+            None => return Err(DamsServerError::UserIdDoesNotExist),
+        };
 
     let server_login_start_result = {
         let mut local_rng = context.rng.lock().await;

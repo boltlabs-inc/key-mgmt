@@ -1,4 +1,5 @@
 use crate::{database::user as User, error::DamsServerError, server::Context};
+use std::ops::DerefMut;
 
 use dams::{
     channel::ServerChannel,
@@ -8,6 +9,7 @@ use dams::{
         register::{client, server},
         Message, MessageStream,
     },
+    user::UserId,
 };
 use opaque_ke::ServerRegistration;
 use tokio_stream::wrappers::ReceiverStream;
@@ -50,7 +52,7 @@ async fn register_start(
     };
 
     // Abort registration if UserId already exists
-    let user = User::find_user(&context.db, &start_message.user_id).await?;
+    let user = User::find_user(&context.db, &start_message.account_name).await?;
 
     if user.is_some() {
         Err(DamsServerError::UserIdAlreadyExists)
@@ -59,7 +61,7 @@ async fn register_start(
         let server_registration_start_result = ServerRegistration::<OpaqueCipherSuite>::start(
             &server_setup,
             start_message.registration_request,
-            start_message.user_id.as_bytes(),
+            start_message.account_name.as_bytes(),
         )?;
 
         let reply = server::RegisterStart {
@@ -84,12 +86,26 @@ async fn register_finish(
     let server_registration =
         ServerRegistration::<OpaqueCipherSuite>::finish(finish_message.registration_upload);
 
+    // Create a user ID for the new client
+    let user_id = {
+        let mut rng = context.rng.lock().await;
+        UserId::new(rng.deref_mut())
+    };
+
     // add the new user to the DB
-    let _object_id =
-        User::create_user(&context.db, &finish_message.user_id, server_registration).await?;
+    let _object_id = User::create_user(
+        &context.db,
+        &user_id,
+        &finish_message.account_name,
+        server_registration,
+    )
+    .await?;
 
     // reply with the success:true if successful
-    let reply = server::RegisterFinish { success: true };
+    let reply = server::RegisterFinish {
+        success: true,
+        user_id,
+    };
 
     // Send response to client
     channel.send(reply).await?;

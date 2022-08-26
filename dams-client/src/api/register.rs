@@ -6,7 +6,7 @@ use dams::{
     channel::ClientChannel,
     config::opaque::OpaqueCipherSuite,
     types::register::{client, server},
-    user::UserId,
+    user::AccountName,
 };
 use opaque_ke::{
     ClientRegistration, ClientRegistrationFinishParameters, ClientRegistrationStartResult,
@@ -18,15 +18,21 @@ impl DamsClient {
     pub(crate) async fn handle_registration<T: CryptoRng + RngCore>(
         mut channel: ClientChannel,
         rng: &mut T,
-        user_id: &UserId,
+        account_name: &AccountName,
         password: &Password,
     ) -> Result<Response<server::RegisterFinish>, DamsClientError> {
         // Handle start step
-        let client_start_result = register_start(&mut channel, rng, user_id, password).await?;
+        let client_start_result = register_start(&mut channel, rng, account_name, password).await?;
 
         // Handle finish step
-        let server_finish_result =
-            register_finish(&mut channel, rng, user_id, password, client_start_result).await?;
+        let server_finish_result = register_finish(
+            &mut channel,
+            rng,
+            account_name,
+            password,
+            client_start_result,
+        )
+        .await?;
 
         Ok(Response::new(server_finish_result))
     }
@@ -35,7 +41,7 @@ impl DamsClient {
 async fn register_start<T: CryptoRng + RngCore>(
     channel: &mut ClientChannel,
     rng: &mut T,
-    user_id: &UserId,
+    account_name: &AccountName,
     password: &Password,
 ) -> Result<ClientRegistrationStartResult<OpaqueCipherSuite>, DamsClientError> {
     let client_registration_start_result =
@@ -43,7 +49,7 @@ async fn register_start<T: CryptoRng + RngCore>(
 
     let response = client::RegisterStart {
         registration_request: client_registration_start_result.message.clone(),
-        user_id: user_id.clone(),
+        account_name: account_name.clone(),
     };
 
     channel.send(response).await?;
@@ -54,7 +60,7 @@ async fn register_start<T: CryptoRng + RngCore>(
 async fn register_finish<T: CryptoRng + RngCore>(
     channel: &mut ClientChannel,
     rng: &mut T,
-    user_id: &UserId,
+    account_name: &AccountName,
     password: &Password,
     client_start_result: ClientRegistrationStartResult<OpaqueCipherSuite>,
 ) -> Result<server::RegisterFinish, DamsClientError> {
@@ -69,7 +75,7 @@ async fn register_finish<T: CryptoRng + RngCore>(
 
     let response = client::RegisterFinish {
         registration_upload: client_finish_registration_result.message,
-        user_id: user_id.clone(),
+        account_name: account_name.clone(),
     };
     channel.send(response).await?;
 

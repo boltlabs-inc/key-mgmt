@@ -8,7 +8,7 @@
 pub(crate) mod authenticate;
 pub(crate) mod register;
 
-use crate::DamsClientError;
+use crate::error::DamsClientError;
 use dams::{
     blockchain::Blockchain,
     crypto::KeyId,
