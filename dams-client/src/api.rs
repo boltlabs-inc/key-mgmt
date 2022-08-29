@@ -19,8 +19,11 @@ use dams::{
     user::UserId,
 };
 use http::uri::Scheme;
-use rand::{CryptoRng, RngCore};
-use std::str::FromStr;
+use rand::{rngs::StdRng, SeedableRng};
+use std::{
+    str::FromStr,
+    sync::{Arc, Mutex},
+};
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::transport::{Channel, Uri};
@@ -64,6 +67,7 @@ pub struct DamsClient {
     session_key: [u8; 64],
     config: Config,
     tonic_client: DamsRpcClient<Channel>,
+    rng: Arc<Mutex<StdRng>>,
 }
 
 /// Options for actions the client can take.
@@ -90,33 +94,34 @@ impl DamsClient {
     /// registered user and a key server.
     ///
     /// Output: If successful, returns a [`DamsClient`].
-    pub async fn open<T: CryptoRng + RngCore>(
-        rng: &mut T,
+    pub async fn open(
         user_id: &UserId,
         password: &Password,
         config: &Config,
     ) -> Result<Self, DamsClientError> {
+        let mut rng = StdRng::from_entropy();
         let server_location = config.server_location()?;
         let mut client = Self::connect(server_location).await?;
         Self::authenticate(client, rng, user_id, password, config).await
     }
 
-    async fn authenticate<T: CryptoRng + RngCore>(
+    async fn authenticate(
         mut client: DamsRpcClient<Channel>,
-        rng: &mut T,
+        mut rng: StdRng,
         user_id: &UserId,
         password: &Password,
         config: &Config,
     ) -> Result<Self, DamsClientError> {
         let mut client_channel =
             Self::create_channel(&mut client, ClientAction::Authenticate).await?;
-        let result = authenticate::handle(client_channel, rng, user_id, password).await;
+        let result = authenticate::handle(client_channel, &mut rng, user_id, password).await;
         match result {
             Ok(result) => {
                 let session = DamsClient {
                     session_key: result,
                     config: config.clone(),
                     tonic_client: client,
+                    rng: Arc::new(Mutex::new(rng)),
                 };
                 Ok(session)
             }
@@ -134,16 +139,16 @@ impl DamsClient {
     /// created with [`DamsClient::open()`].
     ///
     /// Output: If successful, returns a [`DamsClient`].
-    pub async fn register<T: CryptoRng + RngCore>(
-        rng: &mut T,
+    pub async fn register(
         user_id: &UserId,
         password: &Password,
         config: &Config,
     ) -> Result<Self, DamsClientError> {
+        let mut rng = StdRng::from_entropy();
         let server_location = config.server_location()?;
         let mut client = Self::connect(server_location).await?;
         let mut client_channel = Self::create_channel(&mut client, ClientAction::Register).await?;
-        let result = register::handle(client_channel, rng, user_id, password).await;
+        let result = register::handle(client_channel, &mut rng, user_id, password).await;
         match result {
             Ok(_) => Self::authenticate(client, rng, user_id, password, config).await,
             Err(e) => {

@@ -12,7 +12,6 @@ use dams_client::{
     DamsClientError,
 };
 use dams_key_server::database;
-use rand::{prelude::StdRng, SeedableRng};
 use std::{fs::OpenOptions, str::FromStr};
 use thiserror::Error;
 
@@ -29,7 +28,6 @@ pub async fn integration_tests() {
     let _ = db.create_collection("users", None).await;
     let server_future = common::setup(db.clone(), server_config).await;
     let client_config = common::client_test_config().await;
-    let mut rng = StdRng::from_entropy();
 
     // Run every test, printing out details if it fails
     let tests = tests().await;
@@ -44,7 +42,7 @@ pub async fn integration_tests() {
         .unwrap_or_else(|e| panic!("Failed to clear error file at start: {:?}", e));
     for test in tests {
         eprintln!("\n\ntest integration_tests::{} ... ", test.name);
-        let result = test.execute(&client_config, &mut rng).await;
+        let result = test.execute(&client_config).await;
         if let Err(error) = &result {
             eprintln!("failed with error: {:?}", error)
         } else {
@@ -193,14 +191,14 @@ struct Test {
 }
 
 impl Test {
-    async fn execute(&self, config: &Config, rng: &mut StdRng) -> Result<(), anyhow::Error> {
+    async fn execute(&self, config: &Config) -> Result<(), anyhow::Error> {
         for (op, expected_outcome) in &self.operations {
             let outcome: Result<(), anyhow::Error> = match op {
-                Register(user_id, password) => DamsClient::register(rng, user_id, password, config)
+                Register(user_id, password) => DamsClient::register(user_id, password, config)
                     .await
                     .map(|_| ())
                     .map_err(|e| e.into()),
-                Authenticate(user_id, password) => DamsClient::open(rng, user_id, password, config)
+                Authenticate(user_id, password) => DamsClient::open(user_id, password, config)
                     .await
                     .map(|_| ())
                     .map_err(|e| e.into()),
