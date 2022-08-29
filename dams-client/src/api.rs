@@ -55,10 +55,12 @@ impl Password {
     }
 }
 
-/// A `DamsClient` is an abstraction over client operations. It is used
-/// to hold state, common infrastructure, and a `tonic` client object.
-/// Authenticating to the DAMS returns a `DamsClient`, and this object
-/// must be passed to the remaining API functions.
+/// A `DamsClient` is an abstraction over client operations; that is, it wraps
+/// around the state and infrastructure necessary to make requests to the key
+/// server. It handles confidentiality, integrity, and authentication of
+/// communication with the server.
+/// A `DamsClient` exists for the duration of one authenticated session, during
+/// which multiple requests can be made to the server.
 ///
 /// TODO #30: This abstraction needs a lot of design attention.
 #[derive(Debug)]
@@ -78,7 +80,7 @@ pub(crate) enum ClientAction {
 
 #[allow(unused)]
 impl DamsClient {
-    /// Connect to the gRPC client and return it to the client app.
+    /// Create a `tonic` client object and return it to the client app.
     ///
     /// The returned client should be stored as part of the [`DamsClient`]
     /// state.
@@ -90,11 +92,10 @@ impl DamsClient {
         }
     }
 
-    /// Open a new mutually authenticated session between a previously
-    /// registered user and a key server.
+    /// Authenticate to the DAMS key server as a previously registered user.
     ///
     /// Output: If successful, returns a [`DamsClient`].
-    pub async fn open(
+    pub async fn authenticated_client(
         user_id: &UserId,
         password: &Password,
         config: &Config,
@@ -132,8 +133,7 @@ impl DamsClient {
         }
     }
 
-    /// Register a new user who has not yet interacted with the service and open
-    /// a mutually authenticated session with the server.
+    /// Register a new user who has not yet interacted with the service.
     ///
     /// This only needs to be called once per user; future sessions can be
     /// created with [`DamsClient::open()`].

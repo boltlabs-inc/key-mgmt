@@ -198,10 +198,12 @@ impl Test {
                     .await
                     .map(|_| ())
                     .map_err(|e| e.into()),
-                Authenticate(user_id, password) => DamsClient::open(user_id, password, config)
-                    .await
-                    .map(|_| ())
-                    .map_err(|e| e.into()),
+                Authenticate(user_id, password) => {
+                    DamsClient::authenticated_client(user_id, password, config)
+                        .await
+                        .map(|_| ())
+                        .map_err(|e| e.into())
+                }
             };
 
             // Get error logs for each party - we make the following assumptions:
