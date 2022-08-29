@@ -88,8 +88,7 @@ impl DamsClient {
     /// Open a new mutually authenticated session between a previously
     /// registered user and a key server.
     ///
-    /// Output: If successful, returns a [`DamsClient`] holding a
-    /// `tonic`client object, a session key, and configuration information.
+    /// Output: If successful, returns a [`DamsClient`].
     pub async fn open<T: CryptoRng + RngCore>(
         rng: &mut T,
         user_id: &UserId,
@@ -133,8 +132,7 @@ impl DamsClient {
     /// This only needs to be called once per user; future sessions can be
     /// created with [`DamsClient::open()`].
     ///
-    /// Output: If successful, returns a [`DamsClient`] holding a
-    /// `tonic`client object, a session key, and configuration information.
+    /// Output: If successful, returns a [`DamsClient`].
     pub async fn register<T: CryptoRng + RngCore>(
         rng: &mut T,
         user_id: &UserId,
