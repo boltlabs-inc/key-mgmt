@@ -24,8 +24,6 @@ use dams::{
 ///
 /// Output: If successful, returns the [`KeyInfo`] describing the newly created
 /// key.
-///
-/// TODO #172: pass a DamsClient
 #[allow(unused)]
 pub fn create_digital_asset_key(
     user_id: UserId,
@@ -45,8 +43,6 @@ pub fn create_digital_asset_key(
 /// match the user authenticated in the [`DamsClient`].
 ///
 /// Output: None, if successful.
-///
-/// TODO #172: pass a DamsClient
 #[allow(unused)]
 pub fn set_user_key_policy(
     user_id: UserId,
@@ -72,8 +68,6 @@ pub fn set_user_key_policy(
 /// the original [`TransactionApprovalRequest`] -- that is, over the
 /// [`Transaction`](dams::transaction::Transaction), and using the key
 /// corresponding to the [`KeyId`].
-///
-/// TODO #172: pass a DamsClient
 #[allow(unused)]
 pub fn request_transaction_signature(
     transaction_approval_request: TransactionApprovalRequest,
@@ -93,8 +87,6 @@ pub fn request_transaction_signature(
 ///
 /// Output: If successful, returns the [`KeyInfo`] for every key belonging to
 /// the user.
-///
-/// TODO #172: pass a DamsClient
 #[allow(unused)]
 pub fn retrieve_public_keys(user_id: UserId) -> Result<Vec<KeyInfo>, DamsClientError> {
     todo!()
@@ -111,8 +103,6 @@ pub fn retrieve_public_keys(user_id: UserId) -> Result<Vec<KeyInfo>, DamsClientE
 /// [`UserId`].
 ///
 /// Output: If successful, returns the [`KeyInfo`] for the requested key.
-///
-/// TODO #172: pass a DamsClient
 #[allow(unused)]
 pub fn retrieve_public_key_by_id(
     user_id: UserId,
@@ -135,8 +125,6 @@ pub fn retrieve_public_key_by_id(
 /// owned by the [`UserId`].
 ///
 /// Output: if successful, returns a [`String`] representation of the logs.
-///
-/// TODO #172: pass a DamsClient
 #[allow(unused)]
 pub fn retrieve_audit_log(
     user_id: UserId,
