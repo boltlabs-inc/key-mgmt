@@ -4,11 +4,13 @@ use crate::{
     Operation::{Authenticate, Register},
     Party::{Client, Server},
 };
-use anyhow::anyhow;
 use common::{get_logs, LogType, Party};
 
 use dams::{dams_rpc::dams_rpc_client::DamsRpcClient, user::UserId};
-use dams_client::api::{Password, Session};
+use dams_client::{
+    api::{Password, Session},
+    DamsClientError,
+};
 use dams_key_server::database;
 use rand::{prelude::StdRng, SeedableRng};
 use std::{fs::OpenOptions, str::FromStr};
@@ -105,7 +107,7 @@ async fn tests() -> Vec<Test> {
                     ),
                     Outcome {
                         error: Some(Client),
-                        expected_error: Some(anyhow!("RegistrationFailed")),
+                        expected_error: Some(DamsClientError::RegistrationFailed),
                     },
                 ),
             ],
@@ -166,7 +168,7 @@ async fn tests() -> Vec<Test> {
                     ),
                     Outcome {
                         error: Some(Client),
-                        expected_error: Some(anyhow!("AuthenticationFailed")),
+                        expected_error: Some(DamsClientError::AuthenticationFailed),
                     },
                 ),
             ],
@@ -180,7 +182,7 @@ async fn tests() -> Vec<Test> {
                 ),
                 Outcome {
                     error: Some(Client),
-                    expected_error: Some(anyhow!("AuthenticationFailed")),
+                    expected_error: Some(DamsClientError::AuthenticationFailed),
                 },
             )],
         },
@@ -229,7 +231,7 @@ impl Test {
                         expected_outcome
                             .expected_error
                             .as_ref()
-                            .unwrap_or(&anyhow!(""))
+                            .unwrap()
                             .to_string(),
                         e.to_string()
                     );
@@ -278,5 +280,5 @@ struct Outcome {
     /// Which process, if any, had an error? Assumes that exactly one party will
     /// error.
     error: Option<Party>,
-    expected_error: Option<anyhow::Error>,
+    expected_error: Option<DamsClientError>,
 }

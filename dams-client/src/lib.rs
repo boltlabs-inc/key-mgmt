@@ -6,3 +6,6 @@
 #![forbid(rustdoc::broken_intra_doc_links)]
 
 pub mod api;
+pub mod error;
+
+pub use error::DamsClientError;

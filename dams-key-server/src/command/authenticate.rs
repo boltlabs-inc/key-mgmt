@@ -1,4 +1,4 @@
-use crate::{database::user as User, server::Context};
+use crate::{database::user as User, error::DamsServerError, server::Context};
 
 use dams::{
     channel::ServerChannel,
@@ -11,7 +11,7 @@ use dams::{
 };
 use opaque_ke::{ServerLogin, ServerLoginStartParameters, ServerLoginStartResult};
 use tokio_stream::wrappers::ReceiverStream;
-use tonic::{Request, Response, Status};
+use tonic::{Request, Response};
 
 #[derive(Debug)]
 pub struct Authenticate;
@@ -21,14 +21,14 @@ impl Authenticate {
         &self,
         request: Request<tonic::Streaming<Message>>,
         context: Context,
-    ) -> Result<Response<MessageStream>, Status> {
+    ) -> Result<Response<MessageStream>, DamsServerError> {
         let (mut channel, rx) = ServerChannel::create(request.into_inner());
 
         let _ = tokio::spawn(async move {
             let login_start_result = authenticate_start(&mut channel, &context).await?;
             authenticate_finish(&mut channel, login_start_result).await?;
 
-            Ok::<(), Status>(())
+            Ok::<(), DamsServerError>(())
         });
 
         Ok(Response::new(ReceiverStream::new(rx)))
@@ -40,46 +40,33 @@ impl Authenticate {
 async fn authenticate_start(
     channel: &mut ServerChannel,
     context: &Context,
-) -> Result<ServerLoginStartResult<OpaqueCipherSuite>, Status> {
+) -> Result<ServerLoginStartResult<OpaqueCipherSuite>, DamsServerError> {
     // Receive start message from client
     let start_message: client::AuthenticateStart = channel.receive().await?;
 
     let server_setup = {
-        let mut local_rng = context
-            .rng
-            .lock()
-            .map_err(|_| Status::unavailable("Unable to access RNG"))?;
-        create_or_retrieve_server_key_opaque(&mut local_rng, &context.service)
-            .map_err(|_| Status::aborted("could not find/create server key"))?
+        let mut local_rng = context.rng.lock().await;
+        create_or_retrieve_server_key_opaque(&mut local_rng, &context.service)?
     };
 
     // Check that user with corresponding UserId exists and get their
     // server_registration
-    let server_registration = match User::find_user(&context.db, &start_message.user_id)
-        .await
-        .map_err(|_| Status::aborted("MongoDB error"))?
-    {
+    let server_registration = match User::find_user(&context.db, &start_message.user_id).await? {
         Some(user) => user.into_server_registration(),
-        None => return Err(Status::aborted("UserId does not exist")),
+        None => return Err(DamsServerError::UserIdDoesNotExist),
     };
 
     let server_login_start_result = {
-        let mut local_rng = context
-            .rng
-            .lock()
-            .map_err(|_| Status::unavailable("Unable to access RNG"))?;
+        let mut local_rng = context.rng.lock().await;
 
-        match ServerLogin::start(
+        ServerLogin::start(
             &mut *local_rng,
             &server_setup,
             Some(server_registration),
             start_message.credential_request,
             start_message.user_id.as_bytes(),
             ServerLoginStartParameters::default(),
-        ) {
-            Ok(server_login_start_result) => server_login_start_result,
-            Err(_) => return Err(Status::aborted("Server error")),
-        }
+        )?
     };
 
     let reply = server::AuthenticateStart {
@@ -95,20 +82,16 @@ async fn authenticate_start(
 async fn authenticate_finish(
     channel: &mut ServerChannel,
     start_result: ServerLoginStartResult<OpaqueCipherSuite>,
-) -> Result<(), Status> {
+) -> Result<(), DamsServerError> {
     // Receive finish message from client
     let finish_message: client::AuthenticateFinish = channel.receive().await?;
 
-    match start_result
+    let _ = start_result
         .state
-        .finish(finish_message.credential_finalization)
-    {
-        Ok(_) => {
-            let reply = server::AuthenticateFinish { success: true };
-            // Send response to client
-            channel.send(reply).await?;
-            Ok(())
-        }
-        Err(_) => Err(Status::unauthenticated("Could not authenticate")),
-    }
+        .finish(finish_message.credential_finalization)?;
+    let reply = server::AuthenticateFinish { success: true };
+
+    // Send response to client
+    channel.send(reply).await?;
+    Ok(())
 }

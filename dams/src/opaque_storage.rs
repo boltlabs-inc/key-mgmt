@@ -1,8 +1,8 @@
 use crate::{
     config::{opaque::OpaqueCipherSuite, server::Service},
+    error::DamsError,
     user::UserId,
 };
-use anyhow::{anyhow, Context, Error};
 use generic_array::GenericArray;
 use opaque_ke::{
     keypair::PrivateKey, Ristretto255, ServerRegistration, ServerRegistrationLen, ServerSetup,
@@ -22,17 +22,16 @@ pub fn store_opaque(
     service: &Service,
     user_id: &UserId,
     server_registration: &ServerRegistration<OpaqueCipherSuite>,
-) -> Result<(), Error> {
+) -> Result<(), DamsError> {
     std::fs::create_dir_all(
         &service
             .opaque_path
             .parent()
-            .context("could not create opaque path directory")?,
+            .ok_or(DamsError::InvalidOpaqueDirectory)?,
     )?;
-    let mut file = File::create(service.opaque_path.join(user_id.to_string()))
-        .context("could not create file")?;
-    file.write_all(server_registration.serialize().as_slice())
-        .context("could not write file")?;
+    let mut file = File::create(service.opaque_path.join(user_id.to_string()))?;
+    file.write_all(server_registration.serialize().as_slice())?;
+
     Ok(())
 }
 
@@ -42,13 +41,15 @@ pub fn store_opaque(
 pub fn retrieve_opaque(
     service: &Service,
     user_id: &UserId,
-) -> Result<ServerRegistration<OpaqueCipherSuite>, Error> {
+) -> Result<ServerRegistration<OpaqueCipherSuite>, DamsError> {
     let mut file = File::open(service.opaque_path.join(user_id.to_string()))?;
     let mut contents: GenericArray<u8, ServerRegistrationLen<OpaqueCipherSuite>> =
         GenericArray::default();
     let _ = file.read(&mut contents);
-    ServerRegistration::<OpaqueCipherSuite>::deserialize(contents.as_slice())
-        .map_err(|_| anyhow!("couldn't deserialize file"))
+
+    Ok(ServerRegistration::<OpaqueCipherSuite>::deserialize(
+        contents.as_slice(),
+    )?)
 }
 
 /// Retrieves the [`ServerSetup`] used for OPAQUE authentication, creating it if
@@ -58,7 +59,7 @@ pub fn retrieve_opaque(
 pub fn create_or_retrieve_server_key_opaque(
     rng: &mut StdRng,
     service: &Service,
-) -> Result<ServerSetup<OpaqueCipherSuite, PrivateKey<Ristretto255>>, Error> {
+) -> Result<ServerSetup<OpaqueCipherSuite, PrivateKey<Ristretto255>>, DamsError> {
     let server_key_file = File::open(&service.opaque_server_key);
     match server_key_file {
         // Server key file doesn't exist yet, create new
@@ -68,16 +69,10 @@ pub fn create_or_retrieve_server_key_opaque(
                 &service
                     .opaque_server_key
                     .parent()
-                    .context("could not create server key file location path")?,
+                    .ok_or(DamsError::InvalidOpaqueDirectory)?,
             )?;
-            let mut file = File::create(&service.opaque_server_key)
-                .context("could not create server key file")?;
-            file.write_all(
-                bincode::serialize(&server_setup)
-                    .context("could not serialize server setup")?
-                    .as_slice(),
-            )
-            .context("could not write file")?;
+            let mut file = File::create(&service.opaque_server_key)?;
+            file.write_all(bincode::serialize(&server_setup)?.as_slice())?;
             Ok(server_setup)
         }
 
@@ -86,10 +81,7 @@ pub fn create_or_retrieve_server_key_opaque(
             let mut contents = vec![];
             let _ = file.read_to_end(&mut contents)?;
             let server_setup: ServerSetup<OpaqueCipherSuite, PrivateKey<Ristretto255>> =
-                match bincode::deserialize(contents.as_slice()) {
-                    Ok(server_setup) => server_setup,
-                    Err(_) => return Err(anyhow!("could not deserialize server key file")),
-                };
+                bincode::deserialize(contents.as_slice())?;
             Ok(server_setup)
         }
     }
@@ -108,7 +100,7 @@ mod tests {
     };
 
     #[tokio::test]
-    async fn test_store_and_retrieve() -> Result<(), Error> {
+    async fn test_store_and_retrieve() -> Result<(), DamsError> {
         let mut rng = StdRng::from_entropy();
         let service = &Service {
             address: IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
@@ -159,6 +151,7 @@ mod tests {
             retrieved_result.err().unwrap()
         );
         assert_eq!(retrieved_result.unwrap(), server_registration);
+
         Ok(())
     }
 }

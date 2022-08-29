@@ -1,4 +1,5 @@
-use tokio::sync::mpsc::{self, Receiver, Sender};
+use thiserror::Error;
+use tokio::sync::mpsc::{self, error::SendError, Receiver, Sender};
 use tokio_stream::StreamExt;
 use tonic::{Status, Streaming};
 
@@ -26,25 +27,21 @@ impl<T> Channel<T> {
     /// Receive the next message on the channel and convert it to the type `R`.
     /// If the message cannot be converted to `R`, it is assumed to be an
     /// invalid message and an error is returned.
-    pub async fn receive<R: TryFrom<Message>>(&mut self) -> Result<R, Status> {
+    pub async fn receive<R: TryFrom<Message>>(&mut self) -> Result<R, ChannelError> {
         match self.receiver.next().await {
             Some(message) => {
                 let message = message?;
-                let result =
-                    R::try_from(message).map_err(|_| Status::internal("Invalid message"))?;
+                let result = R::try_from(message).map_err(|_| ChannelError::InvalidMessage)?;
                 Ok(result)
             }
-            None => Err(Status::aborted("No message received")),
+            None => Err(ChannelError::NoMessageReceived)?,
         }
     }
 
     /// Generic `send` function used by the client and server versions of
     /// `Channel`.
-    async fn handle_send(&mut self, message: T) -> Result<(), Status> {
-        self.sender
-            .send(message)
-            .await
-            .map_err(|e| Status::aborted(e.to_string()))
+    async fn handle_send(&mut self, message: T) -> Result<(), ChannelError> {
+        Ok(self.sender.send(message).await?)
     }
 }
 
@@ -59,7 +56,7 @@ impl ServerChannel {
 
     /// Send a message across the channel. This function accepts any type that
     /// can be converted to a `Message.
-    pub async fn send(&mut self, message: impl TryInto<Message>) -> Result<(), Status> {
+    pub async fn send(&mut self, message: impl TryInto<Message>) -> Result<(), ChannelError> {
         let message = message
             .try_into()
             .map_err(|_| Status::internal("Invalid message"))?;
@@ -76,11 +73,30 @@ impl ClientChannel {
 
     /// Send a message across the channel. This function accepts any type that
     /// can be converted to a `Message.
-    pub async fn send(&mut self, message: impl TryInto<Message>) -> Result<(), Status> {
+    pub async fn send(&mut self, message: impl TryInto<Message>) -> Result<(), ChannelError> {
         let message = message
             .try_into()
             .map_err(|_| Status::internal("Invalid message"))?;
 
         self.handle_send(message).await
+    }
+}
+
+#[derive(Debug, Error)]
+pub enum ChannelError {
+    #[error("Invalid message")]
+    InvalidMessage,
+    #[error("No message received")]
+    NoMessageReceived,
+
+    #[error(transparent)]
+    TonicStatus(#[from] tonic::Status),
+    #[error("tokio Sender error: {}", .0)]
+    TokioSender(String),
+}
+
+impl<T> From<SendError<T>> for ChannelError {
+    fn from(error: SendError<T>) -> Self {
+        Self::TokioSender(error.to_string())
     }
 }

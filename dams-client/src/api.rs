@@ -8,7 +8,6 @@
 mod authenticate;
 mod register;
 
-use anyhow::anyhow;
 use dams::{
     blockchain::Blockchain,
     crypto::KeyId,
@@ -18,33 +17,11 @@ use dams::{
     user::UserId,
 };
 use rand::{CryptoRng, RngCore};
-use std::{
-    fmt::{Display, Formatter},
-    str::FromStr,
-};
-use thiserror::Error;
-use tonic::{transport::Channel, Status};
+use std::str::FromStr;
+use tonic::transport::Channel;
 use tracing::error;
 
-#[derive(Debug, Error)]
-pub enum SessionError {
-    RegistrationFailed,
-    AuthenticationFailed,
-    ServerConnectionFailed,
-    LoginStartFailed,
-    SelectAuthenticateFailed,
-    SelectRegisterFailed,
-    AuthStartFailed,
-    RegisterStartFailed,
-    AuthFinishFailed,
-    RegisterFinishFailed,
-}
-
-impl Display for SessionError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
+use crate::error::DamsClientError;
 
 // TODO: password security, e.g. memory management, etc... #54
 #[derive(Debug, Default)]
@@ -57,7 +34,7 @@ impl ToString for Password {
 }
 
 impl FromStr for Password {
-    type Err = Error;
+    type Err = DamsClientError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Password(s.to_string()))
@@ -105,7 +82,7 @@ impl Session {
         rng: &mut T,
         user_id: &UserId,
         password: &Password,
-    ) -> Result<Self, SessionError> {
+    ) -> Result<Self, DamsClientError> {
         let result = Self::authenticate(client, rng, user_id, password).await;
         match result {
             Ok(result) => {
@@ -116,7 +93,7 @@ impl Session {
             }
             Err(e) => {
                 error!("{:?}", e);
-                Err(SessionError::AuthenticationFailed)
+                Err(DamsClientError::AuthenticationFailed)
             }
         }
     }
@@ -126,7 +103,7 @@ impl Session {
         rng: &mut T,
         user_id: &UserId,
         password: &Password,
-    ) -> Result<[u8; 64], Status> {
+    ) -> Result<[u8; 64], DamsClientError> {
         authenticate::handle(client, rng, user_id, password).await
     }
 
@@ -143,13 +120,13 @@ impl Session {
         rng: &mut T,
         user_id: &UserId,
         password: &Password,
-    ) -> Result<Self, SessionError> {
+    ) -> Result<Self, DamsClientError> {
         let result = register::handle(client, rng, user_id, password).await;
         match result {
             Ok(_) => Self::open(client, rng, user_id, password).await,
             Err(e) => {
                 error!("{:?}", e);
-                Err(SessionError::RegistrationFailed)
+                Err(DamsClientError::RegistrationFailed)
             }
         }
     }
@@ -157,35 +134,21 @@ impl Session {
     /// Close a session.
     ///
     /// Outputs: None, if successful.
-    pub fn close(self) -> Result<(), SessionError> {
+    pub fn close(self) -> Result<(), DamsClientError> {
         todo!()
     }
-}
-
-#[derive(Debug, Error)]
-#[allow(unused)]
-pub enum Error {
-    #[error("Session failed: {0:?}")]
-    SessionFailed(#[from] SessionError),
-
-    #[error("The request was rejected")]
-    TransactionApprovalRequestFailed,
 }
 
 /// Connect to the gRPC client and return it to the client app.
 ///
 /// The returned client should be passed to the remaining API functions.
-pub async fn connect(address: String) -> Result<DamsRpcClient<Channel>, anyhow::Error> {
+pub async fn connect(address: String) -> Result<DamsRpcClient<Channel>, DamsClientError> {
     // TODO #174 (design, implementation): determine whether the https link
     // is secure before passing to tonic
     if address.starts_with("https:") {
-        DamsRpcClient::connect(address)
-            .await
-            .map_err(|_| anyhow!("Could not connect to server"))
+        Ok(DamsRpcClient::connect(address).await?)
     } else {
-        Err(anyhow!(
-            "Tried to connect to a server without an https link"
-        ))
+        Err(DamsClientError::HttpNotAllowed)
     }
 }
 
@@ -203,7 +166,7 @@ pub fn create_digital_asset_key(
     blockchain: Blockchain,
     permission: impl UsePermission,
     restriction: impl UseRestriction,
-) -> Result<KeyInfo, Error> {
+) -> Result<KeyInfo, DamsClientError> {
     todo!()
 }
 
@@ -222,7 +185,7 @@ pub fn set_user_key_policy(
     user_id: UserId,
     key_id: KeyId,
     user_policy: UserPolicySpecification,
-) -> Result<(), Error> {
+) -> Result<(), DamsClientError> {
     todo!()
 }
 
@@ -246,7 +209,7 @@ pub fn set_user_key_policy(
 pub fn request_transaction_signature(
     session: Session,
     transaction_approval_request: TransactionApprovalRequest,
-) -> Result<TransactionSignature, Error> {
+) -> Result<TransactionSignature, DamsClientError> {
     todo!()
 }
 
@@ -262,7 +225,10 @@ pub fn request_transaction_signature(
 /// Output: If successful, returns the [`KeyInfo`] for every key belonging to
 /// the user.
 #[allow(unused)]
-pub fn retrieve_public_keys(session: Session, user_id: UserId) -> Result<Vec<KeyInfo>, Error> {
+pub fn retrieve_public_keys(
+    session: Session,
+    user_id: UserId,
+) -> Result<Vec<KeyInfo>, DamsClientError> {
     todo!()
 }
 
@@ -281,7 +247,7 @@ pub fn retrieve_public_key_by_id(
     session: Session,
     user_id: UserId,
     key_id: &KeyId,
-) -> Result<KeyInfo, Error> {
+) -> Result<KeyInfo, DamsClientError> {
     todo!()
 }
 
@@ -304,6 +270,6 @@ pub fn retrieve_audit_log(
     session: Session,
     user_id: UserId,
     key_id: Option<&KeyId>,
-) -> Result<String, Error> {
+) -> Result<String, DamsClientError> {
     todo!()
 }
