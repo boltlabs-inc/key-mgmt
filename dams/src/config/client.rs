@@ -4,6 +4,7 @@ use std::{
     path::{Path, PathBuf},
     str::FromStr,
 };
+use tonic::transport::Uri;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
@@ -31,6 +32,10 @@ impl Config {
             .map(|ref cert_path| config_dir.join(cert_path));
 
         Ok(config)
+    }
+
+    pub fn server_location(&self) -> Result<Uri, DamsError> {
+        Ok(Uri::from_str(self.server_location.as_str())?)
     }
 }
 

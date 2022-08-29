@@ -21,6 +21,8 @@ pub enum DamsError {
     Bincode(#[from] bincode::Error),
     #[error(transparent)]
     Io(#[from] std::io::Error),
+    #[error(transparent)]
+    InvalidUri(#[from] http::uri::InvalidUri),
     #[error("OPAQUE protocol error: {}", .0)]
     OpaqueProtocol(opaque_ke::errors::ProtocolError),
     #[error(transparent)]
@@ -45,6 +47,7 @@ impl From<DamsError> for Status {
             | ProjectDirs
             | Bincode(_)
             | Io(_)
+            | InvalidUri(_)
             | OpaqueProtocol(_)
             | Toml(_) => Status::internal(message),
         }

@@ -18,11 +18,12 @@ use dams::{
     transaction::{TransactionApprovalRequest, TransactionSignature},
     user::UserId,
 };
+use http::uri::Scheme;
 use rand::{CryptoRng, RngCore};
 use std::str::FromStr;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
-use tonic::transport::Channel;
+use tonic::transport::{Channel, Uri};
 use tracing::error;
 
 use crate::error::DamsClientError;
@@ -77,8 +78,8 @@ impl DamsClient {
     ///
     /// The returned client should be stored as part of the [`DamsClient`]
     /// state.
-    async fn connect(address: String) -> Result<DamsRpcClient<Channel>, DamsClientError> {
-        if address.starts_with("https:") {
+    async fn connect(address: Uri) -> Result<DamsRpcClient<Channel>, DamsClientError> {
+        if address.scheme() == Some(&Scheme::HTTPS) {
             Ok(DamsRpcClient::connect(address).await?)
         } else {
             Err(DamsClientError::HttpNotAllowed)
@@ -95,8 +96,8 @@ impl DamsClient {
         password: &Password,
         config: &Config,
     ) -> Result<Self, DamsClientError> {
-        let server_location = config.server_location.as_str();
-        let mut client = Self::connect(server_location.to_string()).await?;
+        let server_location = config.server_location()?;
+        let mut client = Self::connect(server_location).await?;
         Self::authenticate(client, rng, user_id, password, config).await
     }
 
@@ -139,8 +140,8 @@ impl DamsClient {
         password: &Password,
         config: &Config,
     ) -> Result<Self, DamsClientError> {
-        let server_location = config.server_location.as_str();
-        let mut client = Self::connect(server_location.to_string()).await?;
+        let server_location = config.server_location()?;
+        let mut client = Self::connect(server_location).await?;
         let mut client_channel = Self::create_channel(&mut client, ClientAction::Register).await?;
         let result = register::handle(client_channel, rng, user_id, password).await;
         match result {
