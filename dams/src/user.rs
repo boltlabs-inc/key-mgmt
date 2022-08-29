@@ -82,7 +82,7 @@ impl User {
         }
     }
 
-    pub fn into_server_registration(self) -> ServerRegistration<OpaqueCipherSuite> {
-        self.server_registration
+    pub fn into_parts(self) -> (ServerRegistration<OpaqueCipherSuite>, UserId) {
+        (self.server_registration, self.user_id)
     }
 }

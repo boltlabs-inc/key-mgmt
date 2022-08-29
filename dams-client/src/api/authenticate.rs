@@ -5,7 +5,7 @@ use dams::{
     channel::ClientChannel,
     config::opaque::OpaqueCipherSuite,
     types::authenticate::{client, server},
-    user::AccountName,
+    user::{AccountName, UserId},
 };
 use opaque_ke::{
     ClientLogin, ClientLoginFinishParameters, ClientLoginFinishResult, ClientLoginStartResult,
@@ -18,7 +18,7 @@ impl DamsClient {
         rng: &mut T,
         account_name: &AccountName,
         password: &Password,
-    ) -> Result<[u8; 64], DamsClientError> {
+    ) -> Result<([u8; 64], UserId), DamsClientError> {
         let client_login_start_result =
             ClientLogin::<OpaqueCipherSuite>::start(rng, password.as_bytes())?;
 
@@ -36,7 +36,12 @@ impl DamsClient {
         )
         .await?;
 
-        Ok(client_login_finish_result.session_key.into())
+        let session_key = client_login_finish_result.session_key.into();
+
+        // Get user id
+        let user_id = retrieve_user_id(&mut channel, &session_key).await?;
+
+        Ok((session_key, user_id))
     }
 }
 
@@ -82,4 +87,16 @@ async fn authenticate_finish(
     } else {
         Err(DamsClientError::ServerReturnedFailure)
     }
+}
+
+/// Retrieve the authenticated user ID from the server.
+///
+/// NB: The unused `_session_key` will have to be passed to receive in order to
+/// check authentication.
+async fn retrieve_user_id(
+    channel: &mut ClientChannel,
+    _session_key: &[u8; 64],
+) -> Result<UserId, DamsClientError> {
+    let received_id: server::SendUserId = channel.receive().await?;
+    Ok(received_id.user_id)
 }

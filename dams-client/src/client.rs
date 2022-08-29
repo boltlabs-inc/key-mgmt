@@ -111,17 +111,16 @@ impl DamsClient {
         let result =
             Self::handle_authentication(client_channel, &mut rng, account_name, password).await;
         match result {
-            Ok(result) => {
-                // TODO: receive User ID over authenticated channel (under session_key)
-                let user_id = todo!();
-                let session = DamsClient {
-                    session_key: result,
+            Ok((session_key, user_id)) => {
+                // TODO #186: receive User ID over authenticated channel (under session_key)
+                let client = DamsClient {
+                    session_key,
                     config: config.clone(),
                     tonic_client: client,
                     rng: Arc::new(Mutex::new(rng)),
                     user_id,
                 };
-                Ok(session)
+                Ok(client)
             }
             Err(e) => {
                 error!("{:?}", e);

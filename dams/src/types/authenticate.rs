@@ -4,14 +4,14 @@ pub mod client {
     use serde::{Deserialize, Serialize};
 
     #[derive(Debug, Deserialize, Serialize)]
-    /// pass user ID and registration-start message from OPAQUE
+    /// Pass account name and registration-start message from OPAQUE.
     pub struct AuthenticateStart {
         pub credential_request: CredentialRequest<OpaqueCipherSuite>,
         pub account_name: AccountName,
     }
 
     #[derive(Debug, Deserialize, Serialize)]
-    /// pass user ID and registration-finish message from OPAQUE
+    /// Pass account name and registration-finish message from OPAQUE.
     pub struct AuthenticateFinish {
         pub credential_finalization: CredentialFinalization<OpaqueCipherSuite>,
         pub account_name: AccountName,
@@ -21,21 +21,32 @@ pub mod client {
 }
 
 pub mod server {
-    use crate::{config::opaque::OpaqueCipherSuite, impl_message_conversion};
+    use crate::{config::opaque::OpaqueCipherSuite, impl_message_conversion, user::UserId};
     use opaque_ke::CredentialResponse;
     use serde::{Deserialize, Serialize};
 
     #[derive(Debug, Deserialize, Serialize)]
-    /// Check if user exists and return successful if not
+    /// Check if user exists and return successful if not.
     pub struct AuthenticateStart {
         pub credential_response: CredentialResponse<OpaqueCipherSuite>,
     }
 
     #[derive(Debug, Deserialize, Serialize)]
-    /// return true if successful
+    /// Return true if successful.
     pub struct AuthenticateFinish {
         pub success: bool,
     }
 
+    #[derive(Debug, Deserialize, Serialize)]
+    /// Return authenticated user id if authentication worked.
+    pub struct SendUserId {
+        pub user_id: UserId,
+    }
+
     impl_message_conversion!(AuthenticateStart, AuthenticateFinish);
+
+    // TODO #186: This struct should be authenticated! Update message conversion to
+    // authenticate on serialization and check authentication on
+    // deserialization.
+    impl_message_conversion!(SendUserId);
 }

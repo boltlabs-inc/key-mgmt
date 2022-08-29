@@ -8,6 +8,7 @@ use dams::{
         authenticate::{client, server},
         Message, MessageStream,
     },
+    user::UserId,
 };
 use opaque_ke::{ServerLogin, ServerLoginStartParameters, ServerLoginStartResult};
 use tokio_stream::wrappers::ReceiverStream;
@@ -25,8 +26,9 @@ impl Authenticate {
         let (mut channel, rx) = ServerChannel::create(request.into_inner());
 
         let _ = tokio::spawn(async move {
-            let login_start_result = authenticate_start(&mut channel, &context).await?;
+            let (login_start_result, user_id) = authenticate_start(&mut channel, &context).await?;
             authenticate_finish(&mut channel, login_start_result).await?;
+            send_user_id(&mut channel, user_id).await?;
 
             Ok::<(), DamsServerError>(())
         });
@@ -40,7 +42,7 @@ impl Authenticate {
 async fn authenticate_start(
     channel: &mut ServerChannel,
     context: &Context,
-) -> Result<ServerLoginStartResult<OpaqueCipherSuite>, DamsServerError> {
+) -> Result<(ServerLoginStartResult<OpaqueCipherSuite>, UserId), DamsServerError> {
     // Receive start message from client
     let start_message: client::AuthenticateStart = channel.receive().await?;
 
@@ -51,10 +53,10 @@ async fn authenticate_start(
 
     // Check that user with corresponding UserId exists and get their
     // server_registration
-    let server_registration =
+    let (server_registration, user_id) =
         match User::find_user(&context.db, &start_message.account_name).await? {
-            Some(user) => user.into_server_registration(),
-            None => return Err(DamsServerError::UserIdDoesNotExist),
+            Some(user) => user.into_parts(),
+            None => return Err(DamsServerError::AccountNameDoesNotExist),
         };
 
     let server_login_start_result = {
@@ -77,7 +79,7 @@ async fn authenticate_start(
     // Send response to client
     channel.send(reply).await?;
 
-    Ok(server_login_start_result)
+    Ok((server_login_start_result, user_id))
 }
 
 async fn authenticate_finish(
@@ -93,6 +95,14 @@ async fn authenticate_finish(
     let reply = server::AuthenticateFinish { success: true };
 
     // Send response to client
+    channel.send(reply).await?;
+    Ok(())
+}
+
+/// Returns the server-side start message along with a login result that will be
+/// used in the finish step.
+async fn send_user_id(channel: &mut ServerChannel, user_id: UserId) -> Result<(), DamsServerError> {
+    let reply = server::SendUserId { user_id };
     channel.send(reply).await?;
     Ok(())
 }

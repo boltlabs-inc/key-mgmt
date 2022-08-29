@@ -7,10 +7,10 @@ pub enum DamsServerError {
     MissingService,
 
     // Protocol errors
-    #[error("UserID already exists")]
-    UserIdAlreadyExists,
-    #[error("UserID does not exist")]
-    UserIdDoesNotExist,
+    #[error("Account name already exists")]
+    AccountNameAlreadyExists,
+    #[error("Account name does not exist")]
+    AccountNameDoesNotExist,
 
     // Wrapped errors
     #[error(transparent)]
