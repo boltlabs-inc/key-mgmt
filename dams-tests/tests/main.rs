@@ -7,10 +7,7 @@ use crate::{
 use common::{get_logs, LogType, Party};
 
 use dams::{config::client::Config, user::UserId};
-use dams_client::{
-    api::{DamsClient, Password},
-    DamsClientError,
-};
+use dams_client::{client::Password, DamsClient, DamsClientError};
 use dams_key_server::database;
 use std::{fs::OpenOptions, str::FromStr};
 use thiserror::Error;

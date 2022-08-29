@@ -1,3 +1,7 @@
+use crate::{
+    client::{DamsClient, Password},
+    DamsClientError,
+};
 use dams::{
     channel::ClientChannel,
     config::opaque::OpaqueCipherSuite,
@@ -10,22 +14,22 @@ use opaque_ke::{
 use rand::{CryptoRng, RngCore};
 use tonic::Response;
 
-use crate::{api::Password, error::DamsClientError};
+impl DamsClient {
+    pub(crate) async fn handle_registration<T: CryptoRng + RngCore>(
+        mut channel: ClientChannel,
+        rng: &mut T,
+        user_id: &UserId,
+        password: &Password,
+    ) -> Result<Response<server::RegisterFinish>, DamsClientError> {
+        // Handle start step
+        let client_start_result = register_start(&mut channel, rng, user_id, password).await?;
 
-pub(crate) async fn handle<T: CryptoRng + RngCore>(
-    mut channel: ClientChannel,
-    rng: &mut T,
-    user_id: &UserId,
-    password: &Password,
-) -> Result<Response<server::RegisterFinish>, DamsClientError> {
-    // Handle start step
-    let client_start_result = register_start(&mut channel, rng, user_id, password).await?;
+        // Handle finish step
+        let server_finish_result =
+            register_finish(&mut channel, rng, user_id, password, client_start_result).await?;
 
-    // Handle finish step
-    let server_finish_result =
-        register_finish(&mut channel, rng, user_id, password, client_start_result).await?;
-
-    Ok(Response::new(server_finish_result))
+        Ok(Response::new(server_finish_result))
+    }
 }
 
 async fn register_start<T: CryptoRng + RngCore>(
