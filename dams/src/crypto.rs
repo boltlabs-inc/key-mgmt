@@ -276,7 +276,21 @@ impl MasterKey {
     /// Encrypt the given [`StorageKey`] under the [`MasterKey`] using an
     /// AEAD scheme.
     fn encrypt_storage_key(self, storage_key: StorageKey) -> Encrypted<StorageKey> {
-        todo!()
+        if cfg!(feature = "broken-crypto") {
+            Encrypted {
+                ciphertext: Vec::new(),
+                associated_data: AssociatedData::default(),
+                nonce: chacha20poly1305::Nonce::default(),
+                original_type: PhantomData,
+            }
+        } else {
+            todo!()
+        }
+    }
+
+    #[cfg(feature = "broken-crypto")]
+    pub fn new(rng: &mut (impl CryptoRng + RngCore)) -> Self {
+        Self(EncryptionKey::new(rng))
     }
 }
 
@@ -646,5 +660,13 @@ mod test {
     fn create_and_encrypt_secret_not_implemented() {
         let mut rng = rand::thread_rng();
         let _ = StorageKey.create_and_encrypt_secret(&mut rng, &UserId::default(), &KeyId);
+    }
+
+    #[cfg(feature = "broken-crypto")]
+    #[test]
+    fn test_broken_storage_key (){
+        let mut rng = rand::thread_rng();
+        let master_key = MasterKey::new(&mut rng);
+        let _storage_key = master_key.encrypt_storage_key(StorageKey);
     }
 }

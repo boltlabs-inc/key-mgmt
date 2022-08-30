@@ -5,6 +5,11 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+# Use this flag for temporary code that does not properly implement cryptography
+# but is still useful for testing purposes.
+broken-crypto = []
+
 [dependencies]
 argon2 = "0.4"
 async-trait = "0"
