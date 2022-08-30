@@ -3,9 +3,14 @@
 //! This database will hold information on users and the secret material
 //! they have stored in the key server.
 
-use mongodb::{options::ClientOptions, Client, Database};
+use dams::user::User;
+use mongodb::{
+    bson::doc,
+    options::{ClientOptions, IndexOptions},
+    Client, Database, IndexModel,
+};
 
-use crate::error::DamsServerError;
+use crate::{constants, error::DamsServerError};
 
 pub(crate) mod user;
 
@@ -21,5 +26,17 @@ pub async fn connect_to_mongo(
     let client = Client::with_options(client_options)?;
     // Get a handle to the database
     let db = client.database(db_name);
+
+    // Enforce that the user ID and account name are unique within the database
+    let options = IndexOptions::builder().unique(true).build();
+    let model = IndexModel::builder()
+        .keys(doc! {"user_id": 1, "account_name": 1})
+        .options(options)
+        .build();
+    let _created_index = db
+        .collection::<User>(constants::USERS)
+        .create_index(model, None)
+        .await?;
+
     Ok(db)
 }

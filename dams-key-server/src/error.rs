@@ -7,8 +7,8 @@ pub enum DamsServerError {
     MissingService,
 
     // Protocol errors
-    #[error("Account name already exists")]
-    AccountNameAlreadyExists,
+    #[error("Account already exists")]
+    AccountAlreadyExists,
     #[error("Account name does not exist")]
     AccountNameDoesNotExist,
 

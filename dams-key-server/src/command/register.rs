@@ -55,7 +55,7 @@ async fn register_start(
     let user = User::find_user(&context.db, &start_message.account_name).await?;
 
     if user.is_some() {
-        Err(DamsServerError::AccountNameAlreadyExists)
+        Err(DamsServerError::AccountAlreadyExists)
     } else {
         // Registration can continue if user ID doesn't exist yet
         let server_registration_start_result = ServerRegistration::<OpaqueCipherSuite>::start(
@@ -86,20 +86,28 @@ async fn register_finish(
     let server_registration =
         ServerRegistration::<OpaqueCipherSuite>::finish(finish_message.registration_upload);
 
-    // Create a user ID for the new client
-    let user_id = {
-        let mut rng = context.rng.lock().await;
-        UserId::new(rng.deref_mut())
-    };
+    loop {
+        // Create a user ID for the new client
+        let user_id = {
+            let mut rng = context.rng.lock().await;
+            UserId::new(rng.deref_mut())
+        };
 
-    // add the new user to the DB
-    let _object_id = User::create_user(
-        &context.db,
-        &user_id,
-        &finish_message.account_name,
-        server_registration,
-    )
-    .await?;
+        // If the user ID is fresh, create the new user
+        if User::find_user_by_id(&context.db, &user_id)
+            .await?
+            .is_none()
+        {
+            let _object_id = User::create_user(
+                &context.db,
+                &user_id,
+                &finish_message.account_name,
+                &server_registration,
+            )
+            .await?;
+            break;
+        }
+    }
 
     // reply with the success:true if successful
     let reply = server::RegisterFinish { success: true };

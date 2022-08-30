@@ -134,12 +134,13 @@ impl DamsClient {
     /// This only needs to be called once per user; future sessions can be
     /// created with [`DamsClient::authenticated_client()`].
     ///
-    /// Output: If successful, returns a [`DamsClient`].
+    /// Output: Returns Ok if successful. To perform further operations, use
+    /// [`Self::authenticated_client()`].
     pub async fn register(
         account_name: &AccountName,
         password: &Password,
         config: &Config,
-    ) -> Result<Self, DamsClientError> {
+    ) -> Result<(), DamsClientError> {
         let mut rng = StdRng::from_entropy();
         let server_location = config.server_location()?;
         let mut client = Self::connect(server_location).await?;
@@ -147,7 +148,10 @@ impl DamsClient {
         let result =
             Self::handle_registration(client_channel, &mut rng, account_name, password).await;
         match result {
-            Ok(response) => Self::authenticate(client, rng, account_name, password, config).await,
+            Ok(response) => {
+                Self::authenticate(client, rng, account_name, password, config).await;
+                Ok(())
+            }
             Err(e) => {
                 error!("{:?}", e);
                 Err(DamsClientError::RegistrationFailed)

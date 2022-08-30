@@ -205,7 +205,6 @@ impl Test {
                 Register(account_name, password) => {
                     DamsClient::register(account_name, password, config)
                         .await
-                        .map(|_| ())
                         .map_err(|e| e.into())
                 }
                 Authenticate(account_name, password) => {

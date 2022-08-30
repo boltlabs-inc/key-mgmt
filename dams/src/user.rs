@@ -10,8 +10,7 @@ use rand::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 use std::{convert::Infallible, fmt::Display, str::FromStr};
 
-/// Unique ID for a user. Assumption: this will be derived from an ID generated
-/// by the Service Provider.
+/// Unique ID for a user.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct UserId(Box<[u8; 16]>);
 
