@@ -1,7 +1,9 @@
+use crate::client::{DamsClient, Password};
+
+use crate::DamsClientError;
 use dams::{
     channel::ClientChannel,
     config::opaque::OpaqueCipherSuite,
-    dams_rpc::dams_rpc_client::DamsRpcClient,
     types::authenticate::{client, server},
     user::UserId,
 };
@@ -9,46 +11,33 @@ use opaque_ke::{
     ClientLogin, ClientLoginFinishParameters, ClientLoginFinishResult, ClientLoginStartResult,
 };
 use rand::{CryptoRng, RngCore};
-use tokio::sync::mpsc;
-use tokio_stream::wrappers::ReceiverStream;
-use tonic::transport::Channel;
 
-use crate::{api::Password, error::DamsClientError};
+impl DamsClient {
+    pub(crate) async fn handle_authentication<T: CryptoRng + RngCore>(
+        mut channel: ClientChannel,
+        rng: &mut T,
+        user_id: &UserId,
+        password: &Password,
+    ) -> Result<[u8; 64], DamsClientError> {
+        let client_login_start_result =
+            ClientLogin::<OpaqueCipherSuite>::start(rng, password.as_bytes())?;
 
-pub(crate) async fn handle<T: CryptoRng + RngCore>(
-    client: &mut DamsRpcClient<Channel>,
-    rng: &mut T,
-    user_id: &UserId,
-    password: &Password,
-) -> Result<[u8; 64], DamsClientError> {
-    // Create channel to send messages to server after connection is established via
-    // RPC
-    let (tx, rx) = mpsc::channel(2);
-    let stream = ReceiverStream::new(rx);
+        // Handle start step
+        let server_start_result =
+            authenticate_start(&mut channel, &client_login_start_result, user_id).await?;
 
-    // Server returns its own channel that is uses to send responses
-    let server_response = client.authenticate(stream).await?.into_inner();
+        // Handle finish step
+        let client_login_finish_result = authenticate_finish(
+            &mut channel,
+            user_id,
+            password,
+            client_login_start_result,
+            server_start_result,
+        )
+        .await?;
 
-    let mut channel = ClientChannel::create(tx, server_response);
-
-    let client_login_start_result =
-        ClientLogin::<OpaqueCipherSuite>::start(rng, password.as_bytes())?;
-
-    // Handle start step
-    let server_start_result =
-        authenticate_start(&mut channel, &client_login_start_result, user_id).await?;
-
-    // Handle finish step
-    let client_login_finish_result = authenticate_finish(
-        &mut channel,
-        user_id,
-        password,
-        client_login_start_result,
-        server_start_result,
-    )
-    .await?;
-
-    Ok(client_login_finish_result.session_key.into())
+        Ok(client_login_finish_result.session_key.into())
+    }
 }
 
 async fn authenticate_start(

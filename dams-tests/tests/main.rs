@@ -6,16 +6,11 @@ use crate::{
 };
 use common::{get_logs, LogType, Party};
 
-use dams::{dams_rpc::dams_rpc_client::DamsRpcClient, user::UserId};
-use dams_client::{
-    api::{Password, Session},
-    DamsClientError,
-};
+use dams::{config::client::Config, user::UserId};
+use dams_client::{client::Password, DamsClient, DamsClientError};
 use dams_key_server::database;
-use rand::{prelude::StdRng, SeedableRng};
 use std::{fs::OpenOptions, str::FromStr};
 use thiserror::Error;
-use tonic::transport::Channel;
 
 #[tokio::test]
 pub async fn integration_tests() {
@@ -29,16 +24,13 @@ pub async fn integration_tests() {
     .expect("Unable to connect to Mongo");
     let _ = db.create_collection("users", None).await;
     let server_future = common::setup(db.clone(), server_config).await;
-    let mut rng = StdRng::from_entropy();
+    let client_config = common::client_test_config().await;
 
     // Run every test, printing out details if it fails
     let tests = tests().await;
     println!("Executing {} tests", tests.len());
     let mut results = Vec::with_capacity(tests.len());
 
-    let mut client = dams_client::api::connect(format!("https://{}:1113", common::SERVER_ADDRESS))
-        .await
-        .expect("Could not return a client");
     // Clear error log
     OpenOptions::new()
         .write(true)
@@ -47,7 +39,7 @@ pub async fn integration_tests() {
         .unwrap_or_else(|e| panic!("Failed to clear error file at start: {:?}", e));
     for test in tests {
         eprintln!("\n\ntest integration_tests::{} ... ", test.name);
-        let result = test.execute(&mut client, &mut rng).await;
+        let result = test.execute(&client_config).await;
         if let Err(error) = &result {
             eprintln!("failed with error: {:?}", error)
         } else {
@@ -196,21 +188,19 @@ struct Test {
 }
 
 impl Test {
-    async fn execute(
-        &self,
-        client: &mut DamsRpcClient<Channel>,
-        rng: &mut StdRng,
-    ) -> Result<(), anyhow::Error> {
+    async fn execute(&self, config: &Config) -> Result<(), anyhow::Error> {
         for (op, expected_outcome) in &self.operations {
             let outcome: Result<(), anyhow::Error> = match op {
-                Register(user_id, password) => Session::register(client, rng, user_id, password)
+                Register(user_id, password) => DamsClient::register(user_id, password, config)
                     .await
                     .map(|_| ())
                     .map_err(|e| e.into()),
-                Authenticate(user_id, password) => Session::open(client, rng, user_id, password)
-                    .await
-                    .map(|_| ())
-                    .map_err(|e| e.into()),
+                Authenticate(user_id, password) => {
+                    DamsClient::authenticated_client(user_id, password, config)
+                        .await
+                        .map(|_| ())
+                        .map_err(|e| e.into())
+                }
             };
 
             // Get error logs for each party - we make the following assumptions:

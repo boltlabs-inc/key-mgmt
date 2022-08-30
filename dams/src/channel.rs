@@ -34,7 +34,7 @@ impl<T> Channel<T> {
                 let result = R::try_from(message).map_err(|_| ChannelError::InvalidMessage)?;
                 Ok(result)
             }
-            None => Err(ChannelError::NoMessageReceived)?,
+            None => Err(ChannelError::NoMessageReceived),
         }
     }
 

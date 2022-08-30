@@ -1,7 +1,10 @@
+use crate::{
+    client::{DamsClient, Password},
+    DamsClientError,
+};
 use dams::{
     channel::ClientChannel,
     config::opaque::OpaqueCipherSuite,
-    dams_rpc::dams_rpc_client::DamsRpcClient,
     types::register::{client, server},
     user::UserId,
 };
@@ -9,35 +12,24 @@ use opaque_ke::{
     ClientRegistration, ClientRegistrationFinishParameters, ClientRegistrationStartResult,
 };
 use rand::{CryptoRng, RngCore};
-use tokio::sync::mpsc;
-use tokio_stream::wrappers::ReceiverStream;
-use tonic::{transport::Channel, Response};
+use tonic::Response;
 
-use crate::{api::Password, error::DamsClientError};
+impl DamsClient {
+    pub(crate) async fn handle_registration<T: CryptoRng + RngCore>(
+        mut channel: ClientChannel,
+        rng: &mut T,
+        user_id: &UserId,
+        password: &Password,
+    ) -> Result<Response<server::RegisterFinish>, DamsClientError> {
+        // Handle start step
+        let client_start_result = register_start(&mut channel, rng, user_id, password).await?;
 
-pub(crate) async fn handle<T: CryptoRng + RngCore>(
-    client: &mut DamsRpcClient<Channel>,
-    rng: &mut T,
-    user_id: &UserId,
-    password: &Password,
-) -> Result<Response<server::RegisterFinish>, DamsClientError> {
-    // Create channel to send messages to server
-    let (tx, rx) = mpsc::channel(2);
-    let stream = ReceiverStream::new(rx);
+        // Handle finish step
+        let server_finish_result =
+            register_finish(&mut channel, rng, user_id, password, client_start_result).await?;
 
-    // Server returns its own channel that is uses to send responses
-    let server_receiver = client.register(stream).await?.into_inner();
-
-    let mut channel = ClientChannel::create(tx, server_receiver);
-
-    // Handle start step
-    let client_start_result = register_start(&mut channel, rng, user_id, password).await?;
-
-    // Handle finish step
-    let server_finish_result =
-        register_finish(&mut channel, rng, user_id, password, client_start_result).await?;
-
-    Ok(Response::new(server_finish_result))
+        Ok(Response::new(server_finish_result))
+    }
 }
 
 async fn register_start<T: CryptoRng + RngCore>(
