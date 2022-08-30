@@ -102,10 +102,7 @@ async fn register_finish(
     .await?;
 
     // reply with the success:true if successful
-    let reply = server::RegisterFinish {
-        success: true,
-        user_id,
-    };
+    let reply = server::RegisterFinish { success: true };
 
     // Send response to client
     channel.send(reply).await?;

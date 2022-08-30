@@ -21,7 +21,7 @@ pub mod client {
 }
 
 pub mod server {
-    use crate::{config::opaque::OpaqueCipherSuite, impl_message_conversion, user::UserId};
+    use crate::{config::opaque::OpaqueCipherSuite, impl_message_conversion};
     use opaque_ke::RegistrationResponse;
     use serde::{Deserialize, Serialize};
 
@@ -35,7 +35,6 @@ pub mod server {
     /// Return true if successful
     pub struct RegisterFinish {
         pub success: bool,
-        pub user_id: UserId,
     }
 
     impl_message_conversion!(RegisterStart, RegisterFinish);
