@@ -1,9 +1,8 @@
 use std::{
-    collections::HashMap,
     fs::{self, File},
-    io::{Read, Write},
-    path::Path,
+    io::Read,
     process::Command,
+    str::FromStr,
     sync::Mutex,
 };
 
@@ -15,8 +14,6 @@ use tracing_futures::Instrument;
 
 use dams::{timeout::WithTimeout, TestLogs};
 
-pub const CLIENT_CONFIG: &str = "tests/gen/TestClient.toml";
-pub const SERVER_CONFIG: &str = "tests/gen/TestServer.toml";
 pub const ERROR_FILENAME: &str = "tests/gen/errors.log";
 
 pub const SERVER_ADDRESS: &str = "127.0.0.1";
@@ -26,7 +23,6 @@ type ServerFuture = JoinHandle<Result<(), dams_key_server::DamsServerError>>;
 
 /// Set of processes that run during a test.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[allow(unused)]
 pub enum Party {
     Client,
     Server,
@@ -41,8 +37,12 @@ impl Party {
     }
 }
 
-#[allow(unused)]
-pub async fn setup(db: Database, server_config: dams::config::server::Config) -> ServerFuture {
+pub async fn setup(_db: Database, server_config: dams::config::server::Config) -> ServerFuture {
+    let gen_path = std::path::Path::new("tests/gen");
+    if !gen_path.exists() {
+        fs::create_dir(gen_path).expect("Unable to create directory tests/gen");
+    }
+
     // Create self-signed SSL certificate in the generated directory
     Command::new("../dev/generate-certificates")
         .arg("tests/gen")
@@ -94,7 +94,6 @@ pub async fn setup(db: Database, server_config: dams::config::server::Config) ->
     server_handle
 }
 
-#[allow(unused)]
 pub async fn teardown(server_future: ServerFuture, db: Database) {
     // Ignore the result because we expect it to be an `Expired` error
     let _result = server_future.with_timeout(Duration::from_secs(1)).await;
@@ -103,41 +102,29 @@ pub async fn teardown(server_future: ServerFuture, db: Database) {
     let _ = fs::remove_dir_all("tests/gen/");
 
     // Drop the test DB
-    db.drop(None).await;
+    let _ = db.drop(None).await;
 }
 
 /// Encode the customizable fields of the keymgmt client Config struct for
 /// testing.
 async fn client_test_config() -> dams::config::client::Config {
-    let m = HashMap::from([("trust_certificate", "\"localhost.crt\"")]);
+    let config_str = r#"
+        trust_certificate = "tests/gen/localhost.crt"
+    "#;
 
-    let contents = m.into_iter().fold("".to_string(), |acc, (key, value)| {
-        format!("{}{} = {}\n", acc, key, value)
-    });
-
-    write_config_file(CLIENT_CONFIG, contents);
-
-    dams::config::client::Config::load(CLIENT_CONFIG)
-        .await
-        .expect("Failed to load client config")
+    dams::config::client::Config::from_str(config_str).expect("Failed to load client config")
 }
 
 /// Encode the customizable fields of the keymgmt server Config struct for
 /// testing.
 pub async fn server_test_config() -> dams::config::server::Config {
-    let gen_path = Path::new("tests/gen");
-    if !gen_path.exists() {
-        fs::create_dir(gen_path).expect("Unable to create directory tests/gen");
-    }
-
-    // Format service string and database string into full config
     let config_str = format!(
         r#"
         [[service]]
         address = "{}"
         port = 1113
-        private_key = "localhost.key"
-        certificate = "localhost.crt"
+        private_key = "tests/gen/localhost.key"
+        certificate = "tests/gen/localhost.crt"
         opaque_path = "tests/gen/opaque"
         opaque_server_key = "tests/gen/opaque/server_setup"
 
@@ -147,23 +134,8 @@ pub async fn server_test_config() -> dams::config::server::Config {
     "#,
         SERVER_ADDRESS
     );
-    write_config_file(SERVER_CONFIG, config_str);
 
-    dams::config::server::Config::load(SERVER_CONFIG)
-        .await
-        .expect("failed to load server config")
-}
-
-/// Write out the configuration in `contents` to the file at `path`.
-fn write_config_file(path: &str, contents: String) {
-    std::fs::OpenOptions::new()
-        .write(true)
-        .create(true)
-        .truncate(true)
-        .open(path)
-        .unwrap_or_else(|_| panic!("Could not open config file: {}", path))
-        .write_all(contents.as_bytes())
-        .unwrap_or_else(|_| panic!("Failed to write to config file: {}", path));
+    dams::config::server::Config::from_str(&config_str).expect("failed to load server config")
 }
 
 #[allow(unused)]
@@ -174,7 +146,6 @@ pub enum LogType {
     Warn,
 }
 
-#[allow(unused)]
 impl LogType {
     pub fn to_str(self) -> &'static str {
         match self {
@@ -186,7 +157,6 @@ impl LogType {
 }
 
 /// Get any errors from the log file, filtered by party and log type.
-#[allow(unused)]
 pub fn get_logs(log_type: LogType, party: Party) -> Result<String, anyhow::Error> {
     let mut file = File::open(ERROR_FILENAME)?;
     let mut logs = String::new();
@@ -204,7 +174,6 @@ pub fn get_logs(log_type: LogType, party: Party) -> Result<String, anyhow::Error
 ///
 /// This checks the log every 1 second; refactor if greater granularity is
 /// needed.
-#[allow(unused)]
 pub async fn await_log(party: Party, log: TestLogs) -> Result<(), anyhow::Error> {
     loop {
         let result = get_logs(LogType::Info, party);

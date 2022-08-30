@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::{
     path::{Path, PathBuf},
+    str::FromStr,
     time::Duration,
 };
 
@@ -26,7 +27,8 @@ pub struct Config {
 
 impl Config {
     pub async fn load(config_path: impl AsRef<Path>) -> Result<Config, DamsError> {
-        let mut config: Config = toml::from_str(&tokio::fs::read_to_string(&config_path).await?)?;
+        let config_string = tokio::fs::read_to_string(&config_path).await?;
+        let mut config = Self::from_str(&config_string)?;
 
         // Directory containing the configuration path
         let config_dir = config_path
@@ -43,6 +45,15 @@ impl Config {
     }
 }
 
+impl FromStr for Config {
+    type Err = DamsError;
+
+    fn from_str(config_string: &str) -> Result<Self, Self::Err> {
+        let config: Config = toml::from_str(config_string)?;
+        Ok(config)
+    }
+}
+
 impl Default for Config {
     fn default() -> Self {
         Self {
@@ -53,5 +64,65 @@ impl Default for Config {
             max_note_length: 0,
             trust_certificate: Some(PathBuf::from("tests/gen/localhost.crt")),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn config_from_str() {
+        let config_str = r#"
+            connection_timeout = "20s"
+            max_pending_connection_retries = 10
+            message_timeout = "20s"
+            max_message_length = 100
+            max_note_length = 100
+        "#;
+
+        // Destructure so the test breaks when fields are added
+        let Config {
+            connection_timeout,
+            max_pending_connection_retries,
+            message_timeout,
+            max_message_length,
+            max_note_length,
+            trust_certificate,
+        } = Config::from_str(config_str).unwrap();
+
+        assert_eq!(connection_timeout, Some(Duration::from_secs(20)));
+        assert_eq!(max_pending_connection_retries, 10);
+        assert_eq!(message_timeout, Duration::from_secs(20));
+        assert_eq!(max_message_length, 100);
+        assert_eq!(max_note_length, 100);
+        assert_eq!(trust_certificate, None);
+    }
+
+    #[test]
+    fn config_defaults() {
+        let config_str = r#"
+            trust_certificate = "tests/gen/localhost.crt"
+        "#;
+
+        // Destructure so the test breaks when fields are added
+        let Config {
+            connection_timeout,
+            max_pending_connection_retries,
+            message_timeout,
+            max_message_length,
+            max_note_length,
+            trust_certificate,
+        } = Config::from_str(config_str).unwrap();
+
+        assert_eq!(connection_timeout, Some(Duration::from_secs(60)));
+        assert_eq!(max_pending_connection_retries, 4);
+        assert_eq!(message_timeout, Duration::from_secs(60));
+        assert_eq!(max_message_length, 1024 * 16);
+        assert_eq!(max_note_length, 1024 * 8);
+        assert_eq!(
+            trust_certificate,
+            Some(PathBuf::from("tests/gen/localhost.crt"))
+        );
     }
 }
