@@ -20,7 +20,7 @@ use dams::{
 /// Generate a new, distributed digital asset key with the given use
 /// parameters for the [`UserId`], and compatible with the specified blockchain.
 ///
-/// The [`UserId`] must be the same user who opened the [`DamsClient`].
+/// The [`UserId`] must be the same user who opened the [`crate::DamsClient`].
 ///
 /// Output: If successful, returns the [`KeyInfo`] describing the newly created
 /// key.
@@ -40,7 +40,7 @@ pub fn create_digital_asset_key(
 /// [`SelfCustodial`](dams::keys::SelfCustodial) and
 /// [`Delegated`](dams::keys::Delegated) key types. The [`KeyId`] must
 /// correspond to a key owned by the [`UserId`], and the [`UserId`] must
-/// match the user authenticated in the [`DamsClient`].
+/// match the user authenticated in the [`crate::DamsClient`].
 ///
 /// Output: None, if successful.
 #[allow(unused)]
@@ -56,12 +56,12 @@ pub fn set_user_key_policy(
 ///
 /// Among the parameters in the [`TransactionApprovalRequest`], the [`KeyId`]
 /// must correspond to a key owned by the [`UserId`], and the [`UserId`] must
-/// match the user authenticated in the [`DamsClient`].
+/// match the user authenticated in the [`crate::DamsClient`].
 ///
 /// Assumption: A [`TransactionApprovalRequest`] originates either with the
 /// asset owner or a key fiduciary. This is cryptographically enforced with
-/// an authenticated [`DamsClient`] between the key server and one of the asset
-/// owner or a key fiduciary. This request will fail if the calling party
+/// an authenticated [`crate::DamsClient`] between the key server and one of the
+/// asset owner or a key fiduciary. This request will fail if the calling party
 /// is not from one of those entities.
 ///
 /// Output: If successful, returns a [`TransactionSignature`] as specified in
@@ -82,7 +82,7 @@ pub fn request_transaction_signature(
 /// machine other than the key server.
 ///
 /// The [`UserId`] must match the asset owner authenticated in the
-/// [`DamsClient`]. This function cannot be used to retrieve keys for a
+/// [`crate::DamsClient`]. This function cannot be used to retrieve keys for a
 /// different user.
 ///
 /// Output: If successful, returns the [`KeyInfo`] for every key belonging to
@@ -99,8 +99,8 @@ pub fn retrieve_public_keys(user_id: UserId) -> Result<Vec<KeyInfo>, DamsClientE
 /// machine other than the key server.
 ///
 /// The [`UserId`] must match the asset owner authenticated in the
-/// [`DamsClient`], and the [`KeyId`] must correspond to a key owned by the
-/// [`UserId`].
+/// [`crate::DamsClient`], and the [`KeyId`] must correspond to a key owned by
+/// the [`UserId`].
 ///
 /// Output: If successful, returns the [`KeyInfo`] for the requested key.
 #[allow(unused)]
@@ -121,8 +121,8 @@ pub fn retrieve_public_key_by_id(
 /// (if relevant), and any other relevant details.
 ///
 /// The [`UserId`] must match the asset owner authenticated in the
-/// [`DamsClient`], and if specified, the [`KeyId`] must correspond to a key
-/// owned by the [`UserId`].
+/// [`crate::DamsClient`], and if specified, the [`KeyId`] must correspond to a
+/// key owned by the [`UserId`].
 ///
 /// Output: if successful, returns a [`String`] representation of the logs.
 #[allow(unused)]

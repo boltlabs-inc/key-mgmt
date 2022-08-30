@@ -121,7 +121,7 @@ impl DamsClient {
     /// Register a new user who has not yet interacted with the service.
     ///
     /// This only needs to be called once per user; future sessions can be
-    /// created with [`DamsClient::open()`].
+    /// created with [`DamsClient::authenticated_client()`].
     ///
     /// Output: If successful, returns a [`DamsClient`].
     pub async fn register(
