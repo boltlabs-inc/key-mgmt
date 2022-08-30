@@ -7,32 +7,32 @@ edition = "2021"
 
 [dependencies]
 argon2 = "0.4"
-async-trait = "0"
+async-trait = "0.1"
 bincode = "1"
 bytes = { version = "1", features = ["serde"] }
-chacha20poly1305 = "0"
+chacha20poly1305 = "0.10"
 directories = "3"
-futures = "0"
-generic-array = "0"
-hkdf = "0"
-http = "0"
+futures = "0.3"
+generic-array = "0.14"
+hkdf = "0.12"
+http = "0.2"
 http-serde = "1"
 humantime = "2"
 humantime-serde = "1"
 mongodb = "2.3.0"
 opaque-ke = { version = "2.0.0-pre.3", features = ["argon2"] }
 prost = "0.11.0"
-rand = "0"
+rand = "0.8"
 serde = { version = "1", features = ["derive"] }
 serde_with = "1"
-sha3 = "0"
-tracing = "0"
+sha3 = "0.10"
+tracing = "0.1"
 thiserror = "1"
 tokio = { version = "1", features = ["full"] }
 tokio-stream = "0.1"
-toml = "0"
+toml = "0.5"
 tonic = "0.8.0"
-webpki = "0"
+webpki = "0.22"
 
 [build-dependencies]
 tonic-build = "0.8.0"
