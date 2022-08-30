@@ -205,6 +205,8 @@ impl DamsClient {
             ClientAction::Register => client.register(stream).await,
             ClientAction::Authenticate => client.authenticate(stream).await,
             ClientAction::CreateStorageKey => client.create_storage_key(stream).await,
+            ClientAction::Generate => client.generate(stream).await,
+            ClientAction::RetrieveStorageKey => client.retrieve_storage_key(stream).await,
         }?
         .into_inner();
 
@@ -217,5 +219,9 @@ impl DamsClient {
     /// Outputs: None, if successful.
     pub fn close(self) -> Result<(), DamsClientError> {
         todo!()
+    }
+
+    pub(crate) fn rng(&self) -> Arc<Mutex<StdRng>> {
+        self.rng.clone()
     }
 }

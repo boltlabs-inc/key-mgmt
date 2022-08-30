@@ -41,6 +41,8 @@ pub enum ClientAction {
     Register,
     Authenticate,
     CreateStorageKey,
+    Generate,
+    RetrieveStorageKey,
 }
 
 /// Logs used to verify that an operation completed in the integration tests.

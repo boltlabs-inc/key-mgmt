@@ -1,4 +1,4 @@
-use crate::DamsClientError;
+use crate::{DamsClient, DamsClientError};
 use dams::{
     channel::ClientChannel,
     crypto::{KeyId, OpaqueExportKey, StorageKey},
@@ -10,30 +10,32 @@ use rand::{CryptoRng, RngCore};
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{transport::Channel, Status};
+use crate::client::ClientAction;
 
-pub(crate) async fn handle<T: CryptoRng + RngCore>(
-    client: &mut DamsRpcClient<Channel>,
-    rng: &mut T,
-    user_id: &UserId,
-    export_key: OpaqueExportKey,
-) -> Result<KeyId, DamsClientError> {
-    // Retrieve the storage key
-    let storage_key = super::retrieve_storage_key(client, export_key, user_id).await?;
+impl DamsClient {
+    pub(crate) async fn handle_generate<T: CryptoRng + RngCore>(
+        &self,
+        client: &mut DamsRpcClient<Channel>,
+        user_id: &UserId,
+        export_key: OpaqueExportKey,
+    ) -> Result<KeyId, DamsClientError> {
+        // Retrieve the storage key
+        let storage_key = self.retrieve_storage_key(client, export_key, user_id).await?;
 
-    // Create channel to send messages to server
-    let (tx, rx) = mpsc::channel(2);
-    let stream = ReceiverStream::new(rx);
+        // Create channel to send messages to server
+        let mut channel = Self::create_channel(client, ClientAction::Generate);
 
-    // Server returns its own channel that is uses to send responses
-    let server_receiver = client.generate(stream).await?.into_inner();
+        // Generate step: get new KeyId from server
+        let key_id = generate(&mut channel, user_id).await?;
+        // Store step: encrypt secret and send to server to store
+        {
+            let mut rng = self.rng().lock().await;
+            store(&mut channel, user_id, storage_key, rng, &key_id).await?;
+        }
 
-    let mut channel = ClientChannel::create(tx, server_receiver);
+        Ok(key_id)
+    }
 
-    // Generate step: get new KeyId from server
-    let key_id = generate(&mut channel, user_id).await?;
-    // Store step: encrypt secret and send to server to store
-    store(&mut channel, user_id, storage_key, rng, &key_id).await?;
-    Ok(key_id)
 }
 
 async fn generate(channel: &mut ClientChannel, user_id: &UserId) -> Result<KeyId, DamsClientError> {
