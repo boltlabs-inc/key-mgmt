@@ -669,4 +669,12 @@ mod test {
         let master_key = MasterKey::new(&mut rng);
         let _storage_key = master_key.encrypt_storage_key(StorageKey);
     }
+
+    #[test]
+    #[should_panic(expected = "not yet implemented")]
+    fn test_broken_storage_key (){
+        let mut rng = rand::thread_rng();
+        let master_key = MasterKey(EncryptionKey::new(&mut rng));
+        let _encrypted_storage_key = master_key.encrypt_storage_key(StorageKey);
+    }
 }
