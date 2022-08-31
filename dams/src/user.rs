@@ -3,15 +3,15 @@
 //! Includes structs for the various models found in the first round of Mongo
 //! integration. This module will likely be split by model into sub-modules.
 
-use crate::{config::opaque::OpaqueCipherSuite, crypto::Secret};
+use crate::{config::opaque::OpaqueCipherSuite, crypto::Secret, DamsError};
 
 use opaque_ke::ServerRegistration;
 use rand::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
-use std::{convert::Infallible, fmt::Display, str::FromStr};
+use std::{fmt::Display, str::FromStr};
 
 /// Unique ID for a user.
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
 pub struct UserId(Box<[u8; 16]>);
 
 impl Display for UserId {
@@ -44,7 +44,7 @@ impl Display for AccountName {
 }
 
 impl FromStr for AccountName {
-    type Err = Infallible;
+    type Err = DamsError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Self(s.to_string()))

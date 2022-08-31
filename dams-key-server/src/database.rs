@@ -27,15 +27,24 @@ pub async fn connect_to_mongo(
     // Get a handle to the database
     let db = client.database(db_name);
 
-    // Enforce that the user ID and account name are unique within the database
-    let options = IndexOptions::builder().unique(true).build();
-    let model = IndexModel::builder()
-        .keys(doc! {"user_id": 1, "account_name": 1})
-        .options(options)
+    // Enforce that the user ID is unique
+    let enforce_uniqueness = IndexOptions::builder().unique(true).build();
+    let user_id_index = IndexModel::builder()
+        .keys(doc! {"user_id": 1})
+        .options(enforce_uniqueness)
         .build();
-    let _created_index = db
+
+    // Enforce that the account name is unique
+    let enforce_uniqueness = IndexOptions::builder().unique(true).build();
+    let account_name_index = IndexModel::builder()
+        .keys(doc! {"account_name": 1})
+        .options(enforce_uniqueness)
+        .build();
+
+    // Apply uniquness to the database
+    let _created_indices = db
         .collection::<User>(constants::USERS)
-        .create_index(model, None)
+        .create_indexes([user_id_index, account_name_index], None)
         .await?;
 
     Ok(db)

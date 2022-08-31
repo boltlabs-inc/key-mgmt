@@ -37,7 +37,7 @@ impl Party {
     }
 }
 
-pub async fn setup(_db: Database, server_config: dams::config::server::Config) -> ServerFuture {
+pub async fn setup(db: Database, server_config: dams::config::server::Config) -> ServerFuture {
     let gen_path = std::path::Path::new("tests/gen");
     if !gen_path.exists() {
         fs::create_dir(gen_path).expect("Unable to create directory tests/gen");
@@ -88,6 +88,9 @@ pub async fn setup(_db: Database, server_config: dams::config::server::Config) -
         },
     }
 
+    // Delete any outdated data
+    db.drop(None).await.unwrap();
+
     server_handle
 }
 
@@ -99,7 +102,7 @@ pub async fn teardown(server_future: ServerFuture, db: Database) {
     let _ = fs::remove_dir_all("tests/gen/");
 
     // Drop the test DB
-    let _ = db.drop(None).await;
+    db.drop(None).await.unwrap();
 }
 
 /// Encode the customizable fields of the keymgmt client Config struct for
