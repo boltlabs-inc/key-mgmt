@@ -9,23 +9,11 @@ use common::{get_logs, LogType, Party};
 use dams::{config::client::Config, user::AccountName};
 use dams_client::{client::Password, DamsClient, DamsClientError};
 use dams_key_server::database;
-use std::{
-    fs::{
-        OpenOptions, {self},
-    },
-    path::Path,
-    str::FromStr,
-};
+use std::{fs::OpenOptions, str::FromStr};
 use thiserror::Error;
 
 #[tokio::test]
 pub async fn integration_tests() {
-    // Clean up any leftover data and create new directory for generated files.
-    let gen_path = Path::new("tests/gen");
-    if !gen_path.exists() {
-        fs::create_dir(gen_path).expect("Unable to create directory tests/gen");
-    }
-
     // Read environment variables from .env file
     let server_config = common::server_test_config().await;
     let db = database::connect_to_mongo(

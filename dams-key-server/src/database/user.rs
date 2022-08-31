@@ -122,14 +122,14 @@ mod test {
         // Add two users
         let _ = create_user(
             &db,
-            &UserId::new(&mut rng),
+            &UserId::new(&mut rng)?,
             &AccountName::from_str("test user 1")?,
             server_registration,
         )
         .await?;
         let _ = create_user(
             &db,
-            &UserId::new(&mut rng),
+            &UserId::new(&mut rng)?,
             &AccountName::from_str("test user 2")?,
             server_registration,
         )

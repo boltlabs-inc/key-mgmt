@@ -90,7 +90,7 @@ async fn register_finish(
         // Create a user ID for the new client
         let user_id = {
             let mut rng = context.rng.lock().await;
-            UserId::new(rng.deref_mut())
+            UserId::new(rng.deref_mut())?
         };
 
         // If the user ID is fresh, create the new user

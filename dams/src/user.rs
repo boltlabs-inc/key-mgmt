@@ -3,10 +3,14 @@
 //! Includes structs for the various models found in the first round of Mongo
 //! integration. This module will likely be split by model into sub-modules.
 
-use crate::{config::opaque::OpaqueCipherSuite, crypto::Secret, DamsError};
+use crate::{
+    config::opaque::OpaqueCipherSuite,
+    crypto::{CryptoError, Secret},
+    DamsError,
+};
 
 use opaque_ke::ServerRegistration;
-use rand::{CryptoRng, RngCore};
+use rand::{CryptoRng, Rng, RngCore};
 use serde::{Deserialize, Serialize};
 use std::{fmt::Display, str::FromStr};
 
@@ -21,11 +25,11 @@ impl Display for UserId {
 }
 
 impl UserId {
-    pub fn new(rng: &mut (impl CryptoRng + RngCore)) -> Self {
+    pub fn new(rng: &mut (impl CryptoRng + RngCore)) -> Result<Self, DamsError> {
         let mut id = [0_u8; 16];
-        // TODO: this can panic
-        rng.fill_bytes(&mut id);
-        Self(Box::new(id))
+        rng.try_fill(&mut id)
+            .map_err(|_| CryptoError::RandomNumberGeneratorFailed)?;
+        Ok(Self(Box::new(id)))
     }
 
     pub fn as_bytes(&self) -> &[u8] {

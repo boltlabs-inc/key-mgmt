@@ -32,6 +32,8 @@ pub enum CryptoError {
     DecryptionFailed,
     #[error("Key derivation failed: {0}")]
     KeyDerivationFailed(hkdf::InvalidLength),
+    #[error("RNG failed")]
+    RandomNumberGeneratorFailed,
 }
 
 /// The associated data used in [`Encrypted`] AEAD ciphertexts and (TODO #130:

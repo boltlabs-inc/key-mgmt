@@ -9,8 +9,8 @@ pub enum DamsServerError {
     // Protocol errors
     #[error("Account already exists")]
     AccountAlreadyExists,
-    #[error("Account name does not exist")]
-    AccountNameDoesNotExist,
+    #[error("Account does not exist")]
+    AccountDoesNotExist,
 
     // Wrapped errors
     #[error(transparent)]

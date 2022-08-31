@@ -56,7 +56,7 @@ async fn authenticate_start(
     let (server_registration, user_id) =
         match User::find_user(&context.db, &start_message.account_name).await? {
             Some(user) => user.into_parts(),
-            None => return Err(DamsServerError::AccountNameDoesNotExist),
+            None => return Err(DamsServerError::AccountDoesNotExist),
         };
 
     let server_login_start_result = {
