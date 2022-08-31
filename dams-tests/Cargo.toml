@@ -10,13 +10,13 @@ anyhow = "1"
 dams = { version = "0.1.0", path = "../dams" }
 dams-key-server = { version = "0.1.0", path = "../dams-key-server" }
 dams-client = { version = "0.1.0", path = "../dams-client", features=["allow_explicit_certificate_trust"] }
-futures = "0"
+futures = "0.3"
 mongodb = "2.3.0"
-rand = "0"
-structopt = "0"
+rand = "0.8"
+structopt = "0.3"
 thiserror = "1"
 tokio = { version = "1", features = ["full"] }
 tonic = "0.8.0"
-tracing = "0"
-tracing-futures = "0"
-tracing-subscriber = { version = "0", features = ["env-filter"] }
+tracing = "0.1"
+tracing-futures = "0.2"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
