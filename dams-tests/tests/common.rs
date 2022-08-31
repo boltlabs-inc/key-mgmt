@@ -1,6 +1,7 @@
 use std::{
     fs::{self, File},
     io::Read,
+    path::Path,
     process::Command,
     str::FromStr,
     sync::Mutex,
@@ -38,10 +39,14 @@ impl Party {
 }
 
 pub async fn setup(db: Database, server_config: dams::config::server::Config) -> ServerFuture {
-    let gen_path = std::path::Path::new("tests/gen");
-    if !gen_path.exists() {
-        fs::create_dir(gen_path).expect("Unable to create directory tests/gen");
-    }
+    // Delete data from previous run
+    let gen_path = Path::new("tests/gen/");
+    // Swallow error if path doesn't exist
+    let _ = fs::remove_dir_all(&gen_path);
+    fs::create_dir(&gen_path).expect("Unable to create directory tests/gen");
+
+    // Ensure that the test DB is fresh
+    db.drop(None).await.expect("Failed to drop database");
 
     // Create self-signed SSL certificate in the generated directory
     Command::new("../dev/generate-certificates")
@@ -88,21 +93,12 @@ pub async fn setup(db: Database, server_config: dams::config::server::Config) ->
         },
     }
 
-    // Delete any outdated data
-    db.drop(None).await.unwrap();
-
     server_handle
 }
 
-pub async fn teardown(server_future: ServerFuture, db: Database) {
+pub async fn teardown(server_future: ServerFuture) {
     // Ignore the result because we expect it to be an `Expired` error
     let _result = server_future.with_timeout(Duration::from_secs(1)).await;
-
-    // Delete data from this run
-    let _ = fs::remove_dir_all("tests/gen/");
-
-    // Drop the test DB
-    db.drop(None).await.unwrap();
 }
 
 /// Encode the customizable fields of the keymgmt client Config struct for
