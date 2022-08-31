@@ -155,46 +155,4 @@ mod test {
 
         Ok(())
     }
-
-    #[tokio::test]
-    async fn unique_indices_enforced() -> Result<(), DamsServerError> {
-        let mut rng = rand::thread_rng();
-        let mongodb_uri = "mongodb://localhost:27017";
-        let db_name = "unique_indices_are_enforced";
-
-        // Clean up previous runs and make fresh connection
-        drop_db(mongodb_uri, db_name).await?;
-        let db = connect_to_mongo(mongodb_uri, db_name).await?;
-
-        // Add the "baseline" user.
-        let user_id = UserId::new(&mut rng);
-        let account_name = AccountName::from_str("unique@email.com")?;
-        let server_registration = server_registration(&mut rng);
-        let _ = create_user(&db, &user_id, &account_name, &server_registration).await?;
-
-        // Matching UserIds can't be added.
-        let different_an = AccountName::from_str("other@email.com")?;
-        assert!(
-            create_user(&db, &user_id, &different_an, &server_registration)
-                .await
-                .is_err()
-        );
-
-        // Matching AccountNames can't be added.
-        let different_uid = UserId::new(&mut rng);
-        assert!(
-            create_user(&db, &different_uid, &account_name, &server_registration)
-                .await
-                .is_err()
-        );
-
-        // Matching both can't be added.
-        assert!(
-            create_user(&db, &user_id, &account_name, &server_registration)
-                .await
-                .is_err()
-        );
-
-        Ok(())
-    }
 }
