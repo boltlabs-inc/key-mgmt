@@ -22,7 +22,6 @@ pub async fn integration_tests() {
     )
     .await
     .expect("Unable to connect to Mongo");
-    let _ = db.create_collection("users", None).await;
     let server_future = common::setup(db.clone(), server_config).await;
     let client_config = common::client_test_config().await;
 
