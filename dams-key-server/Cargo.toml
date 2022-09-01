@@ -15,6 +15,7 @@ async-trait = "0.1"
 bincode = "1"
 dams = { version = "0.1.0", path = "../dams" }
 futures = "0.3"
+hyper = "0.14"
 mongodb = "2.3.0"
 opaque-ke = { version = "2.0.0-pre.3", features = ["argon2"] }
 prost = "0.11.0"
@@ -25,8 +26,10 @@ serde_with = "1"
 structopt = "0.3"
 thiserror = "1"
 tokio = { version = "1", features = ["full"] }
+tokio-rustls = "0.23"
 tokio-stream = "0.1"
 tonic = "0.8.0"
+tower = "0.4"
 tracing = "0.1"
 tracing-futures = "0.2"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }

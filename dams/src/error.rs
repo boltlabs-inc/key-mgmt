@@ -10,6 +10,10 @@ pub enum DamsError {
     #[error(transparent)]
     Channel(#[from] ChannelError),
 
+    // TLS errors
+    #[error("Invalid private key")]
+    InvalidPrivateKey,
+
     // OPAQUE errors
     #[error("Could not create opaque path directory")]
     InvalidOpaqueDirectory,
@@ -26,7 +30,11 @@ pub enum DamsError {
     #[error("OPAQUE protocol error: {}", .0)]
     OpaqueProtocol(opaque_ke::errors::ProtocolError),
     #[error(transparent)]
+    Rustls(#[from] rustls::Error),
+    #[error(transparent)]
     Toml(#[from] toml::de::Error),
+    #[error(transparent)]
+    WebPki(#[from] tokio_rustls::webpki::Error),
 }
 
 impl From<opaque_ke::errors::ProtocolError> for DamsError {
@@ -41,15 +49,18 @@ impl From<DamsError> for Status {
 
         use DamsError::*;
         match error {
-            Crypto(_)
+            Bincode(_)
             | Channel(_)
+            | Crypto(_)
             | InvalidOpaqueDirectory
-            | ProjectDirs
-            | Bincode(_)
-            | Io(_)
+            | InvalidPrivateKey
             | InvalidUri(_)
+            | Io(_)
             | OpaqueProtocol(_)
-            | Toml(_) => Status::internal(message),
+            | ProjectDirs
+            | Rustls(_)
+            | Toml(_)
+            | WebPki(_) => Status::internal(message),
         }
     }
 }

@@ -13,7 +13,7 @@ use tokio::{task::JoinHandle, time::Duration};
 use tracing::info_span;
 use tracing_futures::Instrument;
 
-use dams::{timeout::WithTimeout, TestLogs};
+use dams::{defaults::server::LOCAL_SERVER_URI, timeout::WithTimeout, TestLogs};
 
 pub const ERROR_FILENAME: &str = "tests/gen/errors.log";
 
@@ -104,12 +104,15 @@ pub async fn teardown(server_future: ServerFuture) {
 /// Encode the customizable fields of the keymgmt client Config struct for
 /// testing.
 pub async fn client_test_config() -> dams::config::client::Config {
-    let config_str = r#"
-        server_location = "https://127.0.0.1:1113"
+    let config_str = format!(
+        r#"
+        server_location = "{}"
         trust_certificate = "tests/gen/localhost.crt"
-    "#;
+    "#,
+        LOCAL_SERVER_URI
+    );
 
-    dams::config::client::Config::from_str(config_str).expect("Failed to load client config")
+    dams::config::client::Config::from_str(&config_str).expect("Failed to load client config")
 }
 
 /// Encode the customizable fields of the keymgmt server Config struct for

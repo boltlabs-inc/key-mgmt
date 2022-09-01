@@ -20,6 +20,7 @@ pub mod defaults;
 pub mod error;
 pub mod keys;
 pub mod opaque_storage;
+pub mod pem_utils;
 pub mod timeout;
 pub mod transaction;
 pub mod types;

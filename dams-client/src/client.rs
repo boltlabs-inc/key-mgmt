@@ -9,6 +9,9 @@ use dams::{
     user::{AccountName, UserId},
 };
 use http::uri::Scheme;
+use http_body::combinators::UnsyncBoxBody;
+use hyper::client::HttpConnector;
+use hyper_rustls::HttpsConnector;
 use rand::{rngs::StdRng, SeedableRng};
 use std::{
     str::FromStr,
@@ -16,7 +19,6 @@ use std::{
 };
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
-use tonic::transport::{Channel, Uri};
 use tracing::error;
 
 // TODO: password security, e.g. memory management, etc... #54
@@ -56,7 +58,7 @@ impl Password {
 pub struct DamsClient {
     session_key: OpaqueSessionKey,
     config: Config,
-    tonic_client: DamsRpcClient<Channel>,
+    tonic_client: DamsRpcClient<DamsRpcClientInner>,
     rng: Arc<Mutex<StdRng>>,
     user_id: UserId,
 }
@@ -66,6 +68,14 @@ pub(crate) enum ClientAction {
     Register,
     Authenticate,
 }
+
+/// Connection type used by `DamsRpcClient`.
+/// This would normally be `tonic::transport:Channel` but TLS makes it more
+/// complicated.
+type DamsRpcClientInner = hyper::Client<
+    HttpsConnector<HttpConnector>,
+    UnsyncBoxBody<tonic::codegen::Bytes, tonic::Status>,
+>;
 
 #[allow(unused)]
 impl DamsClient {
@@ -78,12 +88,27 @@ impl DamsClient {
     ///
     /// The returned client should be stored as part of the [`DamsClient`]
     /// state.
-    async fn connect(address: Uri) -> Result<DamsRpcClient<Channel>, DamsClientError> {
-        if address.scheme() == Some(&Scheme::HTTPS) {
-            Ok(DamsRpcClient::connect(address).await?)
-        } else {
-            Err(DamsClientError::HttpNotAllowed)
+    async fn connect(
+        config: &Config,
+    ) -> Result<DamsRpcClient<DamsRpcClientInner>, DamsClientError> {
+        let address = config.server_location()?;
+
+        if address.scheme() != Some(&Scheme::HTTPS) {
+            return Err(DamsClientError::HttpNotAllowed);
         }
+
+        let tls_config = config.tls_config()?;
+
+        let connector = hyper_rustls::HttpsConnectorBuilder::new()
+            .with_tls_config(tls_config)
+            .https_only()
+            .enable_http2()
+            .build();
+
+        let client = hyper::Client::builder().build(connector);
+        let rpc_client = DamsRpcClient::with_origin(client, address);
+
+        Ok(rpc_client)
     }
 
     /// Authenticate to the DAMS key server as a previously registered user.
@@ -96,12 +121,12 @@ impl DamsClient {
     ) -> Result<Self, DamsClientError> {
         let mut rng = StdRng::from_entropy();
         let server_location = config.server_location()?;
-        let mut client = Self::connect(server_location).await?;
+        let mut client = Self::connect(config).await?;
         Self::authenticate(client, rng, account_name, password, config).await
     }
 
     async fn authenticate(
-        mut client: DamsRpcClient<Channel>,
+        mut client: DamsRpcClient<DamsRpcClientInner>,
         mut rng: StdRng,
         account_name: &AccountName,
         password: &Password,
@@ -144,7 +169,7 @@ impl DamsClient {
     ) -> Result<(), DamsClientError> {
         let mut rng = StdRng::from_entropy();
         let server_location = config.server_location()?;
-        let mut client = Self::connect(server_location).await?;
+        let mut client = Self::connect(config).await?;
         let mut client_channel = Self::create_channel(&mut client, ClientAction::Register).await?;
         let result =
             Self::handle_registration(client_channel, &mut rng, account_name, password).await;
@@ -163,7 +188,7 @@ impl DamsClient {
     /// Helper to create the appropriate [`ClientChannel`] to send to tonic
     /// handler functions based on the client's action.
     pub(crate) async fn create_channel(
-        client: &mut DamsRpcClient<Channel>,
+        client: &mut DamsRpcClient<DamsRpcClientInner>,
         action: ClientAction,
     ) -> Result<ClientChannel, DamsClientError> {
         // Create channel to send messages to server after connection is established via
