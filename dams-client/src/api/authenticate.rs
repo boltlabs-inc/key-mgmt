@@ -4,6 +4,7 @@ use crate::DamsClientError;
 use dams::{
     channel::ClientChannel,
     config::opaque::OpaqueCipherSuite,
+    crypto::OpaqueSessionKey,
     types::authenticate::{client, server},
     user::{AccountName, UserId},
 };
@@ -18,7 +19,7 @@ impl DamsClient {
         rng: &mut T,
         account_name: &AccountName,
         password: &Password,
-    ) -> Result<([u8; 64], UserId), DamsClientError> {
+    ) -> Result<(OpaqueSessionKey, UserId), DamsClientError> {
         let client_login_start_result =
             ClientLogin::<OpaqueCipherSuite>::start(rng, password.as_bytes())?;
 
@@ -95,7 +96,7 @@ async fn authenticate_finish(
 /// check authentication.
 async fn retrieve_user_id(
     channel: &mut ClientChannel,
-    _session_key: &[u8; 64],
+    _session_key: &OpaqueSessionKey,
 ) -> Result<UserId, DamsClientError> {
     let received_id: server::SendUserId = channel.receive().await?;
     Ok(received_id.user_id)

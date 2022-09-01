@@ -4,6 +4,7 @@ use crate::DamsClientError;
 use dams::{
     channel::ClientChannel,
     config::client::Config,
+    crypto::OpaqueSessionKey,
     dams_rpc::dams_rpc_client::DamsRpcClient,
     user::{AccountName, UserId},
 };
@@ -53,7 +54,7 @@ impl Password {
 #[derive(Debug)]
 #[allow(unused)]
 pub struct DamsClient {
-    session_key: [u8; 64],
+    session_key: OpaqueSessionKey,
     config: Config,
     tonic_client: DamsRpcClient<Channel>,
     rng: Arc<Mutex<StdRng>>,

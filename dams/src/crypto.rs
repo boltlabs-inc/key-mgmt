@@ -10,7 +10,10 @@ use chacha20poly1305::{
     aead::{Aead, Payload},
     AeadCore, ChaCha20Poly1305, KeyInit,
 };
-use generic_array::{typenum::U32, GenericArray};
+use generic_array::{
+    typenum::{U32, U64},
+    GenericArray,
+};
 use hkdf::Hkdf;
 use rand::{CryptoRng, Rng, RngCore};
 use serde::{Deserialize, Serialize};
@@ -194,6 +197,21 @@ impl Encrypted<StorageKey> {
     /// 3. Return the decrypted [`StorageKey`]
     pub fn decrypt_storage_key(self, _export_key: OpaqueExportKey) -> StorageKey {
         todo!()
+    }
+}
+
+/// A session key is produced as shared output for client and server from
+/// OPAQUE.
+///
+/// This key should not be stored or saved beyond the lifetime of a single
+/// authentication session. It should not be passed out to the local calling
+/// application.
+#[derive(Debug, Clone)]
+pub struct OpaqueSessionKey(Box<[u8; 64]>);
+
+impl From<GenericArray<u8, U64>> for OpaqueSessionKey {
+    fn from(arr: GenericArray<u8, U64>) -> Self {
+        Self(Box::new(arr.into()))
     }
 }
 
