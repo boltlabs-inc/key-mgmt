@@ -77,6 +77,15 @@ impl FromStr for Config {
     }
 }
 
+impl DatabaseSpec {
+    pub fn new(mongodb_uri: String, db_name: String) -> Self {
+        Self {
+            mongodb_uri,
+            db_name,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
