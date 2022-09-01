@@ -81,8 +81,7 @@ impl DamsRpc for DamsKeyServer {
 }
 
 pub async fn start_tonic_server(config: Config) -> Result<(), DamsServerError> {
-    let db =
-        database::connect_to_mongo(&config.database.mongodb_uri, &config.database.db_name).await?;
+    let db = database::connect_to_mongo(&config.database).await?;
     // Collect the futures for the result of running each specified server
     let mut server_futures: FuturesUnordered<_> = config
         .services

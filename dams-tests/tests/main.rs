@@ -16,12 +16,9 @@ use thiserror::Error;
 pub async fn integration_tests() {
     // Read environment variables from .env file
     let server_config = common::server_test_config().await;
-    let db = database::connect_to_mongo(
-        &server_config.database.mongodb_uri,
-        &server_config.database.db_name,
-    )
-    .await
-    .expect("Unable to connect to Mongo");
+    let db = database::connect_to_mongo(&server_config.database)
+        .await
+        .expect("Unable to connect to Mongo");
     let server_future = common::setup(db.clone(), server_config).await;
     let client_config = common::client_test_config().await;
 
