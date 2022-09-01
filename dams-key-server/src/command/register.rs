@@ -9,7 +9,7 @@ use dams::{
         register::{client, server},
         Message, MessageStream,
     },
-    user::UserId,
+    user::{AccountName, UserId},
 };
 use opaque_ke::ServerRegistration;
 use tokio_stream::wrappers::ReceiverStream;
@@ -27,8 +27,8 @@ impl Register {
         let (mut channel, rx) = ServerChannel::create(request.into_inner());
 
         let _ = tokio::spawn(async move {
-            register_start(&mut channel, &context).await?;
-            register_finish(&mut channel, &context).await?;
+            let account_name = register_start(&mut channel, &context).await?;
+            register_finish(account_name, &mut channel, &context).await?;
 
             Ok::<(), DamsServerError>(())
         });
@@ -40,7 +40,7 @@ impl Register {
 async fn register_start(
     channel: &mut ServerChannel,
     context: &Context,
-) -> Result<(), DamsServerError> {
+) -> Result<AccountName, DamsServerError> {
     // Receive start message from client
     let start_message: client::RegisterStart = channel.receive().await?;
 
@@ -71,11 +71,12 @@ async fn register_start(
         // Send response to client
         channel.send(reply).await?;
 
-        Ok(())
+        Ok(start_message.account_name)
     }
 }
 
 async fn register_finish(
+    account_name: AccountName,
     channel: &mut ServerChannel,
     context: &Context,
 ) -> Result<(), DamsServerError> {
@@ -98,13 +99,9 @@ async fn register_finish(
             .await?
             .is_none()
         {
-            let _object_id = User::create_user(
-                &context.db,
-                &user_id,
-                &finish_message.account_name,
-                &server_registration,
-            )
-            .await?;
+            let _object_id =
+                User::create_user(&context.db, &user_id, &account_name, &server_registration)
+                    .await?;
             break;
         }
     }

@@ -14,7 +14,6 @@ pub mod client {
     /// pass user ID and registration-finish message from OPAQUE
     pub struct RegisterFinish {
         pub registration_upload: RegistrationUpload<OpaqueCipherSuite>,
-        pub account_name: AccountName,
     }
 
     impl_message_conversion!(RegisterStart, RegisterFinish);
