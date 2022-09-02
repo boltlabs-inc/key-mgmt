@@ -4,9 +4,6 @@
 //! transformations between them. Public functions here are mostly wrappers
 //! around multiple low-level cryptographic steps.
 
-#[cfg(test)]
-use std::convert::Infallible;
-
 use chacha20poly1305::{
     aead::{Aead, Payload},
     AeadCore, ChaCha20Poly1305, KeyInit,
@@ -24,6 +21,9 @@ use thiserror::Error;
 use tracing::error;
 
 use crate::user::UserId;
+
+#[cfg(test)]
+use std::convert::Infallible;
 
 /// Errors that arise in the cryptography module.
 ///
@@ -394,10 +394,14 @@ impl KeyId {
     /// Generate a new, random `KeyId` for the given [`UserId`].
     ///
     /// This is called by the key server.
-    fn generate(rng: &mut (impl CryptoRng + RngCore), user_id: &UserId) -> Self {
+    fn generate(
+        rng: &mut (impl CryptoRng + RngCore),
+        user_id: &UserId,
+    ) -> Result<Self, CryptoError> {
         const RANDOM_LEN: usize = 32;
         let mut randomness = [0; RANDOM_LEN];
-        rng.fill_bytes(&mut randomness);
+        rng.try_fill(&mut randomness)
+            .map_err(|_| CryptoError::RandomNumberGeneratorFailed)?;
         let domain_separator = b"Lock Keeper key ID";
 
         let mut hasher = Sha3_256::new();
@@ -411,15 +415,16 @@ impl KeyId {
             .finalize();
 
         // Truncate to 32 bytes, then convert into a 32-byte array.
-        // This `unwrap` is safe because the lengths are hardcoded.
-        Self(Box::new(
+        // This should never produce a ConversoinError because the lengths are
+        // hard-coded.
+        Ok(Self(Box::new(
             bytes
                 .into_iter()
                 .take(32)
                 .collect::<Vec<u8>>()
                 .try_into()
-                .unwrap(),
-        ))
+                .map_err(|_| CryptoError::ConversionError)?,
+        )))
     }
 }
 
@@ -684,7 +689,7 @@ mod test {
     }
 
     #[test]
-    fn key_id_generation_produces_unique_ids() {
+    fn key_id_generation_produces_unique_ids() -> Result<(), CryptoError> {
         let mut rng = rand::thread_rng();
         let mut uniq = HashSet::new();
         let user_id = UserId::new(&mut rng).unwrap();
@@ -693,8 +698,10 @@ mod test {
         // by putting them into a set. Insert will return false if a secret
         // already exists in the set.
         assert!((0..1000)
-            .map(|_| KeyId::generate(&mut rng, &user_id))
-            .all(|key_id| uniq.insert(key_id)))
+            .map(|_| KeyId::generate(&mut rng, &user_id).unwrap())
+            .all(|key_id| uniq.insert(key_id)));
+
+        Ok(())
     }
 
     #[test]
@@ -709,7 +716,7 @@ mod test {
             .map(|_| {
                 let user_id = UserId::new(&mut rng).unwrap();
                 let mut bad_rng = StdRng::from_seed(*seed);
-                KeyId::generate(&mut bad_rng, &user_id)
+                KeyId::generate(&mut bad_rng, &user_id).unwrap()
             })
             .all(|key_id| uniq.insert(key_id)))
     }
