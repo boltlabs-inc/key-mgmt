@@ -49,7 +49,7 @@ pub enum CryptoError {
 
 /// The associated data used in [`Encrypted`] AEAD ciphertexts and (TODO #130:
 /// HKDF) key derivations.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 struct AssociatedData(String);
 
 impl Default for AssociatedData {
@@ -105,7 +105,7 @@ pub struct Encrypted<T> {
 }
 
 /// A well-formed symmetric encryption key for an AEAD scheme.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct EncryptionKey {
     key: chacha20poly1305::Key,
 
@@ -322,7 +322,7 @@ impl MasterKey {
     ) -> Result<Encrypted<StorageKey>, CryptoError> {
         let associated_data = AssociatedData::new()
             .with_str(&user_id.to_string())
-            .with_str("storage key");
+            .with_str(StorageKey::domain_separator());
 
         Encrypted::encrypt(rng, &self.0, storage_key, &associated_data)
     }
@@ -337,20 +337,40 @@ impl MasterKey {
 /// authentication session.
 #[allow(unused)]
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct StorageKey(Secret);
+pub struct StorageKey(EncryptionKey);
 
 #[allow(unused)]
 impl StorageKey {
+    fn domain_separator() -> &'static str {
+        "storage key"
+    }
+
     /// Generate a new 32-byte [`StorageKey`].
     fn generate<Rng: CryptoRng + RngCore>(rng: &mut Rng) -> Self {
-        let associated_data = AssociatedData::new().with_str("storage key");
-        Self(Secret::generate(rng, 32, associated_data))
+        let associated_data = AssociatedData::new().with_str(Self::domain_separator());
+        let key = Secret::generate(rng, 32, associated_data.clone());
+
+        Self(EncryptionKey {
+            key: *chacha20poly1305::Key::from_slice(&key.material),
+            associated_data,
+        })
     }
 
     /// Encrypt the given [`Secret`] under the [`StorageKey`], using the
     /// AEAD scheme.
-    fn encrypt_data(self, secret: &Secret) -> Encrypted<Secret> {
-        todo!()
+    fn encrypt_data(
+        self,
+        rng: &mut (impl CryptoRng + RngCore),
+        secret: Secret,
+        user_id: &UserId,
+        key_id: &KeyId,
+    ) -> Result<Encrypted<Secret>, CryptoError> {
+        let ad = AssociatedData::new()
+            .with_str(&user_id.to_string())
+            .with_str(key_id.as_str()?)
+            .with_str("client-generated");
+
+        Encrypted::encrypt(rng, &self.0, secret, &ad)
     }
 
     /// Create and encrypt a new secret. This is part of the
@@ -372,15 +392,67 @@ impl StorageKey {
 
 impl From<StorageKey> for Vec<u8> {
     fn from(key: StorageKey) -> Self {
-        key.0.into()
+        StorageKey::domain_separator()
+            .as_bytes()
+            .iter()
+            .copied()
+            .chain::<Vec<u8>>(key.0.into())
+            .collect()
     }
 }
 
 impl TryFrom<Vec<u8>> for StorageKey {
     type Error = CryptoError;
     fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
-        let secret = bytes.try_into()?;
-        Ok(Self(secret))
+        let expected_domain_sep = StorageKey::domain_separator().as_bytes();
+        let domain_separator = bytes
+            .get(0..expected_domain_sep.len())
+            .ok_or(CryptoError::ConversionError)?;
+        if expected_domain_sep != domain_separator {
+            return Err(CryptoError::ConversionError);
+        }
+
+        // Take off the domain separator
+        let key_bytes = bytes
+            .get(expected_domain_sep.len()..)
+            .ok_or(CryptoError::ConversionError)?
+            .to_vec();
+
+        Ok(Self(key_bytes.try_into()?))
+    }
+}
+
+impl From<EncryptionKey> for Vec<u8> {
+    fn from(key: EncryptionKey) -> Self {
+        // len || key || context
+        iter::once(key.key.len() as u8)
+            .chain(key.key)
+            .chain::<Vec<u8>>(key.associated_data.into())
+            .collect()
+    }
+}
+
+impl TryFrom<Vec<u8>> for EncryptionKey {
+    type Error = CryptoError;
+
+    fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
+        // len (should always be 32) || key || context
+        let len = *bytes.first().ok_or(CryptoError::ConversionError)? as usize;
+        if len != 32 {
+            return Err(CryptoError::ConversionError);
+        }
+
+        // len (1 byte) || material (len bytes) || context (remainder)
+        let key = bytes.get(1..33).ok_or(CryptoError::ConversionError)?;
+        let associated_data: Vec<u8> = bytes
+            .get(len + 1..)
+            .ok_or(CryptoError::ConversionError)?
+            .into();
+
+        Ok(Self {
+            key: *chacha20poly1305::Key::from_slice(key),
+            associated_data: associated_data.try_into()?,
+        })
     }
 }
 
@@ -425,6 +497,10 @@ impl KeyId {
                 .try_into()
                 .map_err(|_| CryptoError::ConversionError)?,
         )))
+    }
+
+    fn as_str(&self) -> Result<&str, CryptoError> {
+        std::str::from_utf8(self.0.as_ref()).map_err(|_| CryptoError::ConversionError)
     }
 }
 
@@ -560,14 +636,33 @@ mod test {
     }
 
     #[test]
+    fn encryption_key_to_vec_u8_conversion_works() -> Result<(), CryptoError> {
+        let mut rng = rand::thread_rng();
+
+        for _ in 0..1000 {
+            let encryption_key = EncryptionKey::new(&mut rng);
+
+            let bytes: Vec<u8> = encryption_key.clone().into();
+            let output_key: EncryptionKey = bytes.try_into()?;
+
+            assert_eq!(encryption_key, output_key);
+        }
+
+        Ok(())
+    }
+
+    #[test]
     fn storage_key_to_vec_u8_conversion_works() -> Result<(), CryptoError> {
         let mut rng = rand::thread_rng();
-        let storage_key = StorageKey::generate(&mut rng);
-        let vec: Vec<u8> = storage_key.clone().into();
-        let output_storage_key = vec.try_into()?;
 
-        // Make sure converting to & from Vec<u8> gives the same result
-        assert_eq!(storage_key, output_storage_key);
+        for _ in 0..1000 {
+            let storage_key = StorageKey::generate(&mut rng);
+
+            let vec: Vec<u8> = storage_key.clone().into();
+            let output_storage_key = vec.try_into()?;
+
+            assert_eq!(storage_key, output_storage_key);
+        }
         Ok(())
     }
 
@@ -622,14 +717,14 @@ mod test {
 
         assert!((0..1000)
             .map(|_| StorageKey::generate(&mut rng))
-            .all(|storage_key| uniq.insert(storage_key.0.material)));
+            .all(|storage_key| uniq.insert(storage_key.0)));
     }
 
     #[test]
     fn storage_keys_are_32_bytes() {
         let mut rng = rand::thread_rng();
         let storage_key = StorageKey::generate(&mut rng);
-        assert_eq!(32, storage_key.0.material.len())
+        assert_eq!(32, storage_key.0.key.len())
     }
 
     #[test]
@@ -641,7 +736,9 @@ mod test {
         };
         let mut rng = rand::thread_rng();
         let storage_key = StorageKey::generate(&mut rng);
-        let _encrypted_secret = storage_key.encrypt_data(&secret);
+        let user_id = UserId::new(&mut rng).unwrap();
+        let key_id = KeyId::generate(&mut rng, &user_id).unwrap();
+        let _encrypted_secret = storage_key.encrypt_data(&mut rng, secret, &user_id, &key_id);
     }
 
     #[test]
