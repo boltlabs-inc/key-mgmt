@@ -96,7 +96,7 @@ impl AssociatedData {
 /// As implied by the scheme name, this uses the recommended 20 rounds and a
 /// standard 96-bit nonce. For more details, see the
 /// [ChaCha20Poly1305 crate](https://docs.rs/chacha20poly1305/latest/chacha20poly1305/index.html).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Encrypted<T> {
     ciphertext: Vec<u8>,
     associated_data: AssociatedData,
@@ -207,8 +207,12 @@ impl Encrypted<StorageKey> {
     /// 1. Derive a master key from the [`OpaqueExportKey`]
     /// 2. Decrypt the encrypted storage key using the master key
     /// 3. Return the decrypted [`StorageKey`]
-    pub fn decrypt_storage_key(self, _export_key: OpaqueExportKey) -> StorageKey {
-        todo!()
+    pub fn decrypt_storage_key(
+        self,
+        export_key: OpaqueExportKey,
+    ) -> Result<StorageKey, CryptoError> {
+        let master_key = export_key.derive_master_key()?;
+        self.decrypt(&master_key.0)
     }
 }
 
@@ -242,7 +246,7 @@ impl From<GenericArray<u8, U64>> for OpaqueSessionKey {
 /// [ClientRegistrationFinishResult](opaque_ke::ClientRegistrationFinishResult)
 /// and corresponding registration result.
 #[allow(unused)]
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OpaqueExportKey(GenericArray<u8, U32>);
 
 impl OpaqueExportKey {
@@ -435,12 +439,19 @@ impl TryFrom<Vec<u8>> for Secret {
     type Error = CryptoError;
     fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
         // len (1 byte) || material (len bytes) || context (remainder)
-        let len = bytes[0] as usize;
-        let (material, associated_data) = bytes.split_at(len + 1);
+        let len = *bytes.first().ok_or(CryptoError::ConversionError)? as usize;
+        let material = bytes
+            .get(1..len + 1)
+            .ok_or(CryptoError::ConversionError)?
+            .into();
+        let associated_data: Vec<u8> = bytes
+            .get(len + 1..)
+            .ok_or(CryptoError::ConversionError)?
+            .into();
 
         Ok(Self {
-            material: material[1..].into(),
-            associated_data: Vec::from(associated_data).try_into()?,
+            material,
+            associated_data: associated_data.try_into()?,
         })
     }
 }
@@ -449,8 +460,10 @@ impl TryFrom<Vec<u8>> for Secret {
 mod test {
     use std::collections::HashSet;
 
+    use crate::DamsError;
+
     use super::*;
-    use rand::Rng;
+    use rand::{rngs::StdRng, Rng, SeedableRng};
 
     #[test]
     fn associated_data_to_vec_u8_conversion_works() -> Result<(), CryptoError> {
@@ -730,22 +743,6 @@ mod test {
 
     #[test]
     #[should_panic(expected = "not yet implemented")]
-    fn decrypt_storage_key_not_implemented() {
-        let mut rng = rand::thread_rng();
-        let user_id = UserId::new(&mut rng).unwrap();
-        let master_key = MasterKey(EncryptionKey::new(&mut rng));
-        let storage_key = StorageKey::generate(&mut rng);
-
-        let encrypted_storage_key = master_key
-            .encrypt_storage_key(&mut rng, storage_key, &user_id)
-            .unwrap();
-
-        let _key = encrypted_storage_key
-            .decrypt_storage_key(create_test_export_key(&mut rand::thread_rng()));
-    }
-
-    #[test]
-    #[should_panic(expected = "not yet implemented")]
     fn decrypt_secret_not_implemented() {
         let mut rng = rand::thread_rng();
         let encrypted_secret = Encrypted {
@@ -759,13 +756,34 @@ mod test {
     }
 
     #[test]
-    #[should_panic(expected = "not yet implemented")]
-    fn create_and_encrypt_storage_key_not_implemented() {
+    fn storage_key_encryption_works() -> Result<(), DamsError> {
         let mut rng = rand::thread_rng();
         let export_key = create_test_export_key(&mut rng);
-        let user_id = UserId::new(&mut rng).unwrap();
+        let user_id = UserId::new(&mut rng)?;
 
-        let _ = export_key.create_and_encrypt_storage_key(&mut rng, &user_id);
+        // Set up matching RNGs to check behavior of the utility function.
+        let seed = b"not-random seed for convenience!";
+        let mut rng = StdRng::from_seed(*seed);
+        let mut rng_copy = StdRng::from_seed(*seed);
+
+        // Encrypt the storage key
+        let master_key = export_key.derive_master_key()?;
+        let storage_key = StorageKey::generate(&mut rng);
+        let encrypted_key =
+            master_key.encrypt_storage_key(&mut rng, storage_key.clone(), &user_id)?;
+
+        // Make sure the utility function gives the same result when encrypting the
+        // storage key
+        let utility_encrypted_key = export_key
+            .clone()
+            .create_and_encrypt_storage_key(&mut rng_copy, &user_id)?;
+        assert_eq!(utility_encrypted_key, encrypted_key);
+
+        // Decrypt the storage key and check that it worked
+        let decrypted_key = encrypted_key.decrypt_storage_key(export_key)?;
+        assert_eq!(storage_key, decrypted_key);
+
+        Ok(())
     }
 
     #[test]
