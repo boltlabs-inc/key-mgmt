@@ -407,30 +407,28 @@ pub struct Secret {
     /// The actual bytes of secret material.
     material: Vec<u8>,
     /// Additional context about the secret.
-    associated_data: AssociatedData,
+    context: AssociatedData,
 }
 
 #[allow(unused)]
 impl Secret {
     /// Generate a new secret of length `len` (in bytes).
-    fn generate(
-        rng: &mut (impl CryptoRng + RngCore),
-        len: usize,
-        associated_data: AssociatedData,
-    ) -> Self {
+    fn generate(rng: &mut (impl CryptoRng + RngCore), len: usize, context: AssociatedData) -> Self {
         Self {
             material: iter::repeat_with(|| rng.gen()).take(len).collect(),
-            associated_data,
+            context,
         }
     }
 }
 
 impl From<Secret> for Vec<u8> {
     fn from(secret: Secret) -> Self {
-        // len || material || context
+        // key len || key material || context len || context
+        let ad: Vec<u8> = secret.context.into();
         iter::once(secret.material.len() as u8)
             .chain(secret.material)
-            .chain::<Vec<u8>>(secret.associated_data.into())
+            .chain(iter::once(ad.len() as u8))
+            .chain(ad)
             .collect()
     }
 }
@@ -438,20 +436,24 @@ impl From<Secret> for Vec<u8> {
 impl TryFrom<Vec<u8>> for Secret {
     type Error = CryptoError;
     fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
-        // len (1 byte) || material (len bytes) || context (remainder)
+        // key len (1 byte) || key material || context len (1 byte) || context
         let len = *bytes.first().ok_or(CryptoError::ConversionError)? as usize;
         let material = bytes
             .get(1..len + 1)
             .ok_or(CryptoError::ConversionError)?
             .into();
-        let associated_data: Vec<u8> = bytes
-            .get(len + 1..)
+        let ad_len = *bytes.get(len + 1).ok_or(CryptoError::ConversionError)? as usize;
+        let context: Vec<u8> = bytes
+            .get(len + 2..)
             .ok_or(CryptoError::ConversionError)?
             .into();
+        if context.len() != ad_len {
+            return Err(CryptoError::ConversionError);
+        }
 
         Ok(Self {
             material,
-            associated_data: associated_data.try_into()?,
+            context: context.try_into()?,
         })
     }
 }
@@ -505,6 +507,27 @@ mod test {
         }
 
         Ok(())
+    }
+
+    #[test]
+    fn secret_parsing_handles_bad_input() {
+        let empty = Vec::new();
+        assert!(Secret::try_from(empty).is_err());
+
+        let just_zero = vec![0];
+        assert!(Secret::try_from(just_zero).is_err());
+
+        let not_enough_key = vec![12, 1, 1, 1];
+        assert!(Secret::try_from(not_enough_key).is_err());
+
+        let no_context = vec![1, 1];
+        assert!(Secret::try_from(no_context).is_err());
+
+        let not_enough_context = vec![1, 1, 12, 1];
+        assert!(Secret::try_from(not_enough_context).is_err());
+
+        let too_much_context = vec![1, 1, 1, 3, 3, 3, 3];
+        assert!(Secret::try_from(too_much_context).is_err());
     }
 
     #[test]
@@ -585,7 +608,7 @@ mod test {
     fn data_encryption_not_implemented() {
         let secret = Secret {
             material: Vec::default(),
-            associated_data: AssociatedData::default(),
+            context: AssociatedData::default(),
         };
         let mut rng = rand::thread_rng();
         let storage_key = StorageKey::generate(&mut rng);
@@ -626,14 +649,14 @@ mod test {
 
         // in the default case
         let secret = Secret::generate(&mut rng, 32, AssociatedData::default());
-        assert_eq!(secret.associated_data, AssociatedData::default());
+        assert_eq!(secret.context, AssociatedData::default());
 
         // in the non-default case
         let complicated_ad = AssociatedData(
             "here is a long, complex string\nfor testing. with details!".to_string(),
         );
         let secret = Secret::generate(&mut rng, 32, complicated_ad.clone());
-        assert_eq!(secret.associated_data, complicated_ad);
+        assert_eq!(secret.context, complicated_ad);
     }
 
     #[test]
