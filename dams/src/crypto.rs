@@ -137,6 +137,7 @@ where
     ///
     ///
     /// Raises a [`CryptoError::EncryptionFailed`] if encryption fails.
+
     fn encrypt(
         rng: &mut (impl CryptoRng + RngCore),
         enc_key: &EncryptionKey,
@@ -249,7 +250,7 @@ impl From<GenericArray<u8, U64>> for OpaqueSessionKey {
 /// and corresponding registration result.
 #[allow(unused)]
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct OpaqueExportKey(GenericArray<u8, U32>);
+pub struct OpaqueExportKey(Box<[u8; 32]>);
 
 impl OpaqueExportKey {
     /// Derive a uniformly distributed secret [`MasterKey`] using the export key
@@ -263,7 +264,7 @@ impl OpaqueExportKey {
         // Derive `master_key_material` from HKDF with no salt, the
         // `OpaqueExportKey` as input key material, and the associated data as
         // extra info.
-        Hkdf::<Sha3_256>::new(None, &self.0)
+        Hkdf::<Sha3_256>::new(None, self.0.as_ref())
             .expand((&associated_data).into(), &mut master_key_material)
             // This should never cause an error because we've hardcoded the length of the master key
             // material and the export key length to both be 32, and length mismatch is the only
@@ -297,6 +298,12 @@ impl OpaqueExportKey {
         let master_key = self.derive_master_key()?;
         let storage_key = StorageKey::generate(rng);
         master_key.encrypt_storage_key(rng, storage_key, user_id)
+    }
+}
+
+impl From<GenericArray<u8, U32>> for OpaqueExportKey {
+    fn from(arr: GenericArray<u8, U32>) -> Self {
+        Self(Box::new(arr.into()))
     }
 }
 
@@ -680,7 +687,7 @@ mod test {
     // Instead, we'll use the encryption key generation function to simulate the
     // same thing.
     fn create_test_export_key(rng: &mut (impl CryptoRng + RngCore)) -> OpaqueExportKey {
-        OpaqueExportKey(EncryptionKey::new(rng).key)
+        OpaqueExportKey(Box::new(EncryptionKey::new(rng).key.into()))
     }
 
     #[test]
@@ -690,7 +697,8 @@ mod test {
         let master_key = export_key.derive_master_key().unwrap();
 
         // Make sure the master key isn't the same as the export key.
-        assert_ne!(master_key.0.key, export_key.0);
+        let master_key_bytes: [u8; 32] = master_key.0.key.into();
+        assert_ne!(master_key_bytes, *export_key.0.as_ref());
 
         // Make sure the master key isn't all 0s.
         assert_ne!(master_key.0.key, [0; 32].into());
@@ -698,7 +706,7 @@ mod test {
         // Make sure that using different context doesn't give the same key.
         let mut bad_mk = [0; 32];
         let bad_ad = AssociatedData::new().with_str("here is my testing context");
-        Hkdf::<Sha3_256>::new(None, &export_key.0)
+        Hkdf::<Sha3_256>::new(None, export_key.0.as_ref())
             .expand((&bad_ad).into(), &mut bad_mk)
             .unwrap();
 
