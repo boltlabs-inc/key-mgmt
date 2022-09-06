@@ -12,18 +12,12 @@ use crate::{
 use opaque_ke::ServerRegistration;
 use rand::{CryptoRng, Rng, RngCore};
 use serde::{Deserialize, Serialize};
-use std::{fmt::Display, str::FromStr};
+use std::{array::IntoIter, fmt::Display, str::FromStr};
 use uuid::Uuid;
 
 /// Unique ID for a user.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
 pub struct UserId(Uuid);
-
-impl Display for UserId {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&format!("{:?}", self.0))
-    }
-}
 
 impl UserId {
     pub fn new(rng: &mut (impl CryptoRng + RngCore)) -> Result<Self, DamsError> {
@@ -39,7 +33,22 @@ impl UserId {
     }
 
     pub(crate) fn len(&self) -> usize {
-        self.0.len()
+        self.as_bytes().len()
+    }
+}
+
+impl IntoIterator for UserId {
+    type Item = u8;
+    type IntoIter = IntoIter<u8, 16>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_bytes().into_iter()
+    }
+}
+
+impl Display for UserId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&format!("{:?}", self.0))
     }
 }
 

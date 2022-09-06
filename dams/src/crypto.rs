@@ -322,7 +322,7 @@ impl MasterKey {
         user_id: &UserId,
     ) -> Result<Encrypted<StorageKey>, CryptoError> {
         let associated_data = AssociatedData::new()
-            .with_str(&user_id.to_string())
+            .with_bytes(user_id.clone())
             .with_str(StorageKey::domain_separator());
 
         Encrypted::encrypt(rng, &self.0, storage_key, &associated_data)
@@ -366,7 +366,7 @@ impl StorageKey {
         key_id: &KeyId,
     ) -> Result<Encrypted<Secret>, CryptoError> {
         let ad = AssociatedData::new()
-            .with_str(&user_id.to_string())
+            .with_bytes(user_id.clone())
             .with_bytes(key_id.clone())
             .with_str("client-generated");
 
@@ -386,7 +386,7 @@ impl StorageKey {
         key_id: &KeyId,
     ) -> Result<Encrypted<Secret>, CryptoError> {
         let ad = AssociatedData::new()
-            .with_str(&user_id.to_string())
+            .with_bytes(user_id.clone())
             .with_bytes(key_id.clone())
             .with_str("client-generated");
         let secret = Secret::generate(rng, 32, ad);
@@ -973,7 +973,7 @@ mod test {
 
         // Encrypt the secret
         let ad = AssociatedData::new()
-            .with_str(&user_id.to_string())
+            .with_bytes(user_id.clone())
             .with_bytes(key_id.clone())
             .with_str("client-generated");
         let secret = Secret::generate(&mut rng, 32, ad);
