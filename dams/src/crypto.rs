@@ -211,7 +211,16 @@ impl Encrypted<StorageKey> {
     pub fn decrypt_storage_key(
         self,
         export_key: OpaqueExportKey,
+        user_id: &UserId,
     ) -> Result<StorageKey, CryptoError> {
+        // Check that the associated data is correct.
+        let expected_aad = AssociatedData::new()
+            .with_bytes(user_id.clone())
+            .with_str(StorageKey::domain_separator());
+        if self.associated_data != expected_aad {
+            return Err(CryptoError::DecryptionFailed);
+        }
+
         let master_key = export_key.derive_master_key()?;
         self.decrypt(&master_key.0)
     }
@@ -912,6 +921,7 @@ mod test {
         // Encrypt the storage key
         let master_key = export_key.derive_master_key()?;
         let storage_key = StorageKey::generate(&mut rng);
+
         let encrypted_key =
             master_key.encrypt_storage_key(&mut rng, storage_key.clone(), &user_id)?;
 
@@ -923,8 +933,65 @@ mod test {
         assert_eq!(utility_encrypted_key, encrypted_key);
 
         // Decrypt the storage key and check that it worked
-        let decrypted_key = encrypted_key.decrypt_storage_key(export_key)?;
+        let decrypted_key = encrypted_key.decrypt_storage_key(export_key, &user_id)?;
         assert_eq!(storage_key, decrypted_key);
+
+        Ok(())
+    }
+
+    #[test]
+    fn storage_key_retrieval_requires_correct_aad() -> Result<(), DamsError> {
+        let mut rng = rand::thread_rng();
+        let export_key = create_test_export_key(&mut rng);
+        let user_id = UserId::new(&mut rng)?;
+
+        let master_key = export_key.derive_master_key()?;
+        let storage_key = StorageKey::generate(&mut rng);
+
+        let bad_aad = AssociatedData::new()
+            .with_bytes(user_id.clone())
+            .with_str(StorageKey::domain_separator())
+            .with_str("some other content that makes this incorrect");
+
+        let encrypted_storage_key =
+            Encrypted::encrypt(&mut rng, &master_key.0, storage_key, &bad_aad)?;
+        assert!(encrypted_storage_key
+            .decrypt_storage_key(export_key, &user_id)
+            .is_err());
+
+        Ok(())
+    }
+
+    #[test]
+    fn storage_key_requires_correct_encrypted_blob() -> Result<(), DamsError> {
+        let mut rng = rand::thread_rng();
+
+        // Set up correct parameters to encrypt a storage key.
+        let user_id = UserId::new(&mut rng)?;
+        let export_key = create_test_export_key(&mut rng);
+        let aad = AssociatedData::new()
+            .with_bytes(user_id.clone())
+            .with_str(StorageKey::domain_separator());
+
+        // Encrypt any old key and pretend it's a storage key.
+        let fake_key = EncryptionKey::new(&mut rng);
+        let encrypted_key =
+            Encrypted::encrypt(&mut rng, &export_key.derive_master_key()?.0, fake_key, &aad)?;
+        assert!(encrypted_key
+            .clone()
+            .decrypt(&export_key.derive_master_key()?.0)
+            .is_ok());
+        let fake_storage_key: Encrypted<StorageKey> = Encrypted {
+            ciphertext: encrypted_key.ciphertext,
+            associated_data: encrypted_key.associated_data,
+            nonce: encrypted_key.nonce,
+            original_type: PhantomData,
+        };
+
+        // Decryption must fail.
+        assert!(fake_storage_key
+            .decrypt_storage_key(export_key, &user_id)
+            .is_err());
 
         Ok(())
     }
