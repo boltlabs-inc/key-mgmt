@@ -13,10 +13,11 @@ use opaque_ke::ServerRegistration;
 use rand::{CryptoRng, Rng, RngCore};
 use serde::{Deserialize, Serialize};
 use std::{fmt::Display, str::FromStr};
+use uuid::Uuid;
 
 /// Unique ID for a user.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
-pub struct UserId(Box<[u8; 16]>);
+pub struct UserId(Uuid);
 
 impl Display for UserId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -29,7 +30,8 @@ impl UserId {
         let mut id = [0_u8; 16];
         rng.try_fill(&mut id)
             .map_err(|_| CryptoError::RandomNumberGeneratorFailed)?;
-        Ok(Self(Box::new(id)))
+        let uuid = Uuid::from_bytes(id);
+        Ok(Self(uuid))
     }
 
     pub fn as_bytes(&self) -> &[u8] {

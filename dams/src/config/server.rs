@@ -19,7 +19,6 @@ pub struct Config {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
-#[non_exhaustive]
 pub struct DatabaseSpec {
     pub mongodb_uri: String,
     pub db_name: String,

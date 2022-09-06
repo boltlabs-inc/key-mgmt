@@ -39,6 +39,9 @@ jobs:
           components: clippy
           default: true
 
+      - name: Start MongoDB
+        uses: supercharge/mongodb-github-action@1.7.0
+
       - name: Install Protoc
         uses: arduino/setup-protoc@v1
         with:
