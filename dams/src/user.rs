@@ -48,7 +48,7 @@ impl IntoIterator for UserId {
 
 impl Display for UserId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&format!("{:?}", self.0))
+        write!(f, "{:?}", self.0)
     }
 }
 

@@ -83,7 +83,7 @@ impl AssociatedData {
     }
 
     fn with_str(self, ad: &str) -> Self {
-        AssociatedData(self.0.into_iter().chain(ad.bytes().into_iter()).collect())
+        self.with_bytes(ad.bytes())
     }
 
     fn with_bytes(self, ad: impl IntoIterator<Item = u8>) -> Self {
@@ -112,7 +112,7 @@ struct EncryptionKey {
     key: chacha20poly1305::Key,
 
     #[allow(unused)]
-    associated_data: AssociatedData,
+    context: AssociatedData,
 }
 
 #[allow(unused)]
@@ -121,7 +121,7 @@ impl EncryptionKey {
     fn new(rng: &mut (impl CryptoRng + RngCore)) -> Self {
         Self {
             key: ChaCha20Poly1305::generate_key(rng),
-            associated_data: AssociatedData::new().with_str("ChaCha20Poly1305 with 96-bit nonce."),
+            context: AssociatedData::new().with_str("ChaCha20Poly1305 with 96-bit nonce."),
         }
     }
 }
@@ -137,7 +137,6 @@ where
     ///
     ///
     /// Raises a [`CryptoError::EncryptionFailed`] if encryption fails.
-
     fn encrypt(
         rng: &mut (impl CryptoRng + RngCore),
         enc_key: &EncryptionKey,
@@ -172,7 +171,6 @@ where
     /// Raises a [`CryptoError::DecryptionFailed`] if decryption fails or
     /// [`CryptoError::ConversionError`] if the decrypted plaintext cannot be
     /// converted into `T`.
-    #[allow(unused)]
     fn decrypt(self, enc_key: &EncryptionKey) -> Result<T, CryptoError> {
         // Set up cipher with key
         let cipher = ChaCha20Poly1305::new(&enc_key.key);
@@ -248,24 +246,21 @@ impl From<GenericArray<u8, U64>> for OpaqueSessionKey {
 /// `export_key` field in the
 /// [ClientRegistrationFinishResult](opaque_ke::ClientRegistrationFinishResult)
 /// and corresponding registration result.
-#[allow(unused)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OpaqueExportKey(Box<[u8; 32]>);
 
 impl OpaqueExportKey {
     /// Derive a uniformly distributed secret [`MasterKey`] using the export key
     /// as input key material.
-    #[allow(unused)]
     fn derive_master_key(&self) -> Result<MasterKey, CryptoError> {
-        let associated_data =
-            AssociatedData::new().with_str("OPAQUE-derived Lock Keeper master key");
+        let context = AssociatedData::new().with_str("OPAQUE-derived Lock Keeper master key");
         let mut master_key_material = [0u8; 32];
 
         // Derive `master_key_material` from HKDF with no salt, the
         // `OpaqueExportKey` as input key material, and the associated data as
         // extra info.
         Hkdf::<Sha3_256>::new(None, self.0.as_ref())
-            .expand((&associated_data).into(), &mut master_key_material)
+            .expand((&context).into(), &mut master_key_material)
             // This should never cause an error because we've hardcoded the length of the master key
             // material and the export key length to both be 32, and length mismatch is the only
             // documented cause of an `expand` failure.
@@ -276,7 +271,7 @@ impl OpaqueExportKey {
 
         Ok(MasterKey(EncryptionKey {
             key: master_key_material.into(),
-            associated_data,
+            context,
         }))
     }
 
@@ -314,11 +309,9 @@ impl From<GenericArray<u8, U32>> for OpaqueExportKey {
 /// [`StorageKey`]. It should not be stored or saved beyond the lifetime of a
 /// single authentication session. It should never be sent to the server or
 /// passed out to the local calling application.
-#[allow(unused)]
 #[derive(Debug, PartialEq, Eq)]
 struct MasterKey(EncryptionKey);
 
-#[allow(unused)]
 impl MasterKey {
     /// Encrypt the given [`StorageKey`] under the [`MasterKey`] using an
     /// AEAD scheme.
@@ -343,7 +336,6 @@ impl MasterKey {
 /// the calling application.
 /// It should not be stored or saved beyond the lifetime of a single
 /// authentication session.
-#[allow(unused)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StorageKey(EncryptionKey);
 
@@ -354,30 +346,13 @@ impl StorageKey {
 
     /// Generate a new 32-byte [`StorageKey`].
     fn generate<Rng: CryptoRng + RngCore>(rng: &mut Rng) -> Self {
-        let associated_data = AssociatedData::new().with_str(Self::domain_separator());
-        let key = Secret::generate(rng, 32, associated_data.clone());
+        let context = AssociatedData::new().with_str(Self::domain_separator());
+        let key = Secret::generate(rng, 32, context.clone());
 
         Self(EncryptionKey {
             key: *chacha20poly1305::Key::from_slice(&key.material),
-            associated_data,
+            context,
         })
-    }
-
-    /// Encrypt the given [`Secret`] under the [`StorageKey`], using the
-    /// AEAD scheme.
-    fn encrypt_data(
-        self,
-        rng: &mut (impl CryptoRng + RngCore),
-        secret: Secret,
-        user_id: &UserId,
-        key_id: &KeyId,
-    ) -> Result<Encrypted<Secret>, CryptoError> {
-        let ad = AssociatedData::new()
-            .with_bytes(user_id.clone())
-            .with_bytes(key_id.clone())
-            .with_str("client-generated");
-
-        Encrypted::encrypt(rng, &self.0, secret, &ad)
     }
 
     /// Create and encrypt a new secret. This is part of the
@@ -391,14 +366,17 @@ impl StorageKey {
         rng: &mut (impl CryptoRng + RngCore),
         user_id: &UserId,
         key_id: &KeyId,
-    ) -> Result<Encrypted<Secret>, CryptoError> {
-        let ad = AssociatedData::new()
+    ) -> Result<(Secret, Encrypted<Secret>), CryptoError> {
+        let context = AssociatedData::new()
             .with_bytes(user_id.clone())
             .with_bytes(key_id.clone())
             .with_str("client-generated");
-        let secret = Secret::generate(rng, 32, ad);
+        let secret = Secret::generate(rng, 32, context.clone());
 
-        self.encrypt_data(rng, secret, user_id, key_id)
+        Ok((
+            secret.clone(),
+            Encrypted::encrypt(rng, &self.0, secret, &context)?,
+        ))
     }
 }
 
@@ -439,7 +417,7 @@ impl From<EncryptionKey> for Vec<u8> {
         // len || key || context
         iter::once(key.key.len() as u8)
             .chain(key.key)
-            .chain::<Vec<u8>>(key.associated_data.into())
+            .chain::<Vec<u8>>(key.context.into())
             .collect()
     }
 }
@@ -448,28 +426,29 @@ impl TryFrom<Vec<u8>> for EncryptionKey {
     type Error = CryptoError;
 
     fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
-        // len (should always be 32) || key || context
+        // len (should always be 32) || key (32 bytes) || context (remainder)
         let len = *bytes.first().ok_or(CryptoError::ConversionError)? as usize;
         if len != 32 {
             return Err(CryptoError::ConversionError);
         }
 
-        // len (1 byte) || material (len bytes) || context (remainder)
-        let key = bytes.get(1..33).ok_or(CryptoError::ConversionError)?;
-        let associated_data: Vec<u8> = bytes
-            .get(len + 1..)
+        let key_offset = len + 1;
+        let key = bytes
+            .get(1..key_offset)
+            .ok_or(CryptoError::ConversionError)?;
+        let context: Vec<u8> = bytes
+            .get(key_offset..)
             .ok_or(CryptoError::ConversionError)?
             .into();
 
         Ok(Self {
             key: *chacha20poly1305::Key::from_slice(key),
-            associated_data: associated_data.try_into()?,
+            context: context.try_into()?,
         })
     }
 }
 
 /// Universally unique identifier for a secret.
-#[allow(unused)]
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct KeyId(Box<[u8; 32]>);
 
@@ -482,12 +461,11 @@ impl IntoIterator for KeyId {
     }
 }
 
-#[allow(unused)]
 impl KeyId {
     /// Generate a new, random `KeyId` for the given [`UserId`].
     ///
     /// This is called by the key server.
-    fn generate(
+    pub fn generate(
         rng: &mut (impl CryptoRng + RngCore),
         user_id: &UserId,
     ) -> Result<Self, CryptoError> {
@@ -497,7 +475,7 @@ impl KeyId {
             .map_err(|_| CryptoError::RandomNumberGeneratorFailed)?;
         let domain_separator = b"Lock Keeper key ID";
 
-        let mut hasher = Sha3_256::new();
+        let hasher = Sha3_256::new();
         let bytes = hasher
             .chain_update(domain_separator.len().to_be_bytes())
             .chain_update(domain_separator)
@@ -508,7 +486,7 @@ impl KeyId {
             .finalize();
 
         // Truncate to 32 bytes, then convert into a 32-byte array.
-        // This should never produce a ConversoinError because the lengths are
+        // This should never produce a `ConversionError` because the lengths are
         // hard-coded.
         Ok(Self(Box::new(
             bytes
@@ -532,7 +510,6 @@ pub struct Secret {
     context: AssociatedData,
 }
 
-#[allow(unused)]
 impl Secret {
     /// Generate a new secret of length `len` (in bytes).
     fn generate(rng: &mut (impl CryptoRng + RngCore), len: usize, context: AssociatedData) -> Self {
@@ -559,17 +536,19 @@ impl TryFrom<Vec<u8>> for Secret {
     type Error = CryptoError;
     fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
         // key len (1 byte) || key material || context len (1 byte) || context
-        let len = *bytes.first().ok_or(CryptoError::ConversionError)? as usize;
+        let key_offset = 1 + *bytes.first().ok_or(CryptoError::ConversionError)? as usize;
         let material = bytes
-            .get(1..len + 1)
+            .get(1..key_offset)
             .ok_or(CryptoError::ConversionError)?
             .into();
-        let ad_len = *bytes.get(len + 1).ok_or(CryptoError::ConversionError)? as usize;
+
+        let context_len = *bytes.get(key_offset).ok_or(CryptoError::ConversionError)? as usize;
+        let context_offset = key_offset + 1;
         let context: Vec<u8> = bytes
-            .get(len + 2..)
+            .get(context_offset..)
             .ok_or(CryptoError::ConversionError)?
             .into();
-        if context.len() != ad_len {
+        if context.len() != context_len {
             return Err(CryptoError::ConversionError);
         }
 
@@ -617,9 +596,8 @@ mod test {
         let mut rng = rand::thread_rng();
 
         for len in 0..128 {
-            let associated_data =
-                AssociatedData::new().with_str(&format!("a secret of length {}", len));
-            let secret = Secret::generate(&mut rng, len, associated_data);
+            let context = AssociatedData::new().with_str(&format!("a secret of length {}", len));
+            let secret = Secret::generate(&mut rng, len, context);
 
             let secret_vec: Vec<u8> = secret.clone().into();
             let output_secret: Secret = secret_vec.try_into()?;
@@ -743,21 +721,6 @@ mod test {
         let mut rng = rand::thread_rng();
         let storage_key = StorageKey::generate(&mut rng);
         assert_eq!(32, storage_key.0.key.len())
-    }
-
-    #[test]
-    fn data_encryption_does_not_panic() {
-        let secret = Secret {
-            material: Vec::default(),
-            context: AssociatedData::default(),
-        };
-        let mut rng = rand::thread_rng();
-        let storage_key = StorageKey::generate(&mut rng);
-        let user_id = UserId::new(&mut rng).unwrap();
-        let key_id = KeyId::generate(&mut rng, &user_id).unwrap();
-        assert!(storage_key
-            .encrypt_data(&mut rng, secret, &user_id, &key_id)
-            .is_ok());
     }
 
     #[test]
@@ -974,28 +937,10 @@ mod test {
         let user_id = UserId::new(&mut rng)?;
         let key_id = KeyId::generate(&mut rng, &user_id)?;
 
-        // Set up matching RNGs to check behavior of the utility function.
-        let seed = b"not-random seed for convenience!";
-        let mut rng = StdRng::from_seed(*seed);
-        let mut rng_copy = StdRng::from_seed(*seed);
-
-        // Encrypt the secret
-        let ad = AssociatedData::new()
-            .with_bytes(user_id.clone())
-            .with_bytes(key_id.clone())
-            .with_str("client-generated");
-        let secret = Secret::generate(&mut rng, 32, ad);
-        let encrypted_secret =
-            storage_key
-                .clone()
-                .encrypt_data(&mut rng, secret.clone(), &user_id, &key_id)?;
-
-        // Make sure the utility function gives the same result
-        let utility_encrypted_secret =
-            storage_key
-                .clone()
-                .create_and_encrypt_secret(&mut rng_copy, &user_id, &key_id)?;
-        assert_eq!(encrypted_secret, utility_encrypted_secret);
+        // Create and encrypt a secret
+        let (secret, encrypted_secret) = storage_key
+            .clone()
+            .create_and_encrypt_secret(&mut rng, &user_id, &key_id)?;
 
         // Decrypt the secret
         let decrypted_secret = encrypted_secret.decrypt_secret(storage_key)?;
