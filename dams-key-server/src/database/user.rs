@@ -68,6 +68,8 @@ mod test {
 
     use super::create_user;
 
+    /// Locally simulates OPAQUE registration to get a valid
+    /// `ServerRegistration` for remaining tests.
     fn server_registration(
         rng: &mut (impl CryptoRng + RngCore),
     ) -> ServerRegistration<OpaqueCipherSuite> {
@@ -192,7 +194,6 @@ mod test {
         );
 
         // Matching both can't be added.
-        eprintln!("one conn:: no match both");
         assert!(
             create_user(&db, &user_id, &account_name, &server_registration)
                 .await
