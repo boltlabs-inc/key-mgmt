@@ -44,7 +44,7 @@ async fn generate(
     // Generate new KeyId
     let key_id = {
         let mut rng = context.rng.lock().await;
-        KeyId::generate(&mut *rng, generate_message.user_id)
+        KeyId::generate(&mut *rng, &generate_message.user_id)?
     };
     // Serialize KeyId and send to client
     let reply = server::Generate {

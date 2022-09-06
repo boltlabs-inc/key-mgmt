@@ -14,11 +14,8 @@ use http_body::combinators::UnsyncBoxBody;
 use hyper::client::HttpConnector;
 use hyper_rustls::HttpsConnector;
 use rand::{rngs::StdRng, SeedableRng};
-use std::{
-    str::FromStr,
-    sync::{Arc, Mutex},
-};
-use tokio::sync::mpsc;
+use std::{str::FromStr, sync::Arc};
+use tokio::sync::{mpsc, Mutex};
 use tokio_stream::wrappers::ReceiverStream;
 use tracing::error;
 
@@ -60,7 +57,7 @@ pub struct DamsClient {
     session_key: OpaqueSessionKey,
     config: Config,
     tonic_client: DamsRpcClient<DamsRpcClientInner>,
-    rng: Arc<Mutex<StdRng>>,
+    pub(crate) rng: Arc<Mutex<StdRng>>,
     user_id: UserId,
 }
 

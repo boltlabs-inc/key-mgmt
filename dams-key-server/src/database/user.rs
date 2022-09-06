@@ -81,14 +81,13 @@ pub async fn add_user_secret(
     user_id: &UserId,
     secret: Encrypted<Secret>,
     key_id: KeyId,
-) -> Result<(), Status> {
+) -> Result<(), DamsServerError> {
     let collection = db.collection::<User>(constants::USERS);
     let query = doc! { USER_ID: user_id.to_string() };
     let mut user = collection
         .find_one(query, None)
-        .await
-        .map_err(|_| Status::aborted("MongoDB error in add_user_secret()"))?
-        .ok_or_else(|| Status::aborted("User not found"))?;
+        .await?
+        .ok_or(DamsServerError::AccountDoesNotExist)?;
     let stored_secret = StoredSecret::new(secret, key_id);
     user.add_secret(stored_secret);
     Ok(())
