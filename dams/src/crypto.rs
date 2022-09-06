@@ -196,8 +196,8 @@ impl Encrypted<Secret> {
     /// retrieve a secret from the server.
     ///
     /// This must be run by the client.
-    pub fn decrypt_secret(self, _storage_key: StorageKey) -> Secret {
-        todo!()
+    pub fn decrypt_secret(self, storage_key: StorageKey) -> Result<Secret, CryptoError> {
+        self.decrypt(&storage_key.0)
     }
 }
 
@@ -289,7 +289,6 @@ impl OpaqueExportKey {
     /// 2. Generate a new [`StorageKey`] to encrypt stored data with
     /// 3. Encrypt the storage key under the master key, using an AEAD scheme
     /// 4. Return the encrypted storage key
-    #[allow(unused)]
     pub fn create_and_encrypt_storage_key(
         self,
         rng: &mut (impl CryptoRng + RngCore),
@@ -341,7 +340,6 @@ impl MasterKey {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StorageKey(EncryptionKey);
 
-#[allow(unused)]
 impl StorageKey {
     fn domain_separator() -> &'static str {
         "storage key"
@@ -381,14 +379,19 @@ impl StorageKey {
     /// This must be run by the client. It takes the following steps:
     /// 1. Generates a new secret
     /// 2. Encrypt it under the [`StorageKey`], using an AEAD scheme
-    #[allow(unused)]
     pub fn create_and_encrypt_secret(
         self,
         rng: &mut (impl CryptoRng + RngCore),
         user_id: &UserId,
         key_id: &KeyId,
-    ) -> Encrypted<Secret> {
-        todo!()
+    ) -> Result<Encrypted<Secret>, CryptoError> {
+        let ad = AssociatedData::new()
+            .with_str(&user_id.to_string())
+            .with_bytes(key_id.clone())
+            .with_str("client-generated");
+        let secret = Secret::generate(rng, 32, ad);
+
+        self.encrypt_data(rng, secret, user_id, key_id)
     }
 }
 
@@ -508,10 +511,6 @@ impl KeyId {
                 .try_into()
                 .map_err(|_| CryptoError::ConversionError)?,
         )))
-    }
-
-    fn as_str(&self) -> Result<&str, CryptoError> {
-        std::str::from_utf8(self.0.as_ref()).map_err(|_| CryptoError::ConversionError)
     }
 }
 
@@ -929,20 +928,6 @@ mod test {
     }
 
     #[test]
-    #[should_panic(expected = "not yet implemented")]
-    fn decrypt_secret_not_implemented() {
-        let mut rng = rand::thread_rng();
-        let encrypted_secret = Encrypted {
-            ciphertext: Vec::default(),
-            associated_data: AssociatedData::default(),
-            nonce: chacha20poly1305::Nonce::default(),
-            original_type: PhantomData,
-        };
-        let storage_key = StorageKey::generate(&mut rng);
-        let _secret = encrypted_secret.decrypt_secret(storage_key);
-    }
-
-    #[test]
     fn storage_key_encryption_works() -> Result<(), DamsError> {
         let mut rng = rand::thread_rng();
         let export_key = create_test_export_key(&mut rng);
@@ -974,12 +959,40 @@ mod test {
     }
 
     #[test]
-    #[should_panic(expected = "not yet implemented")]
-    fn create_and_encrypt_secret_not_implemented() {
+    fn secret_encryption_works() -> Result<(), DamsError> {
         let mut rng = rand::thread_rng();
         let storage_key = StorageKey::generate(&mut rng);
-        // TODO #134: use proper gen function
-        let key_id = KeyId(Box::new([0; 32]));
-        let _ = storage_key.create_and_encrypt_secret(&mut rng, &UserId::default(), &key_id);
+
+        let user_id = UserId::new(&mut rng)?;
+        let key_id = KeyId::generate(&mut rng, &user_id)?;
+
+        // Set up matching RNGs to check behavior of the utility function.
+        let seed = b"not-random seed for convenience!";
+        let mut rng = StdRng::from_seed(*seed);
+        let mut rng_copy = StdRng::from_seed(*seed);
+
+        // Encrypt the secret
+        let ad = AssociatedData::new()
+            .with_str(&user_id.to_string())
+            .with_bytes(key_id.clone())
+            .with_str("client-generated");
+        let secret = Secret::generate(&mut rng, 32, ad);
+        let encrypted_secret =
+            storage_key
+                .clone()
+                .encrypt_data(&mut rng, secret.clone(), &user_id, &key_id)?;
+
+        // Make sure the utility function gives the same result
+        let utility_encrypted_secret =
+            storage_key
+                .clone()
+                .create_and_encrypt_secret(&mut rng_copy, &user_id, &key_id)?;
+        assert_eq!(encrypted_secret, utility_encrypted_secret);
+
+        // Decrypt the secret
+        let decrypted_secret = encrypted_secret.decrypt_secret(storage_key)?;
+        assert_eq!(decrypted_secret, secret);
+
+        Ok(())
     }
 }
