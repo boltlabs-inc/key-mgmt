@@ -19,7 +19,6 @@ pub struct Config {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
-#[non_exhaustive]
 pub struct DatabaseSpec {
     pub mongodb_uri: String,
     pub db_name: String,
@@ -74,15 +73,6 @@ impl FromStr for Config {
     fn from_str(config_string: &str) -> Result<Self, Self::Err> {
         let config: Config = toml::from_str(config_string)?;
         Ok(config)
-    }
-}
-
-impl DatabaseSpec {
-    pub fn new(mongodb_uri: String, db_name: String) -> Self {
-        Self {
-            mongodb_uri,
-            db_name,
-        }
     }
 }
 

@@ -112,7 +112,10 @@ mod test {
         let mut rng = rand::thread_rng();
         let mongodb_uri = "mongodb://localhost:27017";
         let db_name = "multiple_connections_dont_overwrite";
-        let db_spec = DatabaseSpec::new(mongodb_uri.to_string(), db_name.to_string());
+        let db_spec = DatabaseSpec {
+            mongodb_uri: mongodb_uri.to_string(),
+            db_name: db_name.to_string(),
+        };
 
         // Clean up previous runs and make fresh connection
         drop_db(mongodb_uri, db_name).await?;
@@ -165,7 +168,10 @@ mod test {
         let mut rng = rand::thread_rng();
         let mongodb_uri = "mongodb://localhost:27017";
         let db_name = "unique_indices_are_enforced";
-        let db_spec = DatabaseSpec::new(mongodb_uri.to_string(), db_name.to_string());
+        let db_spec = DatabaseSpec {
+            mongodb_uri: mongodb_uri.to_string(),
+            db_name: db_name.to_string(),
+        };
 
         // Clean up previous runs and make fresh connection
         drop_db(mongodb_uri, db_name).await?;
