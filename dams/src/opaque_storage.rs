@@ -71,6 +71,9 @@ mod tests {
             opaque_server_key: temp_dir().join("opaque/server_setup"),
         };
 
+        // Delete file from previous run if it exists
+        let _ = std::fs::remove_file(&service.opaque_server_key);
+
         // First, the storage key doesn't exist
         assert!(!Path::new(&service.opaque_server_key).is_file());
 
