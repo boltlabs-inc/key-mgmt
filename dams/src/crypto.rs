@@ -16,7 +16,7 @@ use hkdf::Hkdf;
 use rand::{CryptoRng, Rng, RngCore};
 use serde::{Deserialize, Serialize};
 use sha3::{Digest, Sha3_256};
-use std::{iter, marker::PhantomData};
+use std::{array::IntoIter, iter, marker::PhantomData};
 use thiserror::Error;
 use tracing::error;
 
@@ -47,35 +47,33 @@ pub enum CryptoError {
     Infallible(#[from] Infallible),
 }
 
-/// The associated data used in [`Encrypted`] AEAD ciphertexts and (TODO #130:
-/// HKDF) key derivations.
+/// The associated data used in [`Encrypted`] AEAD ciphertexts and
+/// key derivations.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
-struct AssociatedData(String);
+struct AssociatedData(Vec<u8>);
 
 impl Default for AssociatedData {
     fn default() -> Self {
-        Self(String::from("Version 0.1."))
+        Self("Version 0.1.".as_bytes().to_vec())
     }
 }
 
 impl TryFrom<Vec<u8>> for AssociatedData {
     type Error = CryptoError;
     fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
-        Ok(Self(
-            String::from_utf8(bytes).map_err(|_| CryptoError::ConversionError)?,
-        ))
+        Ok(Self(bytes))
     }
 }
 
 impl From<AssociatedData> for Vec<u8> {
     fn from(associated_data: AssociatedData) -> Self {
-        associated_data.0.into_bytes()
+        associated_data.0
     }
 }
 
 impl<'a> From<&'a AssociatedData> for &'a [u8] {
     fn from(associated_data: &'a AssociatedData) -> Self {
-        associated_data.0.as_bytes()
+        associated_data.0.as_ref()
     }
 }
 
@@ -85,7 +83,11 @@ impl AssociatedData {
     }
 
     fn with_str(self, ad: &str) -> Self {
-        AssociatedData(format!("{}\n{}", self.0, ad))
+        AssociatedData(self.0.into_iter().chain(ad.bytes().into_iter()).collect())
+    }
+
+    fn with_bytes(self, ad: impl IntoIterator<Item = u8>) -> Self {
+        AssociatedData(self.0.into_iter().chain(ad.into_iter()).collect())
     }
 }
 
@@ -367,7 +369,7 @@ impl StorageKey {
     ) -> Result<Encrypted<Secret>, CryptoError> {
         let ad = AssociatedData::new()
             .with_str(&user_id.to_string())
-            .with_str(key_id.as_str()?)
+            .with_bytes(key_id.clone())
             .with_str("client-generated");
 
         Encrypted::encrypt(rng, &self.0, secret, &ad)
@@ -458,8 +460,17 @@ impl TryFrom<Vec<u8>> for EncryptionKey {
 
 /// Universally unique identifier for a secret.
 #[allow(unused)]
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct KeyId(Box<[u8; 32]>);
+
+impl IntoIterator for KeyId {
+    type Item = u8;
+    type IntoIter = IntoIter<u8, 32>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
+}
 
 #[allow(unused)]
 impl KeyId {
@@ -583,7 +594,7 @@ mod test {
         ];
 
         for test in test_strings {
-            let data = AssociatedData(test.to_string());
+            let data = AssociatedData(test.as_bytes().to_vec());
 
             let data_vec: Vec<u8> = data.clone().into();
             let output_data: AssociatedData = data_vec.try_into()?;
@@ -728,8 +739,7 @@ mod test {
     }
 
     #[test]
-    #[should_panic(expected = "not yet implemented")]
-    fn data_encryption_not_implemented() {
+    fn data_encryption_does_not_panic() {
         let secret = Secret {
             material: Vec::default(),
             context: AssociatedData::default(),
@@ -738,7 +748,9 @@ mod test {
         let storage_key = StorageKey::generate(&mut rng);
         let user_id = UserId::new(&mut rng).unwrap();
         let key_id = KeyId::generate(&mut rng, &user_id).unwrap();
-        let _encrypted_secret = storage_key.encrypt_data(&mut rng, secret, &user_id, &key_id);
+        assert!(storage_key
+            .encrypt_data(&mut rng, secret, &user_id, &key_id)
+            .is_ok());
     }
 
     #[test]
@@ -778,9 +790,8 @@ mod test {
         assert_eq!(secret.context, AssociatedData::default());
 
         // in the non-default case
-        let complicated_ad = AssociatedData(
-            "here is a long, complex string\nfor testing. with details!".to_string(),
-        );
+        let complicated_ad = AssociatedData::new()
+            .with_str("here is a long, complex string\nfor testing. with details!");
         let secret = Secret::generate(&mut rng, 32, complicated_ad.clone());
         assert_eq!(secret.context, complicated_ad);
     }
@@ -891,7 +902,8 @@ mod test {
     fn decryption_fails_with_wrong_associated_data() {
         let mut rng = rand::thread_rng();
         let (_, mut encrypted_bytes, enc_key) = encrypt_random_bytes(&mut rng);
-        encrypted_bytes.associated_data = AssociatedData("Here is some incorrect data".to_string());
+        encrypted_bytes.associated_data =
+            AssociatedData::new().with_str("Here is some incorrect data");
 
         assert!(encrypted_bytes.decrypt(&enc_key).is_err())
     }
