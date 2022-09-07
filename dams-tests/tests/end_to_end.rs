@@ -1,27 +1,18 @@
-pub(crate) mod common;
+mod common;
 
-use crate::{
-    Operation::{Authenticate, Register},
-    Party::{Client, Server},
-};
 use common::{get_logs, LogType, Party};
+use Operation::{Authenticate, Register};
+use Party::{Client, Server};
 
 use crate::Operation::Generate;
 use dams::{config::client::Config, user::AccountName};
 use dams_client::{client::Password, DamsClient, DamsClientError};
-use dams_key_server::database;
 use std::{fs::OpenOptions, str::FromStr};
 use thiserror::Error;
 
 #[tokio::test]
-pub async fn integration_tests() {
-    // Read environment variables from .env file
-    let server_config = common::server_test_config().await;
-    let db = database::connect_to_mongo(&server_config.database)
-        .await
-        .expect("Unable to connect to Mongo");
-    let server_future = common::setup(db.clone(), server_config).await;
-    let client_config = common::client_test_config().await;
+pub async fn end_to_end_tests() {
+    let context = common::setup().await;
 
     // Run every test, printing out details if it fails
     let tests = tests().await;
@@ -36,7 +27,7 @@ pub async fn integration_tests() {
         .unwrap_or_else(|e| panic!("Failed to clear error file at start: {:?}", e));
     for test in tests {
         eprintln!("\n\ntest integration_tests::{} ... ", test.name);
-        let result = test.execute(&client_config).await;
+        let result = test.execute(&context.client_config).await;
         if let Err(error) = &result {
             eprintln!("failed with error: {:?}", error)
         } else {
@@ -56,7 +47,7 @@ pub async fn integration_tests() {
     // _every_ test must run without short-circuiting the execution at first
     // failure
     let mut errors = Vec::with_capacity(results.len());
-    for result in results.iter() {
+    for result in results.into_iter() {
         match result {
             Ok(_) => {}
             Err(err) => {
@@ -65,7 +56,7 @@ pub async fn integration_tests() {
         }
     }
 
-    common::teardown(server_future).await;
+    context.teardown().await;
     if !errors.is_empty() {
         panic!("Test failed: {:?}", errors);
     }
