@@ -13,7 +13,11 @@ use tokio::{task::JoinHandle, time::Duration};
 use tracing::info_span;
 use tracing_futures::Instrument;
 
-use dams::{timeout::WithTimeout, TestLogs, config::{client::Config as ClientConfig, server::Config as ServerConfig}};
+use dams::{
+    config::{client::Config as ClientConfig, server::Config as ServerConfig},
+    timeout::WithTimeout,
+    TestLogs,
+};
 use dams_key_server::database;
 
 pub const ERROR_FILENAME: &str = "tests/gen/errors.log";
@@ -25,6 +29,7 @@ pub type ServerFuture = JoinHandle<Result<(), dams_key_server::DamsServerError>>
 
 /// Set of processes that run during a test.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(unused)]
 pub enum Party {
     Client,
     Server,
@@ -39,7 +44,7 @@ impl Party {
     }
 }
 
-pub async fn setup() -> (ServerFuture, ClientConfig) {
+pub async fn setup() -> (ServerFuture, ClientConfig, Database) {
     // Read environment variables from .env file
     let server_config = server_test_config().await;
     let db = database::connect_to_mongo(&server_config.database)
@@ -51,7 +56,7 @@ pub async fn setup() -> (ServerFuture, ClientConfig) {
     let server_future = start_server(server_config).await;
     let client_config = client_test_config().await;
 
-    (server_future, client_config)
+    (server_future, client_config, db)
 }
 
 pub async fn generate_files(db: Database) {

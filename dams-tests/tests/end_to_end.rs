@@ -11,7 +11,7 @@ use thiserror::Error;
 
 #[tokio::test]
 pub async fn end_to_end_tests() {
-    let (server_future, client_config) = common::setup().await;
+    let (server_future, client_config, _) = common::setup().await;
 
     // Run every test, printing out details if it fails
     let tests = tests().await;
@@ -260,4 +260,3 @@ struct Outcome {
     error: Option<Party>,
     expected_error: Option<DamsClientError>,
 }
-
