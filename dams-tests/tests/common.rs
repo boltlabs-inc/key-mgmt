@@ -13,40 +13,47 @@ use tokio::{task::JoinHandle, time::Duration};
 use tracing::info_span;
 use tracing_futures::Instrument;
 
-use dams::{defaults::server::LOCAL_SERVER_URI, timeout::WithTimeout, TestLogs};
+use dams::{
+    config::{client::Config as ClientConfig, server::Config as ServerConfig},
+    defaults::server::LOCAL_SERVER_URI,
+    timeout::WithTimeout,
+    TestLogs,
+};
 
 pub const ERROR_FILENAME: &str = "tests/gen/errors.log";
-
 pub const SERVER_ADDRESS: &str = "127.0.0.1";
 
 /// Give a name to the slightly annoying type of the joined server futures
-type ServerFuture = JoinHandle<Result<(), dams_key_server::DamsServerError>>;
+pub type ServerFuture = JoinHandle<Result<(), dams_key_server::DamsServerError>>;
 
-/// Set of processes that run during a test.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Party {
-    Client,
-    Server,
-}
+pub async fn setup() -> TestContext {
+    // Read environment variables from .env file
+    let server_config = server_test_config().await;
+    let database = Database::connect(&server_config.database)
+        .await
+        .expect("Unable to connect to Mongo");
 
-impl Party {
-    pub const fn to_str(self) -> &'static str {
-        match self {
-            Party::Client => "party: client",
-            Party::Server => "party: server",
-        }
+    // Ensure that the test DB is fresh
+    database.drop().await.expect("Failed to drop database");
+
+    generate_files().await;
+
+    let server_future = start_server(server_config).await;
+    let client_config = client_test_config().await;
+
+    TestContext {
+        server_future,
+        client_config,
+        database,
     }
 }
 
-pub async fn setup(db: Database, server_config: dams::config::server::Config) -> ServerFuture {
+async fn generate_files() {
     // Delete data from previous run
     let gen_path = Path::new("tests/gen/");
     // Swallow error if path doesn't exist
     let _ = fs::remove_dir_all(&gen_path);
-    fs::create_dir(&gen_path).expect("Unable to create directory tests/gen");
-
-    // Ensure that the test DB is fresh
-    db.drop().await.expect("Failed to drop database");
+    fs::create_dir_all(&gen_path).expect("Unable to create directory tests/gen");
 
     // Create self-signed SSL certificate in the generated directory
     Command::new("../dev/generate-certificates")
@@ -54,7 +61,9 @@ pub async fn setup(db: Database, server_config: dams::config::server::Config) ->
         .spawn()
         .expect("Failed to generate new certificates");
     tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
+}
 
+async fn start_server(server_config: ServerConfig) -> ServerFuture {
     // set up tracing for all log messages
     tracing_subscriber::fmt()
         .with_writer(Mutex::new(
@@ -63,7 +72,6 @@ pub async fn setup(db: Database, server_config: dams::config::server::Config) ->
         .init();
 
     // Form the server run request and execute
-    #[allow(clippy::infallible_destructuring_match)]
     let server_handle = tokio::spawn(
         dams_key_server::server::start_tonic_server(server_config)
             .instrument(info_span!(Party::Server.to_str())),
@@ -96,14 +104,9 @@ pub async fn setup(db: Database, server_config: dams::config::server::Config) ->
     server_handle
 }
 
-pub async fn teardown(server_future: ServerFuture) {
-    // Ignore the result because we expect it to be an `Expired` error
-    let _result = server_future.with_timeout(Duration::from_secs(1)).await;
-}
-
 /// Encode the customizable fields of the keymgmt client Config struct for
 /// testing.
-pub async fn client_test_config() -> dams::config::client::Config {
+async fn client_test_config() -> ClientConfig {
     let config_str = format!(
         r#"
         server_location = "{}"
@@ -112,12 +115,12 @@ pub async fn client_test_config() -> dams::config::client::Config {
         LOCAL_SERVER_URI
     );
 
-    dams::config::client::Config::from_str(&config_str).expect("Failed to load client config")
+    ClientConfig::from_str(&config_str).expect("Failed to load client config")
 }
 
 /// Encode the customizable fields of the keymgmt server Config struct for
 /// testing.
-pub async fn server_test_config() -> dams::config::server::Config {
+async fn server_test_config() -> ServerConfig {
     let config_str = format!(
         r#"
         [[service]]
@@ -135,7 +138,40 @@ pub async fn server_test_config() -> dams::config::server::Config {
         SERVER_ADDRESS
     );
 
-    dams::config::server::Config::from_str(&config_str).expect("failed to load server config")
+    ServerConfig::from_str(&config_str).expect("failed to load server config")
+}
+
+/// Set of processes that run during a test.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(unused)]
+pub enum Party {
+    Client,
+    Server,
+}
+
+impl Party {
+    pub const fn to_str(self) -> &'static str {
+        match self {
+            Party::Client => "party: client",
+            Party::Server => "party: server",
+        }
+    }
+}
+
+pub struct TestContext {
+    server_future: ServerFuture,
+    pub client_config: ClientConfig,
+    pub database: Database,
+}
+
+impl TestContext {
+    pub async fn teardown(self) {
+        // Ignore the result because we expect it to be an `Expired` error
+        let _result = self
+            .server_future
+            .with_timeout(Duration::from_secs(1))
+            .await;
+    }
 }
 
 #[allow(unused)]
