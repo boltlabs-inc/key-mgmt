@@ -1,35 +1,28 @@
-use crate::{client::ClientAction, DamsClient, DamsClientError};
+use crate::{DamsClient, DamsClientError};
 use dams::{
     channel::ClientChannel,
     crypto::{KeyId, OpaqueExportKey, Secret, StorageKey},
-    dams_rpc::dams_rpc_client::DamsRpcClient,
     types::generate::{client, server},
     user::UserId,
 };
 use rand::rngs::StdRng;
-use tonic::transport::Channel;
 
 impl DamsClient {
     pub(crate) async fn handle_generate(
-        &self,
-        client: &mut DamsRpcClient<Channel>,
+        &mut self,
+        channel: &mut ClientChannel,
         user_id: &UserId,
         export_key: OpaqueExportKey,
     ) -> Result<(KeyId, Secret), DamsClientError> {
         // Retrieve the storage key
-        let storage_key = self
-            .retrieve_storage_key(client, export_key, user_id)
-            .await?;
-
-        // Create channel to send messages to server
-        let mut channel = Self::create_channel(client, ClientAction::Generate).await?;
+        let storage_key = self.retrieve_storage_key(export_key, user_id).await?;
 
         // Generate step: get new KeyId from server
-        let key_id = generate(&mut channel, user_id).await?;
+        let key_id = generate(channel, user_id).await?;
         // Store step: encrypt secret and send to server to store
         let secret = {
             let mut rng = self.rng.lock().await;
-            store(&mut channel, user_id, storage_key, &mut rng, &key_id).await?
+            store(channel, user_id, storage_key, &mut rng, &key_id).await?
         };
 
         Ok((key_id, secret))

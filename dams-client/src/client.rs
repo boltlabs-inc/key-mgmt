@@ -56,7 +56,7 @@ impl Password {
 pub struct DamsClient {
     session_key: OpaqueSessionKey,
     config: Config,
-    tonic_client: DamsRpcClient<DamsRpcClientInner>,
+    pub(crate) tonic_client: DamsRpcClient<DamsRpcClientInner>,
     pub(crate) rng: Arc<Mutex<StdRng>>,
     user_id: UserId,
 }

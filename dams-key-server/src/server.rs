@@ -89,8 +89,8 @@ impl DamsRpc for DamsKeyServer {
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::CreateStorageKeyStream>, Status> {
         Ok(command::create_storage_key::CreateStorageKey
-               .run(request, self.context())
-               .await?)
+            .run(request, self.context())
+            .await?)
     }
 
     async fn generate(

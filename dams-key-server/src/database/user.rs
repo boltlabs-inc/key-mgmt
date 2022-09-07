@@ -14,7 +14,6 @@ use mongodb::{
     Database,
 };
 use opaque_ke::ServerRegistration;
-use tonic::Status;
 
 pub const ACCOUNT_NAME: &str = "account_name";
 pub const STORAGE_KEY: &str = "storage_key";
