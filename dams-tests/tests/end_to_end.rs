@@ -1,26 +1,17 @@
-pub(crate) mod common;
+mod common;
 
-use crate::{
-    Operation::{Authenticate, Register},
-    Party::{Client, Server},
-};
 use common::{get_logs, LogType, Party};
+use Operation::{Authenticate, Register};
+use Party::{Client, Server};
 
 use dams::{config::client::Config, user::AccountName};
 use dams_client::{client::Password, DamsClient, DamsClientError};
-use dams_key_server::database;
 use std::{fs::OpenOptions, str::FromStr};
 use thiserror::Error;
 
 #[tokio::test]
-pub async fn integration_tests() {
-    // Read environment variables from .env file
-    let server_config = common::server_test_config().await;
-    let db = database::connect_to_mongo(&server_config.database)
-        .await
-        .expect("Unable to connect to Mongo");
-    let server_future = common::setup(db.clone(), server_config).await;
-    let client_config = common::client_test_config().await;
+pub async fn end_to_end_tests() {
+    let (server_future, client_config) = common::setup().await;
 
     // Run every test, printing out details if it fails
     let tests = tests().await;
@@ -55,7 +46,7 @@ pub async fn integration_tests() {
     // _every_ test must run without short-circuiting the execution at first
     // failure
     let mut errors = Vec::with_capacity(results.len());
-    for result in results.iter() {
+    for result in results.into_iter() {
         match result {
             Ok(_) => {}
             Err(err) => {
@@ -269,3 +260,4 @@ struct Outcome {
     error: Option<Party>,
     expected_error: Option<DamsClientError>,
 }
+

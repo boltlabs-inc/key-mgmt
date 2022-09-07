@@ -5,7 +5,7 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[dev-dependencies]
+[dependencies]
 anyhow = "1"
 dams = { version = "0.1.0", path = "../dams" }
 dams-key-server = { version = "0.1.0", path = "../dams-key-server" }
