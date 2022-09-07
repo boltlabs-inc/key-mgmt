@@ -1,6 +1,6 @@
 use crate::{client::ClientAction, DamsClient, DamsClientError};
 use dams::{
-    crypto::{KeyId, OpaqueExportKey, StorageKey},
+    crypto::{KeyId, OpaqueExportKey, Secret, StorageKey},
     dams_rpc::dams_rpc_client::DamsRpcClient,
     types::retrieve_storage_key::{client, server},
     user::UserId,
@@ -46,7 +46,7 @@ impl DamsClient {
         client: &mut DamsRpcClient<Channel>,
         user_id: &UserId,
         export_key: OpaqueExportKey,
-    ) -> Result<KeyId, DamsClientError> {
+    ) -> Result<(KeyId, Secret), DamsClientError> {
         self.handle_generate(client, user_id, export_key).await
     }
 }

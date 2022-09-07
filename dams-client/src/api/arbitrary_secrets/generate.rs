@@ -1,7 +1,7 @@
 use crate::{client::ClientAction, DamsClient, DamsClientError};
 use dams::{
     channel::ClientChannel,
-    crypto::{KeyId, OpaqueExportKey, StorageKey},
+    crypto::{KeyId, OpaqueExportKey, Secret, StorageKey},
     dams_rpc::dams_rpc_client::DamsRpcClient,
     types::generate::{client, server},
     user::UserId,
@@ -15,7 +15,7 @@ impl DamsClient {
         client: &mut DamsRpcClient<Channel>,
         user_id: &UserId,
         export_key: OpaqueExportKey,
-    ) -> Result<KeyId, DamsClientError> {
+    ) -> Result<(KeyId, Secret), DamsClientError> {
         // Retrieve the storage key
         let storage_key = self
             .retrieve_storage_key(client, export_key, user_id)
@@ -27,12 +27,12 @@ impl DamsClient {
         // Generate step: get new KeyId from server
         let key_id = generate(&mut channel, user_id).await?;
         // Store step: encrypt secret and send to server to store
-        {
+        let secret = {
             let mut rng = self.rng.lock().await;
-            store(&mut channel, user_id, storage_key, &mut rng, &key_id).await?;
-        }
+            store(&mut channel, user_id, storage_key, &mut rng, &key_id).await?
+        };
 
-        Ok(key_id)
+        Ok((key_id, secret))
     }
 }
 
@@ -55,12 +55,12 @@ async fn store(
     storage_key: StorageKey,
     rng: &mut StdRng,
     key_id: &KeyId,
-) -> Result<(), DamsClientError> {
+) -> Result<Secret, DamsClientError> {
     // Generate and encrypt secret
-    let (_, encrypted) = storage_key.create_and_encrypt_secret(rng, user_id, key_id)?;
+    let (secret, encrypted) = storage_key.create_and_encrypt_secret(rng, user_id, key_id)?;
     // Serialize and send ciphertext
     let response = client::Store {
-        ciphertext: encrypted,
+        ciphertext: encrypted.clone(),
         user_id: user_id.clone(),
     };
     channel.send(response).await?;
@@ -71,7 +71,7 @@ async fn store(
     // Await Ok from server
     let result: server::Store = channel.receive().await?;
     if result.success {
-        Ok(())
+        Ok(secret)
     } else {
         Err(DamsClientError::ServerReturnedFailure)
     }
