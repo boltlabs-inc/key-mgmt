@@ -67,6 +67,7 @@ pub struct DamsClient {
 pub(crate) enum ClientAction {
     Register,
     Authenticate,
+    CreateStorageKey,
 }
 
 /// Connection type used by `DamsRpcClient`.
@@ -122,16 +123,17 @@ impl DamsClient {
         let mut rng = StdRng::from_entropy();
         let server_location = config.server_location()?;
         let mut client = Self::connect(config).await?;
-        Self::authenticate(client, rng, account_name, password, config).await
+        Self::authenticate(client, account_name, password, config).await
     }
 
     async fn authenticate(
         mut client: DamsRpcClient<DamsRpcClientInner>,
-        mut rng: StdRng,
         account_name: &AccountName,
         password: &Password,
         config: &Config,
     ) -> Result<Self, DamsClientError> {
+        let mut rng = StdRng::from_entropy();
+
         let mut client_channel =
             Self::create_channel(&mut client, ClientAction::Authenticate).await?;
         let result =
@@ -174,8 +176,16 @@ impl DamsClient {
         let result =
             Self::handle_registration(client_channel, &mut rng, account_name, password).await;
         match result {
-            Ok(response) => {
-                Self::authenticate(client, rng, account_name, password, config).await;
+            Ok(export_key) => {
+                let mut client = Self::authenticate(client, account_name, password, config).await?;
+
+                // After authenticating we can create the storage key
+                let mut client_channel =
+                    Self::create_channel(&mut client.tonic_client, ClientAction::CreateStorageKey)
+                        .await?;
+                Self::handle_create_storage_key(client_channel, &mut rng, account_name, export_key)
+                    .await;
+
                 Ok(())
             }
             Err(e) => {
@@ -200,6 +210,7 @@ impl DamsClient {
         let server_response = match action {
             ClientAction::Register => client.register(stream).await,
             ClientAction::Authenticate => client.authenticate(stream).await,
+            ClientAction::CreateStorageKey => client.create_storage_key(stream).await,
         }?
         .into_inner();
 

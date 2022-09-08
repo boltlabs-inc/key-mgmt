@@ -7,10 +7,12 @@ pub enum DamsServerError {
     MissingService,
 
     // Protocol errors
-    #[error("Account already exists")]
-    AccountAlreadyExists,
     #[error("Account does not exist")]
     AccountDoesNotExist,
+    #[error("Invalid user_id")]
+    InvalidUserId,
+    #[error("Storage key is already set")]
+    StorageKeyAlreadySet,
 
     // Wrapped errors
     #[error(transparent)]
@@ -18,9 +20,11 @@ pub enum DamsServerError {
     #[error(transparent)]
     DamsChannel(#[from] dams::channel::ChannelError),
     #[error(transparent)]
-    Hyoer(#[from] hyper::Error),
+    Hyper(#[from] hyper::Error),
     #[error(transparent)]
     Io(#[from] std::io::Error),
+    #[error(transparent)]
+    Bson(#[from] mongodb::bson::ser::Error),
     #[error("OPAQUE protocol error: {}", .0)]
     OpaqueProtocol(opaque_ke::errors::ProtocolError),
     #[error(transparent)]

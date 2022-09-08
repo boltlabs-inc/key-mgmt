@@ -1,4 +1,4 @@
-use crate::{database::user as User, error::DamsServerError, server::Context};
+use crate::{database::user::find_user, error::DamsServerError, server::Context};
 
 use dams::{
     channel::ServerChannel,
@@ -54,7 +54,7 @@ async fn authenticate_start(
     // Check that user with corresponding UserId exists and get their
     // server_registration
     let (server_registration, user_id) =
-        match User::find_user(&context.db, &start_message.account_name).await? {
+        match find_user(&context.db, &start_message.account_name).await? {
             Some(user) => user.into_parts(),
             None => return Err(DamsServerError::AccountDoesNotExist),
         };

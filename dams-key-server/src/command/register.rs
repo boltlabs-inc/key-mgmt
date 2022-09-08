@@ -55,7 +55,7 @@ async fn register_start(
     let user = User::find_user(&context.db, &start_message.account_name).await?;
 
     if user.is_some() {
-        Err(DamsServerError::AccountAlreadyExists)
+        Err(DamsServerError::InvalidUserId)
     } else {
         // Registration can continue if user ID doesn't exist yet
         let server_registration_start_result = ServerRegistration::<OpaqueCipherSuite>::start(
