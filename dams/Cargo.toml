@@ -12,7 +12,6 @@ bincode = "1"
 bson = { version = "2", features = ["uuid-1"] }
 bytes = { version = "1", features = ["serde"] }
 chacha20poly1305 = "0.10"
-chrono = "0.4.19"
 directories = "3"
 futures = "0.3"
 generic-array = "0.14"
