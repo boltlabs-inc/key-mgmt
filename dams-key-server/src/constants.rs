@@ -2,4 +2,5 @@
 
 /* DB TABLE NAMES */
 /// Name of MongoDB users table.
+pub(crate) const LOGS: &str = "logs";
 pub(crate) const USERS: &str = "users";

@@ -3,7 +3,7 @@
 //! Functions in this module are used to perform CRUD operations
 //! on the [`LogEntry`] model in the MongoDB database.
 
-use crate::DamsServerError;
+use crate::{constants, DamsServerError};
 use dams::{
     audit_log::{Action, LogEntry, Outcome},
     crypto::KeyId,
@@ -19,7 +19,7 @@ pub async fn create_log_entry(
     action: Action,
     outcome: Outcome,
 ) -> Result<(), DamsServerError> {
-    let collection = db.collection::<LogEntry>("log_entries");
+    let collection = db.collection::<LogEntry>(constants::LOGS);
     let new_log = LogEntry::new(actor.clone(), secret_id, action, outcome);
     let _ = collection.insert_one(new_log, None).await?;
     Ok(())
