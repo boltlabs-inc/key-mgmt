@@ -17,6 +17,10 @@ pub enum DamsServerError {
     Dams(#[from] dams::DamsError),
     #[error(transparent)]
     DamsChannel(#[from] dams::channel::ChannelError),
+    #[error(transparent)]
+    Hyoer(#[from] hyper::Error),
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
     #[error("OPAQUE protocol error: {}", .0)]
     OpaqueProtocol(opaque_ke::errors::ProtocolError),
     #[error(transparent)]

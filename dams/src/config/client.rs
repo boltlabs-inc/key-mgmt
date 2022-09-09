@@ -1,4 +1,5 @@
-use crate::error::DamsError;
+use crate::{defaults::client::LOCAL_SERVER_URI, error::DamsError, pem_utils};
+use rustls::{ClientConfig, RootCertStore};
 use serde::{Deserialize, Serialize};
 use std::{
     path::{Path, PathBuf},
@@ -37,6 +38,24 @@ impl Config {
     pub fn server_location(&self) -> Result<Uri, DamsError> {
         Ok(Uri::from_str(self.server_location.as_str())?)
     }
+
+    pub fn tls_config(&self) -> Result<ClientConfig, DamsError> {
+        let mut root_store = RootCertStore::empty();
+
+        if let Some(trust_certificate) = &self.trust_certificate {
+            let certs = pem_utils::read_certificates(trust_certificate)?;
+            for cert in certs {
+                root_store.add(&cert)?;
+            }
+        }
+
+        let tls_config = ClientConfig::builder()
+            .with_safe_defaults()
+            .with_root_certificates(root_store)
+            .with_no_client_auth();
+
+        Ok(tls_config)
+    }
 }
 
 impl FromStr for Config {
@@ -51,7 +70,7 @@ impl FromStr for Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            server_location: "https://127.0.0.1:1113".to_string(),
+            server_location: LOCAL_SERVER_URI.to_string(),
             trust_certificate: Some(PathBuf::from("tests/gen/localhost.crt")),
         }
     }
@@ -63,17 +82,20 @@ mod tests {
 
     #[test]
     fn config_from_str() {
-        let config_str = r#"
-            server_location = "https://127.0.0.1:1113"
-        "#;
+        let config_str = format!(
+            r#"
+            server_location = "{}"
+        "#,
+            LOCAL_SERVER_URI
+        );
 
         // Destructure so the test breaks when fields are added
         let Config {
             server_location,
             trust_certificate,
-        } = Config::from_str(config_str).unwrap();
+        } = Config::from_str(&config_str).unwrap();
 
-        assert_eq!(server_location, "https://127.0.0.1:1113");
+        assert_eq!(server_location, LOCAL_SERVER_URI);
         assert_eq!(trust_certificate, None);
     }
 }

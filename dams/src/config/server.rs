@@ -1,3 +1,4 @@
+use rustls::ServerConfig;
 use serde::{Deserialize, Serialize};
 use std::{
     net::IpAddr,
@@ -6,7 +7,7 @@ use std::{
     time::Duration,
 };
 
-use crate::{defaults::server as defaults, error::DamsError};
+use crate::{defaults::server as defaults, error::DamsError, pem_utils};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
@@ -15,6 +16,36 @@ pub struct Config {
     #[serde(rename = "service")]
     pub services: Vec<Service>,
     pub database: DatabaseSpec,
+}
+
+impl Config {
+    pub async fn load(config_path: impl AsRef<Path>) -> Result<Config, DamsError> {
+        let config_string = tokio::fs::read_to_string(&config_path).await?;
+        let mut config = Self::from_str(&config_string)?;
+
+        // Directory containing the configuration path
+        let config_dir = config_path
+            .as_ref()
+            .parent()
+            .expect("Server configuration path must exist in some parent directory");
+
+        // Adjust contained paths to be relative to the config path
+        for service in config.services.as_mut_slice() {
+            service.private_key = config_dir.join(&service.private_key);
+            service.certificate = config_dir.join(&service.certificate);
+        }
+
+        Ok(config)
+    }
+}
+
+impl FromStr for Config {
+    type Err = DamsError;
+
+    fn from_str(config_string: &str) -> Result<Self, Self::Err> {
+        let config: Config = toml::from_str(config_string)?;
+        Ok(config)
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -46,33 +77,18 @@ pub struct Service {
     pub opaque_server_key: PathBuf,
 }
 
-impl Config {
-    pub async fn load(config_path: impl AsRef<Path>) -> Result<Config, DamsError> {
-        let config_string = tokio::fs::read_to_string(&config_path).await?;
-        let mut config = Self::from_str(&config_string)?;
+impl Service {
+    pub fn tls_config(&self) -> Result<ServerConfig, DamsError> {
+        let certs = pem_utils::read_certificates(&self.certificate)?;
+        let key = pem_utils::read_private_key(&self.private_key)?;
 
-        // Directory containing the configuration path
-        let config_dir = config_path
-            .as_ref()
-            .parent()
-            .expect("Server configuration path must exist in some parent directory");
+        let mut tls = ServerConfig::builder()
+            .with_safe_defaults()
+            .with_no_client_auth()
+            .with_single_cert(certs, key)?;
+        tls.alpn_protocols = vec![b"h2".to_vec()];
 
-        // Adjust contained paths to be relative to the config path
-        for service in config.services.as_mut_slice() {
-            service.private_key = config_dir.join(&service.private_key);
-            service.certificate = config_dir.join(&service.certificate);
-        }
-
-        Ok(config)
-    }
-}
-
-impl FromStr for Config {
-    type Err = DamsError;
-
-    fn from_str(config_string: &str) -> Result<Self, Self::Err> {
-        let config: Config = toml::from_str(config_string)?;
-        Ok(config)
+        Ok(tls)
     }
 }
 

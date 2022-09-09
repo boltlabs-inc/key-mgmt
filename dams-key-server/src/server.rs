@@ -8,10 +8,12 @@ use dams::{
     TestLogs,
 };
 use futures::stream::{FuturesUnordered, StreamExt};
+use hyper::server::conn::Http;
 use mongodb::Database;
 use rand::{rngs::StdRng, SeedableRng};
 use std::{convert::identity, net::SocketAddr, sync::Arc};
-use tokio::{signal, sync::Mutex};
+use tokio::{net::TcpListener, signal, sync::Mutex};
+use tokio_rustls::TlsAcceptor;
 use tonic::{transport::Server, Request, Response, Status};
 use tracing::{error, info};
 
@@ -86,24 +88,56 @@ pub async fn start_tonic_server(config: Config) -> Result<(), DamsServerError> {
     let mut server_futures: FuturesUnordered<_> = config
         .services
         .iter()
-        .map(|service| {
+        .map(|service| async {
             // Clone `Arc`s for the various resources we need in this server
             let config = config.clone();
             let db = db.clone();
             let service = Arc::new(service.clone());
 
-            async move {
-                let dams_rpc_server = DamsKeyServer::new(db, config, service)?;
-                let addr = dams_rpc_server.service.address;
-                let port = dams_rpc_server.service.port;
-                info!("{}", TestLogs::ServerSpawned(format!("{}:{}", addr, port)));
-                Server::builder()
-                    .add_service(DamsRpcServer::new(dams_rpc_server))
-                    .serve(SocketAddr::new(addr, port))
-                    .await?;
+            let tls = service.tls_config()?;
 
-                Ok::<_, DamsServerError>(())
-            }
+            let dams_rpc_server = DamsKeyServer::new(db, config, service)?;
+            let addr = dams_rpc_server.service.address;
+            let port = dams_rpc_server.service.port;
+            info!("{}", TestLogs::ServerSpawned(format!("{}:{}", addr, port)));
+
+            let svc = Server::builder()
+                .add_service(DamsRpcServer::new(dams_rpc_server))
+                .into_service();
+
+            let mut http = Http::new();
+            let _ = http.http2_only(true);
+
+            let listener = TcpListener::bind(SocketAddr::new(addr, port)).await?;
+            let tls_acceptor = TlsAcceptor::from(Arc::new(tls));
+
+            // Spawn a task to accept connections
+            let _ = tokio::spawn(async move {
+                loop {
+                    let (conn, _) = match listener.accept().await {
+                        Ok(incoming) => incoming,
+                        Err(e) => {
+                            eprintln!("Error accepting connection: {}", e);
+                            continue;
+                        }
+                    };
+
+                    let http = http.clone();
+                    let tls_acceptor = tls_acceptor.clone();
+                    let svc = svc.clone();
+
+                    // Spawn a task to handle each connection
+                    let _ = tokio::spawn(async move {
+                        let conn = tls_acceptor.accept(conn).await?;
+                        let svc = tower::ServiceBuilder::new().service(svc);
+                        http.serve_connection(conn, svc).await?;
+
+                        Ok::<_, DamsServerError>(())
+                    });
+                }
+            });
+
+            Ok::<_, DamsServerError>(())
         })
         .collect();
 

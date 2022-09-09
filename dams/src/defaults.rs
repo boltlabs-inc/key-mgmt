@@ -15,8 +15,8 @@ pub(crate) mod shared {
     use super::*;
 
     pub const ORGANIZATION: &str = "Bolt Labs";
-
     pub const APPLICATION: &str = "key-mgmt";
+    pub const LOCAL_SERVER_URI: &str = "https://localhost:1113";
 
     pub const fn max_pending_connection_retries() -> usize {
         4
