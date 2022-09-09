@@ -59,7 +59,7 @@ async fn store(
     context: &Context,
     key_id: KeyId,
 ) -> Result<(), DamsServerError> {
-    // Receive UserId from client
+    // Receive Encrypted<Secret> from client
     let store_message: client::Store = channel.receive().await?;
 
     // Check validity of ciphertext and store in DB

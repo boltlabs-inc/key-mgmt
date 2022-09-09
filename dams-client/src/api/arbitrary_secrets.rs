@@ -11,8 +11,8 @@ mod generate;
 const SECRET_LENGTH: u32 = 32;
 
 impl DamsClient {
-    /// Retrieve the [`Encrypted<StorageKey>`] that belongs to the user
-    /// specified by `user_id`
+    /// Retrieve the [`dams::crypto::Encrypted<StorageKey>`] that belongs to the
+    /// user specified by `user_id`
     async fn retrieve_storage_key(
         &mut self,
         export_key: OpaqueExportKey,
