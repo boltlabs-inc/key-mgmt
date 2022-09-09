@@ -5,6 +5,7 @@ use crate::{
 use dams::{
     channel::ClientChannel,
     config::opaque::OpaqueCipherSuite,
+    crypto::OpaqueExportKey,
     types::register::{client, server},
     user::AccountName,
 };
@@ -12,7 +13,6 @@ use opaque_ke::{
     ClientRegistration, ClientRegistrationFinishParameters, ClientRegistrationStartResult,
 };
 use rand::{CryptoRng, RngCore};
-use tonic::Response;
 
 impl DamsClient {
     pub(crate) async fn handle_registration<T: CryptoRng + RngCore>(
@@ -20,15 +20,14 @@ impl DamsClient {
         rng: &mut T,
         account_name: &AccountName,
         password: &Password,
-    ) -> Result<Response<server::RegisterFinish>, DamsClientError> {
+    ) -> Result<OpaqueExportKey, DamsClientError> {
         // Handle start step
         let client_start_result = register_start(&mut channel, rng, account_name, password).await?;
 
         // Handle finish step
-        let server_finish_result =
-            register_finish(&mut channel, rng, password, client_start_result).await?;
+        let export_key = register_finish(&mut channel, rng, password, client_start_result).await?;
 
-        Ok(Response::new(server_finish_result))
+        Ok(export_key)
     }
 }
 
@@ -56,7 +55,7 @@ async fn register_finish<T: CryptoRng + RngCore>(
     rng: &mut T,
     password: &Password,
     client_start_result: ClientRegistrationStartResult<OpaqueCipherSuite>,
-) -> Result<server::RegisterFinish, DamsClientError> {
+) -> Result<OpaqueExportKey, DamsClientError> {
     let server_start_result: server::RegisterStart = channel.receive().await?;
 
     let client_finish_registration_result = client_start_result.state.finish(
@@ -71,7 +70,11 @@ async fn register_finish<T: CryptoRng + RngCore>(
     };
     channel.send(response).await?;
 
-    let result = channel.receive().await?;
+    let result: server::RegisterFinish = channel.receive().await?;
 
-    Ok(result)
+    if result.success {
+        Ok(client_finish_registration_result.export_key.into())
+    } else {
+        Err(DamsClientError::ServerReturnedFailure)
+    }
 }

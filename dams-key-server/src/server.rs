@@ -62,6 +62,7 @@ pub struct Context {
 impl DamsRpc for DamsKeyServer {
     type RegisterStream = dams::types::MessageStream;
     type AuthenticateStream = dams::types::MessageStream;
+    type CreateStorageKeyStream = dams::types::MessageStream;
 
     async fn register(
         &self,
@@ -77,6 +78,15 @@ impl DamsRpc for DamsKeyServer {
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::AuthenticateStream>, Status> {
         Ok(command::authenticate::Authenticate
+            .run(request, self.context())
+            .await?)
+    }
+
+    async fn create_storage_key(
+        &self,
+        request: Request<tonic::Streaming<Message>>,
+    ) -> Result<Response<Self::CreateStorageKeyStream>, Status> {
+        Ok(command::create_storage_key::CreateStorageKey
             .run(request, self.context())
             .await?)
     }

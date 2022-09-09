@@ -17,6 +17,8 @@ pub enum DamsClientError {
     #[error(transparent)]
     Dams(#[from] dams::DamsError),
     #[error(transparent)]
+    DamsCrypto(#[from] dams::crypto::CryptoError),
+    #[error(transparent)]
     DamsChannel(#[from] dams::channel::ChannelError),
     #[error("OPAQUE protocol error: {}", .0)]
     OpaqueProtocol(opaque_ke::errors::ProtocolError),

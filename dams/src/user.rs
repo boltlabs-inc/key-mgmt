@@ -5,27 +5,31 @@
 
 use crate::{
     config::opaque::OpaqueCipherSuite,
-    crypto::{CryptoError, Secret},
+    crypto::{CryptoError, Encrypted, Secret, StorageKey},
     DamsError,
 };
 
+use bson::Bson;
 use opaque_ke::ServerRegistration;
 use rand::{CryptoRng, Rng, RngCore};
 use serde::{Deserialize, Serialize};
-use std::{array::IntoIter, fmt::Display, str::FromStr};
+use std::{fmt::Display, str::FromStr, vec::IntoIter};
 use uuid::Uuid;
 
 /// Unique ID for a user.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
-pub struct UserId(Uuid);
+pub struct UserId(String);
 
 impl UserId {
     pub fn new(rng: &mut (impl CryptoRng + RngCore)) -> Result<Self, DamsError> {
+        // Generate a UUID from bytes
         let mut id = [0_u8; 16];
         rng.try_fill(&mut id)
             .map_err(|_| CryptoError::RandomNumberGeneratorFailed)?;
         let uuid = Uuid::from_bytes(id);
-        Ok(Self(uuid))
+
+        // Store the UUID as a string to simplify database queries
+        Ok(Self(uuid.to_string()))
     }
 
     pub fn as_bytes(&self) -> &[u8] {
@@ -39,7 +43,7 @@ impl UserId {
 
 impl IntoIterator for UserId {
     type Item = u8;
-    type IntoIter = IntoIter<u8, 16>;
+    type IntoIter = IntoIter<u8>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.0.into_bytes().into_iter()
@@ -52,8 +56,14 @@ impl Display for UserId {
     }
 }
 
+impl From<UserId> for Bson {
+    fn from(user_id: UserId) -> Self {
+        Bson::String(user_id.0)
+    }
+}
+
 /// Account name used as human-memorable identifier for a user during OPAQUE.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct AccountName(String);
 
 impl Display for AccountName {
@@ -80,10 +90,11 @@ impl AccountName {
 /// authenticate with.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct User {
-    user_id: UserId,
-    account_name: AccountName,
-    secrets: Vec<Secret>,
-    server_registration: ServerRegistration<OpaqueCipherSuite>,
+    pub user_id: UserId,
+    pub account_name: AccountName,
+    pub storage_key: Option<Encrypted<StorageKey>>,
+    pub secrets: Vec<Secret>,
+    pub server_registration: ServerRegistration<OpaqueCipherSuite>,
 }
 
 impl User {
@@ -95,6 +106,7 @@ impl User {
         User {
             user_id,
             account_name,
+            storage_key: None,
             secrets: Vec::new(),
             server_registration,
         }

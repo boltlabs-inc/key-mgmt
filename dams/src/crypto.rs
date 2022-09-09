@@ -8,10 +8,7 @@ use chacha20poly1305::{
     aead::{Aead, Payload},
     AeadCore, ChaCha20Poly1305, KeyInit,
 };
-use generic_array::{
-    typenum::{U32, U64},
-    GenericArray,
-};
+use generic_array::{typenum::U64, GenericArray};
 use hkdf::Hkdf;
 use rand::{CryptoRng, Rng, RngCore};
 use serde::{Deserialize, Serialize};
@@ -256,7 +253,7 @@ impl From<GenericArray<u8, U64>> for OpaqueSessionKey {
 /// [ClientRegistrationFinishResult](opaque_ke::ClientRegistrationFinishResult)
 /// and corresponding registration result.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct OpaqueExportKey(Box<[u8; 32]>);
+pub struct OpaqueExportKey(Box<[u8; 64]>);
 
 impl OpaqueExportKey {
     /// Derive a uniformly distributed secret [`MasterKey`] using the export key
@@ -305,8 +302,8 @@ impl OpaqueExportKey {
     }
 }
 
-impl From<GenericArray<u8, U32>> for OpaqueExportKey {
-    fn from(arr: GenericArray<u8, U32>) -> Self {
+impl From<GenericArray<u8, U64>> for OpaqueExportKey {
+    fn from(arr: GenericArray<u8, U64>) -> Self {
         Self(Box::new(arr.into()))
     }
 }
@@ -671,10 +668,13 @@ mod test {
     }
 
     // In practice, an export key will be a pseudorandom output from OPAQUE.
-    // Instead, we'll use the encryption key generation function to simulate the
-    // same thing.
+    // We'll use random bytes for the test key.
     fn create_test_export_key(rng: &mut (impl CryptoRng + RngCore)) -> OpaqueExportKey {
-        OpaqueExportKey(Box::new(EncryptionKey::new(rng).key.into()))
+        let mut key = [0_u8; 64];
+        rng.try_fill(&mut key)
+            .expect("Failed to generate random key");
+
+        OpaqueExportKey(key.into())
     }
 
     #[test]
@@ -682,10 +682,6 @@ mod test {
         let mut rng = rand::thread_rng();
         let export_key = create_test_export_key(&mut rng);
         let master_key = export_key.derive_master_key().unwrap();
-
-        // Make sure the master key isn't the same as the export key.
-        let master_key_bytes: [u8; 32] = master_key.0.key.into();
-        assert_ne!(master_key_bytes, *export_key.0.as_ref());
 
         // Make sure the master key isn't all 0s.
         assert_ne!(master_key.0.key, [0; 32].into());
