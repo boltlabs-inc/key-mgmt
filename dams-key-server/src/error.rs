@@ -62,7 +62,7 @@ pub trait LogExt {
     async fn log(
         self,
         db: &Database,
-        actor: impl Into<LogIdentifier> + std::marker::Send,
+        actor: impl Into<LogIdentifier> + std::marker::Send + 'async_trait,
         secret_id: Option<KeyId>,
         action: ClientAction,
     ) -> Self;
@@ -73,7 +73,7 @@ impl<T: std::marker::Send> LogExt for Result<T, DamsServerError> {
     async fn log(
         self,
         db: &Database,
-        actor: impl Into<LogIdentifier> + std::marker::Send,
+        actor: impl Into<LogIdentifier> + std::marker::Send + 'async_trait,
         secret_id: Option<KeyId>,
         action: ClientAction,
     ) -> Self {
