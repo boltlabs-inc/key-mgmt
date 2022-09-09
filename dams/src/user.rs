@@ -128,10 +128,6 @@ impl User {
     pub fn into_parts(self) -> (ServerRegistration<OpaqueCipherSuite>, UserId) {
         (self.server_registration, self.user_id)
     }
-
-    pub fn add_secret(&mut self, secret: StoredSecret) {
-        self.secrets.push(secret);
-    }
 }
 
 /// Abstraction to wrap around [`UserId`] and [`AccountName`] as user

@@ -17,6 +17,7 @@ use opaque_ke::ServerRegistration;
 
 pub const ACCOUNT_NAME: &str = "account_name";
 pub const STORAGE_KEY: &str = "storage_key";
+pub const SECRETS: &str = "secrets";
 pub const USER_ID: &str = "user_id";
 
 /// Create a new [`User`] with their authentication information and insert it
@@ -82,13 +83,14 @@ pub async fn add_user_secret(
     key_id: KeyId,
 ) -> Result<(), DamsServerError> {
     let collection = db.collection::<User>(constants::USERS);
-    let query = doc! { USER_ID: user_id.to_string() };
-    let mut user = collection
-        .find_one(query, None)
+    let stored_secret = StoredSecret::new(secret, key_id);
+    let stored_secret_bson = mongodb::bson::to_bson(&stored_secret)?;
+    let filter = doc! { USER_ID: user_id };
+    let update = doc! { "$push": { SECRETS: stored_secret_bson } };
+    let _ = collection
+        .find_one_and_update(filter, update, None)
         .await?
         .ok_or(DamsServerError::AccountDoesNotExist)?;
-    let stored_secret = StoredSecret::new(secret, key_id);
-    user.add_secret(stored_secret);
     Ok(())
 }
 
