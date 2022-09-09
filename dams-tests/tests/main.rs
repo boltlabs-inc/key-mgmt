@@ -6,6 +6,7 @@ use crate::{
 };
 use common::{get_logs, LogType, Party};
 
+use crate::Operation::Generate;
 use dams::{config::client::Config, user::AccountName};
 use dams_client::{client::Password, DamsClient, DamsClientError};
 use dams_key_server::database;
@@ -75,6 +76,31 @@ pub async fn integration_tests() {
 /// processes (server).
 async fn tests() -> Vec<Test> {
     vec![
+        Test {
+            name: "Generate a secret".to_string(),
+            operations: vec![
+                (
+                    Register(
+                        AccountName::from_str("generate").unwrap(),
+                        Password::from_str("generatePassword").unwrap(),
+                    ),
+                    Outcome {
+                        error: None,
+                        expected_error: None,
+                    },
+                ),
+                (
+                    Generate(
+                        AccountName::from_str("generate").unwrap(),
+                        Password::from_str("generatePassword").unwrap(),
+                    ),
+                    Outcome {
+                        error: None,
+                        expected_error: None,
+                    },
+                ),
+            ],
+        },
         Test {
             name: "Register the same user twice user".to_string(),
             operations: vec![
@@ -198,6 +224,15 @@ impl Test {
                         .map(|_| ())
                         .map_err(|e| e.into())
                 }
+                Generate(account_name, password) => {
+                    let dams_client =
+                        DamsClient::authenticated_client(account_name, password, config).await?;
+                    dams_client
+                        .generate_and_store()
+                        .await
+                        .map(|_| ())
+                        .map_err(|e| e.into())
+                }
             };
 
             // Get error logs for each party - we make the following assumptions:
@@ -260,6 +295,7 @@ enum TestError {
 enum Operation {
     Register(AccountName, Password),
     Authenticate(AccountName, Password),
+    Generate(AccountName, Password),
 }
 
 #[derive(Debug)]
