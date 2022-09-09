@@ -1,6 +1,6 @@
 use crate::{client::ClientAction, DamsClient, DamsClientError};
 use dams::{
-    crypto::{KeyId, OpaqueExportKey, Secret, StorageKey},
+    crypto::{KeyId, Secret, StorageKey},
     types::retrieve_storage_key::{client, server},
     user::UserId,
 };
@@ -15,7 +15,6 @@ impl DamsClient {
     /// user specified by `user_id`
     async fn retrieve_storage_key(
         &mut self,
-        export_key: OpaqueExportKey,
         user_id: &UserId,
     ) -> Result<StorageKey, DamsClientError> {
         // Create channel to send messages to server
@@ -34,7 +33,7 @@ impl DamsClient {
         // Decrypt storage_key
         let storage_key = response
             .ciphertext
-            .decrypt_storage_key(export_key, user_id)?;
+            .decrypt_storage_key(self.export_key.clone(), user_id)?;
         Ok(storage_key)
     }
 
@@ -42,11 +41,9 @@ impl DamsClient {
     pub async fn generate_and_store(
         &mut self,
         user_id: &UserId,
-        export_key: OpaqueExportKey,
     ) -> Result<(KeyId, Secret), DamsClientError> {
         let mut client_channel =
             Self::create_channel(&mut self.tonic_client, ClientAction::Generate).await?;
-        self.handle_generate(&mut client_channel, user_id, export_key)
-            .await
+        self.handle_generate(&mut client_channel, user_id).await
     }
 }

@@ -1,7 +1,7 @@
 use crate::{DamsClient, DamsClientError};
 use dams::{
     channel::ClientChannel,
-    crypto::{KeyId, OpaqueExportKey, Secret, StorageKey},
+    crypto::{KeyId, Secret, StorageKey},
     types::generate::{client, server},
     user::UserId,
 };
@@ -12,10 +12,9 @@ impl DamsClient {
         &mut self,
         channel: &mut ClientChannel,
         user_id: &UserId,
-        export_key: OpaqueExportKey,
     ) -> Result<(KeyId, Secret), DamsClientError> {
         // Retrieve the storage key
-        let storage_key = self.retrieve_storage_key(export_key, user_id).await?;
+        let storage_key = self.retrieve_storage_key(user_id).await?;
 
         // Generate step: get new KeyId from server
         let key_id = generate(channel, user_id).await?;

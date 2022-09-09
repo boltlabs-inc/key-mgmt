@@ -4,7 +4,7 @@ use crate::DamsClientError;
 use dams::{
     channel::ClientChannel,
     config::client::Config,
-    crypto::OpaqueSessionKey,
+    crypto::{OpaqueExportKey, OpaqueSessionKey},
     dams_rpc::dams_rpc_client::DamsRpcClient,
     user::{AccountName, UserId},
     ClientAction,
@@ -56,9 +56,10 @@ impl Password {
 pub struct DamsClient {
     session_key: OpaqueSessionKey,
     config: Config,
+    user_id: UserId,
     pub(crate) tonic_client: DamsRpcClient<DamsRpcClientInner>,
     pub(crate) rng: Arc<Mutex<StdRng>>,
-    user_id: UserId,
+    pub(crate) export_key: OpaqueExportKey,
 }
 
 /// Connection type used by `DamsRpcClient`.
@@ -130,7 +131,7 @@ impl DamsClient {
         let result =
             Self::handle_authentication(client_channel, &mut rng, account_name, password).await;
         match result {
-            Ok((session_key, user_id)) => {
+            Ok((session_key, export_key, user_id)) => {
                 // TODO #186: receive User ID over authenticated channel (under session_key)
                 let client = DamsClient {
                     session_key,
@@ -138,6 +139,7 @@ impl DamsClient {
                     tonic_client: client,
                     rng: Arc::new(Mutex::new(rng)),
                     user_id,
+                    export_key,
                 };
                 Ok(client)
             }
