@@ -1,5 +1,5 @@
 use crate::{
-    database::user::{find_user, set_storage_key},
+    database::user::{delete_user, find_user, set_storage_key},
     error::DamsServerError,
     server::Context,
 };
@@ -72,7 +72,10 @@ async fn store_storage_key(
         return Err(DamsServerError::InvalidUserId);
     }
 
-    set_storage_key(&context.db, &user_id, client_message.storage_key).await?;
+    if let Err(error) = set_storage_key(&context.db, &user_id, client_message.storage_key).await {
+        delete_user(&context.db, &user_id).await?;
+        return Err(error);
+    }
 
     let reply = server::CreateStorageKeyResult { success: true };
     channel.send(reply).await?;
