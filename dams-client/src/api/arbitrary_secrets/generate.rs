@@ -9,19 +9,19 @@ use rand::rngs::StdRng;
 
 impl DamsClient {
     pub(crate) async fn handle_generate(
-        &mut self,
+        &self,
         channel: &mut ClientChannel,
-        user_id: &UserId,
     ) -> Result<(KeyId, Secret), DamsClientError> {
         // Retrieve the storage key
-        let storage_key = self.retrieve_storage_key(user_id).await?;
+        let storage_key = self.retrieve_storage_key().await?;
 
         // Generate step: get new KeyId from server
-        let key_id = generate(channel, user_id).await?;
+        let key_id = generate(channel, self.user_id()).await?;
         // Store step: encrypt secret and send to server to store
         let secret = {
-            let mut rng = self.rng.lock().await;
-            store(channel, user_id, storage_key, &mut rng, &key_id).await?
+            let rng = self.rng();
+            let mut rng = rng.lock().await;
+            store(channel, self.user_id(), storage_key, &mut rng, &key_id).await?
         };
 
         Ok((key_id, secret))
