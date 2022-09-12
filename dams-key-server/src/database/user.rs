@@ -61,6 +61,19 @@ pub async fn find_user_by_id(
     Ok(user)
 }
 
+/// Delete a [`User`] by their [`UserId`]
+pub async fn delete_user(db: &Database, user_id: &UserId) -> Result<(), DamsServerError> {
+    let collection = db.collection::<User>(constants::USERS);
+    let query = doc! { USER_ID: user_id };
+    let result = collection.delete_one(query, None).await?;
+
+    if result.deleted_count == 0 {
+        Err(DamsServerError::InvalidUserId)
+    } else {
+        Ok(())
+    }
+}
+
 /// Set the `storage_key` field for the [`User`] associated with a given
 /// [`UserId`]
 /// ## Errors
@@ -307,6 +320,45 @@ mod test {
                 .await
                 .is_err()
         );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn user_is_deleted() -> Result<(), DamsServerError> {
+        let mut rng = rand::thread_rng();
+        let mongodb_uri = "mongodb://localhost:27017";
+        let db_name = "user_is_deleted";
+        let db_spec = DatabaseSpec {
+            mongodb_uri: mongodb_uri.to_string(),
+            db_name: db_name.to_string(),
+        };
+
+        // Clean up previous runs and make fresh connection
+        drop_db(mongodb_uri, db_name).await?;
+        let db = connect_to_mongo(&db_spec).await?;
+
+        // Add the user.
+        let user_id = UserId::new(&mut rng)?;
+        let account_name = AccountName::from_str("user@email.com")?;
+
+        let server_registration = server_registration(&mut rng);
+        let _ = create_user(&db, &user_id, &account_name, &server_registration).await?;
+
+        // Ensure that the user was created
+        let user = find_user_by_id(&db, &user_id).await?;
+        assert!(user.is_some());
+
+        // Delete the user
+        delete_user(&db, &user_id).await?;
+
+        // Ensure that the user was deleted
+        let user = find_user_by_id(&db, &user_id).await?;
+        assert!(user.is_none());
+
+        // Ensure that an error is returned if the user is deleted again
+        let result = delete_user(&db, &user_id).await;
+        assert!(matches!(result, Err(DamsServerError::InvalidUserId)));
 
         Ok(())
     }
