@@ -39,7 +39,7 @@ async fn handle_retrieve_storage_key(
         .await?
         .ok_or(DamsServerError::AccountDoesNotExist)?;
     // Send storage key if set
-    let storage_key = user.storage_key.ok_or(DamsServerError::StorageNotSet)?;
+    let storage_key = user.storage_key.ok_or(DamsServerError::StorageKeyNotSet)?;
     let reply = server::Response {
         ciphertext: storage_key,
     };

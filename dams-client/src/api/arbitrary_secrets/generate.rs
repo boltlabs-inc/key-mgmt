@@ -16,7 +16,7 @@ impl DamsClient {
         let storage_key = self.retrieve_storage_key().await?;
 
         // Generate step: get new KeyId from server
-        let key_id = generate(channel, self.user_id()).await?;
+        let key_id = get_key_id(channel, self.user_id()).await?;
         // Store step: encrypt secret and send to server to store
         let secret = {
             let rng = self.rng();
@@ -28,7 +28,10 @@ impl DamsClient {
     }
 }
 
-async fn generate(channel: &mut ClientChannel, user_id: &UserId) -> Result<KeyId, DamsClientError> {
+async fn get_key_id(
+    channel: &mut ClientChannel,
+    user_id: &UserId,
+) -> Result<KeyId, DamsClientError> {
     // Send UserId to server
     let generate_message = client::Generate {
         user_id: user_id.clone(),

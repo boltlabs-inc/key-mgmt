@@ -1,10 +1,10 @@
-use crate::client::{DamsClient, Password};
+use crate::client::{AuthenticateResult, DamsClient, Password};
 
 use crate::DamsClientError;
 use dams::{
     channel::ClientChannel,
     config::opaque::OpaqueCipherSuite,
-    crypto::{OpaqueExportKey, OpaqueSessionKey},
+    crypto::OpaqueSessionKey,
     types::authenticate::{client, server},
     user::{AccountName, UserId},
 };
@@ -19,7 +19,7 @@ impl DamsClient {
         rng: &mut T,
         account_name: &AccountName,
         password: &Password,
-    ) -> Result<(OpaqueSessionKey, OpaqueExportKey, UserId), DamsClientError> {
+    ) -> Result<AuthenticateResult, DamsClientError> {
         let client_login_start_result =
             ClientLogin::<OpaqueCipherSuite>::start(rng, password.as_bytes())?;
 
@@ -43,7 +43,11 @@ impl DamsClient {
         // Get user id
         let user_id = retrieve_user_id(&mut channel, &session_key).await?;
 
-        Ok((session_key, export_key, user_id))
+        Ok(AuthenticateResult {
+            session_key,
+            export_key,
+            user_id,
+        })
     }
 }
 

@@ -19,7 +19,7 @@ pub enum DamsServerError {
     #[error("Storage key is already set")]
     StorageKeyAlreadySet,
     #[error("Storage key is not set for this user")]
-    StorageNotSet,
+    StorageKeyNotSet,
 
     // Wrapped errors
     #[error(transparent)]

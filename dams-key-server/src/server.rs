@@ -105,7 +105,7 @@ impl DamsRpc for DamsKeyServer {
     async fn retrieve_storage_key(
         &self,
         request: Request<tonic::Streaming<Message>>,
-    ) -> Result<Response<Self::GenerateStream>, Status> {
+    ) -> Result<Response<Self::RetrieveStorageKeyStream>, Status> {
         Ok(command::retrieve_storage_key(request, self.context()).await?)
     }
 }

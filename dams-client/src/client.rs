@@ -70,6 +70,12 @@ type DamsRpcClientInner = hyper::Client<
     UnsyncBoxBody<tonic::codegen::Bytes, tonic::Status>,
 >;
 
+pub(crate) struct AuthenticateResult {
+    pub(crate) session_key: OpaqueSessionKey,
+    pub(crate) export_key: OpaqueExportKey,
+    pub(crate) user_id: UserId,
+}
+
 #[allow(unused)]
 impl DamsClient {
     // Get [`UserId`] for the authenticated client.
@@ -143,7 +149,11 @@ impl DamsClient {
         let result =
             Self::handle_authentication(client_channel, &mut rng, account_name, password).await;
         match result {
-            Ok((session_key, export_key, user_id)) => {
+            Ok(AuthenticateResult {
+                session_key,
+                export_key,
+                user_id,
+            }) => {
                 // TODO #186: receive User ID over authenticated channel (under session_key)
                 let client = DamsClient {
                     session_key,
