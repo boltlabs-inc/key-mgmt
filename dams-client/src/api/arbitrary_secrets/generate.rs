@@ -20,7 +20,7 @@ impl DamsClient {
         // Store step: encrypt secret and send to server to store
         let wrapped_secret = {
             let mut rng = self.rng.lock().await;
-            store(channel, self.user_id(), storage_key, &mut rng, &key_id).await?
+            generate_and_store(channel, self.user_id(), storage_key, &mut rng, &key_id).await?
         };
 
         Ok((key_id, wrapped_secret))
@@ -43,7 +43,7 @@ async fn get_key_id(
     Ok(generate_result.key_id)
 }
 
-async fn store(
+async fn generate_and_store(
     channel: &mut ClientChannel,
     user_id: &UserId,
     storage_key: StorageKey,

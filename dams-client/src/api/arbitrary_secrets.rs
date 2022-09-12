@@ -1,7 +1,8 @@
-use crate::{client::ClientAction, DamsClient, DamsClientError};
+use crate::{DamsClient, DamsClientError};
 use dams::{
     crypto::{KeyId, Secret, StorageKey},
     types::retrieve_storage_key::{client, server},
+    ClientAction,
 };
 use serde::{Deserialize, Serialize};
 
