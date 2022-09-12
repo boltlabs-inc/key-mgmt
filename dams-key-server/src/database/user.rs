@@ -6,8 +6,8 @@
 use crate::{constants, DamsServerError};
 use dams::{
     config::opaque::OpaqueCipherSuite,
-    crypto::{Encrypted, StorageKey},
-    user::{AccountName, User, UserId},
+    crypto::{Encrypted, KeyId, Secret, StorageKey},
+    user::{AccountName, StoredSecret, User, UserId},
 };
 use mongodb::{
     bson::{doc, oid::ObjectId},
@@ -17,6 +17,7 @@ use opaque_ke::ServerRegistration;
 
 pub const ACCOUNT_NAME: &str = "account_name";
 pub const STORAGE_KEY: &str = "storage_key";
+pub const SECRETS: &str = "secrets";
 pub const USER_ID: &str = "user_id";
 
 /// Create a new [`User`] with their authentication information and insert it
@@ -72,6 +73,25 @@ pub async fn delete_user(db: &Database, user_id: &UserId) -> Result<(), DamsServ
     } else {
         Ok(())
     }
+}
+
+/// Add a [`StoredSecret`] to a [`User`]'s list of arbitrary secrets
+pub async fn add_user_secret(
+    db: &Database,
+    user_id: &UserId,
+    secret: Encrypted<Secret>,
+    key_id: KeyId,
+) -> Result<(), DamsServerError> {
+    let collection = db.collection::<User>(constants::USERS);
+    let stored_secret = StoredSecret::new(secret, key_id);
+    let stored_secret_bson = mongodb::bson::to_bson(&stored_secret)?;
+    let filter = doc! { USER_ID: user_id };
+    let update = doc! { "$push": { SECRETS: stored_secret_bson } };
+    let _ = collection
+        .find_one_and_update(filter, update, None)
+        .await?
+        .ok_or(DamsServerError::AccountDoesNotExist)?;
+    Ok(())
 }
 
 /// Set the `storage_key` field for the [`User`] associated with a given

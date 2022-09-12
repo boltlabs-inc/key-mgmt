@@ -63,6 +63,8 @@ impl DamsRpc for DamsKeyServer {
     type RegisterStream = dams::types::MessageStream;
     type AuthenticateStream = dams::types::MessageStream;
     type CreateStorageKeyStream = dams::types::MessageStream;
+    type GenerateStream = dams::types::MessageStream;
+    type RetrieveStorageKeyStream = dams::types::MessageStream;
 
     async fn register(
         &self,
@@ -89,6 +91,22 @@ impl DamsRpc for DamsKeyServer {
         Ok(command::create_storage_key::CreateStorageKey
             .run(request, self.context())
             .await?)
+    }
+
+    async fn generate(
+        &self,
+        request: Request<tonic::Streaming<Message>>,
+    ) -> Result<Response<Self::GenerateStream>, Status> {
+        Ok(command::generate::Generate
+            .run(request, self.context())
+            .await?)
+    }
+
+    async fn retrieve_storage_key(
+        &self,
+        request: Request<tonic::Streaming<Message>>,
+    ) -> Result<Response<Self::RetrieveStorageKeyStream>, Status> {
+        Ok(command::retrieve_storage_key(request, self.context()).await?)
     }
 }
 

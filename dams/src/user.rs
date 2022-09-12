@@ -5,7 +5,7 @@
 
 use crate::{
     config::opaque::OpaqueCipherSuite,
-    crypto::{CryptoError, Encrypted, Secret, StorageKey},
+    crypto::{CryptoError, Encrypted, KeyId, Secret, StorageKey},
     DamsError,
 };
 
@@ -86,6 +86,19 @@ impl AccountName {
     }
 }
 
+/// Wrapper around an [`Encrypted<Secret>`] and its [`KeyId`]
+#[derive(Debug, Deserialize, Serialize)]
+pub struct StoredSecret {
+    secret: Encrypted<Secret>,
+    key_id: KeyId,
+}
+
+impl StoredSecret {
+    pub fn new(secret: Encrypted<Secret>, key_id: KeyId) -> Self {
+        Self { secret, key_id }
+    }
+}
+
 /// One user with a set of arbitrary secrets and a [`ServerRegistration`] to
 /// authenticate with.
 #[derive(Debug, Deserialize, Serialize)]
@@ -93,7 +106,7 @@ pub struct User {
     pub user_id: UserId,
     pub account_name: AccountName,
     pub storage_key: Option<Encrypted<StorageKey>>,
-    pub secrets: Vec<Secret>,
+    pub secrets: Vec<StoredSecret>,
     pub server_registration: ServerRegistration<OpaqueCipherSuite>,
 }
 

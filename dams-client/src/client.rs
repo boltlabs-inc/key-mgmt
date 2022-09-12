@@ -4,7 +4,7 @@ use crate::DamsClientError;
 use dams::{
     channel::ClientChannel,
     config::client::Config,
-    crypto::OpaqueSessionKey,
+    crypto::{OpaqueExportKey, OpaqueSessionKey},
     dams_rpc::dams_rpc_client::DamsRpcClient,
     user::{AccountName, UserId},
     ClientAction,
@@ -14,11 +14,8 @@ use http_body::combinators::UnsyncBoxBody;
 use hyper::client::HttpConnector;
 use hyper_rustls::HttpsConnector;
 use rand::{rngs::StdRng, SeedableRng};
-use std::{
-    str::FromStr,
-    sync::{Arc, Mutex},
-};
-use tokio::sync::mpsc;
+use std::{str::FromStr, sync::Arc};
+use tokio::sync::{mpsc, Mutex};
 use tokio_stream::wrappers::ReceiverStream;
 use tracing::error;
 
@@ -59,9 +56,10 @@ impl Password {
 pub struct DamsClient {
     session_key: OpaqueSessionKey,
     config: Config,
-    tonic_client: DamsRpcClient<DamsRpcClientInner>,
-    rng: Arc<Mutex<StdRng>>,
     user_id: UserId,
+    tonic_client: DamsRpcClient<DamsRpcClientInner>,
+    pub(crate) rng: Arc<Mutex<StdRng>>,
+    pub(crate) export_key: OpaqueExportKey,
 }
 
 /// Connection type used by `DamsRpcClient`.
@@ -72,11 +70,21 @@ type DamsRpcClientInner = hyper::Client<
     UnsyncBoxBody<tonic::codegen::Bytes, tonic::Status>,
 >;
 
+pub(crate) struct AuthenticateResult {
+    pub(crate) session_key: OpaqueSessionKey,
+    pub(crate) export_key: OpaqueExportKey,
+    pub(crate) user_id: UserId,
+}
+
 #[allow(unused)]
 impl DamsClient {
     // Get [`UserId`] for the authenticated client.
     pub fn user_id(&self) -> &UserId {
         &self.user_id
+    }
+
+    pub fn tonic_client(&self) -> DamsRpcClient<DamsRpcClientInner> {
+        self.tonic_client.clone()
     }
 
     /// Create a `tonic` client object and return it to the client app.
@@ -133,7 +141,11 @@ impl DamsClient {
         let result =
             Self::handle_authentication(client_channel, &mut rng, account_name, password).await;
         match result {
-            Ok((session_key, user_id)) => {
+            Ok(AuthenticateResult {
+                session_key,
+                export_key,
+                user_id,
+            }) => {
                 // TODO #186: receive User ID over authenticated channel (under session_key)
                 let client = DamsClient {
                     session_key,
@@ -141,6 +153,7 @@ impl DamsClient {
                     tonic_client: client,
                     rng: Arc::new(Mutex::new(rng)),
                     user_id,
+                    export_key,
                 };
                 Ok(client)
             }
@@ -205,6 +218,8 @@ impl DamsClient {
             ClientAction::Register => client.register(stream).await,
             ClientAction::Authenticate => client.authenticate(stream).await,
             ClientAction::CreateStorageKey => client.create_storage_key(stream).await,
+            ClientAction::Generate => client.generate(stream).await,
+            ClientAction::RetrieveStorageKey => client.retrieve_storage_key(stream).await,
         }?
         .into_inner();
 

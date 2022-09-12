@@ -4,6 +4,7 @@
 //! transformations between them. Public functions here are mostly wrappers
 //! around multiple low-level cryptographic steps.
 
+use crate::DamsError;
 use chacha20poly1305::{
     aead::{Aead, Payload},
     AeadCore, ChaCha20Poly1305, KeyInit,
@@ -209,17 +210,18 @@ impl Encrypted<StorageKey> {
         self,
         export_key: OpaqueExportKey,
         user_id: &UserId,
-    ) -> Result<StorageKey, CryptoError> {
+    ) -> Result<StorageKey, DamsError> {
         // Check that the associated data is correct.
         let expected_aad = AssociatedData::new()
             .with_bytes(user_id.clone())
             .with_str(StorageKey::domain_separator());
         if self.associated_data != expected_aad {
-            return Err(CryptoError::DecryptionFailed);
+            return Err(CryptoError::DecryptionFailed.into());
         }
 
         let master_key = export_key.derive_master_key()?;
-        self.decrypt(&master_key.0)
+        let decrypted = self.decrypt(&master_key.0)?;
+        Ok(decrypted)
     }
 }
 
@@ -372,7 +374,7 @@ impl StorageKey {
         rng: &mut (impl CryptoRng + RngCore),
         user_id: &UserId,
         key_id: &KeyId,
-    ) -> Result<(Secret, Encrypted<Secret>), CryptoError> {
+    ) -> Result<(Secret, Encrypted<Secret>), DamsError> {
         let context = AssociatedData::new()
             .with_bytes(user_id.clone())
             .with_bytes(key_id.clone())
@@ -474,7 +476,7 @@ impl KeyId {
     pub fn generate(
         rng: &mut (impl CryptoRng + RngCore),
         user_id: &UserId,
-    ) -> Result<Self, CryptoError> {
+    ) -> Result<Self, DamsError> {
         const RANDOM_LEN: usize = 32;
         let mut randomness = [0; RANDOM_LEN];
         rng.try_fill(&mut randomness)

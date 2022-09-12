@@ -26,7 +26,7 @@ pub mod server {
     use serde::{Deserialize, Serialize};
 
     #[derive(Debug, Deserialize, Serialize)]
-    /// Check if user exists and return successful if not.
+    /// Check if user exists and return OPAQUE message if so
     pub struct AuthenticateStart {
         pub credential_response: CredentialResponse<OpaqueCipherSuite>,
     }

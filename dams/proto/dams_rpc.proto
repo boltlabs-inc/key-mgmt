@@ -5,6 +5,8 @@ service DamsRpc {
   rpc Register (stream Message) returns (stream Message);
   rpc Authenticate (stream Message) returns (stream Message);
   rpc CreateStorageKey (stream Message) returns (stream Message);
+  rpc Generate (stream Message) returns (stream Message);
+  rpc RetrieveStorageKey (stream Message) returns (stream Message);
 }
 
 message Message {
