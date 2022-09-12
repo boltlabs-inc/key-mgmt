@@ -122,14 +122,14 @@ impl User {
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct LogIdentifier(String);
 
-impl From<UserId> for LogIdentifier {
-    fn from(user_id: UserId) -> Self {
-        Self(user_id.0)
+impl From<&UserId> for LogIdentifier {
+    fn from(user_id: &UserId) -> Self {
+        Self(user_id.clone().0)
     }
 }
 
-impl From<AccountName> for LogIdentifier {
-    fn from(account_name: AccountName) -> Self {
-        Self(account_name.0)
+impl From<&AccountName> for LogIdentifier {
+    fn from(account_name: &AccountName) -> Self {
+        Self(account_name.clone().0)
     }
 }

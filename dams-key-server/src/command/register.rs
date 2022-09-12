@@ -32,12 +32,7 @@ impl Register {
             let account_name = register_start(&mut channel, &context).await?;
             register_finish(&account_name, &mut channel, &context)
                 .await
-                .log(
-                    &context.db,
-                    &account_name.into(),
-                    None,
-                    ClientAction::Register,
-                )
+                .log(&context.db, &account_name, None, ClientAction::Register)
                 .await?;
 
             Ok::<(), DamsServerError>(())

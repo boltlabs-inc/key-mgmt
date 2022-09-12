@@ -42,12 +42,7 @@ impl Authenticate {
             authenticate_finish(&mut channel, login_start_result).await?;
             send_user_id(&mut channel, user_id)
                 .await
-                .log(
-                    &context.db,
-                    &account_name.into(),
-                    None,
-                    ClientAction::Authenticate,
-                )
+                .log(&context.db, &account_name, None, ClientAction::Authenticate)
                 .await?;
 
             Ok::<(), DamsServerError>(())
