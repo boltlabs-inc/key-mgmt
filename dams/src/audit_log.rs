@@ -4,17 +4,10 @@
 
 use crate::user::AccountName;
 
-use crate::crypto::KeyId;
+use crate::{crypto::KeyId, ClientAction};
 use mongodb::bson::DateTime;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
-
-/// Options for which action was taken for a given [`LogEntry`]
-#[derive(Debug, Serialize, Deserialize)]
-pub enum Action {
-    Register,
-    Authenticate,
-}
 
 /// Options for the outcome of a given action in a [`LogEntry`]
 #[derive(Debug, Serialize, Deserialize)]
@@ -30,7 +23,7 @@ pub struct LogEntry {
     actor: AccountName,
     secret_id: Option<KeyId>,
     date: DateTime,
-    action: Action,
+    action: ClientAction,
     outcome: Outcome,
 }
 
@@ -38,7 +31,7 @@ impl LogEntry {
     pub fn new(
         actor: AccountName,
         secret_id: Option<KeyId>,
-        action: Action,
+        action: ClientAction,
         outcome: Outcome,
     ) -> Self {
         LogEntry {

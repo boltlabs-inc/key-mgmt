@@ -7,6 +7,7 @@ use dams::{
     crypto::OpaqueSessionKey,
     dams_rpc::dams_rpc_client::DamsRpcClient,
     user::{AccountName, UserId},
+    ClientAction,
 };
 use http::uri::Scheme;
 use http_body::combinators::UnsyncBoxBody;
@@ -63,12 +64,6 @@ pub struct DamsClient {
     user_id: UserId,
 }
 
-/// Options for actions the client can take.
-pub(crate) enum ClientAction {
-    Register,
-    Authenticate,
-    CreateStorageKey,
-}
 
 /// Connection type used by `DamsRpcClient`.
 /// This would normally be `tonic::transport:Channel` but TLS makes it more

@@ -1,11 +1,7 @@
 use crate::database::log as Log;
 
 use async_trait::async_trait;
-use dams::{
-    audit_log::{Action, Outcome},
-    crypto::KeyId,
-    user::AccountName,
-};
+use dams::{audit_log::Outcome, crypto::KeyId, user::AccountName, ClientAction};
 use mongodb::Database;
 use thiserror::Error;
 use tonic::Status;
@@ -65,7 +61,7 @@ pub trait LogExt {
         db: &Database,
         actor: &AccountName,
         secret_id: Option<KeyId>,
-        action: Action,
+        action: ClientAction,
     ) -> Self;
 }
 
@@ -76,7 +72,7 @@ impl<T: std::marker::Send> LogExt for Result<T, DamsServerError> {
         db: &Database,
         actor: &AccountName,
         secret_id: Option<KeyId>,
-        action: Action,
+        action: ClientAction,
     ) -> Self {
         if self.is_err() {
             Log::create_log_entry(db, actor, secret_id, action, Outcome::Failed).await?;

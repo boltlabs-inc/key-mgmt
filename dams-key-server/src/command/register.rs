@@ -3,7 +3,6 @@ use std::ops::DerefMut;
 
 use crate::error::LogExt;
 use dams::{
-    audit_log::Action,
     channel::ServerChannel,
     config::opaque::OpaqueCipherSuite,
     opaque_storage::create_or_retrieve_server_key_opaque,
@@ -12,6 +11,7 @@ use dams::{
         Message, MessageStream,
     },
     user::{AccountName, UserId},
+    ClientAction,
 };
 use opaque_ke::ServerRegistration;
 use tokio_stream::wrappers::ReceiverStream;
@@ -32,7 +32,7 @@ impl Register {
             let account_name = register_start(&mut channel, &context).await?;
             register_finish(&account_name, &mut channel, &context)
                 .await
-                .log(&context.db, &account_name, None, Action::Register)
+                .log(&context.db, &account_name, None, ClientAction::Register)
                 .await?;
 
             Ok::<(), DamsServerError>(())

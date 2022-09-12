@@ -2,7 +2,6 @@ use crate::{database::user::find_user, error::DamsServerError, server::Context};
 
 use crate::error::LogExt;
 use dams::{
-    audit_log::Action,
     channel::ServerChannel,
     config::opaque::OpaqueCipherSuite,
     opaque_storage::create_or_retrieve_server_key_opaque,
@@ -11,6 +10,7 @@ use dams::{
         Message, MessageStream,
     },
     user::{AccountName, UserId},
+    ClientAction,
 };
 use opaque_ke::{ServerLogin, ServerLoginStartParameters, ServerLoginStartResult};
 use tokio_stream::wrappers::ReceiverStream;
@@ -42,7 +42,7 @@ impl Authenticate {
             authenticate_finish(&mut channel, login_start_result).await?;
             send_user_id(&mut channel, user_id)
                 .await
-                .log(&context.db, &account_name, None, Action::Authenticate)
+                .log(&context.db, &account_name, None, ClientAction::Authenticate)
                 .await?;
 
             Ok::<(), DamsServerError>(())

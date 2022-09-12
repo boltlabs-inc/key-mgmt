@@ -5,9 +5,10 @@
 
 use crate::{constants, DamsServerError};
 use dams::{
-    audit_log::{Action, LogEntry, Outcome},
+    audit_log::{LogEntry, Outcome},
     crypto::KeyId,
     user::AccountName,
+    ClientAction,
 };
 use mongodb::Database;
 
@@ -16,7 +17,7 @@ pub async fn create_log_entry(
     db: &Database,
     actor: &AccountName,
     secret_id: Option<KeyId>,
-    action: Action,
+    action: ClientAction,
     outcome: Outcome,
 ) -> Result<(), DamsServerError> {
     let collection = db.collection::<LogEntry>(constants::LOGS);

@@ -10,6 +10,7 @@
 #![warn(unused)]
 #![forbid(rustdoc::broken_intra_doc_links)]
 
+use serde::{Deserialize, Serialize};
 use std::fmt;
 
 pub mod audit_log;
@@ -32,6 +33,14 @@ pub use error::DamsError;
 #[allow(clippy::all)]
 pub mod dams_rpc {
     tonic::include_proto!("dams_rpc");
+}
+
+/// Options for actions the DAMS client can take.
+#[derive(Debug, Serialize, Deserialize)]
+pub enum ClientAction {
+    Register,
+    Authenticate,
+    CreateStorageKey,
 }
 
 /// Logs used to verify that an operation completed in the integration tests.
