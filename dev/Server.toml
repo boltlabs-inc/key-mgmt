@@ -1,3 +1,6 @@
+#TODO #220: Remove me!
+disable_tls = true
+
 [[service]]
 address = "::1"
 port = 1113
