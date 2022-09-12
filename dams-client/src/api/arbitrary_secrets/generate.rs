@@ -1,7 +1,7 @@
-use crate::{DamsClient, DamsClientError};
+use crate::{api::arbitrary_secrets::LocalStorage, DamsClient, DamsClientError};
 use dams::{
     channel::ClientChannel,
-    crypto::{KeyId, Secret, StorageKey},
+    crypto::{KeyId, StorageKey},
     types::generate::{client, server},
     user::UserId,
 };
@@ -11,19 +11,19 @@ impl DamsClient {
     pub(crate) async fn handle_generate(
         &self,
         channel: &mut ClientChannel,
-    ) -> Result<(KeyId, Secret), DamsClientError> {
+    ) -> Result<(KeyId, LocalStorage), DamsClientError> {
         // Retrieve the storage key
         let storage_key = self.retrieve_storage_key().await?;
 
         // Generate step: get new KeyId from server
         let key_id = get_key_id(channel, self.user_id()).await?;
         // Store step: encrypt secret and send to server to store
-        let secret = {
+        let wrapped_secret = {
             let mut rng = self.rng.lock().await;
             store(channel, self.user_id(), storage_key, &mut rng, &key_id).await?
         };
 
-        Ok((key_id, secret))
+        Ok((key_id, wrapped_secret))
     }
 }
 
@@ -49,7 +49,7 @@ async fn store(
     storage_key: StorageKey,
     rng: &mut StdRng,
     key_id: &KeyId,
-) -> Result<Secret, DamsClientError> {
+) -> Result<LocalStorage, DamsClientError> {
     // Generate and encrypt secret
     let (secret, encrypted) = storage_key.create_and_encrypt_secret(rng, user_id, key_id)?;
     // Serialize and send ciphertext
@@ -65,7 +65,7 @@ async fn store(
     // Await Ok from server
     let result: server::Store = channel.receive().await?;
     if result.success {
-        Ok(secret)
+        Ok(LocalStorage { secret })
     } else {
         Err(DamsClientError::ServerReturnedFailure)
     }

@@ -3,11 +3,17 @@ use dams::{
     crypto::{KeyId, Secret, StorageKey},
     types::retrieve_storage_key::{client, server},
 };
+use serde::{Deserialize, Serialize};
 
 mod generate;
 
 #[allow(unused)]
 const SECRET_LENGTH: u32 = 32;
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct LocalStorage {
+    pub(crate) secret: Secret,
+}
 
 impl DamsClient {
     /// Retrieve the [`dams::crypto::Encrypted<StorageKey>`] that belongs to the
@@ -35,7 +41,7 @@ impl DamsClient {
     }
 
     /// Generate and store an arbitrary secret at the key server
-    pub async fn generate_and_store(&self) -> Result<(KeyId, Secret), DamsClientError> {
+    pub async fn generate_and_store(&self) -> Result<(KeyId, LocalStorage), DamsClientError> {
         let mut client_channel =
             Self::create_channel(&mut self.tonic_client(), ClientAction::Generate).await?;
         self.handle_generate(&mut client_channel).await
