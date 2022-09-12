@@ -16,6 +16,12 @@ use opaque_ke::{ServerLogin, ServerLoginStartParameters, ServerLoginStartResult}
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response};
 
+struct AuthenticateStartResult {
+    login_start_result: ServerLoginStartResult<OpaqueCipherSuite>,
+    user_id: UserId,
+    account_name: AccountName,
+}
+
 #[derive(Debug)]
 pub struct Authenticate;
 
@@ -28,8 +34,11 @@ impl Authenticate {
         let (mut channel, rx) = ServerChannel::create(request.into_inner());
 
         let _ = tokio::spawn(async move {
-            let (login_start_result, user_id, account_name) =
-                authenticate_start(&mut channel, &context).await?;
+            let AuthenticateStartResult {
+                login_start_result,
+                user_id,
+                account_name,
+            } = authenticate_start(&mut channel, &context).await?;
             authenticate_finish(&mut channel, login_start_result).await?;
             send_user_id(&mut channel, user_id)
                 .await
@@ -48,14 +57,7 @@ impl Authenticate {
 async fn authenticate_start(
     channel: &mut ServerChannel,
     context: &Context,
-) -> Result<
-    (
-        ServerLoginStartResult<OpaqueCipherSuite>,
-        UserId,
-        AccountName,
-    ),
-    DamsServerError,
-> {
+) -> Result<AuthenticateStartResult, DamsServerError> {
     // Receive start message from client
     let start_message: client::AuthenticateStart = channel.receive().await?;
 
@@ -92,11 +94,11 @@ async fn authenticate_start(
     // Send response to client
     channel.send(reply).await?;
 
-    Ok((
-        server_login_start_result,
+    Ok(AuthenticateStartResult {
+        login_start_result: server_login_start_result,
         user_id,
-        start_message.account_name,
-    ))
+        account_name: start_message.account_name,
+    })
 }
 
 async fn authenticate_finish(
