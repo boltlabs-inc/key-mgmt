@@ -12,6 +12,12 @@ mod generate;
 const SECRET_LENGTH: u32 = 32;
 
 #[derive(Debug, Deserialize, Serialize)]
+pub enum Context {
+    LocalOnly,
+    Export
+}
+
+#[derive(Debug, Deserialize, Serialize)]
 pub struct LocalStorage {
     pub(crate) secret: Secret,
 }
