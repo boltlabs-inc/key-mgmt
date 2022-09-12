@@ -65,7 +65,7 @@ pub struct DamsClient {
 /// Connection type used by `DamsRpcClient`.
 /// This would normally be `tonic::transport:Channel` but TLS makes it more
 /// complicated.
-type DamsRpcClientInner = hyper::Client<
+pub type DamsRpcClientInner = hyper::Client<
     HttpsConnector<HttpConnector>,
     UnsyncBoxBody<tonic::codegen::Bytes, tonic::Status>,
 >;

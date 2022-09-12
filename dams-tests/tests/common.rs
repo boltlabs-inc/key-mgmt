@@ -7,6 +7,7 @@ use std::{
     sync::Mutex,
 };
 
+use dams_client::client::DamsRpcClientInner;
 use futures::future;
 use mongodb::Database;
 use tokio::{task::JoinHandle, time::Duration};
@@ -17,7 +18,7 @@ use dams::{
     config::{client::Config as ClientConfig, server::Config as ServerConfig},
     defaults::server::LOCAL_SERVER_URI,
     timeout::WithTimeout,
-    TestLogs,
+    TestLogs, dams_rpc::dams_rpc_client::DamsRpcClient, ClientAction, channel::ClientChannel,
 };
 use dams_key_server::database;
 
@@ -167,6 +168,52 @@ pub struct TestContext {
 }
 
 impl TestContext {
+    /// Create a [`DamsRpcClient`] for use in hackier test cases
+    pub async fn create_client(&self) -> anyhow::Result<DamsRpcClient<DamsRpcClientInner>> {
+        let address = self.client_config.server_location()?;
+
+        let tls_config = self.client_config.tls_config()?;
+
+        let connector = hyper_rustls::HttpsConnectorBuilder::new()
+            .with_tls_config(tls_config)
+            .https_only()
+            .enable_http2()
+            .build();
+
+        let client = hyper::Client::builder().build(connector);
+        let rpc_client = DamsRpcClient::with_origin(client, address);
+
+        Ok(rpc_client)
+    }
+
+    /// Create a [`ClientChannel`] for use in hackier test cases
+    pub async fn create_channel(
+        &self,
+        action: ClientAction,
+    ) -> anyhow::Result<ClientChannel> {
+        use tokio::sync::mpsc;
+        use tokio_stream::wrappers::ReceiverStream;
+
+        let mut client = self.create_client().await?;
+
+        let (tx, rx) = mpsc::channel(2);
+        let stream = ReceiverStream::new(rx);
+
+        // Server returns its own channel that is uses to send responses
+        let server_response = match action {
+            ClientAction::Register => client.register(stream).await,
+            ClientAction::Authenticate => client.authenticate(stream).await,
+            ClientAction::CreateStorageKey => client.create_storage_key(stream).await,
+            ClientAction::Generate => client.generate(stream).await,
+            ClientAction::RetrieveStorageKey => client.retrieve_storage_key(stream).await,
+        }?
+        .into_inner();
+
+        let channel = ClientChannel::create(tx, server_response);
+
+        Ok(channel)
+    }
+
     pub async fn teardown(self) {
         // Ignore the result because we expect it to be an `Expired` error
         let _result = self

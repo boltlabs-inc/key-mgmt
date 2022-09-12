@@ -11,11 +11,15 @@ dams = { version = "0.1.0", path = "../dams" }
 dams-key-server = { version = "0.1.0", path = "../dams-key-server" }
 dams-client = { version = "0.1.0", path = "../dams-client", features=["allow_explicit_certificate_trust"] }
 futures = "0.3"
+hyper = "0.14"
+hyper-rustls = { version = "0.23", features = ["http2"] }
 mongodb = "2.3.0"
+opaque-ke = { version = "2.0.0-pre.3", features = ["argon2"] }
 rand = "0.8"
 structopt = "0.3"
 thiserror = "1"
 tokio = { version = "1", features = ["full"] }
+tokio-stream = "0.1"
 tonic = "0.8.0"
 tracing = "0.1"
 tracing-futures = "0.2"
