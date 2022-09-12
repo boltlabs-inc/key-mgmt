@@ -1,4 +1,4 @@
-use crate::database::log as Log;
+use crate::database::log;
 
 use async_trait::async_trait;
 use dams::{audit_log::Outcome, crypto::KeyId, user::LogIdentifier, ClientAction};
@@ -75,9 +75,9 @@ impl<T: std::marker::Send> LogExt for Result<T, DamsServerError> {
         action: ClientAction,
     ) -> Self {
         if self.is_err() {
-            Log::create_log_entry(db, actor, secret_id, action, Outcome::Failed).await?;
+            log::create_log_entry(db, actor, secret_id, action, Outcome::Failed).await?;
         } else {
-            Log::create_log_entry(db, actor, secret_id, action, Outcome::Successful).await?;
+            log::create_log_entry(db, actor, secret_id, action, Outcome::Successful).await?;
         }
         self
     }
