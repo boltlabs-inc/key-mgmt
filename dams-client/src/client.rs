@@ -58,8 +58,8 @@ pub struct DamsClient {
     config: Config,
     user_id: UserId,
     tonic_client: DamsRpcClient<DamsRpcClientInner>,
-    rng: Arc<Mutex<StdRng>>,
-    export_key: OpaqueExportKey,
+    pub(crate) rng: Arc<Mutex<StdRng>>,
+    pub(crate) export_key: OpaqueExportKey,
 }
 
 /// Connection type used by `DamsRpcClient`.
@@ -83,16 +83,8 @@ impl DamsClient {
         &self.user_id
     }
 
-    pub fn rng(&self) -> Arc<Mutex<StdRng>> {
-        self.rng.clone()
-    }
-
     pub fn tonic_client(&self) -> DamsRpcClient<DamsRpcClientInner> {
         self.tonic_client.clone()
-    }
-
-    pub fn export_key(&self) -> OpaqueExportKey {
-        self.export_key.clone()
     }
 
     /// Create a `tonic` client object and return it to the client app.

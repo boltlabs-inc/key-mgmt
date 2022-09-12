@@ -30,7 +30,7 @@ impl DamsClient {
         // Decrypt storage_key
         let storage_key = response
             .ciphertext
-            .decrypt_storage_key(self.export_key(), self.user_id())?;
+            .decrypt_storage_key(self.export_key.clone(), self.user_id())?;
         Ok(storage_key)
     }
 

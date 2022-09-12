@@ -19,8 +19,7 @@ impl DamsClient {
         let key_id = get_key_id(channel, self.user_id()).await?;
         // Store step: encrypt secret and send to server to store
         let secret = {
-            let rng = self.rng();
-            let mut rng = rng.lock().await;
+            let mut rng = self.rng.lock().await;
             store(channel, self.user_id(), storage_key, &mut rng, &key_id).await?
         };
 
