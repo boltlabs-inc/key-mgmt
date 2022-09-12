@@ -1,6 +1,7 @@
 use crate::{database::user as User, error::DamsServerError, server::Context};
 use std::ops::DerefMut;
 
+use crate::error::LogExt;
 use dams::{
     channel::ServerChannel,
     config::opaque::OpaqueCipherSuite,
@@ -10,6 +11,7 @@ use dams::{
         Message, MessageStream,
     },
     user::{AccountName, UserId},
+    ClientAction,
 };
 use opaque_ke::ServerRegistration;
 use tokio_stream::wrappers::ReceiverStream;
@@ -28,7 +30,10 @@ impl Register {
 
         let _ = tokio::spawn(async move {
             let account_name = register_start(&mut channel, &context).await?;
-            register_finish(account_name, &mut channel, &context).await?;
+            register_finish(&account_name, &mut channel, &context)
+                .await
+                .log(&context.db, &account_name, None, ClientAction::Register)
+                .await?;
 
             Ok::<(), DamsServerError>(())
         });
@@ -76,7 +81,7 @@ async fn register_start(
 }
 
 async fn register_finish(
-    account_name: AccountName,
+    account_name: &AccountName,
     channel: &mut ServerChannel,
     context: &Context,
 ) -> Result<(), DamsServerError> {
@@ -100,7 +105,7 @@ async fn register_finish(
             .is_none()
         {
             let _object_id =
-                User::create_user(&context.db, &user_id, &account_name, &server_registration)
+                User::create_user(&context.db, &user_id, account_name, &server_registration)
                     .await?;
             break;
         }
