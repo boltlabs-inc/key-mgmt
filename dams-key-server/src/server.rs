@@ -1,4 +1,4 @@
-use crate::{cli::Cli, command, database, error::DamsServerError};
+use crate::{cli::Cli, command, database::Database, error::DamsServerError};
 
 use dams::{
     config::server::{Config, Service},
@@ -9,7 +9,6 @@ use dams::{
 };
 use futures::stream::{FuturesUnordered, StreamExt};
 use hyper::server::conn::Http;
-use mongodb::Database;
 use rand::{rngs::StdRng, SeedableRng};
 use std::{convert::identity, net::SocketAddr, sync::Arc};
 use tokio::{net::TcpListener, signal, sync::Mutex};
@@ -111,7 +110,7 @@ impl DamsRpc for DamsKeyServer {
 }
 
 pub async fn start_tonic_server(config: Config) -> Result<(), DamsServerError> {
-    let db = database::connect_to_mongo(&config.database).await?;
+    let db = Database::connect(&config.database).await?;
     // Collect the futures for the result of running each specified server
     let mut server_futures: FuturesUnordered<_> = config
         .services

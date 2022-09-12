@@ -1,4 +1,4 @@
-use crate::{database::user as User, error::DamsServerError, server::Context};
+use crate::{error::DamsServerError, server::Context};
 use std::ops::DerefMut;
 
 use crate::error::LogExt;
@@ -57,7 +57,7 @@ async fn register_start(
     };
 
     // Abort registration if UserId already exists
-    let user = User::find_user(&context.db, &start_message.account_name).await?;
+    let user = context.db.find_user(&start_message.account_name).await?;
 
     if user.is_some() {
         Err(DamsServerError::InvalidUserId)
@@ -100,13 +100,11 @@ async fn register_finish(
         };
 
         // If the user ID is fresh, create the new user
-        if User::find_user_by_id(&context.db, &user_id)
-            .await?
-            .is_none()
-        {
-            let _object_id =
-                User::create_user(&context.db, &user_id, account_name, &server_registration)
-                    .await?;
+        if context.db.find_user_by_id(&user_id).await?.is_none() {
+            let _object_id = context
+                .db
+                .create_user(&user_id, account_name, &server_registration)
+                .await?;
             break;
         }
     }

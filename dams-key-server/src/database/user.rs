@@ -9,116 +9,114 @@ use dams::{
     crypto::{Encrypted, KeyId, Secret, StorageKey},
     user::{AccountName, StoredSecret, User, UserId},
 };
-use mongodb::{
-    bson::{doc, oid::ObjectId},
-    Database,
-};
+use mongodb::bson::{doc, oid::ObjectId};
 use opaque_ke::ServerRegistration;
+
+use super::Database;
 
 pub const ACCOUNT_NAME: &str = "account_name";
 pub const STORAGE_KEY: &str = "storage_key";
 pub const SECRETS: &str = "secrets";
 pub const USER_ID: &str = "user_id";
 
-/// Create a new [`User`] with their authentication information and insert it
-/// into the MongoDB database.
-pub async fn create_user(
-    db: &Database,
-    user_id: &UserId,
-    account_name: &AccountName,
-    server_registration: &ServerRegistration<OpaqueCipherSuite>,
-) -> Result<Option<ObjectId>, DamsServerError> {
-    let collection = db.collection::<User>(constants::USERS);
+impl Database {
+    /// Create a new [`User`] with their authentication information and insert
+    /// it into the MongoDB database.
+    pub async fn create_user(
+        &self,
+        user_id: &UserId,
+        account_name: &AccountName,
+        server_registration: &ServerRegistration<OpaqueCipherSuite>,
+    ) -> Result<Option<ObjectId>, DamsServerError> {
+        let collection = self.inner.collection::<User>(constants::USERS);
 
-    let new_user = User::new(
-        user_id.clone(),
-        account_name.clone(),
-        server_registration.clone(),
-    );
+        let new_user = User::new(
+            user_id.clone(),
+            account_name.clone(),
+            server_registration.clone(),
+        );
 
-    let insert_one_res = collection.insert_one(new_user, None).await?;
-    Ok(insert_one_res.inserted_id.as_object_id())
-}
+        let insert_one_res = collection.insert_one(new_user, None).await?;
+        Ok(insert_one_res.inserted_id.as_object_id())
+    }
 
-/// Find a [`User`] by their human-readable [`AccountName`].
-pub async fn find_user(
-    db: &Database,
-    account_name: &AccountName,
-) -> Result<Option<User>, DamsServerError> {
-    let collection = db.collection::<User>(constants::USERS);
-    let query = doc! { ACCOUNT_NAME: account_name.to_string() };
-    let user = collection.find_one(query, None).await?;
-    Ok(user)
-}
+    /// Find a [`User`] by their human-readable [`AccountName`].
+    pub async fn find_user(
+        &self,
+        account_name: &AccountName,
+    ) -> Result<Option<User>, DamsServerError> {
+        let collection = self.inner.collection::<User>(constants::USERS);
+        let query = doc! { ACCOUNT_NAME: account_name.to_string() };
+        let user = collection.find_one(query, None).await?;
+        Ok(user)
+    }
 
-/// Find a [`User`] by their machine-readable [`UserId`].
-pub async fn find_user_by_id(
-    db: &Database,
-    user_id: &UserId,
-) -> Result<Option<User>, DamsServerError> {
-    let collection = db.collection::<User>(constants::USERS);
-    let query = doc! { USER_ID: user_id };
-    let user = collection.find_one(query, None).await?;
-    Ok(user)
-}
+    /// Find a [`User`] by their machine-readable [`UserId`].
+    pub async fn find_user_by_id(&self, user_id: &UserId) -> Result<Option<User>, DamsServerError> {
+        let collection = self.inner.collection::<User>(constants::USERS);
+        let query = doc! { USER_ID: user_id };
+        let user = collection.find_one(query, None).await?;
+        Ok(user)
+    }
 
-/// Delete a [`User`] by their [`UserId`]
-pub async fn delete_user(db: &Database, user_id: &UserId) -> Result<(), DamsServerError> {
-    let collection = db.collection::<User>(constants::USERS);
-    let query = doc! { USER_ID: user_id };
-    let result = collection.delete_one(query, None).await?;
+    /// Delete a [`User`] by their [`UserId`]
+    pub async fn delete_user(&self, user_id: &UserId) -> Result<(), DamsServerError> {
+        let collection = self.inner.collection::<User>(constants::USERS);
+        let query = doc! { USER_ID: user_id };
+        let result = collection.delete_one(query, None).await?;
 
-    if result.deleted_count == 0 {
-        Err(DamsServerError::InvalidUserId)
-    } else {
+        if result.deleted_count == 0 {
+            Err(DamsServerError::InvalidUserId)
+        } else {
+            Ok(())
+        }
+    }
+
+    /// Add a [`StoredSecret`] to a [`User`]'s list of arbitrary secrets
+    pub async fn add_user_secret(
+        &self,
+        user_id: &UserId,
+        secret: Encrypted<Secret>,
+        key_id: KeyId,
+    ) -> Result<(), DamsServerError> {
+        let collection = self.inner.collection::<User>(constants::USERS);
+        let stored_secret = StoredSecret::new(secret, key_id);
+        let stored_secret_bson = mongodb::bson::to_bson(&stored_secret)?;
+        let filter = doc! { USER_ID: user_id };
+        let update = doc! { "$push": { SECRETS: stored_secret_bson } };
+        let _ = collection
+            .find_one_and_update(filter, update, None)
+            .await?
+            .ok_or(DamsServerError::AccountDoesNotExist)?;
         Ok(())
     }
-}
 
-/// Add a [`StoredSecret`] to a [`User`]'s list of arbitrary secrets
-pub async fn add_user_secret(
-    db: &Database,
-    user_id: &UserId,
-    secret: Encrypted<Secret>,
-    key_id: KeyId,
-) -> Result<(), DamsServerError> {
-    let collection = db.collection::<User>(constants::USERS);
-    let stored_secret = StoredSecret::new(secret, key_id);
-    let stored_secret_bson = mongodb::bson::to_bson(&stored_secret)?;
-    let filter = doc! { USER_ID: user_id };
-    let update = doc! { "$push": { SECRETS: stored_secret_bson } };
-    let _ = collection
-        .find_one_and_update(filter, update, None)
-        .await?
-        .ok_or(DamsServerError::AccountDoesNotExist)?;
-    Ok(())
-}
+    /// Set the `storage_key` field for the [`User`] associated with a given
+    /// [`UserId`]
+    /// ## Errors
+    /// - Returns a `bson::Error` if the storage key cannot be converted to BSON
+    /// - Returns a `mongodb::Error` if there is a problem connecting to the
+    ///   database
+    /// - Returns a `DamsServerError::InvalidUserId` if the given `user_id` does
+    ///   not exist.
+    pub async fn set_storage_key(
+        &self,
+        user_id: &UserId,
+        storage_key: Encrypted<StorageKey>,
+    ) -> Result<(), DamsServerError> {
+        let storage_key_bson = mongodb::bson::to_bson(&storage_key)?;
 
-/// Set the `storage_key` field for the [`User`] associated with a given
-/// [`UserId`]
-/// ## Errors
-/// - Returns a `bson::Error` if the storage key cannot be converted to BSON
-/// - Returns a `mongodb::Error` if there is a problem connecting to the
-///   database
-/// - Returns a `DamsServerError::InvalidUserId` if the given `user_id` does not
-///   exist.
-pub async fn set_storage_key(
-    db: &Database,
-    user_id: &UserId,
-    storage_key: Encrypted<StorageKey>,
-) -> Result<(), DamsServerError> {
-    let storage_key_bson = mongodb::bson::to_bson(&storage_key)?;
+        let collection = self.inner.collection::<User>(constants::USERS);
+        let filter = doc! { USER_ID: user_id };
+        let update = doc! { "$set": { STORAGE_KEY: storage_key_bson } };
 
-    let collection = db.collection::<User>(constants::USERS);
-    let filter = doc! { USER_ID: user_id };
-    let update = doc! { "$set": { STORAGE_KEY: storage_key_bson } };
+        let user = collection.find_one_and_update(filter, update, None).await?;
 
-    let user = collection.find_one_and_update(filter, update, None).await?;
-
-    if user.is_none() {
-        Err(DamsServerError::InvalidUserId)
-    } else {
-        Ok(())
+        if user.is_none() {
+            Err(DamsServerError::InvalidUserId)
+        } else {
+            Ok(())
+        }
     }
 }
 
@@ -140,7 +138,7 @@ mod test {
     };
     use rand::{CryptoRng, Rng, RngCore};
 
-    use crate::{constants, database::connect_to_mongo, DamsServerError};
+    use crate::{constants, database::Database, DamsServerError};
 
     /// Locally simulates OPAQUE registration to get a valid
     /// `ServerRegistration` for remaining tests.
@@ -193,16 +191,18 @@ mod test {
 
         // Clean up previous runs and make fresh connection
         drop_db(mongodb_uri, db_name).await?;
-        let db = connect_to_mongo(&db_spec).await?;
+        let db = Database::connect(&db_spec).await?;
 
         // Add the "baseline" user.
         let user_id = UserId::new(&mut rng)?;
         let account_name = AccountName::from_str("user@email.com")?;
 
         let server_registration = server_registration(&mut rng);
-        let _ = create_user(&db, &user_id, &account_name, &server_registration).await?;
+        let _ = db
+            .create_user(&user_id, &account_name, &server_registration)
+            .await?;
 
-        let user = find_user(&db, &account_name).await?.unwrap();
+        let user = db.find_user(&account_name).await?.unwrap();
         assert_eq!(user.account_name, account_name);
 
         Ok(())
@@ -220,19 +220,21 @@ mod test {
 
         // Clean up previous runs and make fresh connection
         drop_db(mongodb_uri, db_name).await?;
-        let db = connect_to_mongo(&db_spec).await?;
+        let db = Database::connect(&db_spec).await?;
 
         // Add the "baseline" user.
         let user_id = UserId::new(&mut rng)?;
         let account_name = AccountName::from_str("user@email.com")?;
 
         let server_registration = server_registration(&mut rng);
-        let _ = create_user(&db, &user_id, &account_name, &server_registration).await?;
+        let _ = db
+            .create_user(&user_id, &account_name, &server_registration)
+            .await?;
 
-        let user = find_user(&db, &account_name).await?.unwrap();
+        let user = db.find_user(&account_name).await?.unwrap();
         assert_eq!(user.user_id, user_id);
 
-        let user = find_user_by_id(&db, &user_id).await?;
+        let user = db.find_user_by_id(&user_id).await?;
         assert!(user.is_some());
 
         let user = user.unwrap();
@@ -253,42 +255,44 @@ mod test {
 
         // Clean up previous runs and make fresh connection
         drop_db(mongodb_uri, db_name).await?;
-        let db = connect_to_mongo(&db_spec).await?;
+        let db = Database::connect(&db_spec).await?;
 
         let server_registration = &server_registration(&mut rng);
 
         // Add two users
         let uid1 = UserId::new(&mut rng)?;
-        let _ = create_user(
-            &db,
-            &uid1,
-            &AccountName::from_str("test user 1")?,
-            server_registration,
-        )
-        .await?;
+        let _ = db
+            .create_user(
+                &uid1,
+                &AccountName::from_str("test user 1")?,
+                server_registration,
+            )
+            .await?;
 
         let uid2 = UserId::new(&mut rng)?;
-        let _ = create_user(
-            &db,
-            &uid2,
-            &AccountName::from_str("test user 2")?,
-            server_registration,
-        )
-        .await?;
+        let _ = db
+            .create_user(
+                &uid2,
+                &AccountName::from_str("test user 2")?,
+                server_registration,
+            )
+            .await?;
 
         // Check that the database holds two users.
         assert_eq!(
             2,
-            db.collection::<User>(constants::USERS)
+            db.inner
+                .collection::<User>(constants::USERS)
                 .estimated_document_count(None)
                 .await?
         );
 
         // Reconnect and make sure it still has two users.
-        let reconnected_db = connect_to_mongo(&db_spec).await?;
+        let reconnected_db = Database::connect(&db_spec).await?;
         assert_eq!(
             2,
             reconnected_db
+                .inner
                 .collection::<User>(constants::USERS)
                 .estimated_document_count(None)
                 .await?
@@ -309,37 +313,36 @@ mod test {
 
         // Clean up previous runs and make fresh connection
         drop_db(mongodb_uri, db_name).await?;
-        let db = connect_to_mongo(&db_spec).await?;
+        let db = Database::connect(&db_spec).await?;
 
         // Add the "baseline" user.
         let user_id = UserId::new(&mut rng)?;
         let account_name = AccountName::from_str("unique@email.com")?;
 
         let server_registration = server_registration(&mut rng);
-        let _ = create_user(&db, &user_id, &account_name, &server_registration).await?;
+        let _ = db
+            .create_user(&user_id, &account_name, &server_registration)
+            .await?;
 
         // Matching UserIds can't be added.
         let different_an = AccountName::from_str("other@email.com")?;
-        assert!(
-            create_user(&db, &user_id, &different_an, &server_registration)
-                .await
-                .is_err()
-        );
+        assert!(db
+            .create_user(&user_id, &different_an, &server_registration)
+            .await
+            .is_err());
 
         // Matching AccountNames can't be added.
         let different_uid = UserId::new(&mut rng)?;
-        assert!(
-            create_user(&db, &different_uid, &account_name, &server_registration)
-                .await
-                .is_err()
-        );
+        assert!(db
+            .create_user(&different_uid, &account_name, &server_registration)
+            .await
+            .is_err());
 
         // Matching both can't be added.
-        assert!(
-            create_user(&db, &user_id, &account_name, &server_registration)
-                .await
-                .is_err()
-        );
+        assert!(db
+            .create_user(&user_id, &account_name, &server_registration)
+            .await
+            .is_err());
 
         Ok(())
     }
@@ -356,28 +359,30 @@ mod test {
 
         // Clean up previous runs and make fresh connection
         drop_db(mongodb_uri, db_name).await?;
-        let db = connect_to_mongo(&db_spec).await?;
+        let db = Database::connect(&db_spec).await?;
 
         // Add the user.
         let user_id = UserId::new(&mut rng)?;
         let account_name = AccountName::from_str("user@email.com")?;
 
         let server_registration = server_registration(&mut rng);
-        let _ = create_user(&db, &user_id, &account_name, &server_registration).await?;
+        let _ = db
+            .create_user(&user_id, &account_name, &server_registration)
+            .await?;
 
         // Ensure that the user was created
-        let user = find_user_by_id(&db, &user_id).await?;
+        let user = db.find_user_by_id(&user_id).await?;
         assert!(user.is_some());
 
         // Delete the user
-        delete_user(&db, &user_id).await?;
+        db.delete_user(&user_id).await?;
 
         // Ensure that the user was deleted
-        let user = find_user_by_id(&db, &user_id).await?;
+        let user = db.find_user_by_id(&user_id).await?;
         assert!(user.is_none());
 
         // Ensure that an error is returned if the user is deleted again
-        let result = delete_user(&db, &user_id).await;
+        let result = db.delete_user(&user_id).await;
         assert!(matches!(result, Err(DamsServerError::InvalidUserId)));
 
         Ok(())
@@ -396,17 +401,19 @@ mod test {
 
         // Clean up previous runs and make fresh connection
         drop_db(mongodb_uri, db_name).await?;
-        let db = connect_to_mongo(&db_spec).await?;
+        let db = Database::connect(&db_spec).await?;
 
         // Add the user.
         let user_id = UserId::new(&mut rng)?;
         let account_name = AccountName::from_str("user@email.com")?;
 
         let server_registration = server_registration(&mut rng);
-        let _ = create_user(&db, &user_id, &account_name, &server_registration).await?;
+        let _ = db
+            .create_user(&user_id, &account_name, &server_registration)
+            .await?;
 
         // Ensure that the user was created an no storage key is set
-        let user = find_user(&db, &account_name).await?.unwrap();
+        let user = db.find_user(&account_name).await?.unwrap();
         assert!(user.storage_key.is_none());
 
         // Create a storage key
@@ -417,9 +424,9 @@ mod test {
             .unwrap();
 
         // Set storage key and check that it is correct in the database
-        set_storage_key(&db, &user_id, storage_key.clone()).await?;
+        db.set_storage_key(&user_id, storage_key.clone()).await?;
 
-        let user = find_user(&db, &account_name).await?.unwrap();
+        let user = db.find_user(&account_name).await?.unwrap();
         assert_eq!(user.storage_key, Some(storage_key.clone()));
 
         Ok(())
