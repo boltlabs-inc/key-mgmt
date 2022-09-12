@@ -7,7 +7,7 @@ use crate::{constants, DamsServerError};
 use dams::{
     audit_log::{LogEntry, Outcome},
     crypto::KeyId,
-    user::AccountName,
+    user::LogIdentifier,
     ClientAction,
 };
 use mongodb::Database;
@@ -15,7 +15,7 @@ use mongodb::Database;
 /// Create a new [`LogEntry`] for the given actor, action, and outcome
 pub async fn create_log_entry(
     db: &Database,
-    actor: &AccountName,
+    actor: &LogIdentifier,
     secret_id: Option<KeyId>,
     action: ClientAction,
     outcome: Outcome,

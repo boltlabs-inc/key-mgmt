@@ -64,7 +64,6 @@ pub struct DamsClient {
     user_id: UserId,
 }
 
-
 /// Connection type used by `DamsRpcClient`.
 /// This would normally be `tonic::transport:Channel` but TLS makes it more
 /// complicated.
