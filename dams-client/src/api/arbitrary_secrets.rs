@@ -11,7 +11,7 @@ mod retrieve;
 
 /// Options for the asset owner's intended use of a secret
 #[derive(Debug, Deserialize, Serialize)]
-pub enum Context {
+pub enum RetrieveContext {
     LocalOnly,
     Export,
 }
@@ -66,7 +66,7 @@ impl DamsClient {
     pub async fn retrieve(
         &self,
         key_id: &KeyId,
-        context: Option<Context>,
+        context: Option<RetrieveContext>,
     ) -> Result<RetrieveResult, DamsClientError> {
         let mut client_channel =
             Self::create_channel(&mut self.tonic_client(), ClientAction::Retrieve).await?;

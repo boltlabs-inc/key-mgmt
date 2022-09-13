@@ -1,5 +1,5 @@
 use crate::{
-    api::arbitrary_secrets::{Context, LocalStorage, RetrieveResult},
+    api::arbitrary_secrets::{LocalStorage, RetrieveContext, RetrieveResult},
     DamsClient, DamsClientError,
 };
 use dams::{
@@ -13,7 +13,7 @@ impl DamsClient {
         &self,
         channel: &mut ClientChannel,
         key_id: &KeyId,
-        context: Option<Context>,
+        context: Option<RetrieveContext>,
     ) -> Result<RetrieveResult, DamsClientError> {
         // Retrieve the storage key
         let storage_key = self.retrieve_storage_key().await?;
@@ -39,11 +39,11 @@ impl DamsClient {
         // Return appropriate value based on Context
         match context {
             None => Ok(RetrieveResult::None),
-            Some(Context::LocalOnly) => {
+            Some(RetrieveContext::LocalOnly) => {
                 let wrapped_secret = LocalStorage { secret };
                 Ok(RetrieveResult::ArbitraryKey(wrapped_secret))
             }
-            Some(Context::Export) => Ok(RetrieveResult::ExportedKey(secret.into())),
+            Some(RetrieveContext::Export) => Ok(RetrieveResult::ExportedKey(secret.into())),
         }
     }
 }

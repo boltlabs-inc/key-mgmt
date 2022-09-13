@@ -1,13 +1,12 @@
 pub(crate) mod common;
 
 use crate::{
-    Operation::{Authenticate, Register},
+    Operation::{Authenticate, Generate, GenerateAndRetrieve, Register},
     Party::{Client, Server},
 };
 use common::{get_logs, LogType, Party};
 use dams_key_server::database::Database;
 
-use crate::Operation::{Generate, Retrieve};
 use dams::{config::client::Config, user::AccountName};
 use dams_client::{client::Password, DamsClient, DamsClientError};
 use std::{fs::OpenOptions, str::FromStr};
@@ -214,7 +213,7 @@ async fn tests() -> Vec<Test> {
                     },
                 ),
                 (
-                    Retrieve(
+                    GenerateAndRetrieve(
                         AccountName::from_str("retrieve").unwrap(),
                         Password::from_str("retrievePassword").unwrap(),
                     ),
@@ -258,7 +257,7 @@ impl Test {
                         .map(|_| ())
                         .map_err(|e| e.into())
                 }
-                Retrieve(account_name, password) => {
+                GenerateAndRetrieve(account_name, password) => {
                     let dams_client =
                         DamsClient::authenticated_client(account_name, password, config).await?;
                     let (key_id, _) = dams_client.generate_and_store().await?;
@@ -331,7 +330,7 @@ enum Operation {
     Register(AccountName, Password),
     Authenticate(AccountName, Password),
     Generate(AccountName, Password),
-    Retrieve(AccountName, Password),
+    GenerateAndRetrieve(AccountName, Password),
 }
 
 #[derive(Debug)]
