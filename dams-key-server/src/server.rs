@@ -182,55 +182,8 @@ pub async fn start_tonic_server(config: Config) -> Result<(), DamsServerError> {
     Ok(())
 }
 
-// TODO #220: Remove me!
-pub async fn start_tonic_server_without_tls(config: Config) -> Result<(), DamsServerError> {
-    let db = database::connect_to_mongo(&config.database).await?;
-    // Collect the futures for the result of running each specified server
-    let mut server_futures: FuturesUnordered<_> = config
-        .services
-        .iter()
-        .map(|service| {
-            // Clone `Arc`s for the various resources we need in this server
-            let config = config.clone();
-            let db = db.clone();
-            let service = Arc::new(service.clone());
-
-            async move {
-                let dams_rpc_server = DamsKeyServer::new(db, config, service)?;
-                let addr = dams_rpc_server.service.address;
-                let port = dams_rpc_server.service.port;
-                info!("{}", TestLogs::ServerSpawned(format!("{}:{}", addr, port)));
-                Server::builder()
-                    .add_service(DamsRpcServer::new(dams_rpc_server))
-                    .serve(SocketAddr::new(addr, port))
-                    .await?;
-
-                Ok::<_, DamsServerError>(())
-            }
-        })
-        .collect();
-
-    // Wait for the server to finish
-    tokio::select! {
-        _ = signal::ctrl_c() => info!("Terminated by user"),
-        Some(Err(e)) = server_futures.next() => {
-            error!("Error: {}", e);
-        },
-        else => {
-            info!("Shutting down...")
-        }
-    }
-    Ok(())
-}
-
 pub async fn main_with_cli(cli: Cli) -> Result<(), DamsServerError> {
     let config_path = cli.config.ok_or_else(config_path).or_else(identity)?;
     let config = Config::load(&config_path).await?;
-
-    // TODO #220: Remove me!
-    if config.disable_tls {
-        start_tonic_server_without_tls(config).await
-    } else {
-        start_tonic_server(config).await
-    }
+    start_tonic_server(config).await
 }
