@@ -193,8 +193,9 @@ impl Encrypted<Secret> {
     /// retrieve a secret from the server.
     ///
     /// This must be run by the client.
-    pub fn decrypt_secret(self, storage_key: StorageKey) -> Result<Secret, CryptoError> {
-        self.decrypt(&storage_key.0)
+    pub fn decrypt_secret(self, storage_key: StorageKey) -> Result<Secret, DamsError> {
+        let decrypted = self.decrypt(&storage_key.0)?;
+        Ok(decrypted)
     }
 }
 

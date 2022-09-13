@@ -42,6 +42,7 @@ pub enum ClientAction {
     Authenticate,
     CreateStorageKey,
     Generate,
+    Retrieve,
     RetrieveStorageKey,
 }
 

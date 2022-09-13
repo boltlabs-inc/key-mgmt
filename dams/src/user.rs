@@ -89,8 +89,8 @@ impl AccountName {
 /// Wrapper around an [`Encrypted<Secret>`] and its [`KeyId`]
 #[derive(Debug, Deserialize, Serialize)]
 pub struct StoredSecret {
-    secret: Encrypted<Secret>,
-    key_id: KeyId,
+    pub secret: Encrypted<Secret>,
+    pub key_id: KeyId,
 }
 
 impl StoredSecret {
