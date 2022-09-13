@@ -16,9 +16,6 @@ pub struct Config {
     #[serde(rename = "service")]
     pub services: Vec<Service>,
     pub database: DatabaseSpec,
-    // TODO #220: Remove me!
-    #[serde(default)]
-    pub disable_tls: bool,
 }
 
 impl Config {
@@ -128,7 +125,6 @@ mod tests {
                     mongodb_uri,
                     db_name,
                 },
-            disable_tls: _,
         } = Config::from_str(config_str).unwrap();
 
         assert_eq!(mongodb_uri, "mongodb://localhost:27017");
@@ -184,7 +180,6 @@ mod tests {
                     mongodb_uri,
                     db_name,
                 },
-            disable_tls: _,
         } = Config::from_str(config_str).unwrap();
 
         assert_eq!(mongodb_uri, "mongodb://localhost:27017");
