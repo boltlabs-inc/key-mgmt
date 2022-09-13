@@ -19,6 +19,8 @@ pub enum DamsServerError {
     StorageKeyAlreadySet,
     #[error("Storage key is not set for this user")]
     StorageKeyNotSet,
+    #[error("Key ID does not match any stored arbitrary key")]
+    KeyNotFound,
 
     // Wrapped errors
     #[error(transparent)]
