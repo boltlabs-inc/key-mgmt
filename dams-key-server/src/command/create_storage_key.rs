@@ -1,8 +1,4 @@
-use crate::{
-    database::user::{delete_user, find_user, set_storage_key},
-    error::DamsServerError,
-    server::Context,
-};
+use crate::{error::DamsServerError, server::Context};
 
 use dams::{
     channel::ServerChannel,
@@ -42,7 +38,7 @@ async fn send_user_id(
     context: &Context,
 ) -> Result<UserId, DamsServerError> {
     let request: client::RequestUserId = channel.receive().await?;
-    let user = find_user(&context.db, &request.account_name).await?;
+    let user = context.db.find_user(&request.account_name).await?;
 
     if let Some(user) = user {
         if user.storage_key.is_some() {
@@ -72,8 +68,12 @@ async fn store_storage_key(
         return Err(DamsServerError::InvalidUserId);
     }
 
-    if let Err(error) = set_storage_key(&context.db, &user_id, client_message.storage_key).await {
-        delete_user(&context.db, &user_id).await?;
+    if let Err(error) = context
+        .db
+        .set_storage_key(&user_id, client_message.storage_key)
+        .await
+    {
+        context.db.delete_user(&user_id).await?;
         return Err(error);
     }
 

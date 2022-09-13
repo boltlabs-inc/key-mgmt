@@ -1,4 +1,4 @@
-use crate::{database::user as User, server::Context, DamsServerError};
+use crate::{server::Context, DamsServerError};
 
 use dams::{
     channel::ServerChannel,
@@ -63,13 +63,10 @@ async fn store(
     let store_message: client::Store = channel.receive().await?;
 
     // Check validity of ciphertext and store in DB
-    User::add_user_secret(
-        &context.db,
-        &store_message.user_id,
-        store_message.ciphertext,
-        key_id,
-    )
-    .await?;
+    context
+        .db
+        .add_user_secret(&store_message.user_id, store_message.ciphertext, key_id)
+        .await?;
 
     // Reply with the success:true if successful
     let reply = server::Store { success: true };

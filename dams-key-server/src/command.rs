@@ -3,7 +3,7 @@ pub mod create_storage_key;
 pub mod generate;
 pub mod register;
 
-use crate::{database::user as User, server::Context, DamsServerError};
+use crate::{server::Context, DamsServerError};
 use dams::{
     channel::ServerChannel,
     types::{
@@ -35,7 +35,9 @@ async fn handle_retrieve_storage_key(
 ) -> Result<(), DamsServerError> {
     let request: client::Request = channel.receive().await?;
     // Find user by ID
-    let user = User::find_user_by_id(&context.db, &request.user_id)
+    let user = context
+        .db
+        .find_user_by_id(&request.user_id)
         .await?
         .ok_or(DamsServerError::AccountDoesNotExist)?;
     // Send storage key if set

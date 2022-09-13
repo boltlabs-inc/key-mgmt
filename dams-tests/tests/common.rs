@@ -7,8 +7,8 @@ use std::{
     sync::Mutex,
 };
 
+use dams_key_server::database::Database;
 use futures::future;
-use mongodb::Database;
 use tokio::{task::JoinHandle, time::Duration};
 use tracing::info_span;
 use tracing_futures::Instrument;
@@ -46,7 +46,7 @@ pub async fn setup(db: Database, server_config: dams::config::server::Config) ->
     fs::create_dir(&gen_path).expect("Unable to create directory tests/gen");
 
     // Ensure that the test DB is fresh
-    db.drop(None).await.expect("Failed to drop database");
+    db.drop().await.expect("Failed to drop database");
 
     // Create self-signed SSL certificate in the generated directory
     Command::new("../dev/generate-certificates")

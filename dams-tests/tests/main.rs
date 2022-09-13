@@ -5,11 +5,11 @@ use crate::{
     Party::{Client, Server},
 };
 use common::{get_logs, LogType, Party};
+use dams_key_server::database::Database;
 
 use crate::Operation::Generate;
 use dams::{config::client::Config, user::AccountName};
 use dams_client::{client::Password, DamsClient, DamsClientError};
-use dams_key_server::database;
 use std::{fs::OpenOptions, str::FromStr};
 use thiserror::Error;
 
@@ -17,7 +17,7 @@ use thiserror::Error;
 pub async fn integration_tests() {
     // Read environment variables from .env file
     let server_config = common::server_test_config().await;
-    let db = database::connect_to_mongo(&server_config.database)
+    let db = Database::connect(&server_config.database)
         .await
         .expect("Unable to connect to Mongo");
     let server_future = common::setup(db.clone(), server_config).await;
