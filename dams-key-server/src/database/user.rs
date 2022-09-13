@@ -95,12 +95,12 @@ impl Database {
     pub async fn get_user_secret(
         &self,
         user_id: &UserId,
-        key_id: KeyId,
+        key_id: &KeyId,
     ) -> Result<StoredSecret, DamsServerError> {
         // Get user collection
         let collection = self.inner.collection::<User>(constants::USERS);
         // Match on UserId and KeyId, update "retrieved" field to true
-        let key_id_bson = mongodb::bson::to_bson(&key_id)?;
+        let key_id_bson = mongodb::bson::to_bson(key_id)?;
         let filter = doc! { USER_ID: user_id, "secrets.key_id": key_id_bson };
         let update = doc! { "$set": { "secrets.$.retrieved": true } };
         let user = collection
@@ -112,7 +112,7 @@ impl Database {
         let stored_secret = user
             .secrets
             .into_iter()
-            .find(|x| x.key_id == key_id)
+            .find(|x| x.key_id == *key_id)
             .ok_or(DamsServerError::KeyNotFound)?;
 
         Ok(stored_secret)
