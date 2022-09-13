@@ -1,4 +1,4 @@
-use crate::{database::user as User, server::Context, DamsServerError};
+use crate::{server::Context, DamsServerError};
 
 use dams::{
     channel::ServerChannel,
@@ -35,18 +35,11 @@ impl Retrieve {
 async fn retrieve(channel: &mut ServerChannel, context: &Context) -> Result<(), DamsServerError> {
     // Receive UserId from client
     let request: client::Request = channel.receive().await?;
-    // Find user by ID
-    let user = User::find_user_by_id(&context.db, &request.user_id)
-        .await?
-        .ok_or(DamsServerError::AccountDoesNotExist)?;
-
     // Find secret based on key_id
-    let stored_secret = user
-        .secrets
-        .into_iter()
-        .find(|x| x.key_id == request.key_id)
-        .ok_or(DamsServerError::KeyNotFound)?;
-
+    let stored_secret = context
+        .db
+        .get_user_secret(&request.user_id, request.key_id)
+        .await?;
     // Serialize KeyId and send to client
     let reply = server::Response { stored_secret };
     channel.send(reply).await?;

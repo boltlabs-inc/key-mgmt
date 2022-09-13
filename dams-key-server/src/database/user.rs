@@ -91,6 +91,33 @@ impl Database {
         Ok(())
     }
 
+    /// Get a [`User`]'s [`StoredSecret`] based on its [`KeyId`]
+    pub async fn get_user_secret(
+        &self,
+        user_id: &UserId,
+        key_id: KeyId,
+    ) -> Result<StoredSecret, DamsServerError> {
+        // Get user collection
+        let collection = self.inner.collection::<User>(constants::USERS);
+        // Match on UserId and KeyId, update "retrieved" field to true
+        let key_id_bson = mongodb::bson::to_bson(&key_id)?;
+        let filter = doc! { USER_ID: user_id, "secrets.key_id": key_id_bson };
+        let update = doc! { "$set": { "secrets.$.retrieved": true } };
+        let user = collection
+            .find_one_and_update(filter, update, None)
+            .await?
+            .ok_or(DamsServerError::AccountDoesNotExist)?;
+
+        // Filter found user to return stored secret
+        let stored_secret = user
+            .secrets
+            .into_iter()
+            .find(|x| x.key_id == key_id)
+            .ok_or(DamsServerError::KeyNotFound)?;
+
+        Ok(stored_secret)
+    }
+
     /// Set the `storage_key` field for the [`User`] associated with a given
     /// [`UserId`]
     /// ## Errors

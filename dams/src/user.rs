@@ -91,11 +91,16 @@ impl AccountName {
 pub struct StoredSecret {
     pub secret: Encrypted<Secret>,
     pub key_id: KeyId,
+    pub retrieved: bool,
 }
 
 impl StoredSecret {
     pub fn new(secret: Encrypted<Secret>, key_id: KeyId) -> Self {
-        Self { secret, key_id }
+        Self {
+            secret,
+            key_id,
+            retrieved: false,
+        }
     }
 }
 
