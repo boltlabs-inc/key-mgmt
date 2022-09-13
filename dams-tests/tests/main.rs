@@ -7,7 +7,7 @@ use crate::{
 use common::{get_logs, LogType, Party};
 use dams_key_server::database::Database;
 
-use dams::{config::client::Config, user::AccountName};
+use dams::{config::client::Config, user::AccountName, RetrieveContext};
 use dams_client::{client::Password, DamsClient, DamsClientError};
 use std::{fs::OpenOptions, str::FromStr};
 use thiserror::Error;
@@ -262,7 +262,7 @@ impl Test {
                         DamsClient::authenticated_client(account_name, password, config).await?;
                     let (key_id, _) = dams_client.generate_and_store().await?;
                     dams_client
-                        .retrieve(&key_id, None)
+                        .retrieve(&key_id, RetrieveContext::Null)
                         .await
                         .map(|_| ())
                         .map_err(|e| e.into())

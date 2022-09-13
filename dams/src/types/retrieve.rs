@@ -1,5 +1,5 @@
 pub mod client {
-    use crate::{crypto::KeyId, impl_message_conversion, user::UserId};
+    use crate::{crypto::KeyId, impl_message_conversion, user::UserId, RetrieveContext};
     use serde::{Deserialize, Serialize};
 
     #[derive(Debug, Deserialize, Serialize)]
@@ -7,6 +7,7 @@ pub mod client {
     pub struct Request {
         pub user_id: UserId,
         pub key_id: KeyId,
+        pub context: RetrieveContext,
     }
 
     impl_message_conversion!(Request);

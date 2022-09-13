@@ -2,19 +2,12 @@ use crate::{DamsClient, DamsClientError};
 use dams::{
     crypto::{KeyId, Secret, StorageKey},
     types::retrieve_storage_key::{client, server},
-    ClientAction,
+    ClientAction, RetrieveContext,
 };
 use serde::{Deserialize, Serialize};
 
 mod generate;
 mod retrieve;
-
-/// Options for the asset owner's intended use of a secret
-#[derive(Debug, Deserialize, Serialize)]
-pub enum RetrieveContext {
-    LocalOnly,
-    Export,
-}
 
 /// Ways of returning a key from the retrieval process based on usage
 /// [`Context`]
@@ -66,7 +59,7 @@ impl DamsClient {
     pub async fn retrieve(
         &self,
         key_id: &KeyId,
-        context: Option<RetrieveContext>,
+        context: RetrieveContext,
     ) -> Result<RetrieveResult, DamsClientError> {
         let mut client_channel =
             Self::create_channel(&mut self.tonic_client(), ClientAction::Retrieve).await?;
