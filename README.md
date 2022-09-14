@@ -63,7 +63,13 @@ We follow test-driven development practices and the test suite should be a close
 
 ## Running the server locally
 
-To run the server locally, make sure MongoDB is running as above and then run:
+To run the server locally, make sure MongoDB is running as above. Then, generate an SSL cert locally using the provided script in the `dev/` directory:
+```bash
+cd dev/
+./generate-certificates
+```
+
+Then, go back to the top level directory of this repo and run the following command to start the server:
 ```bash
 cargo run --bin key-server-cli server --config {path_to_server_config} run
 ```
