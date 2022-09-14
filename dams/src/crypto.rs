@@ -101,9 +101,6 @@ impl From<GenericArray<u8, U64>> for OpaqueSessionKey {
 /// authentication session.
 /// It should never be sent to the server or passed out to the local calling
 /// application.
-///
-/// Implementation note: this is a wrapper around the type returned by the
-/// `opaque_ke` library's `export_key` field.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OpaqueExportKey(Box<[u8; 64]>);
 
