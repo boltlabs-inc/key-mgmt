@@ -10,7 +10,7 @@ mod generate;
 mod retrieve;
 
 /// Ways of returning a key from the retrieval process based on usage
-/// [`Context`]
+/// [`RetrieveContext`]
 #[derive(Debug, Deserialize, Serialize)]
 pub enum RetrieveResult {
     None,
