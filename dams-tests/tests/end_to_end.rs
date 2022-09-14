@@ -6,8 +6,13 @@ use Party::{Client, Server};
 
 use dams::{config::client::Config, user::AccountName, RetrieveContext};
 use dams_client::{client::Password, DamsClient, DamsClientError};
-use std::{fs::OpenOptions, str::FromStr};
+use rand::{distributions::Alphanumeric, Rng};
+use serde_json::Value;
+use std::{collections::HashMap, fs::OpenOptions, str::FromStr};
 use thiserror::Error;
+
+const USER: &str = "user";
+const PASSWORD: &str = "user";
 
 #[tokio::test]
 pub async fn end_to_end_tests() {
@@ -66,191 +71,191 @@ pub async fn end_to_end_tests() {
 /// processes (server).
 async fn tests() -> Vec<Test> {
     vec![
-        Test {
-            name: "Register the same user twice user".to_string(),
-            operations: vec![
+        Test::new(
+            "Register the same user twice user".to_string(),
+            vec![
                 (
-                    Register(
-                        AccountName::from_str("sameUser").unwrap(),
-                        Password::from_str("testPassword1").unwrap(),
-                    ),
+                    Register,
                     Outcome {
                         error: None,
                         expected_error: None,
                     },
                 ),
                 (
-                    Register(
-                        AccountName::from_str("sameUser").unwrap(),
-                        Password::from_str("testPassword2").unwrap(),
-                    ),
+                    Register,
                     Outcome {
                         error: Some(Client),
                         expected_error: Some(DamsClientError::RegistrationFailed),
                     },
                 ),
             ],
-        },
-        Test {
-            name: "Register and open multiple sessions as a client to the server".to_string(),
-            operations: vec![
+        ),
+        Test::new(
+            "Register and open multiple sessions as a client to the server".to_string(),
+            vec![
                 (
-                    Register(
-                        AccountName::from_str("testUser").unwrap(),
-                        Password::from_str("testPassword").unwrap(),
-                    ),
+                    Register,
                     Outcome {
                         error: None,
                         expected_error: None,
                     },
                 ),
                 (
-                    Authenticate(
-                        AccountName::from_str("testUser").unwrap(),
-                        Password::from_str("testPassword").unwrap(),
-                    ),
+                    Authenticate(None),
                     Outcome {
                         error: None,
                         expected_error: None,
                     },
                 ),
                 (
-                    Authenticate(
-                        AccountName::from_str("testUser").unwrap(),
-                        Password::from_str("testPassword").unwrap(),
-                    ),
+                    Authenticate(None),
                     Outcome {
                         error: None,
                         expected_error: None,
                     },
                 ),
             ],
-        },
-        Test {
-            name: "Register and authenticate with wrong password fails as a client to the server"
+        ),
+        Test::new(
+            "Register and authenticate with wrong password fails as a client to the server"
                 .to_string(),
-            operations: vec![
+            vec![
                 (
-                    Register(
-                        AccountName::from_str("testUser2").unwrap(),
-                        Password::from_str("testPassword2").unwrap(),
-                    ),
+                    Register,
                     Outcome {
                         error: None,
                         expected_error: None,
                     },
                 ),
                 (
-                    Authenticate(
-                        AccountName::from_str("testUser2").unwrap(),
-                        Password::from_str("wrongPassword").unwrap(),
-                    ),
+                    Authenticate(Some(Password::from_str("wrongPassword").unwrap())),
                     Outcome {
                         error: Some(Client),
                         expected_error: Some(DamsClientError::AuthenticationFailed),
                     },
                 ),
             ],
-        },
-        Test {
-            name: "Authenticate with unregistered user fails".to_string(),
-            operations: vec![(
-                Authenticate(
-                    AccountName::from_str("unregisteredUser").unwrap(),
-                    Password::from_str("testPassword").unwrap(),
-                ),
+        ),
+        Test::new(
+            "Authenticate with unregistered user fails".to_string(),
+            vec![(
+                Authenticate(None),
                 Outcome {
                     error: Some(Client),
                     expected_error: Some(DamsClientError::AuthenticationFailed),
                 },
             )],
-        },
-        Test {
-            name: "Generate a secret".to_string(),
-            operations: vec![
+        ),
+        Test::new(
+            "Generate a secret".to_string(),
+            vec![
                 (
-                    Register(
-                        AccountName::from_str("generate").unwrap(),
-                        Password::from_str("generatePassword").unwrap(),
-                    ),
+                    Register,
                     Outcome {
                         error: None,
                         expected_error: None,
                     },
                 ),
                 (
-                    Generate(
-                        AccountName::from_str("generate").unwrap(),
-                        Password::from_str("generatePassword").unwrap(),
-                    ),
+                    Generate,
                     Outcome {
                         error: None,
                         expected_error: None,
                     },
                 ),
             ],
-        },
-        Test {
-            name: "Retrieve a secret".to_string(),
-            operations: vec![
+        ),
+        Test::new(
+            "Retrieve a secret".to_string(),
+            vec![
                 (
-                    Register(
-                        AccountName::from_str("retrieve").unwrap(),
-                        Password::from_str("retrievePassword").unwrap(),
-                    ),
+                    Register,
                     Outcome {
                         error: None,
                         expected_error: None,
                     },
                 ),
                 (
-                    GenerateAndRetrieve(
-                        AccountName::from_str("retrieve").unwrap(),
-                        Password::from_str("retrievePassword").unwrap(),
-                    ),
+                    GenerateAndRetrieve,
                     Outcome {
                         error: None,
                         expected_error: None,
                     },
                 ),
             ],
-        },
+        ),
     ]
 }
 
 #[derive(Debug)]
+#[allow(unused)]
 struct Test {
     pub name: String,
+    pub account_name: AccountName,
+    pub password: Password,
     pub operations: Vec<(Operation, Outcome)>,
+    pub state: HashMap<String, Value>,
 }
 
 impl Test {
+    fn generate_tag() -> String {
+        rand::thread_rng()
+            .sample_iter(&Alphanumeric)
+            .take(7)
+            .map(char::from)
+            .collect()
+    }
+
+    fn new(name: String, operations: Vec<(Operation, Outcome)>) -> Self {
+        let tag = Self::generate_tag();
+        let account_name = AccountName::from_str(format!("{}-{}", USER, tag).as_str()).unwrap();
+        let password = Password::from_str(format!("{}-{}", PASSWORD, tag).as_str()).unwrap();
+
+        Self {
+            name,
+            account_name,
+            password,
+            operations,
+            state: HashMap::new(),
+        }
+    }
+
     async fn execute(&self, config: &Config) -> Result<(), anyhow::Error> {
         for (op, expected_outcome) in &self.operations {
             let outcome: Result<(), anyhow::Error> = match op {
-                Register(account_name, password) => {
-                    DamsClient::register(account_name, password, config)
-                        .await
-                        .map_err(|e| e.into())
-                }
-                Authenticate(account_name, password) => {
-                    DamsClient::authenticated_client(account_name, password, config)
+                Register => DamsClient::register(&self.account_name, &self.password, config)
+                    .await
+                    .map_err(|e| e.into()),
+                Authenticate(pwd) => {
+                    let password = match pwd {
+                        Some(pwd) => pwd,
+                        None => &self.password,
+                    };
+                    DamsClient::authenticated_client(&self.account_name, password, config)
                         .await
                         .map(|_| ())
                         .map_err(|e| e.into())
                 }
-                Generate(account_name, password) => {
-                    let dams_client =
-                        DamsClient::authenticated_client(account_name, password, config).await?;
+                Generate => {
+                    let dams_client = DamsClient::authenticated_client(
+                        &self.account_name,
+                        &self.password,
+                        config,
+                    )
+                    .await?;
                     dams_client
                         .generate_and_store()
                         .await
                         .map(|_| ())
                         .map_err(|e| e.into())
                 }
-                GenerateAndRetrieve(account_name, password) => {
-                    let dams_client =
-                        DamsClient::authenticated_client(account_name, password, config).await?;
+                GenerateAndRetrieve => {
+                    let dams_client = DamsClient::authenticated_client(
+                        &self.account_name,
+                        &self.password,
+                        config,
+                    )
+                    .await?;
                     let (key_id, _) = dams_client.generate_and_store().await?;
                     dams_client
                         .retrieve(&key_id, RetrieveContext::Null)
@@ -318,10 +323,10 @@ enum TestError {
 #[allow(unused)]
 #[derive(Debug)]
 enum Operation {
-    Register(AccountName, Password),
-    Authenticate(AccountName, Password),
-    Generate(AccountName, Password),
-    GenerateAndRetrieve(AccountName, Password),
+    Register,
+    Authenticate(Option<Password>),
+    Generate,
+    GenerateAndRetrieve,
 }
 
 #[derive(Debug)]
