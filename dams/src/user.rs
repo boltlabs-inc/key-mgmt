@@ -89,13 +89,18 @@ impl AccountName {
 /// Wrapper around an [`Encrypted<Secret>`] and its [`KeyId`]
 #[derive(Debug, Deserialize, Serialize)]
 pub struct StoredSecret {
-    secret: Encrypted<Secret>,
-    key_id: KeyId,
+    pub secret: Encrypted<Secret>,
+    pub key_id: KeyId,
+    pub retrieved: bool,
 }
 
 impl StoredSecret {
     pub fn new(secret: Encrypted<Secret>, key_id: KeyId) -> Self {
-        Self { secret, key_id }
+        Self {
+            secret,
+            key_id,
+            retrieved: false,
+        }
     }
 }
 

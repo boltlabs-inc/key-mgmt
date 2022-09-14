@@ -1,14 +1,13 @@
 pub(crate) mod common;
 
 use crate::{
-    Operation::{Authenticate, Register},
+    Operation::{Authenticate, Generate, GenerateAndRetrieve, Register},
     Party::{Client, Server},
 };
 use common::{get_logs, LogType, Party};
 use dams_key_server::database::Database;
 
-use crate::Operation::Generate;
-use dams::{config::client::Config, user::AccountName};
+use dams::{config::client::Config, user::AccountName, RetrieveContext};
 use dams_client::{client::Password, DamsClient, DamsClientError};
 use std::{fs::OpenOptions, str::FromStr};
 use thiserror::Error;
@@ -76,31 +75,6 @@ pub async fn integration_tests() {
 /// processes (server).
 async fn tests() -> Vec<Test> {
     vec![
-        Test {
-            name: "Generate a secret".to_string(),
-            operations: vec![
-                (
-                    Register(
-                        AccountName::from_str("generate").unwrap(),
-                        Password::from_str("generatePassword").unwrap(),
-                    ),
-                    Outcome {
-                        error: None,
-                        expected_error: None,
-                    },
-                ),
-                (
-                    Generate(
-                        AccountName::from_str("generate").unwrap(),
-                        Password::from_str("generatePassword").unwrap(),
-                    ),
-                    Outcome {
-                        error: None,
-                        expected_error: None,
-                    },
-                ),
-            ],
-        },
         Test {
             name: "Register the same user twice user".to_string(),
             operations: vec![
@@ -200,6 +174,56 @@ async fn tests() -> Vec<Test> {
                 },
             )],
         },
+        Test {
+            name: "Generate a secret".to_string(),
+            operations: vec![
+                (
+                    Register(
+                        AccountName::from_str("generate").unwrap(),
+                        Password::from_str("generatePassword").unwrap(),
+                    ),
+                    Outcome {
+                        error: None,
+                        expected_error: None,
+                    },
+                ),
+                (
+                    Generate(
+                        AccountName::from_str("generate").unwrap(),
+                        Password::from_str("generatePassword").unwrap(),
+                    ),
+                    Outcome {
+                        error: None,
+                        expected_error: None,
+                    },
+                ),
+            ],
+        },
+        Test {
+            name: "Retrieve a secret".to_string(),
+            operations: vec![
+                (
+                    Register(
+                        AccountName::from_str("retrieve").unwrap(),
+                        Password::from_str("retrievePassword").unwrap(),
+                    ),
+                    Outcome {
+                        error: None,
+                        expected_error: None,
+                    },
+                ),
+                (
+                    GenerateAndRetrieve(
+                        AccountName::from_str("retrieve").unwrap(),
+                        Password::from_str("retrievePassword").unwrap(),
+                    ),
+                    Outcome {
+                        error: None,
+                        expected_error: None,
+                    },
+                ),
+            ],
+        },
     ]
 }
 
@@ -229,6 +253,16 @@ impl Test {
                         DamsClient::authenticated_client(account_name, password, config).await?;
                     dams_client
                         .generate_and_store()
+                        .await
+                        .map(|_| ())
+                        .map_err(|e| e.into())
+                }
+                GenerateAndRetrieve(account_name, password) => {
+                    let dams_client =
+                        DamsClient::authenticated_client(account_name, password, config).await?;
+                    let (key_id, _) = dams_client.generate_and_store().await?;
+                    dams_client
+                        .retrieve(&key_id, RetrieveContext::Null)
                         .await
                         .map(|_| ())
                         .map_err(|e| e.into())
@@ -296,6 +330,7 @@ enum Operation {
     Register(AccountName, Password),
     Authenticate(AccountName, Password),
     Generate(AccountName, Password),
+    GenerateAndRetrieve(AccountName, Password),
 }
 
 #[derive(Debug)]

@@ -1,5 +1,6 @@
 use crate::{server::Context, DamsServerError};
 
+use crate::error::LogExt;
 use dams::{
     channel::ServerChannel,
     crypto::KeyId,
@@ -7,6 +8,8 @@ use dams::{
         generate::{client, server},
         Message, MessageStream,
     },
+    user::UserId,
+    ClientAction,
 };
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response};
@@ -24,9 +27,12 @@ impl Generate {
 
         let _ = tokio::spawn(async move {
             // Generate step: receive UserId and reply with new KeyId
-            let key_id = generate(&mut channel, &context).await?;
+            let (key_id, user_id) = generate(&mut channel, &context).await?;
             // Store step: receive ciphertext from client and store in DB
-            store(&mut channel, &context, key_id).await?;
+            store(&mut channel, &context, &key_id)
+                .await
+                .log(&context.db, &user_id, Some(key_id), ClientAction::Generate)
+                .await?;
 
             Ok::<(), DamsServerError>(())
         });
@@ -38,7 +44,7 @@ impl Generate {
 async fn generate(
     channel: &mut ServerChannel,
     context: &Context,
-) -> Result<KeyId, DamsServerError> {
+) -> Result<(KeyId, UserId), DamsServerError> {
     // Receive UserId from client
     let generate_message: client::Generate = channel.receive().await?;
     // Generate new KeyId
@@ -51,13 +57,13 @@ async fn generate(
         key_id: key_id.clone(),
     };
     channel.send(reply).await?;
-    Ok(key_id)
+    Ok((key_id, generate_message.user_id))
 }
 
 async fn store(
     channel: &mut ServerChannel,
     context: &Context,
-    key_id: KeyId,
+    key_id: &KeyId,
 ) -> Result<(), DamsServerError> {
     // Receive Encrypted<Secret> from client
     let store_message: client::Store = channel.receive().await?;
@@ -65,7 +71,11 @@ async fn store(
     // Check validity of ciphertext and store in DB
     context
         .db
-        .add_user_secret(&store_message.user_id, store_message.ciphertext, key_id)
+        .add_user_secret(
+            &store_message.user_id,
+            store_message.ciphertext,
+            key_id.clone(),
+        )
         .await?;
 
     // Reply with the success:true if successful

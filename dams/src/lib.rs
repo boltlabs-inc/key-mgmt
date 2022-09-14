@@ -42,7 +42,16 @@ pub enum ClientAction {
     Authenticate,
     CreateStorageKey,
     Generate,
+    Retrieve,
     RetrieveStorageKey,
+}
+
+/// Options for the asset owner's intended use of a secret
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub enum RetrieveContext {
+    Null,
+    LocalOnly,
+    Export,
 }
 
 /// Logs used to verify that an operation completed in the integration tests.

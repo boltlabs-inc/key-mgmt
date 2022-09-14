@@ -2,14 +2,21 @@ use crate::{DamsClient, DamsClientError};
 use dams::{
     crypto::{KeyId, Secret, StorageKey},
     types::retrieve_storage_key::{client, server},
-    ClientAction,
+    ClientAction, RetrieveContext,
 };
 use serde::{Deserialize, Serialize};
 
 mod generate;
+mod retrieve;
 
-#[allow(unused)]
-const SECRET_LENGTH: u32 = 32;
+/// Ways of returning a key from the retrieval process based on usage
+/// [`RetrieveContext`]
+#[derive(Debug, Deserialize, Serialize)]
+pub enum RetrieveResult {
+    None,
+    ArbitraryKey(LocalStorage),
+    ExportedKey(Vec<u8>),
+}
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct LocalStorage {
@@ -46,5 +53,17 @@ impl DamsClient {
         let mut client_channel =
             Self::create_channel(&mut self.tonic_client(), ClientAction::Generate).await?;
         self.handle_generate(&mut client_channel).await
+    }
+
+    /// Retrieve an arbitrary secret from the key server by [`KeyId`]
+    pub async fn retrieve(
+        &self,
+        key_id: &KeyId,
+        context: RetrieveContext,
+    ) -> Result<RetrieveResult, DamsClientError> {
+        let mut client_channel =
+            Self::create_channel(&mut self.tonic_client(), ClientAction::Retrieve).await?;
+        self.handle_retrieve(&mut client_channel, key_id, context)
+            .await
     }
 }
