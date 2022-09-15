@@ -65,7 +65,7 @@ pub struct DamsClient {
 /// Connection type used by `DamsRpcClient`.
 /// This would normally be `tonic::transport:Channel` but TLS makes it more
 /// complicated.
-type DamsRpcClientInner = hyper::Client<
+pub type DamsRpcClientInner = hyper::Client<
     HttpsConnector<HttpConnector>,
     UnsyncBoxBody<tonic::codegen::Bytes, tonic::Status>,
 >;
@@ -128,7 +128,10 @@ impl DamsClient {
         Self::authenticate(client, account_name, password, config).await
     }
 
-    async fn authenticate(
+    /// Authenticate to the DAMS key server if you already have an RPC client.
+    /// `DamsClient::authenticated_client` is the standard method for
+    /// authentication.
+    pub async fn authenticate(
         mut client: DamsRpcClient<DamsRpcClientInner>,
         account_name: &AccountName,
         password: &Password,
@@ -204,7 +207,7 @@ impl DamsClient {
 
     /// Helper to create the appropriate [`ClientChannel`] to send to tonic
     /// handler functions based on the client's action.
-    pub(crate) async fn create_channel(
+    pub async fn create_channel(
         client: &mut DamsRpcClient<DamsRpcClientInner>,
         action: ClientAction,
     ) -> Result<ClientChannel, DamsClientError> {

@@ -7,6 +7,7 @@ use std::{
     sync::Mutex,
 };
 
+use dams_client::client::DamsRpcClientInner;
 use dams_key_server::database::Database;
 use futures::future;
 use tokio::{task::JoinHandle, time::Duration};
@@ -15,6 +16,7 @@ use tracing_futures::Instrument;
 
 use dams::{
     config::{client::Config as ClientConfig, server::Config as ServerConfig},
+    dams_rpc::dams_rpc_client::DamsRpcClient,
     defaults::server::LOCAL_SERVER_URI,
     timeout::WithTimeout,
     TestLogs,
@@ -218,4 +220,24 @@ pub async fn await_log(party: Party, log: TestLogs) -> Result<(), anyhow::Error>
         }
         tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
     }
+}
+
+#[allow(unused)]
+pub fn create_rpc_client(
+    config: &ClientConfig,
+) -> Result<DamsRpcClient<DamsRpcClientInner>, anyhow::Error> {
+    let address = config.server_location()?;
+
+    let tls_config = config.tls_config()?;
+
+    let connector = hyper_rustls::HttpsConnectorBuilder::new()
+        .with_tls_config(tls_config)
+        .https_only()
+        .enable_http2()
+        .build();
+
+    let client = hyper::Client::builder().build(connector);
+    let rpc_client = DamsRpcClient::with_origin(client, address);
+
+    Ok(rpc_client)
 }
