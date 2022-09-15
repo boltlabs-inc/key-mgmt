@@ -4,6 +4,7 @@
 //! on the [`LogEntry`] model in the MongoDB database.
 
 use crate::{constants, DamsServerError};
+use async_trait::async_trait;
 use dams::{
     audit_log::{LogEntry, Outcome},
     crypto::KeyId,
@@ -26,5 +27,36 @@ impl Database {
         let new_log = LogEntry::new(actor.into(), secret_id, action, outcome);
         let _ = collection.insert_one(new_log, None).await?;
         Ok(())
+    }
+}
+
+#[async_trait]
+pub trait AuditLogExt {
+    async fn audit_log(
+        self,
+        db: &Database,
+        actor: impl Into<LogIdentifier> + std::marker::Send + 'async_trait,
+        secret_id: Option<KeyId>,
+        action: ClientAction,
+    ) -> Self;
+}
+
+#[async_trait]
+impl<T: std::marker::Send> AuditLogExt for Result<T, DamsServerError> {
+    async fn audit_log(
+        self,
+        db: &Database,
+        actor: impl Into<LogIdentifier> + std::marker::Send + 'async_trait,
+        secret_id: Option<KeyId>,
+        action: ClientAction,
+    ) -> Self {
+        if self.is_err() {
+            db.create_log_entry(actor, secret_id, action, Outcome::Failed)
+                .await?;
+        } else {
+            db.create_log_entry(actor, secret_id, action, Outcome::Successful)
+                .await?;
+        }
+        self
     }
 }

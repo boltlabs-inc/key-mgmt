@@ -73,7 +73,7 @@ async fn start_server(server_config: ServerConfig) -> ServerFuture {
 
     // Form the server run request and execute
     let server_handle = tokio::spawn(
-        dams_key_server::server::start_tonic_server(server_config)
+        dams_key_server::server::start_dams_server(server_config)
             .instrument(info_span!(Party::Server.to_str())),
     );
     // Check the logs of server + client for indication of a successful set-up

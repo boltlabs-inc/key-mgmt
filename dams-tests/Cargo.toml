@@ -12,6 +12,7 @@ dams-key-server = { version = "0.1.0", path = "../dams-key-server" }
 dams-client = { version = "0.1.0", path = "../dams-client", features=["allow_explicit_certificate_trust"] }
 futures = "0.3"
 mongodb = "2.3.0"
+opaque-ke = { version = "2.0.0-pre.3", features = ["argon2"] }
 rand = "0.8"
 serde = "1"
 serde_json = "1.0.85"

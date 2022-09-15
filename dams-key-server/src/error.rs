@@ -1,9 +1,5 @@
-use async_trait::async_trait;
-use dams::{audit_log::Outcome, crypto::KeyId, user::LogIdentifier, ClientAction};
 use thiserror::Error;
 use tonic::Status;
-
-use crate::database::Database;
 
 #[derive(Debug, Error)]
 pub enum DamsServerError {
@@ -11,10 +7,10 @@ pub enum DamsServerError {
     MissingService,
 
     // Protocol errors
-    #[error("Account does not exist")]
-    AccountDoesNotExist,
-    #[error("Invalid user_id")]
-    InvalidUserId,
+    #[error("Account already registered")]
+    AccountAlreadyRegistered,
+    #[error("Invalid account")]
+    InvalidAccount,
     #[error("Storage key is already set")]
     StorageKeyAlreadySet,
     #[error("Storage key is not set for this user")]
@@ -25,8 +21,6 @@ pub enum DamsServerError {
     // Wrapped errors
     #[error(transparent)]
     Dams(#[from] dams::DamsError),
-    #[error(transparent)]
-    DamsChannel(#[from] dams::channel::ChannelError),
     #[error(transparent)]
     Hyper(#[from] hyper::Error),
     #[error(transparent)]
@@ -53,37 +47,28 @@ impl From<opaque_ke::errors::ProtocolError> for DamsServerError {
 
 impl From<DamsServerError> for Status {
     fn from(error: DamsServerError) -> Status {
-        Status::internal(error.to_string())
-    }
-}
+        match error {
+            // Errors that are safe to return to the client
+            DamsServerError::AccountAlreadyRegistered
+            | DamsServerError::InvalidAccount
+            | DamsServerError::KeyNotFound => Status::invalid_argument(error.to_string()),
+            DamsServerError::StorageKeyAlreadySet | DamsServerError::StorageKeyNotSet => {
+                Status::internal(error.to_string())
+            }
 
-#[async_trait]
-pub trait LogExt {
-    async fn log(
-        self,
-        db: &Database,
-        actor: impl Into<LogIdentifier> + std::marker::Send + 'async_trait,
-        secret_id: Option<KeyId>,
-        action: ClientAction,
-    ) -> Self;
-}
+            DamsServerError::TonicTransport(err) => Status::internal(err.to_string()),
+            DamsServerError::TonicStatus(status) => status,
+            // These errors are are sanitized in the [`DamsError`] module
+            DamsServerError::Dams(err) => err.into(),
 
-#[async_trait]
-impl<T: std::marker::Send> LogExt for Result<T, DamsServerError> {
-    async fn log(
-        self,
-        db: &Database,
-        actor: impl Into<LogIdentifier> + std::marker::Send + 'async_trait,
-        secret_id: Option<KeyId>,
-        action: ClientAction,
-    ) -> Self {
-        if self.is_err() {
-            db.create_log_entry(actor, secret_id, action, Outcome::Failed)
-                .await?;
-        } else {
-            db.create_log_entry(actor, secret_id, action, Outcome::Successful)
-                .await?;
+            // Errors that the client should not see
+            DamsServerError::MissingService
+            | DamsServerError::Hyper(_)
+            | DamsServerError::Io(_)
+            | DamsServerError::Bson(_)
+            | DamsServerError::OpaqueProtocol(_)
+            | DamsServerError::EnvVar(_)
+            | DamsServerError::MongoDb(_) => Status::internal("Internal server error"),
         }
-        self
     }
 }

@@ -1,35 +1,28 @@
-use crate::{error::DamsServerError, server::Context};
+use crate::{
+    error::DamsServerError,
+    server::{Context, Operation},
+};
 
+use async_trait::async_trait;
 use dams::{
     channel::ServerChannel,
-    types::{
-        create_storage_key::{client, server},
-        Message, MessageStream,
-    },
+    types::create_storage_key::{client, server},
     user::UserId,
 };
-use tokio_stream::wrappers::ReceiverStream;
-use tonic::{Request, Response};
 
 #[derive(Debug)]
 pub struct CreateStorageKey;
 
-impl CreateStorageKey {
-    pub async fn run<'a>(
-        &self,
-        request: Request<tonic::Streaming<Message>>,
+#[async_trait]
+impl Operation for CreateStorageKey {
+    async fn operation(
+        self,
+        channel: &mut ServerChannel,
         context: Context,
-    ) -> Result<Response<MessageStream>, DamsServerError> {
-        let (mut channel, rx) = ServerChannel::create(request.into_inner());
-
-        let _ = tokio::spawn(async move {
-            let user_id = send_user_id(&mut channel, &context).await?;
-            store_storage_key(user_id, &mut channel, &context).await?;
-
-            Ok::<(), DamsServerError>(())
-        });
-
-        Ok(Response::new(ReceiverStream::new(rx)))
+    ) -> Result<(), DamsServerError> {
+        let user_id = send_user_id(channel, &context).await?;
+        store_storage_key(user_id, channel, &context).await?;
+        Ok(())
     }
 }
 
@@ -53,7 +46,7 @@ async fn send_user_id(
 
         Ok(user.user_id)
     } else {
-        Err(DamsServerError::AccountDoesNotExist)
+        Err(DamsServerError::InvalidAccount)
     }
 }
 
@@ -65,7 +58,7 @@ async fn store_storage_key(
     let client_message: client::SendStorageKey = channel.receive().await?;
 
     if client_message.user_id != user_id {
-        return Err(DamsServerError::InvalidUserId);
+        return Err(DamsServerError::InvalidAccount);
     }
 
     if let Err(error) = context

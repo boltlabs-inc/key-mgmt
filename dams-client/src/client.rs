@@ -159,7 +159,7 @@ impl DamsClient {
             }
             Err(e) => {
                 error!("{:?}", e);
-                Err(DamsClientError::AuthenticationFailed)
+                Err(e)
             }
         }
     }
@@ -197,7 +197,7 @@ impl DamsClient {
             }
             Err(e) => {
                 error!("{:?}", e);
-                Err(DamsClientError::RegistrationFailed)
+                Err(e)
             }
         }
     }

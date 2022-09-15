@@ -66,7 +66,7 @@ impl Database {
         let result = collection.delete_one(query, None).await?;
 
         if result.deleted_count == 0 {
-            Err(DamsServerError::InvalidUserId)
+            Err(DamsServerError::InvalidAccount)
         } else {
             Ok(())
         }
@@ -87,7 +87,7 @@ impl Database {
         let _ = collection
             .find_one_and_update(filter, update, None)
             .await?
-            .ok_or(DamsServerError::AccountDoesNotExist)?;
+            .ok_or(DamsServerError::InvalidAccount)?;
         Ok(())
     }
 
@@ -106,7 +106,7 @@ impl Database {
         let user = collection
             .find_one_and_update(filter, update, None)
             .await?
-            .ok_or(DamsServerError::AccountDoesNotExist)?;
+            .ok_or(DamsServerError::InvalidAccount)?;
 
         // Filter found user to return stored secret
         let stored_secret = user
@@ -124,8 +124,8 @@ impl Database {
     /// - Returns a `bson::Error` if the storage key cannot be converted to BSON
     /// - Returns a `mongodb::Error` if there is a problem connecting to the
     ///   database
-    /// - Returns a `DamsServerError::InvalidUserId` if the given `user_id` does
-    ///   not exist.
+    /// - Returns a `DamsServerError::InvalidAccount` if the given `user_id`
+    ///   does not exist.
     pub async fn set_storage_key(
         &self,
         user_id: &UserId,
@@ -140,7 +140,7 @@ impl Database {
         let user = collection.find_one_and_update(filter, update, None).await?;
 
         if user.is_none() {
-            Err(DamsServerError::InvalidUserId)
+            Err(DamsServerError::InvalidAccount)
         } else {
             Ok(())
         }
@@ -410,7 +410,7 @@ mod test {
 
         // Ensure that an error is returned if the user is deleted again
         let result = db.delete_user(&user_id).await;
-        assert!(matches!(result, Err(DamsServerError::InvalidUserId)));
+        assert!(matches!(result, Err(DamsServerError::InvalidAccount)));
 
         Ok(())
     }

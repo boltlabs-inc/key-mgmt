@@ -1,44 +1,38 @@
-use crate::{error::DamsServerError, server::Context};
+use crate::{
+    database::log::AuditLogExt,
+    error::DamsServerError,
+    server::{Context, Operation},
+};
 use std::ops::DerefMut;
 
-use crate::error::LogExt;
+use async_trait::async_trait;
 use dams::{
     channel::ServerChannel,
     config::opaque::OpaqueCipherSuite,
     opaque_storage::create_or_retrieve_server_key_opaque,
-    types::{
-        register::{client, server},
-        Message, MessageStream,
-    },
+    types::register::{client, server},
     user::{AccountName, UserId},
     ClientAction,
 };
 use opaque_ke::ServerRegistration;
-use tokio_stream::wrappers::ReceiverStream;
-use tonic::{Request, Response};
 
 #[derive(Debug)]
 pub struct Register;
 
-impl Register {
-    pub async fn run<'a>(
-        &self,
-        request: Request<tonic::Streaming<Message>>,
+#[async_trait]
+impl Operation for Register {
+    async fn operation(
+        self,
+        channel: &mut ServerChannel,
         context: Context,
-    ) -> Result<Response<MessageStream>, DamsServerError> {
-        let (mut channel, rx) = ServerChannel::create(request.into_inner());
+    ) -> Result<(), DamsServerError> {
+        let account_name = register_start(channel, &context).await?;
+        register_finish(&account_name, channel, &context)
+            .await
+            .audit_log(&context.db, &account_name, None, ClientAction::Register)
+            .await?;
 
-        let _ = tokio::spawn(async move {
-            let account_name = register_start(&mut channel, &context).await?;
-            register_finish(&account_name, &mut channel, &context)
-                .await
-                .log(&context.db, &account_name, None, ClientAction::Register)
-                .await?;
-
-            Ok::<(), DamsServerError>(())
-        });
-
-        Ok(Response::new(ReceiverStream::new(rx)))
+        Ok(())
     }
 }
 
@@ -60,7 +54,7 @@ async fn register_start(
     let user = context.db.find_user(&start_message.account_name).await?;
 
     if user.is_some() {
-        Err(DamsServerError::InvalidUserId)
+        Err(DamsServerError::AccountAlreadyRegistered)
     } else {
         // Registration can continue if user ID doesn't exist yet
         let server_registration_start_result = ServerRegistration::<OpaqueCipherSuite>::start(
