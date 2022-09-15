@@ -1,11 +1,13 @@
 mod common;
 
 use common::{get_logs, LogType, Party};
-use Operation::{Authenticate, Generate, GenerateAndRetrieve, Register};
+use Operation::{Authenticate, Generate, Register, Retrieve};
 use Party::{Client, Server};
 
-use dams::{config::client::Config, user::AccountName, RetrieveContext};
-use dams_client::{client::Password, DamsClient, DamsClientError};
+use dams::{config::client::Config, crypto::KeyId, user::AccountName, RetrieveContext};
+use dams_client::{
+    api::arbitrary_secrets::RetrieveResult, client::Password, DamsClient, DamsClientError,
+};
 use rand::{distributions::Alphanumeric, Rng};
 use serde_json::Value;
 use std::{collections::HashMap, fs::OpenOptions, str::FromStr};
@@ -13,6 +15,8 @@ use thiserror::Error;
 
 const USER: &str = "user";
 const PASSWORD: &str = "user";
+const GENERATED_ID: &str = "generated_key_id";
+const GENERATED_KEY: &str = "generated_key";
 
 #[tokio::test]
 pub async fn end_to_end_tests() {
@@ -29,7 +33,7 @@ pub async fn end_to_end_tests() {
         .truncate(true)
         .open(&common::ERROR_FILENAME)
         .unwrap_or_else(|e| panic!("Failed to clear error file at start: {:?}", e));
-    for test in tests {
+    for mut test in tests {
         eprintln!("\n\ntest integration_tests::{} ... ", test.name);
         let result = test.execute(&context.client_config).await;
         if let Err(error) = &result {
@@ -176,7 +180,14 @@ async fn tests() -> Vec<Test> {
                     },
                 ),
                 (
-                    GenerateAndRetrieve,
+                    Generate,
+                    Outcome {
+                        error: None,
+                        expected_error: None,
+                    },
+                ),
+                (
+                    Retrieve,
                     Outcome {
                         error: None,
                         expected_error: None,
@@ -188,13 +199,41 @@ async fn tests() -> Vec<Test> {
 }
 
 #[derive(Debug)]
-#[allow(unused)]
+struct TestState {
+    pub state: HashMap<String, Value>,
+}
+
+impl TestState {
+    pub fn new() -> Self {
+        Self {
+            state: HashMap::new(),
+        }
+    }
+
+    pub fn get(&self, key: &str) -> Result<&Value, anyhow::Error> {
+        let val = self
+            .state
+            .get(key)
+            .ok_or_else(|| TestError::TestStateError("Unable to get state".to_string()))?;
+        Ok(val)
+    }
+
+    pub fn set(&mut self, key: String, value: Value) -> Result<(), anyhow::Error> {
+        let prev_state = self.state.insert(key, value);
+        if prev_state.is_some() {
+            return Err(TestError::TestStateError("State was overwritten".to_string()).into());
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug)]
 struct Test {
     pub name: String,
     pub account_name: AccountName,
     pub password: Password,
     pub operations: Vec<(Operation, Outcome)>,
-    pub state: HashMap<String, Value>,
+    pub state: TestState,
 }
 
 impl Test {
@@ -216,11 +255,11 @@ impl Test {
             account_name,
             password,
             operations,
-            state: HashMap::new(),
+            state: TestState::new(),
         }
     }
 
-    async fn execute(&self, config: &Config) -> Result<(), anyhow::Error> {
+    async fn execute(&mut self, config: &Config) -> Result<(), anyhow::Error> {
         for (op, expected_outcome) in &self.operations {
             let outcome: Result<(), anyhow::Error> = match op {
                 Register => DamsClient::register(&self.account_name, &self.password, config)
@@ -237,31 +276,65 @@ impl Test {
                         .map_err(|e| e.into())
                 }
                 Generate => {
+                    // Authenticate and run generate
                     let dams_client = DamsClient::authenticated_client(
                         &self.account_name,
                         &self.password,
                         config,
                     )
                     .await?;
-                    dams_client
-                        .generate_and_store()
-                        .await
-                        .map(|_| ())
-                        .map_err(|e| e.into())
+                    let (key_id, local_storage) = dams_client.generate_and_store().await?;
+                    // Store generated key ID and local storage object to state
+                    let key_id_json = serde_json::to_value(key_id)?;
+                    self.state.set(GENERATED_ID.to_string(), key_id_json)?;
+                    // self.set_to_state(GENERATED_ID.to_string(), key_id_json)?;
+                    let local_storage_json = serde_json::to_value(local_storage)?;
+                    self.state
+                        .set(GENERATED_KEY.to_string(), local_storage_json)
                 }
-                GenerateAndRetrieve => {
+                Retrieve => {
+                    // Authenticate
                     let dams_client = DamsClient::authenticated_client(
                         &self.account_name,
                         &self.password,
                         config,
                     )
                     .await?;
-                    let (key_id, _) = dams_client.generate_and_store().await?;
-                    dams_client
-                        .retrieve(&key_id, RetrieveContext::Null)
-                        .await
-                        .map(|_| ())
-                        .map_err(|e| e.into())
+                    // Get KeyId from state and run retrieve
+                    let key_id_json = self.state.get(GENERATED_ID)?;
+                    let key_id: KeyId = serde_json::from_value(key_id_json.clone())?;
+                    let res = dams_client
+                        .retrieve(&key_id, RetrieveContext::LocalOnly)
+                        .await?;
+                    let original_local_storage_json = self.state.get(GENERATED_KEY)?.clone();
+
+                    // Ensure result matches what was stored in generate
+                    match res {
+                        RetrieveResult::None => Err(TestError::InvalidValueRetrieved(
+                            original_local_storage_json,
+                            Value::Null,
+                        )),
+                        RetrieveResult::ExportedKey(exported) => {
+                            let exported_json = serde_json::to_value(exported)?;
+                            Err(TestError::InvalidValueRetrieved(
+                                original_local_storage_json,
+                                exported_json,
+                            ))
+                        }
+                        RetrieveResult::ArbitraryKey(local_storage) => {
+                            let new_local_storage_json = serde_json::to_value(local_storage)?;
+                            if original_local_storage_json != new_local_storage_json {
+                                Err(TestError::InvalidValueRetrieved(
+                                    original_local_storage_json,
+                                    new_local_storage_json,
+                                ))
+                            } else {
+                                Ok(())
+                            }
+                        }
+                    }?;
+
+                    Ok(())
                 }
             };
 
@@ -317,6 +390,14 @@ enum TestError {
         server_errors: String,
         op_error: Result<(), anyhow::Error>,
     },
+    #[error("An error occurred while working with test state: {0:?}")]
+    TestStateError(String),
+    #[error(
+        "The wrong value was retrieved from the key server:
+    expected: {0:?}
+    got: {1:?}"
+    )]
+    InvalidValueRetrieved(Value, Value),
 }
 
 /// Set of operations that can be executed by the test harness
@@ -326,7 +407,7 @@ enum Operation {
     Register,
     Authenticate(Option<Password>),
     Generate,
-    GenerateAndRetrieve,
+    Retrieve,
 }
 
 #[derive(Debug)]
