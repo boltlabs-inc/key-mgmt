@@ -9,12 +9,13 @@ use dams_client::{
     api::arbitrary_secrets::RetrieveResult, client::Password, DamsClient, DamsClientError,
 };
 use rand::{distributions::Alphanumeric, Rng};
+use serde::Serialize;
 use serde_json::Value;
 use std::{collections::HashMap, fs::OpenOptions, str::FromStr};
 use thiserror::Error;
 
 const USER: &str = "user";
-const PASSWORD: &str = "user";
+const PASSWORD: &str = "password";
 const GENERATED_ID: &str = "generated_key_id";
 const GENERATED_KEY: &str = "generated_key";
 
@@ -218,8 +219,13 @@ impl TestState {
         Ok(val)
     }
 
-    pub fn set(&mut self, key: String, value: Value) -> Result<(), anyhow::Error> {
-        let prev_state = self.state.insert(key, value);
+    pub fn set<T, V>(&mut self, key: T, value: V) -> Result<(), anyhow::Error>
+    where
+        T: Into<String>,
+        V: Serialize,
+    {
+        let value_json = serde_json::to_value(value)?;
+        let prev_state = self.state.insert(key.into(), value_json);
         if prev_state.is_some() {
             return Err(TestError::TestStateError("State was overwritten".to_string()).into());
         }
@@ -285,12 +291,8 @@ impl Test {
                     .await?;
                     let (key_id, local_storage) = dams_client.generate_and_store().await?;
                     // Store generated key ID and local storage object to state
-                    let key_id_json = serde_json::to_value(key_id)?;
-                    self.state.set(GENERATED_ID.to_string(), key_id_json)?;
-                    // self.set_to_state(GENERATED_ID.to_string(), key_id_json)?;
-                    let local_storage_json = serde_json::to_value(local_storage)?;
-                    self.state
-                        .set(GENERATED_KEY.to_string(), local_storage_json)
+                    self.state.set(GENERATED_ID.to_string(), key_id)?;
+                    self.state.set(GENERATED_KEY.to_string(), local_storage)
                 }
                 Retrieve => {
                     // Authenticate
