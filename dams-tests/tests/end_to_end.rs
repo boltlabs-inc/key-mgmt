@@ -77,7 +77,7 @@ pub async fn end_to_end_tests() {
 async fn tests() -> Vec<Test> {
     vec![
         Test::new(
-            "Register the same user twice user".to_string(),
+            "Register the same user twice user",
             vec![
                 (
                     Register,
@@ -96,7 +96,7 @@ async fn tests() -> Vec<Test> {
             ],
         ),
         Test::new(
-            "Register and open multiple sessions as a client to the server".to_string(),
+            "Register and open multiple sessions as a client to the server",
             vec![
                 (
                     Register,
@@ -122,8 +122,7 @@ async fn tests() -> Vec<Test> {
             ],
         ),
         Test::new(
-            "Register and authenticate with wrong password fails as a client to the server"
-                .to_string(),
+            "Register and authenticate with wrong password fails as a client to the server",
             vec![
                 (
                     Register,
@@ -142,7 +141,7 @@ async fn tests() -> Vec<Test> {
             ],
         ),
         Test::new(
-            "Authenticate with unregistered user fails".to_string(),
+            "Authenticate with unregistered user fails",
             vec![(
                 Authenticate(None),
                 Outcome {
@@ -152,7 +151,7 @@ async fn tests() -> Vec<Test> {
             )],
         ),
         Test::new(
-            "Generate a secret".to_string(),
+            "Generate a secret",
             vec![
                 (
                     Register,
@@ -171,7 +170,7 @@ async fn tests() -> Vec<Test> {
             ],
         ),
         Test::new(
-            "Retrieve a secret".to_string(),
+            "Retrieve a secret",
             vec![
                 (
                     Register,
@@ -251,13 +250,13 @@ impl Test {
             .collect()
     }
 
-    fn new(name: String, operations: Vec<(Operation, Outcome)>) -> Self {
+    fn new(name: impl Into<String>, operations: Vec<(Operation, Outcome)>) -> Self {
         let tag = Self::generate_tag();
         let account_name = AccountName::from_str(format!("{}-{}", USER, tag).as_str()).unwrap();
         let password = Password::from_str(format!("{}-{}", PASSWORD, tag).as_str()).unwrap();
 
         Self {
-            name,
+            name: name.into(),
             account_name,
             password,
             operations,
