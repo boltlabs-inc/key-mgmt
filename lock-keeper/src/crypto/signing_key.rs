@@ -5,25 +5,36 @@ use std::marker::PhantomData;
 use super::{generic::AssociatedData, CryptoError, Encrypted, KeyId, StorageKey};
 
 /// An ECDSA signing key pair, including a public component for verifying
-/// signatures and a private component for creating them.
+/// signatures, a private component for creating them, and context about the key
+/// pair.
 ///
 /// This can be generated locally by the client or remotely by the server.
 #[allow(unused)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SigningKeyPair;
 
-/// The public component of an ECDSA signing key.
+/// The public component of an ECDSA signing key, and context about the key.
 #[allow(unused)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SigningPublicKey;
 
 #[allow(unused)]
 impl SigningKeyPair {
-    pub fn generate(rng: &mut (impl CryptoRng + RngCore)) -> Self {
+    /// Create a new `SigningKeyPair` with the given associated data.
+    fn generate(rng: &mut (impl CryptoRng + RngCore), associated_data: &AssociatedData) -> Self {
         SigningKeyPair
     }
 
-    // Domain separator for use in serializing signing keypairs.
+    /// Create a new `SigningKeyPair`. This must be run by the server.
+    pub fn remote_generate(
+        rng: &mut (impl CryptoRng + RngCore),
+        user_id: &UserId,
+        key_id: &KeyId,
+    ) -> Self {
+        SigningKeyPair
+    }
+
+    /// Domain separator for use in serializing signing keypairs.
     fn domain_separator() -> &'static str {
         "ECDSA signing key"
     }
@@ -117,8 +128,8 @@ impl StorageKey {
         _user_id: &UserId,
         _key_id: &KeyId,
     ) -> Result<(SigningKeyPair, Encrypted<SigningKeyPair>), LockKeeperError> {
-        let signing_key = SigningKeyPair::generate(rng);
         let context = AssociatedData::new();
+        let signing_key = SigningKeyPair::generate(rng, &context);
 
         Ok((
             signing_key.clone(),

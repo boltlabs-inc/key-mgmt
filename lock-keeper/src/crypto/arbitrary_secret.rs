@@ -93,6 +93,7 @@ mod test {
 
         Ok(())
     }
+
     #[test]
     fn secret_encryption_works() -> Result<(), LockKeeperError> {
         let mut rng = rand::thread_rng();
