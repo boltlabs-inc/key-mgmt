@@ -1,20 +1,19 @@
-use crate::{error::DamsServerError, server::Context};
+use crate::{
+    database::log::AuditLogExt,
+    error::DamsServerError,
+    server::{Context, Operation},
+};
 
-use crate::error::LogExt;
+use async_trait::async_trait;
 use dams::{
     channel::ServerChannel,
     config::opaque::OpaqueCipherSuite,
     opaque_storage::create_or_retrieve_server_key_opaque,
-    types::{
-        authenticate::{client, server},
-        Message, MessageStream,
-    },
+    types::authenticate::{client, server},
     user::{AccountName, UserId},
     ClientAction,
 };
 use opaque_ke::{ServerLogin, ServerLoginStartParameters, ServerLoginStartResult};
-use tokio_stream::wrappers::ReceiverStream;
-use tonic::{Request, Response};
 
 struct AuthenticateStartResult {
     login_start_result: ServerLoginStartResult<OpaqueCipherSuite>,
@@ -25,30 +24,25 @@ struct AuthenticateStartResult {
 #[derive(Debug)]
 pub struct Authenticate;
 
-impl Authenticate {
-    pub async fn run(
-        &self,
-        request: Request<tonic::Streaming<Message>>,
+#[async_trait]
+impl Operation for Authenticate {
+    async fn operation(
+        self,
+        channel: &mut ServerChannel,
         context: Context,
-    ) -> Result<Response<MessageStream>, DamsServerError> {
-        let (mut channel, rx) = ServerChannel::create(request.into_inner());
+    ) -> Result<(), DamsServerError> {
+        let AuthenticateStartResult {
+            login_start_result,
+            user_id,
+            account_name,
+        } = authenticate_start(channel, &context).await?;
+        authenticate_finish(channel, login_start_result).await?;
+        send_user_id(channel, user_id)
+            .await
+            .audit_log(&context.db, &account_name, None, ClientAction::Authenticate)
+            .await?;
 
-        let _ = tokio::spawn(async move {
-            let AuthenticateStartResult {
-                login_start_result,
-                user_id,
-                account_name,
-            } = authenticate_start(&mut channel, &context).await?;
-            authenticate_finish(&mut channel, login_start_result).await?;
-            send_user_id(&mut channel, user_id)
-                .await
-                .log(&context.db, &account_name, None, ClientAction::Authenticate)
-                .await?;
-
-            Ok::<(), DamsServerError>(())
-        });
-
-        Ok(Response::new(ReceiverStream::new(rx)))
+        Ok(())
     }
 }
 
@@ -71,7 +65,7 @@ async fn authenticate_start(
     let (server_registration, user_id) =
         match context.db.find_user(&start_message.account_name).await? {
             Some(user) => user.into_parts(),
-            None => return Err(DamsServerError::AccountDoesNotExist),
+            None => return Err(DamsServerError::InvalidAccount),
         };
 
     let server_login_start_result = {

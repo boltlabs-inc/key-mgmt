@@ -90,7 +90,7 @@ async fn tests() -> Vec<Test> {
                     Register,
                     Outcome {
                         error: Some(Client),
-                        expected_error: Some(DamsClientError::RegistrationFailed),
+                        expected_error: Some(DamsClientError::AccountAlreadyRegistered),
                     },
                 ),
             ],
@@ -135,7 +135,7 @@ async fn tests() -> Vec<Test> {
                     Authenticate(Some(Password::from_str("wrongPassword").unwrap())),
                     Outcome {
                         error: Some(Client),
-                        expected_error: Some(DamsClientError::AuthenticationFailed),
+                        expected_error: Some(DamsClientError::InvalidLogin),
                     },
                 ),
             ],
@@ -146,7 +146,7 @@ async fn tests() -> Vec<Test> {
                 Authenticate(None),
                 Outcome {
                     error: Some(Client),
-                    expected_error: Some(DamsClientError::AuthenticationFailed),
+                    expected_error: Some(DamsClientError::InvalidAccount),
                 },
             )],
         ),

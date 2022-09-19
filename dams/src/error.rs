@@ -1,14 +1,19 @@
 use thiserror::Error;
+use tokio::sync::mpsc::error::SendError;
 use tonic::Status;
 
-use crate::{channel::ChannelError, crypto::CryptoError};
+use crate::crypto::CryptoError;
 
 #[derive(Debug, Error)]
 pub enum DamsError {
     #[error(transparent)]
     Crypto(#[from] CryptoError),
-    #[error(transparent)]
-    Channel(#[from] ChannelError),
+
+    // Channel errors
+    #[error("Invalid message")]
+    InvalidMessage,
+    #[error("No message received")]
+    NoMessageReceived,
 
     // TLS errors
     #[error("Invalid private key")]
@@ -31,8 +36,12 @@ pub enum DamsError {
     OpaqueProtocol(opaque_ke::errors::ProtocolError),
     #[error(transparent)]
     Rustls(#[from] rustls::Error),
+    #[error("tokio Sender error: {}", .0)]
+    TokioSender(String),
     #[error(transparent)]
     Toml(#[from] toml::de::Error),
+    #[error(transparent)]
+    TonicStatus(#[from] tonic::Status),
     #[error(transparent)]
     WebPki(#[from] tokio_rustls::webpki::Error),
 }
@@ -43,24 +52,33 @@ impl From<opaque_ke::errors::ProtocolError> for DamsError {
     }
 }
 
+impl<T> From<SendError<T>> for DamsError {
+    fn from(error: SendError<T>) -> Self {
+        Self::TokioSender(error.to_string())
+    }
+}
+
 impl From<DamsError> for Status {
     fn from(error: DamsError) -> Self {
-        let message = error.to_string();
-
-        use DamsError::*;
         match error {
-            Bincode(_)
-            | Channel(_)
-            | Crypto(_)
-            | InvalidOpaqueDirectory
-            | InvalidPrivateKey
-            | InvalidUri(_)
-            | Io(_)
-            | OpaqueProtocol(_)
-            | ProjectDirs
-            | Rustls(_)
-            | Toml(_)
-            | WebPki(_) => Status::internal(message),
+            // Errors that are safe to return to the client
+            DamsError::InvalidMessage => Status::invalid_argument(error.to_string()),
+            DamsError::NoMessageReceived => Status::deadline_exceeded(error.to_string()),
+
+            // Errors that the client should not see
+            DamsError::Crypto(_)
+            | DamsError::InvalidOpaqueDirectory
+            | DamsError::ProjectDirs
+            | DamsError::Bincode(_)
+            | DamsError::Io(_)
+            | DamsError::InvalidPrivateKey
+            | DamsError::InvalidUri(_)
+            | DamsError::OpaqueProtocol(_)
+            | DamsError::Rustls(_)
+            | DamsError::TokioSender(_)
+            | DamsError::Toml(_)
+            | DamsError::TonicStatus(_)
+            | DamsError::WebPki(_) => Status::internal("Internal server error"),
         }
     }
 }

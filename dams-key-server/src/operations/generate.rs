@@ -1,47 +1,41 @@
-use crate::{server::Context, DamsServerError};
+use crate::{
+    database::log::AuditLogExt,
+    server::{Context, Operation},
+    DamsServerError,
+};
 
-use crate::error::LogExt;
+use async_trait::async_trait;
 use dams::{
     channel::ServerChannel,
     crypto::KeyId,
-    types::{
-        generate::{client, server},
-        Message, MessageStream,
-    },
+    types::generate::{client, server},
     user::UserId,
     ClientAction,
 };
-use tokio_stream::wrappers::ReceiverStream;
-use tonic::{Request, Response};
 
 #[derive(Debug)]
 pub struct Generate;
 
-impl Generate {
-    pub async fn run<'a>(
-        &self,
-        request: Request<tonic::Streaming<Message>>,
+#[async_trait]
+impl Operation for Generate {
+    async fn operation(
+        self,
+        channel: &mut ServerChannel,
         context: Context,
-    ) -> Result<Response<MessageStream>, DamsServerError> {
-        let (mut channel, rx) = ServerChannel::create(request.into_inner());
+    ) -> Result<(), DamsServerError> {
+        // Generate step: receive UserId and reply with new KeyId
+        let (key_id, user_id) = generate_key(channel, &context).await?;
 
-        let _ = tokio::spawn(async move {
-            // Generate step: receive UserId and reply with new KeyId
-            let (key_id, user_id) = generate(&mut channel, &context).await?;
-            // Store step: receive ciphertext from client and store in DB
-            store(&mut channel, &context, &key_id)
-                .await
-                .log(&context.db, &user_id, Some(key_id), ClientAction::Generate)
-                .await?;
-
-            Ok::<(), DamsServerError>(())
-        });
-
-        Ok(Response::new(ReceiverStream::new(rx)))
+        // Store step: receive ciphertext from client and store in DB
+        store_key(channel, &context, &key_id)
+            .await
+            .audit_log(&context.db, &user_id, Some(key_id), ClientAction::Generate)
+            .await?;
+        Ok(())
     }
 }
 
-async fn generate(
+async fn generate_key(
     channel: &mut ServerChannel,
     context: &Context,
 ) -> Result<(KeyId, UserId), DamsServerError> {
@@ -60,7 +54,7 @@ async fn generate(
     Ok((key_id, generate_message.user_id))
 }
 
-async fn store(
+async fn store_key(
     channel: &mut ServerChannel,
     context: &Context,
     key_id: &KeyId,
