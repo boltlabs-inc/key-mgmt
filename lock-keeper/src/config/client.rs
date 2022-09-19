@@ -19,19 +19,7 @@ pub struct Config {
 impl Config {
     pub async fn load(config_path: impl AsRef<Path>) -> Result<Config, LockKeeperError> {
         let config_string = tokio::fs::read_to_string(&config_path).await?;
-        let mut config = Self::from_str(&config_string)?;
-
-        // Directory containing the configuration path
-        let config_dir = config_path
-            .as_ref()
-            .parent()
-            .expect("Client configuration path must exist in some parent directory");
-
-        // Adjust contained paths to be relative to the config path
-        config.trust_certificate = config
-            .trust_certificate
-            .map(|ref cert_path| config_dir.join(cert_path));
-
+        let config = Self::from_str(&config_string)?;
         Ok(config)
     }
 

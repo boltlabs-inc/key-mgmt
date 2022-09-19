@@ -28,10 +28,14 @@ Refer to the [current design specification](https://github.com/boltlabs-inc/key-
 
 ### Dependencies:
 
-- A recent version of [stable Rust](https://www.rust-lang.org/) to build the Lock Keeper project. We have tested with 1.59.0.
+- A recent version of [stable Rust](https://www.rust-lang.org/) to build the Lock Keeper project. Version 1.64 is the minimum required version.
 - OpenSSL. You should be able to install this using your package manager of choice.
-- [MongoDB](https://www.mongodb.com/try/download/community) is required to run `lock-keeper-key-server`. This includes running the integration tests.
 - `protoc` is required to build .proto files. It can be installed using `brew` for MacOS or `apt install` for Linux. Further instructions [here](https://grpc.io/docs/protoc-installation/).
+- [cargo-make](https://github.com/sagiegurari/cargo-make) can be installed with `cargo install --cargo-make`.
+- [Docker](https://www.docker.com/).
+
+If you need to run the server outside of Docker, [MongoDB](https://www.mongodb.com/try/download/community) is also required.
+
 
 Once the required dependencies are installed, build the project as follows:
 
@@ -49,32 +53,40 @@ cargo test --all-features --doc --verbose
 
 To run all unit and integration tests:
 
-- Start MongoDB in one terminal window (see the [MongoDB docs](https://www.mongodb.com/docs/manual/reference/configuration-options/) for default mongod.conf paths based on your OS):
+1. Start the server with:
 ```bash
-mongod --config {path_to_mongod.conf}
+cargo make start-server
+```
+2. Once the server has started, run the tests with:
+```bash
+cargo make e2e
 ```
 
-- Open another terminal window, navigate to this repo and run:
+The server will be running in the background so you can continue to run integration tests without starting the server again. To stop the server, run:
 ```bash
-cargo test --all-features --all-targets
+cargo make stop-server
 ```
 
 We follow test-driven development practices and the test suite should be a close mapping to the functionality we currently implement at any given stage of development.
 
 ## Running the server locally
 
-To run the server locally, make sure MongoDB is running as above. Then, generate an SSL cert locally using the provided script in the `dev/` directory:
+To run the server locally, make sure MongoDB is running as above. Then run:
 ```bash
-cd dev/
-./generate-certificates
+cargo make start-server-local
 ```
 
-Then, go back to the top level directory of this repo and run the following command to start the server:
+Tests can be run against a local server with:
 ```bash
-cargo run --bin key-server-cli server --config {path_to_server_config} run
+cargo make e2e
 ```
 
-There is an example server config file, `dev/Server.toml`. This will start the server on two endpoints, one for IPv4 and one for IPv6, and contains information to connect to a local instance of MongoDB.
+## Troubleshooting
+
+If you get a `no space left on device` error from Docker, try running:
+```bash
+docker system prune
+```
 
 ## Build documentation
 

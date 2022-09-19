@@ -4,12 +4,12 @@ KEY_DIR=${1:-$SCRIPT_DIR}
 
 if test -f "$KEY_DIR/localhost.crt" ; then
   echo "Found localhost.crt, doing nothing and exiting."
-  exit 1
+  exit 0
 fi
 
 if test -f "$KEY_DIR/localhost.key" ; then
   echo "Found localhost.key, doing nothing and exiting."
-  exit 1
+  exit 0
 fi
 
 # Copied from:

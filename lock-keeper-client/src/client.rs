@@ -95,6 +95,22 @@ impl LockKeeperClient {
         self.tonic_client.clone()
     }
 
+    pub async fn health(config: &Config) -> Result<(), LockKeeperClientError> {
+        use lock_keeper::rpc::HealthCheck;
+
+        let mut client = Self::connect(config).await?;
+        match client.health(HealthCheck { check: true }).await {
+            Ok(response) => {
+                if response.into_inner() == (HealthCheck { check: true }) {
+                    Ok(())
+                } else {
+                    Err(LockKeeperClientError::HealthCheckFailed)
+                }
+            }
+            Err(_) => Err(LockKeeperClientError::HealthCheckFailed),
+        }
+    }
+
     /// Create a `tonic` client object and return it to the client app.
     ///
     /// The returned client should be stored as part of the [`LockKeeperClient`]

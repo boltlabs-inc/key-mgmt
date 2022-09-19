@@ -15,6 +15,7 @@ async-trait = "0.1"
 bincode = "1"
 bson = { version = "2", features = ["uuid-1"] }
 bytes = { version = "1", features = ["serde"] }
+clap = { version = "3", features = ["derive"] }
 futures = "0.3"
 generic-array = "0.14"
 http = "0.2"
@@ -30,7 +31,6 @@ rustls-pemfile = "1"
 serde = "1"
 serde_json = "1.0.85"
 serde_with = "1"
-structopt = "0.3"
 thiserror = "1"
 tokio = { version = "1", features = ["full"] }
 tokio-rustls = "0.23"

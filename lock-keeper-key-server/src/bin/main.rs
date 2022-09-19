@@ -1,22 +1,21 @@
-use structopt::StructOpt;
-use tracing::error;
+use std::path::PathBuf;
+
+use clap::Parser;
+use lock_keeper::config::server::Config;
+use lock_keeper_key_server::server::start_lock_keeper_server;
 use tracing_subscriber::EnvFilter;
 
-use Cli::Server;
-
-#[derive(Debug, StructOpt)]
-pub enum Cli {
-    Server(lock_keeper_key_server::cli::Cli),
+#[derive(Debug, Parser)]
+pub struct Cli {
+    pub config: PathBuf,
 }
 
 #[tokio::main]
 pub async fn main() {
     let filter = EnvFilter::try_new("info,sqlx::query=warn").unwrap();
     tracing_subscriber::fmt().with_env_filter(filter).init();
-    let result = match Cli::from_args() {
-        Server(cli) => cli.run().await,
-    };
-    if let Err(e) = result {
-        error!("{}", e);
-    }
+    let cli = Cli::parse();
+
+    let config = Config::load(&cli.config).await.unwrap();
+    start_lock_keeper_server(config).await.unwrap();
 }

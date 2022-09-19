@@ -1,8 +1,4 @@
-mod common;
-
-use common::{get_logs, LogType, Party};
 use Operation::{Authenticate, Generate, Register, Retrieve};
-use Party::{Client, Server};
 
 use lock_keeper::{config::client::Config, crypto::KeyId, user::AccountName, RetrieveContext};
 use lock_keeper_client::{
@@ -12,7 +8,7 @@ use lock_keeper_client::{
 use rand::{distributions::Alphanumeric, Rng};
 use serde::Serialize;
 use serde_json::Value;
-use std::{collections::HashMap, fs::OpenOptions, str::FromStr};
+use std::{collections::HashMap, str::FromStr};
 use thiserror::Error;
 
 const USER: &str = "user";
@@ -20,55 +16,40 @@ const PASSWORD: &str = "password";
 const GENERATED_ID: &str = "generated_key_id";
 const GENERATED_KEY: &str = "generated_key";
 
-#[tokio::test]
-pub async fn end_to_end_tests() {
-    let context = common::setup().await;
-
+pub async fn end_to_end_tests(client_config: &Config) {
     // Run every test, printing out details if it fails
     let tests = tests().await;
     println!("Executing {} tests", tests.len());
-    let mut results = Vec::with_capacity(tests.len());
+    let mut results = Vec::new();
 
-    // Clear error log
-    OpenOptions::new()
-        .write(true)
-        .truncate(true)
-        .open(&common::ERROR_FILENAME)
-        .unwrap_or_else(|e| panic!("Failed to clear error file at start: {:?}", e));
     for mut test in tests {
-        eprintln!("\n\ntest integration_tests::{} ... ", test.name);
-        let result = test.execute(&context.client_config).await;
+        println!("\n\ntest integration_tests::{} ... ", test.name);
+        let result = test.execute(client_config).await;
         if let Err(error) = &result {
-            eprintln!("failed with error: {:?}", error)
+            println!("failed with error: {:?}", error)
         } else {
-            eprintln!("ok")
+            println!("ok")
         }
-        results.push(result);
 
-        // Clear error log
-        OpenOptions::new()
-            .write(true)
-            .truncate(true)
-            .open(&common::ERROR_FILENAME)
-            .unwrap_or_else(|e| panic!("Failed to clear error file after {}: {:?}", test.name, e));
+        results.push(TestResult {
+            name: test.name,
+            error: result.err().map(|e| e.to_string()),
+        });
     }
 
-    // Fail if any test failed. This is separate from evaluation to enforce that
-    // _every_ test must run without short-circuiting the execution at first
-    // failure
-    let mut errors = Vec::with_capacity(results.len());
-    for result in results.into_iter() {
-        match result {
-            Ok(_) => {}
-            Err(err) => {
-                errors.push(err);
-            }
-        }
-    }
+    let failed_tests: Vec<TestResult> = results.into_iter().filter(|r| r.error.is_some()).collect();
 
-    context.teardown().await;
-    if !errors.is_empty() {
-        panic!("Test failed: {:?}", errors);
+    if !failed_tests.is_empty() {
+        println!("Tests failed:");
+        for test in failed_tests {
+            println!(
+                "{} => {}",
+                test.name,
+                test.error.unwrap_or_else(|| "No error message".to_string())
+            );
+        }
+
+        std::process::exit(1);
     }
 }
 
@@ -83,14 +64,12 @@ async fn tests() -> Vec<Test> {
                 (
                     Register,
                     Outcome {
-                        error: None,
                         expected_error: None,
                     },
                 ),
                 (
                     Register,
                     Outcome {
-                        error: Some(Client),
                         expected_error: Some(LockKeeperClientError::AccountAlreadyRegistered),
                     },
                 ),
@@ -102,21 +81,18 @@ async fn tests() -> Vec<Test> {
                 (
                     Register,
                     Outcome {
-                        error: None,
                         expected_error: None,
                     },
                 ),
                 (
                     Authenticate(None),
                     Outcome {
-                        error: None,
                         expected_error: None,
                     },
                 ),
                 (
                     Authenticate(None),
                     Outcome {
-                        error: None,
                         expected_error: None,
                     },
                 ),
@@ -128,14 +104,12 @@ async fn tests() -> Vec<Test> {
                 (
                     Register,
                     Outcome {
-                        error: None,
                         expected_error: None,
                     },
                 ),
                 (
                     Authenticate(Some(Password::from_str("wrongPassword").unwrap())),
                     Outcome {
-                        error: Some(Client),
                         expected_error: Some(LockKeeperClientError::InvalidLogin),
                     },
                 ),
@@ -146,7 +120,6 @@ async fn tests() -> Vec<Test> {
             vec![(
                 Authenticate(None),
                 Outcome {
-                    error: Some(Client),
                     expected_error: Some(LockKeeperClientError::InvalidAccount),
                 },
             )],
@@ -157,14 +130,12 @@ async fn tests() -> Vec<Test> {
                 (
                     Register,
                     Outcome {
-                        error: None,
                         expected_error: None,
                     },
                 ),
                 (
                     Generate,
                     Outcome {
-                        error: None,
                         expected_error: None,
                     },
                 ),
@@ -176,21 +147,18 @@ async fn tests() -> Vec<Test> {
                 (
                     Register,
                     Outcome {
-                        error: None,
                         expected_error: None,
                     },
                 ),
                 (
                     Generate,
                     Outcome {
-                        error: None,
                         expected_error: None,
                     },
                 ),
                 (
                     Retrieve,
                     Outcome {
-                        error: None,
                         expected_error: None,
                     },
                 ),
@@ -340,37 +308,21 @@ impl Test {
                 }
             };
 
-            // Get error logs for each party - we make the following assumptions:
-            // - logs are deleted after each test, so all errors correspond to this test
-            // - any Operation that throws an error is the final Operation in the test
-            // These mean that any error found in the logs is caused by the current
-            // operation
-            let server_errors = get_logs(LogType::Error, Party::Server)?;
-
             // Check whether the process errors matched the expectation.
-            match (&expected_outcome.error, &outcome, server_errors.is_empty()) {
-                // No party threw an error
-                (None, Ok(_), true) => Ok(()),
-                // Only the active operation threw an error
-                (Some(Server), Err(_), false) => Ok(()),
-                (Some(Client), Err(e), true) => {
-                    assert_eq!(
-                        expected_outcome
-                            .expected_error
-                            .as_ref()
-                            .unwrap()
-                            .to_string(),
-                        e.to_string()
-                    );
-                    Ok(())
+            if let Err(e) = outcome {
+                match &expected_outcome.expected_error {
+                    Some(expected) => {
+                        let expected_string = expected.to_string();
+                        let error_string = e.to_string();
+                        if expected_string != error_string {
+                            return Err(
+                                TestError::IncorrectError(expected_string, error_string).into()
+                            );
+                        }
+                    }
+                    None => return Err(TestError::UnexpectedError.into()),
                 }
-
-                // In any other case, something went wrong. Provide lots of details to diagnose
-                _ => Err(TestError::InvalidErrorBehavior {
-                    server_errors,
-                    op_error: outcome,
-                }),
-            }?;
+            }
         }
 
         Ok(())
@@ -379,19 +331,11 @@ impl Test {
 
 #[derive(Debug, Error)]
 enum TestError {
-    // #[error("Operation {0:?} not yet implemented")]
-    // NotImplemented(Operation),
-    #[error(
-        "The error behavior did not satisfy expected behavior. Got
-    SERVER OUTPUT:
-    {server_errors}
-    OPERATION OUTPUT:
-    {op_error:?}"
-    )]
-    InvalidErrorBehavior {
-        server_errors: String,
-        op_error: Result<(), anyhow::Error>,
-    },
+    #[error("An error was returned when none was expected")]
+    UnexpectedError,
+    #[error("Incorrect error. Expected: {}. Got: {}.", .0, .1)]
+    IncorrectError(String, String),
+
     #[error("An error occurred while working with test state: {0:?}")]
     TestStateError(String),
     #[error(
@@ -414,8 +358,11 @@ enum Operation {
 
 #[derive(Debug)]
 struct Outcome {
-    /// Which process, if any, had an error? Assumes that exactly one party will
-    /// error.
-    error: Option<Party>,
     expected_error: Option<LockKeeperClientError>,
+}
+
+#[derive(Debug)]
+struct TestResult {
+    pub name: String,
+    pub error: Option<String>,
 }
