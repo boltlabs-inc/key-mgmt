@@ -1,10 +1,10 @@
-# Digital asset management system (DAMS)
+# Lock Keeper
 
 ## Overview
 
-The DAMS helps people store, retrieve and use the private keys associated with their digital assets. We're building a security-first system with layers of cryptography, hardware protection, and a misuse-resistant design to prevent theft and misuse of keys. 
+Lock Keeper helps people store, retrieve and use the private keys associated with their digital assets. We're building a security-first system with layers of cryptography, hardware protection, and a misuse-resistant design to prevent theft and misuse of keys. 
 
-The DAMS aims to provide a flexible system of components for managing digital assets and composed of the following:
+Lock Keeper aims to provide a flexible system of components for managing digital assets and composed of the following:
 
 * A **client library**: The *client* allows a user to generate and store a secret key in a distributed way, across multiple servers, and provides generic functionality for requesting a signature under the stored key, and reconstructs a full signature from a set of partial signatures. <br/>
 The client also includes the cryptographic functionality for:
@@ -22,15 +22,15 @@ The client also includes the cryptographic functionality for:
 
     * This server either returns a partial signature, if the signature request meets the designated policy, or returns an appropriate rejection message. 
 
-Refer to the [current design specification](https://github.com/boltlabs-inc/key-mgmt-spec) for the DAMS.
+Refer to the [current design specification](https://github.com/boltlabs-inc/key-mgmt-spec) for Lock Keeper.
 
 ## Install & Setup
 
 ### Dependencies:
 
-- A recent version of [stable Rust](https://www.rust-lang.org/) to build the DAMS project. We have tested with 1.59.0.
+- A recent version of [stable Rust](https://www.rust-lang.org/) to build the Lock Keeper project. We have tested with 1.59.0.
 - OpenSSL. You should be able to install this using your package manager of choice.
-- [MongoDB](https://www.mongodb.com/try/download/community) is required to run `dams-key-server`. This includes running the integration tests.
+- [MongoDB](https://www.mongodb.com/try/download/community) is required to run `lock-keeper-key-server`. This includes running the integration tests.
 - `protoc` is required to build .proto files. It can be installed using `brew` for MacOS or `apt install` for Linux. Further instructions [here](https://grpc.io/docs/protoc-installation/).
 
 Once the required dependencies are installed, build the project as follows:
@@ -84,4 +84,4 @@ To build the API documentation for the project:
 RUSTDOCFLAGS="-Dwarnings" cargo doc --all-features --no-deps --open
 ```
 
-You can find the API docs in the source of the [client](dams-client/src/api.rs) and [policy engine](dams-key-server/src/policy_engine.rs).
+You can find the API docs in the source of the [client](lock-keeper-client/src/api.rs) and [policy engine](lock-keeper-key-server/src/policy_engine.rs).

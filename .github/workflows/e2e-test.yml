@@ -33,5 +33,5 @@ jobs:
 
       - name: Run tests
         run: |
-          cd dams-tests
+          cd lock-keeper-tests
           cargo test --all-features --all-targets --verbose

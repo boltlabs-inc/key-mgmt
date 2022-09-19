@@ -1,7 +1,7 @@
 [workspace]
 members = [
-    "dams",
-    "dams-client",
-    "dams-key-server",
-    "dams-tests"
+    "lock-keeper",
+    "lock-keeper-client",
+    "lock-keeper-key-server",
+    "lock-keeper-tests"
 ]
