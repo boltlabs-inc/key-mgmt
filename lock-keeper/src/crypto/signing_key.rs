@@ -4,34 +4,65 @@ use std::marker::PhantomData;
 
 use super::{generic::AssociatedData, CryptoError, Encrypted, KeyId, StorageKey};
 
-/// An ECDSA signing key.
+/// An ECDSA signing key pair, including a public component for verifying
+/// signatures and a private component for creating them.
 ///
 /// This can be generated locally by the client or remotely by the server.
 #[allow(unused)]
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SigningKey;
+pub struct SigningKeyPair;
 
-impl SigningKey {
+/// The public component of an ECDSA signing key.
+#[allow(unused)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SigningPublicKey;
+
+#[allow(unused)]
+impl SigningKeyPair {
+    pub fn generate(rng: &mut (impl CryptoRng + RngCore)) -> Self {
+        SigningKeyPair
+    }
+
+    // Domain separator for use in serializing signing keypairs.
     fn domain_separator() -> &'static str {
         "ECDSA signing key"
     }
-}
 
-impl From<SigningKey> for Vec<u8> {
-    fn from(_: SigningKey) -> Self {
-        SigningKey::domain_separator().into()
+    /// Retrieve the public portion of the key.
+    fn public_key(&self) -> &SigningPublicKey {
+        &SigningPublicKey
     }
 }
 
-impl TryFrom<Vec<u8>> for SigningKey {
+impl From<SigningKeyPair> for Vec<u8> {
+    fn from(_: SigningKeyPair) -> Self {
+        SigningKeyPair::domain_separator().into()
+    }
+}
+
+impl TryFrom<Vec<u8>> for SigningKeyPair {
     type Error = CryptoError;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-        let expected: Vec<u8> = SigningKey::domain_separator().into();
+        // The signing key is just be the domain separator, serialized.
+        let expected: Vec<u8> = SigningKeyPair::domain_separator().into();
         if value.iter().zip(expected.iter()).all(|(v, u)| v == u) {
-            Ok(SigningKey)
+            Ok(SigningKeyPair)
         } else {
             Err(CryptoError::ConversionError)
+        }
+    }
+}
+
+#[allow(unused)]
+impl SigningKeyPair {
+    /// Compute an ECDSA signature on the given message.
+    pub fn sign<T>(&self, message: &T) -> Signature<T>
+    where
+        T: Into<Vec<u8>>,
+    {
+        Signature {
+            original_type: PhantomData,
         }
     }
 }
@@ -39,17 +70,35 @@ impl TryFrom<Vec<u8>> for SigningKey {
 /// A signature on an object of type `T`, encrypted under the ECDSA signature
 /// scheme.
 #[allow(unused)]
-#[derive(Debug, Clone)]
-struct Signature<T> {
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Signature<T> {
     original_type: PhantomData<T>,
 }
 
-impl Encrypted<SigningKey> {
+impl<T> Signature<T> {
+    /// Verify that the signature is over the given message under the
+    /// `SigningPublicKey`.
+    pub fn verify(
+        &self,
+        _public_key: &SigningPublicKey,
+        _message: &T,
+    ) -> Result<(), LockKeeperError>
+    where
+        T: Into<Vec<u8>>,
+    {
+        Ok(())
+    }
+}
+
+impl Encrypted<SigningKeyPair> {
     /// Decrypt a signing key. This should be run as part of the subprotocol to
     /// retrieve an encrypted signing key from the server.
     ///
     /// This must be run by the client.
-    pub fn decrypt_secret(self, storage_key: StorageKey) -> Result<SigningKey, LockKeeperError> {
+    pub fn decrypt_secret(
+        self,
+        storage_key: StorageKey,
+    ) -> Result<SigningKeyPair, LockKeeperError> {
         let decrypted = self.decrypt(&storage_key.0)?;
         Ok(decrypted)
     }
@@ -67,12 +116,13 @@ impl StorageKey {
         rng: &mut (impl CryptoRng + RngCore),
         _user_id: &UserId,
         _key_id: &KeyId,
-    ) -> Result<(SigningKey, Encrypted<SigningKey>), LockKeeperError> {
+    ) -> Result<(SigningKeyPair, Encrypted<SigningKeyPair>), LockKeeperError> {
+        let signing_key = SigningKeyPair::generate(rng);
         let context = AssociatedData::new();
 
         Ok((
-            SigningKey,
-            Encrypted::encrypt(rng, &self.0, SigningKey, &context)?,
+            signing_key.clone(),
+            Encrypted::encrypt(rng, &self.0, signing_key, &context)?,
         ))
     }
 }
@@ -80,22 +130,23 @@ impl StorageKey {
 #[cfg(test)]
 mod test {
     use crate::{
-        crypto::{CryptoError, KeyId, SigningKey, StorageKey},
+        crypto::{CryptoError, KeyId, SigningKeyPair, StorageKey},
         user::UserId,
         LockKeeperError,
     };
+    use rand::Rng;
 
     #[test]
     fn signing_key_to_vec_u8_conversion_works_and_is_trivial() -> Result<(), CryptoError> {
         for _ in 0..1000 {
             // Trivial - the serializiation doesn't include anything beyond the domain
             // separator.
-            let vec: Vec<u8> = SigningKey.into();
-            assert_eq!(vec.len(), SigningKey::domain_separator().len());
+            let vec: Vec<u8> = SigningKeyPair.into();
+            assert_eq!(vec.len(), SigningKeyPair::domain_separator().len());
 
             // Works - you get the same nothing back.
             let output_key = vec.try_into()?;
-            assert_eq!(SigningKey, output_key);
+            assert_eq!(SigningKeyPair, output_key);
         }
         Ok(())
     }
@@ -118,5 +169,28 @@ mod test {
         assert_eq!(decrypted_signing_key, signing_key);
 
         Ok(())
+    }
+
+    #[test]
+    fn signing_is_trivial() {
+        // This tests that the signature scheme is _broken_. It should be removed once
+        // signing is correctly implemented.
+        let mut rng = rand::thread_rng();
+
+        let generic_message = "every message has the same signature".as_bytes().to_vec();
+        let signing_key = SigningKeyPair;
+        let trivial_signature = signing_key.sign(&generic_message);
+        let public_key = signing_key.public_key();
+
+        // Make 100 random messages and verify that
+        // 1. They all produce the same, trivial signature
+        // 2. They all verify -- to the wrong message, even!
+        assert!((0..100)
+            .into_iter()
+            .map(|len| -> Vec<u8> { std::iter::repeat_with(|| rng.gen()).take(len).collect() })
+            .map(|msg| signing_key.sign(&msg))
+            .all(
+                |sig| trivial_signature == sig && sig.verify(public_key, &generic_message).is_ok()
+            ));
     }
 }
