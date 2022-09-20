@@ -1,0 +1,34 @@
+[package]
+name = "lock-keeper-client"
+version = "0.1.0"
+edition = "2021"
+
+
+[features]
+allow_explicit_certificate_trust = []
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+argon2 = "0.4"
+async-trait = "0.1"
+bincode = "1"
+lock-keeper = { version = "0.1.0", path = "../lock-keeper" }
+futures = "0.3"
+http = "0.2"
+http-body = "0.4"
+hyper = "0.14"
+hyper-rustls = { version = "0.23", features = ["http2"] }
+opaque-ke = { version = "2.0.0-pre.3", features = ["argon2"] }
+prost = "0.11.0"
+rand = "0.8"
+serde = "1"
+serde_with = "1"
+structopt = "0.3"
+thiserror = "1"
+tokio = { version = "1", features = ["full"] }
+tokio-stream = "0.1"
+tonic =  "0.8"
+tracing = "0.1"
+tracing-futures = "0.2"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
