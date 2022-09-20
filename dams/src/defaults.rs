@@ -1,4 +1,3 @@
-use dialectic_reconnect::Backoff;
 use directories::ProjectDirs;
 use std::{
     net::{IpAddr, Ipv4Addr},
@@ -6,17 +5,18 @@ use std::{
     time::Duration,
 };
 
-fn project_dirs() -> Result<ProjectDirs, anyhow::Error> {
-    ProjectDirs::from("", shared::ORGANIZATION, shared::APPLICATION)
-        .ok_or_else(|| anyhow::anyhow!("Could not open user's home directory"))
+use crate::error::DamsError;
+
+fn project_dirs() -> Result<ProjectDirs, DamsError> {
+    ProjectDirs::from("", shared::ORGANIZATION, shared::APPLICATION).ok_or(DamsError::ProjectDirs)
 }
 
 pub(crate) mod shared {
     use super::*;
 
     pub const ORGANIZATION: &str = "Bolt Labs";
-
     pub const APPLICATION: &str = "key-mgmt";
+    pub const LOCAL_SERVER_URI: &str = "https://localhost:1113";
 
     pub const fn max_pending_connection_retries() -> usize {
         4
@@ -48,7 +48,7 @@ pub mod server {
 
     pub const CONFIG_FILE: &str = "Server.toml";
 
-    pub fn config_path() -> Result<PathBuf, anyhow::Error> {
+    pub fn config_path() -> Result<PathBuf, DamsError> {
         Ok(project_dirs()?.config_dir().join(CONFIG_FILE))
     }
 }
@@ -58,17 +58,13 @@ pub mod client {
 
     pub use super::shared::*;
 
-    pub fn backoff() -> Backoff {
-        Backoff::with_delay(Duration::from_secs(1))
-    }
-
     pub const fn connection_timeout() -> Option<Duration> {
         Some(Duration::from_secs(60))
     }
 
     pub const CONFIG_FILE: &str = "Client.toml";
 
-    pub fn config_path() -> Result<PathBuf, anyhow::Error> {
+    pub fn config_path() -> Result<PathBuf, DamsError> {
         Ok(project_dirs()?.config_dir().join(CONFIG_FILE))
     }
 

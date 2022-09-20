@@ -3,7 +3,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::keys::{KeyId, UserId};
+use crate::{crypto::KeyId, user::UserId};
 
 /// A transaction approval request is used to log a request for a
 /// [`TransactionSignature`] under the specified key. The key
@@ -29,18 +29,6 @@ pub struct TransactionApprovalRequest {
     asset_id: AssetId,
     tar_id: TarId,
     transaction: Transaction,
-}
-
-impl Default for TransactionApprovalRequest {
-    fn default() -> Self {
-        Self {
-            key_id: KeyId,
-            user_id: UserId,
-            asset_id: AssetId,
-            tar_id: TarId,
-            transaction: Transaction,
-        }
-    }
 }
 
 /// Unique ID for a [`TransactionApprovalRequest`].

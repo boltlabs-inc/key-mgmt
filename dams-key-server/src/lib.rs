@@ -6,5 +6,12 @@
 #![forbid(rustdoc::broken_intra_doc_links)]
 
 pub mod cli;
-pub mod command;
+pub mod database;
+pub mod error;
+pub mod operations;
 pub mod policy_engine;
+pub mod server;
+
+pub(crate) mod constants;
+
+pub use error::DamsServerError;

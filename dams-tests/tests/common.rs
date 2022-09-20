@@ -1,59 +1,59 @@
 use std::{
-    collections::HashMap,
     fs::{self, File},
-    io::{Read, Write},
+    io::Read,
+    path::Path,
     process::Command,
+    str::FromStr,
     sync::Mutex,
 };
-use structopt::StructOpt;
 
+use dams_key_server::database::Database;
 use futures::future;
-use thiserror::Error;
 use tokio::{task::JoinHandle, time::Duration};
 use tracing::info_span;
 use tracing_futures::Instrument;
 
-use dams::{timeout::WithTimeout, TestLogs};
-use dams_key_server::command::Command as _;
+use dams::{
+    config::{client::Config as ClientConfig, server::Config as ServerConfig},
+    defaults::server::LOCAL_SERVER_URI,
+    timeout::WithTimeout,
+    TestLogs,
+};
 
-pub const CLIENT_CONFIG: &str = "tests/gen/TestClient.toml";
-pub const SERVER_CONFIG: &str = "tests/gen/TestServer.toml";
 pub const ERROR_FILENAME: &str = "tests/gen/errors.log";
-
-const SERVER_ADDRESS: &str = "127.0.0.1";
+pub const SERVER_ADDRESS: &str = "127.0.0.1";
 
 /// Give a name to the slightly annoying type of the joined server futures
-type ServerFuture = JoinHandle<Result<(), anyhow::Error>>;
+pub type ServerFuture = JoinHandle<Result<(), dams_key_server::DamsServerError>>;
 
-/// Set of processes that run during a test.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Party {
-    Server,
-}
+pub async fn setup() -> TestContext {
+    // Read environment variables from .env file
+    let server_config = server_test_config().await;
+    let database = Database::connect(&server_config.database)
+        .await
+        .expect("Unable to connect to Mongo");
 
-impl Party {
-    pub const fn to_str(self) -> &'static str {
-        match self {
-            Party::Server => "party: server",
-        }
+    // Ensure that the test DB is fresh
+    database.drop().await.expect("Failed to drop database");
+
+    generate_files().await;
+
+    let server_future = start_server(server_config).await;
+    let client_config = client_test_config().await;
+
+    TestContext {
+        server_future,
+        client_config,
+        database,
     }
 }
 
-/// Form a server CLI request. These cannot be constructed directly because the
-/// CLI types are non-exhaustive.
-macro_rules! server_cli {
-    ($cli:ident, $args:expr) => {
-        match ::dams_key_server::cli::Server::from_iter(
-            ::std::iter::once("key-server-cli").chain($args),
-        ) {
-            ::dams_key_server::cli::Server::$cli(result) => result,
-        }
-    };
-}
-pub(crate) use server_cli;
-
-pub async fn setup() -> ServerFuture {
-    let _ = fs::create_dir("tests/gen");
+async fn generate_files() {
+    // Delete data from previous run
+    let gen_path = Path::new("tests/gen/");
+    // Swallow error if path doesn't exist
+    let _ = fs::remove_dir_all(&gen_path);
+    fs::create_dir_all(&gen_path).expect("Unable to create directory tests/gen");
 
     // Create self-signed SSL certificate in the generated directory
     Command::new("../dev/generate-certificates")
@@ -61,11 +61,9 @@ pub async fn setup() -> ServerFuture {
         .spawn()
         .expect("Failed to generate new certificates");
     tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
+}
 
-    // write config options for each party
-    let _client_config = client_test_config().await;
-    let server_config = server_test_config().await;
-
+async fn start_server(server_config: ServerConfig) -> ServerFuture {
     // set up tracing for all log messages
     tracing_subscriber::fmt()
         .with_writer(Mutex::new(
@@ -74,17 +72,15 @@ pub async fn setup() -> ServerFuture {
         .init();
 
     // Form the server run request and execute
-    #[allow(clippy::infallible_destructuring_match)]
-    let run = server_cli!(Run, vec!["run"]);
     let server_handle = tokio::spawn(
-        run.run(server_config)
+        dams_key_server::server::start_dams_server(server_config)
             .instrument(info_span!(Party::Server.to_str())),
     );
     // Check the logs of server + client for indication of a successful set-up
     // Note: hard-coded to match the 2-service server with default port.
     let checks = vec![await_log(
         Party::Server,
-        TestLogs::ServerSpawned(SERVER_ADDRESS.to_string() + ":1113"),
+        TestLogs::ServerSpawned(format!("{}:1113", SERVER_ADDRESS)),
     )];
 
     // Wait up to 30sec for the servers to set up or fail
@@ -93,87 +89,89 @@ pub async fn setup() -> ServerFuture {
         .await
     {
         Err(_) => panic!("Server setup timed out"),
-        Ok(results) => {
-            match results
-                .into_iter()
-                .collect::<Result<Vec<()>, anyhow::Error>>()
-            {
-                Ok(_) => {}
-                Err(err) => panic!(
-                    "Failed to read logs while waiting for servers to set up: {:?}",
-                    err
-                ),
-            }
-        }
+        Ok(results) => match results
+            .into_iter()
+            .collect::<Result<Vec<()>, anyhow::Error>>()
+        {
+            Ok(_) => {}
+            Err(err) => panic!(
+                "Failed to read logs while waiting for servers to set up: {:?}",
+                err
+            ),
+        },
     }
 
     server_handle
 }
 
-pub async fn teardown(server_future: ServerFuture) {
-    // Ignore the result because we expect it to be an `Expired` error
-    let _result = server_future.with_timeout(Duration::from_secs(1)).await;
-
-    // Delete data from this run
-    let _ = fs::remove_dir_all("tests/gen/");
-}
-
 /// Encode the customizable fields of the keymgmt client Config struct for
 /// testing.
-async fn client_test_config() -> dams::config::client::Config {
-    let m = HashMap::from([("trust_certificate", "\"localhost.crt\"")]);
+async fn client_test_config() -> ClientConfig {
+    let config_str = format!(
+        r#"
+        server_location = "{}"
+        trust_certificate = "tests/gen/localhost.crt"
+    "#,
+        LOCAL_SERVER_URI
+    );
 
-    let contents = m.into_iter().fold("".to_string(), |acc, (key, value)| {
-        format!("{}{} = {}\n", acc, key, value)
-    });
-
-    write_config_file(CLIENT_CONFIG, contents);
-
-    dams::config::client::Config::load(CLIENT_CONFIG)
-        .await
-        .expect("Failed to load client config")
+    ClientConfig::from_str(&config_str).expect("Failed to load client config")
 }
 
 /// Encode the customizable fields of the keymgmt server Config struct for
 /// testing.
-async fn server_test_config() -> dams::config::server::Config {
-    // Helper to write out the service for the server service addresses
-    let services = HashMap::from([
-        ("address", SERVER_ADDRESS),
-        ("private_key", "localhost.key"),
-        ("certificate", "localhost.crt"),
-    ])
-    .into_iter()
-    .fold("\n[[service]]".to_string(), |acc, (key, value)| {
-        format!("{}\n{} = \"{}\"", acc, key, value)
-    });
+async fn server_test_config() -> ServerConfig {
+    let config_str = format!(
+        r#"
+        [[service]]
+        address = "{}"
+        port = 1113
+        private_key = "tests/gen/localhost.key"
+        certificate = "tests/gen/localhost.crt"
+        opaque_path = "tests/gen/opaque"
+        opaque_server_key = "tests/gen/opaque/server_setup"
 
-    write_config_file(SERVER_CONFIG, services.to_string());
+        [database]
+        mongodb_uri = "mongodb://localhost:27017"
+        db_name = "dams-test-db"
+    "#,
+        SERVER_ADDRESS
+    );
 
-    dams::config::server::Config::load(SERVER_CONFIG)
-        .await
-        .expect("failed to load server config")
+    ServerConfig::from_str(&config_str).expect("failed to load server config")
 }
 
-/// Write out the configuration in `contents` to the file at `path`.
-fn write_config_file(path: &str, contents: String) {
-    std::fs::OpenOptions::new()
-        .write(true)
-        .create(true)
-        .truncate(true)
-        .open(path)
-        .unwrap_or_else(|_| panic!("Could not open config file: {}", path))
-        .write_all(contents.as_bytes())
-        .unwrap_or_else(|_| panic!("Failed to write to config file: {}", path));
-}
-
-#[derive(Debug, Error)]
+/// Set of processes that run during a test.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[allow(unused)]
-pub enum LogError {
-    #[error("Failed to open log file: {0}")]
-    OpenFailed(std::io::Error),
-    #[error("Failed to read contents of file: {0}")]
-    ReadFailed(std::io::Error),
+pub enum Party {
+    Client,
+    Server,
+}
+
+impl Party {
+    pub const fn to_str(self) -> &'static str {
+        match self {
+            Party::Client => "party: client",
+            Party::Server => "party: server",
+        }
+    }
+}
+
+pub struct TestContext {
+    server_future: ServerFuture,
+    pub client_config: ClientConfig,
+    pub database: Database,
+}
+
+impl TestContext {
+    pub async fn teardown(self) {
+        // Ignore the result because we expect it to be an `Expired` error
+        let _result = self
+            .server_future
+            .with_timeout(Duration::from_secs(1))
+            .await;
+    }
 }
 
 #[allow(unused)]
@@ -184,7 +182,6 @@ pub enum LogType {
     Warn,
 }
 
-#[allow(unused)]
 impl LogType {
     pub fn to_str(self) -> &'static str {
         match self {
@@ -196,11 +193,10 @@ impl LogType {
 }
 
 /// Get any errors from the log file, filtered by party and log type.
-pub fn get_logs(log_type: LogType, party: Party) -> Result<String, LogError> {
-    let mut file = File::open(ERROR_FILENAME).map_err(LogError::OpenFailed)?;
+pub fn get_logs(log_type: LogType, party: Party) -> Result<String, anyhow::Error> {
+    let mut file = File::open(ERROR_FILENAME)?;
     let mut logs = String::new();
-    file.read_to_string(&mut logs)
-        .map_err(LogError::ReadFailed)?;
+    file.read_to_string(&mut logs)?;
 
     Ok(logs
         .lines()

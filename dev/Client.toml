@@ -1,1 +1,2 @@
+server_location = "https://localhost:1113"
 trust_certificate = "localhost.crt"

@@ -1,0 +1,15 @@
+syntax = "proto3";
+package dams_rpc;
+
+service DamsRpc {
+  rpc Register (stream Message) returns (stream Message);
+  rpc Authenticate (stream Message) returns (stream Message);
+  rpc CreateStorageKey (stream Message) returns (stream Message);
+  rpc Generate (stream Message) returns (stream Message);
+  rpc Retrieve (stream Message) returns (stream Message);
+  rpc RetrieveStorageKey (stream Message) returns (stream Message);
+}
+
+message Message {
+  bytes content = 1;
+}

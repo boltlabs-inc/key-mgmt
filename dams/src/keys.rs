@@ -1,20 +1,12 @@
 //! Digital asset keys and descriptions.
 //!
-//! Includes basic key types (both standard keys and shares of keys) and identifiers
-//! and modifiers describing access control and custody.
+//! Includes basic key types (both standard keys and shares of keys) and
+//! identifiers and modifiers describing access control and custody.
 
-use bytes::BytesMut;
+use crate::{crypto::KeyId, user::UserId};
+
+use bytes::Bytes;
 use serde::{Deserialize, Serialize};
-
-/// Unique ID for a user. Assumption: this will be derived from an ID generated
-/// by the Service Provider.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct UserId;
-
-/// Universally unique identifier for a key.
-#[allow(unused)]
-#[derive(Debug, Serialize, Deserialize)]
-pub struct KeyId;
 
 /// Public key portion of a digital asset key pair.
 #[derive(Debug, Serialize, Deserialize)]
@@ -30,18 +22,19 @@ pub struct KeyInfo {
     public_key: DigitalAssetPublicKey,
 }
 
-/// Wrapper around [`BytesMut`] to represent key material external to the system.
+/// Key material that is generated externally to the system.
 ///
 /// TODO #49 (design, implementation): Define key material properly.
 #[derive(Debug, Serialize, Deserialize)]
 #[allow(unused)]
 pub struct KeyMaterial {
-    key_material: BytesMut,
+    key_material: Bytes,
 }
+
 impl Default for KeyMaterial {
     fn default() -> Self {
         Self {
-            key_material: BytesMut::with_capacity(32),
+            key_material: Bytes::new(),
         }
     }
 }
