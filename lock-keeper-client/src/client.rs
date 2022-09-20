@@ -17,6 +17,7 @@ use rand::{rngs::StdRng, SeedableRng};
 use std::{str::FromStr, sync::Arc};
 use tokio::sync::{mpsc, Mutex};
 use tokio_stream::wrappers::ReceiverStream;
+use tonic::{metadata::MetadataValue, Request};
 use tracing::error;
 
 // TODO: password security, e.g. memory management, etc... #54
@@ -56,6 +57,7 @@ impl Password {
 pub struct LockKeeperClient {
     session_key: OpaqueSessionKey,
     config: Config,
+    account_name: AccountName,
     user_id: UserId,
     tonic_client: LockKeeperRpcClient<LockKeeperRpcClientInner>,
     pub(crate) rng: Arc<Mutex<StdRng>>,
@@ -78,9 +80,14 @@ pub(crate) struct AuthenticateResult {
 
 #[allow(unused)]
 impl LockKeeperClient {
-    // Get [`UserId`] for the authenticated client.
+    /// Get [`UserId`] for the authenticated client.
     pub fn user_id(&self) -> &UserId {
         &self.user_id
+    }
+
+    /// Get [`AccountName`] for the authenticated client.
+    pub fn account_name(&self) -> &AccountName {
+        &self.account_name
     }
 
     pub fn tonic_client(&self) -> LockKeeperRpcClient<LockKeeperRpcClientInner> {
@@ -138,7 +145,7 @@ impl LockKeeperClient {
         let mut rng = StdRng::from_entropy();
 
         let mut client_channel =
-            Self::create_channel(&mut client, ClientAction::Authenticate).await?;
+            Self::create_channel(&mut client, ClientAction::Authenticate, account_name).await?;
         let result =
             Self::handle_authentication(client_channel, &mut rng, account_name, password).await;
         match result {
@@ -153,6 +160,7 @@ impl LockKeeperClient {
                     config: config.clone(),
                     tonic_client: client,
                     rng: Arc::new(Mutex::new(rng)),
+                    account_name: account_name.clone(),
                     user_id,
                     export_key,
                 };
@@ -180,7 +188,8 @@ impl LockKeeperClient {
         let mut rng = StdRng::from_entropy();
         let server_location = config.server_location()?;
         let mut client = Self::connect(config).await?;
-        let mut client_channel = Self::create_channel(&mut client, ClientAction::Register).await?;
+        let mut client_channel =
+            Self::create_channel(&mut client, ClientAction::Register, account_name).await?;
         let result =
             Self::handle_registration(client_channel, &mut rng, account_name, password).await;
         match result {
@@ -188,9 +197,12 @@ impl LockKeeperClient {
                 let mut client = Self::authenticate(client, account_name, password, config).await?;
 
                 // After authenticating we can create the storage key
-                let mut client_channel =
-                    Self::create_channel(&mut client.tonic_client, ClientAction::CreateStorageKey)
-                        .await?;
+                let mut client_channel = Self::create_channel(
+                    &mut client.tonic_client,
+                    ClientAction::CreateStorageKey,
+                    account_name,
+                )
+                .await?;
                 Self::handle_create_storage_key(client_channel, &mut rng, account_name, export_key)
                     .await;
 
@@ -208,11 +220,18 @@ impl LockKeeperClient {
     pub(crate) async fn create_channel(
         client: &mut LockKeeperRpcClient<LockKeeperRpcClientInner>,
         action: ClientAction,
+        account_name: &AccountName,
     ) -> Result<ClientChannel, LockKeeperClientError> {
         // Create channel to send messages to server after connection is established via
         // RPC
         let (tx, rx) = mpsc::channel(2);
-        let stream = ReceiverStream::new(rx);
+        let mut stream = Request::new(ReceiverStream::new(rx));
+
+        let account_name_val = MetadataValue::try_from(account_name.to_string())
+            .map_err(|_| LockKeeperClientError::InvalidAccount)?;
+        let _ = stream
+            .metadata_mut()
+            .insert("account_name", account_name_val);
 
         // Server returns its own channel that is uses to send responses
         let server_response = match action {
