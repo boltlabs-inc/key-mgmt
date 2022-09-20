@@ -36,7 +36,7 @@ pub(super) struct AssociatedData(Vec<u8>);
 
 impl Default for AssociatedData {
     fn default() -> Self {
-        Self("Version 0.1.".as_bytes().to_vec())
+        Self("Version 0.2.".as_bytes().to_vec())
     }
 }
 

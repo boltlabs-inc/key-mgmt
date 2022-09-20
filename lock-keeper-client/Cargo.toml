@@ -1,6 +1,6 @@
 [package]
 name = "lock-keeper-client"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 
 
@@ -13,7 +13,7 @@ allow_explicit_certificate_trust = []
 argon2 = "0.4"
 async-trait = "0.1"
 bincode = "1"
-lock-keeper = { version = "0.1.0", path = "../lock-keeper" }
+lock-keeper = { version = "0.2.0", path = "../lock-keeper" }
 futures = "0.3"
 http = "0.2"
 http-body = "0.4"
