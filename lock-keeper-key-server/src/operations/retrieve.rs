@@ -1,5 +1,4 @@
 use crate::{
-    database::log::AuditLogExt,
     server::{Context, Operation},
     LockKeeperServerError,
 };
@@ -8,7 +7,6 @@ use async_trait::async_trait;
 use lock_keeper::{
     channel::ServerChannel,
     types::retrieve::{client, server},
-    ClientAction,
 };
 
 #[derive(Debug)]
@@ -19,7 +17,7 @@ impl Operation for Retrieve {
     async fn operation(
         self,
         channel: &mut ServerChannel,
-        context: Context,
+        context: &Context,
     ) -> Result<(), LockKeeperServerError> {
         // Receive UserId from client
         let request: client::Request = channel.receive().await?;
@@ -29,13 +27,6 @@ impl Operation for Retrieve {
         let stored_secret = context
             .db
             .get_user_secret(&request.user_id, &request.key_id)
-            .await
-            .audit_log(
-                &context.db,
-                &request.user_id,
-                Some(request.key_id),
-                ClientAction::Retrieve,
-            )
             .await?;
 
         // Serialize KeyId and send to client

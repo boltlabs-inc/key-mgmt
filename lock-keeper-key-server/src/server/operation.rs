@@ -1,14 +1,13 @@
-use std::{thread, time::Duration};
-
 use async_trait::async_trait;
 use lock_keeper::{
     channel::ServerChannel,
     types::{Message, MessageStream},
+    ClientAction,
 };
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status, Streaming};
 
-use crate::{server::Context, LockKeeperServerError};
+use crate::{database::log::AuditLogExt, server::Context, LockKeeperServerError};
 
 #[async_trait]
 /// A type implementing [`Operation`] can process `tonic` requests using a
@@ -18,7 +17,7 @@ pub(crate) trait Operation: Sized + Send + 'static {
     async fn operation(
         self,
         channel: &mut ServerChannel,
-        context: Context,
+        context: &Context,
     ) -> Result<(), LockKeeperServerError>;
 
     /// Takes a request from `tonic` and spawns a new thread to process that
@@ -29,20 +28,17 @@ pub(crate) trait Operation: Sized + Send + 'static {
         self,
         context: Context,
         request: Request<Streaming<Message>>,
+        action: ClientAction,
     ) -> Result<Response<MessageStream>, Status> {
         let (mut channel, rx) = ServerChannel::create(request.into_inner());
         let context = context;
 
         let _ = tokio::spawn(async move {
-            let result = self.operation(&mut channel, context).await;
-            if let Err(e) = result {
-                tracing::error!("{}", e);
-                if let Err(e) = channel.send_error(e).await {
-                    tracing::error!("{}", e);
-                }
-                // Give the client a moment to receive the error before dropping the channel
-                thread::sleep(Duration::from_millis(100));
-            }
+            let _ = self
+                .operation(&mut channel, &context)
+                .await
+                .audit_log(&mut channel, &context, None, action)
+                .await;
         });
 
         Ok(Response::new(ReceiverStream::new(rx)))

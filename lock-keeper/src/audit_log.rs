@@ -2,7 +2,7 @@
 //!
 //! Includes possible actions to log and outcomes of those actions
 
-use crate::user::LogIdentifier;
+use crate::user::AccountName;
 
 use crate::{crypto::KeyId, ClientAction};
 use mongodb::bson::DateTime;
@@ -20,7 +20,7 @@ pub enum Outcome {
 /// any related key for a logged event
 #[derive(Debug, Serialize, Deserialize)]
 pub struct LogEntry {
-    actor: LogIdentifier,
+    actor: AccountName,
     secret_id: Option<KeyId>,
     date: DateTime,
     action: ClientAction,
@@ -29,7 +29,7 @@ pub struct LogEntry {
 
 impl LogEntry {
     pub fn new(
-        actor: LogIdentifier,
+        actor: AccountName,
         secret_id: Option<KeyId>,
         action: ClientAction,
         outcome: Outcome,

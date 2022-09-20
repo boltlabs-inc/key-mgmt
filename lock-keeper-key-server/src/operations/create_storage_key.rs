@@ -18,10 +18,10 @@ impl Operation for CreateStorageKey {
     async fn operation(
         self,
         channel: &mut ServerChannel,
-        context: Context,
+        context: &Context,
     ) -> Result<(), LockKeeperServerError> {
-        let user_id = send_user_id(channel, &context).await?;
-        store_storage_key(user_id, channel, &context).await?;
+        let user_id = send_user_id(channel, context).await?;
+        store_storage_key(user_id, channel, context).await?;
         Ok(())
     }
 }

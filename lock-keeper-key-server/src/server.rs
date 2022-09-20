@@ -11,6 +11,7 @@ use lock_keeper::{
     config::server::{Config, Service},
     rpc::lock_keeper_rpc_server::LockKeeperRpc,
     types::{Message, MessageStream},
+    ClientAction,
 };
 
 use lock_keeper::user::AccountName;
@@ -85,7 +86,7 @@ impl LockKeeperRpc for LockKeeperKeyServer {
     ) -> Result<Response<Self::RegisterStream>, Status> {
         let context = self.context(&request)?;
         Ok(operations::Register
-            .handle_request(context, request)
+            .handle_request(context, request, ClientAction::Register)
             .await?)
     }
 
@@ -95,7 +96,7 @@ impl LockKeeperRpc for LockKeeperKeyServer {
     ) -> Result<Response<Self::AuthenticateStream>, Status> {
         let context = self.context(&request)?;
         Ok(operations::Authenticate
-            .handle_request(context, request)
+            .handle_request(context, request, ClientAction::Authenticate)
             .await?)
     }
 
@@ -105,7 +106,7 @@ impl LockKeeperRpc for LockKeeperKeyServer {
     ) -> Result<Response<Self::CreateStorageKeyStream>, Status> {
         let context = self.context(&request)?;
         Ok(operations::CreateStorageKey
-            .handle_request(context, request)
+            .handle_request(context, request, ClientAction::CreateStorageKey)
             .await?)
     }
 
@@ -115,7 +116,7 @@ impl LockKeeperRpc for LockKeeperKeyServer {
     ) -> Result<Response<Self::GenerateStream>, Status> {
         let context = self.context(&request)?;
         Ok(operations::Generate
-            .handle_request(context, request)
+            .handle_request(context, request, ClientAction::Generate)
             .await?)
     }
 
@@ -125,7 +126,7 @@ impl LockKeeperRpc for LockKeeperKeyServer {
     ) -> Result<Response<Self::RetrieveStream>, Status> {
         let context = self.context(&request)?;
         Ok(operations::Retrieve
-            .handle_request(context, request)
+            .handle_request(context, request, ClientAction::Retrieve)
             .await?)
     }
 
@@ -135,7 +136,7 @@ impl LockKeeperRpc for LockKeeperKeyServer {
     ) -> Result<Response<Self::RetrieveStorageKeyStream>, Status> {
         let context = self.context(&request)?;
         Ok(operations::RetrieveStorageKey
-            .handle_request(context, request)
+            .handle_request(context, request, ClientAction::RetrieveStorageKey)
             .await?)
     }
 }

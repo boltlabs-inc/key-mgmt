@@ -1,5 +1,4 @@
 use crate::{
-    database::log::AuditLogExt,
     error::LockKeeperServerError,
     server::{Context, Operation},
 };
@@ -10,15 +9,13 @@ use lock_keeper::{
     config::opaque::OpaqueCipherSuite,
     opaque_storage::create_or_retrieve_server_key_opaque,
     types::authenticate::{client, server},
-    user::{AccountName, UserId},
-    ClientAction,
+    user::UserId,
 };
 use opaque_ke::{ServerLogin, ServerLoginStartParameters, ServerLoginStartResult};
 
 struct AuthenticateStartResult {
     login_start_result: ServerLoginStartResult<OpaqueCipherSuite>,
     user_id: UserId,
-    account_name: AccountName,
 }
 
 #[derive(Debug)]
@@ -29,18 +26,14 @@ impl Operation for Authenticate {
     async fn operation(
         self,
         channel: &mut ServerChannel,
-        context: Context,
+        context: &Context,
     ) -> Result<(), LockKeeperServerError> {
         let AuthenticateStartResult {
             login_start_result,
             user_id,
-            account_name,
-        } = authenticate_start(channel, &context).await?;
+        } = authenticate_start(channel, context).await?;
         authenticate_finish(channel, login_start_result).await?;
-        send_user_id(channel, user_id)
-            .await
-            .audit_log(&context.db, &account_name, None, ClientAction::Authenticate)
-            .await?;
+        send_user_id(channel, user_id).await?;
 
         Ok(())
     }
@@ -91,7 +84,6 @@ async fn authenticate_start(
     Ok(AuthenticateStartResult {
         login_start_result: server_login_start_result,
         user_id,
-        account_name: start_message.account_name,
     })
 }
 

@@ -1,5 +1,4 @@
 use crate::{
-    database::log::AuditLogExt,
     error::LockKeeperServerError,
     server::{Context, Operation},
 };
@@ -12,7 +11,6 @@ use lock_keeper::{
     opaque_storage::create_or_retrieve_server_key_opaque,
     types::register::{client, server},
     user::{AccountName, UserId},
-    ClientAction,
 };
 use opaque_ke::ServerRegistration;
 
@@ -24,13 +22,10 @@ impl Operation for Register {
     async fn operation(
         self,
         channel: &mut ServerChannel,
-        context: Context,
+        context: &Context,
     ) -> Result<(), LockKeeperServerError> {
-        let account_name = register_start(channel, &context).await?;
-        register_finish(&account_name, channel, &context)
-            .await
-            .audit_log(&context.db, &account_name, None, ClientAction::Register)
-            .await?;
+        let account_name = register_start(channel, context).await?;
+        register_finish(&account_name, channel, context).await?;
 
         Ok(())
     }
