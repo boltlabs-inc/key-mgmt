@@ -1,15 +1,15 @@
 [package]
 name = "lock-keeper-tests"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dev-dependencies]
 anyhow = "1"
-lock-keeper = { version = "0.1.0", path = "../lock-keeper" }
-lock-keeper-key-server = { version = "0.1.0", path = "../lock-keeper-key-server" }
-lock-keeper-client = { version = "0.1.0", path = "../lock-keeper-client", features=["allow_explicit_certificate_trust"] }
+lock-keeper = { version = "0.2.0", path = "../lock-keeper" }
+lock-keeper-key-server = { version = "0.2.0", path = "../lock-keeper-key-server" }
+lock-keeper-client = { version = "0.2.0", path = "../lock-keeper-client", features=["allow_explicit_certificate_trust"] }
 futures = "0.3"
 mongodb = "2.3.0"
 opaque-ke = { version = "2.0.0-pre.3", features = ["argon2"] }

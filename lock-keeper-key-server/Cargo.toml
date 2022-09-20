@@ -1,6 +1,6 @@
 [package]
 name = "lock-keeper-key-server"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 
 [[bin]]
@@ -13,7 +13,7 @@ path = "src/bin/main.rs"
 argon2 = "0.4"
 async-trait = "0.1"
 bincode = "1"
-lock-keeper = { version = "0.1.0", path = "../lock-keeper" }
+lock-keeper = { version = "0.2.0", path = "../lock-keeper" }
 futures = "0.3"
 hyper = "0.14"
 mongodb = "2.3.0"
