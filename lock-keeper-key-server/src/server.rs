@@ -3,6 +3,7 @@ mod service;
 
 pub(crate) use operation::Operation;
 pub use service::start_lock_keeper_server;
+use std::str::FromStr;
 
 use crate::{database::Database, error::LockKeeperServerError, operations};
 
@@ -12,6 +13,7 @@ use lock_keeper::{
     types::{Message, MessageStream},
 };
 
+use lock_keeper::user::AccountName;
 use rand::{rngs::StdRng, SeedableRng};
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -42,12 +44,21 @@ impl LockKeeperKeyServer {
         })
     }
 
-    pub fn context(&self) -> Context {
-        Context {
+    pub fn context(&self, request: &Request<tonic::Streaming<Message>>) -> Result<Context, Status> {
+        let account_name_str = request
+            .metadata()
+            .get("account_name")
+            .ok_or_else(|| Status::unauthenticated("Account name not found"))?
+            .to_str()
+            .map_err(|_| Status::unauthenticated("Invalid account name"))?;
+        let account_name = AccountName::from_str(account_name_str)?;
+
+        Ok(Context {
             db: self.db.clone(),
             service: self.service.clone(),
             rng: self.rng.clone(),
-        }
+            account_name,
+        })
     }
 }
 
@@ -56,6 +67,7 @@ pub struct Context {
     pub db: Arc<Database>,
     pub service: Arc<Service>,
     pub rng: Arc<Mutex<StdRng>>,
+    pub account_name: AccountName,
 }
 
 #[tonic::async_trait]
@@ -71,8 +83,9 @@ impl LockKeeperRpc for LockKeeperKeyServer {
         &self,
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::RegisterStream>, Status> {
+        let context = self.context(&request)?;
         Ok(operations::Register
-            .handle_request(self.context(), request)
+            .handle_request(context, request)
             .await?)
     }
 
@@ -80,8 +93,9 @@ impl LockKeeperRpc for LockKeeperKeyServer {
         &self,
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::AuthenticateStream>, Status> {
+        let context = self.context(&request)?;
         Ok(operations::Authenticate
-            .handle_request(self.context(), request)
+            .handle_request(context, request)
             .await?)
     }
 
@@ -89,8 +103,9 @@ impl LockKeeperRpc for LockKeeperKeyServer {
         &self,
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::CreateStorageKeyStream>, Status> {
+        let context = self.context(&request)?;
         Ok(operations::CreateStorageKey
-            .handle_request(self.context(), request)
+            .handle_request(context, request)
             .await?)
     }
 
@@ -98,8 +113,9 @@ impl LockKeeperRpc for LockKeeperKeyServer {
         &self,
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::GenerateStream>, Status> {
+        let context = self.context(&request)?;
         Ok(operations::Generate
-            .handle_request(self.context(), request)
+            .handle_request(context, request)
             .await?)
     }
 
@@ -107,8 +123,9 @@ impl LockKeeperRpc for LockKeeperKeyServer {
         &self,
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::RetrieveStream>, Status> {
+        let context = self.context(&request)?;
         Ok(operations::Retrieve
-            .handle_request(self.context(), request)
+            .handle_request(context, request)
             .await?)
     }
 
@@ -116,8 +133,9 @@ impl LockKeeperRpc for LockKeeperKeyServer {
         &self,
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::RetrieveStorageKeyStream>, Status> {
+        let context = self.context(&request)?;
         Ok(operations::RetrieveStorageKey
-            .handle_request(self.context(), request)
+            .handle_request(context, request)
             .await?)
     }
 }
