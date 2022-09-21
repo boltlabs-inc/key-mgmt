@@ -1,6 +1,6 @@
 //! Audit events, and associated fields and types
 //!
-//! Includes possible events to log and outcomes of those events
+//! Includes possible events to log and statuses of those events
 
 use crate::user::AccountName;
 
@@ -11,7 +11,8 @@ use std::fmt::{Debug, Display, Formatter};
 
 /// Options for the outcome of a given action in a [`AuditEvent`]
 #[derive(Debug, Serialize, Deserialize)]
-pub enum Outcome {
+pub enum EventStatus {
+    Started,
     Successful,
     Failed,
 }
@@ -24,7 +25,7 @@ pub struct AuditEvent {
     secret_id: Option<KeyId>,
     date: DateTime,
     action: ClientAction,
-    outcome: Outcome,
+    status: EventStatus,
 }
 
 impl AuditEvent {
@@ -32,14 +33,14 @@ impl AuditEvent {
         actor: AccountName,
         secret_id: Option<KeyId>,
         action: ClientAction,
-        outcome: Outcome,
+        status: EventStatus,
     ) -> Self {
         AuditEvent {
             actor,
             secret_id,
             date: DateTime::now(),
             action,
-            outcome,
+            status,
         }
     }
 }
@@ -49,7 +50,7 @@ impl Display for AuditEvent {
         write!(
             f,
             "AuditEvent: User <{:?}> performed action <{:?}> on {} with outcome <{:?}>",
-            self.actor, self.action, self.date, self.outcome
+            self.actor, self.action, self.date, self.status
         )
     }
 }

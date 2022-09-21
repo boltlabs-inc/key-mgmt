@@ -5,7 +5,7 @@
 
 use crate::{constants, LockKeeperServerError};
 use lock_keeper::{
-    audit_event::{AuditEvent, Outcome},
+    audit_event::{AuditEvent, EventStatus},
     crypto::KeyId,
     user::AccountName,
     ClientAction,
@@ -20,10 +20,10 @@ impl Database {
         actor: &AccountName,
         secret_id: &Option<KeyId>,
         action: &ClientAction,
-        outcome: Outcome,
+        status: EventStatus,
     ) -> Result<(), LockKeeperServerError> {
         let collection = self.inner.collection::<AuditEvent>(constants::AUDIT_EVENTS);
-        let new_event = AuditEvent::new(actor.clone(), secret_id.clone(), action.clone(), outcome);
+        let new_event = AuditEvent::new(actor.clone(), secret_id.clone(), action.clone(), status);
         let _ = collection.insert_one(new_event, None).await?;
         Ok(())
     }

@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use lock_keeper::{
-    audit_event::Outcome,
+    audit_event::EventStatus,
     channel::ServerChannel,
     types::{Message, MessageStream},
 };
@@ -37,15 +37,16 @@ pub(crate) trait Operation: Sized + Send + 'static {
         let mut context = context;
 
         let _ = tokio::spawn(async move {
+            Self::audit_event(&mut channel, &context, EventStatus::Started).await;
             let result = self.operation(&mut channel, &mut context).await;
             if let Err(e) = result {
                 Self::handle_error(&mut channel, e).await;
-                Self::audit_event(&mut channel, &context, Outcome::Failed).await;
+                Self::audit_event(&mut channel, &context, EventStatus::Failed).await;
 
                 // Give the client a moment to receive the error before dropping the channel
                 thread::sleep(Duration::from_millis(100));
             } else {
-                Self::audit_event(&mut channel, &context, Outcome::Successful).await;
+                Self::audit_event(&mut channel, &context, EventStatus::Successful).await;
             }
         });
 
@@ -59,14 +60,14 @@ pub(crate) trait Operation: Sized + Send + 'static {
         }
     }
 
-    async fn audit_event(channel: &mut ServerChannel, context: &Context, outcome: Outcome) {
+    async fn audit_event(channel: &mut ServerChannel, context: &Context, status: EventStatus) {
         let audit_event = context
             .db
             .create_audit_event(
                 &context.account_name,
                 &context.key_id,
                 &context.action,
-                outcome,
+                status,
             )
             .await;
         if let Err(e) = audit_event {
