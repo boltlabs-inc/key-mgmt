@@ -26,7 +26,7 @@ impl Operation for Authenticate {
     async fn operation(
         self,
         channel: &mut ServerChannel,
-        context: &Context,
+        context: &mut Context,
     ) -> Result<OperationResult, LockKeeperServerError> {
         let AuthenticateStartResult {
             login_start_result,

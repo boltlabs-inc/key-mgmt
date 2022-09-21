@@ -22,7 +22,7 @@ impl Operation for Register {
     async fn operation(
         self,
         channel: &mut ServerChannel,
-        context: &Context,
+        context: &mut Context,
     ) -> Result<OperationResult, LockKeeperServerError> {
         let account_name = register_start(channel, context).await?;
         register_finish(&account_name, channel, context).await?;

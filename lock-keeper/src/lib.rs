@@ -36,7 +36,7 @@ pub mod rpc {
 }
 
 /// Options for actions the Lock Keeper client can take.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ClientAction {
     Register,
     Authenticate,

@@ -17,10 +17,11 @@ impl Operation for Retrieve {
     async fn operation(
         self,
         channel: &mut ServerChannel,
-        context: &Context,
+        context: &mut Context,
     ) -> Result<OperationResult, LockKeeperServerError> {
         // Receive UserId from client
         let request: client::Request = channel.receive().await?;
+        context.key_id = Some(request.key_id.clone());
 
         // Find secret based on key_id
         let stored_secret = context
