@@ -3,7 +3,11 @@
 //! Functions in this module are used to perform CRUD operations
 //! on the [`LogEntry`] model in the MongoDB database.
 
-use crate::{constants, server::Context, LockKeeperServerError};
+use crate::{
+    constants,
+    server::{Context, OperationResult},
+    LockKeeperServerError,
+};
 use async_trait::async_trait;
 use lock_keeper::{
     audit_log::{LogEntry, Outcome},
@@ -13,7 +17,6 @@ use lock_keeper::{
     ClientAction,
 };
 use std::{thread, time::Duration};
-use tonic::Status;
 
 use super::Database;
 
@@ -39,47 +42,42 @@ pub trait AuditLogExt {
         self,
         channel: &mut ServerChannel,
         context: &Context,
-        secret_id: Option<KeyId>,
         action: ClientAction,
     ) -> Result<(), LockKeeperServerError>;
 }
 
 #[async_trait]
-impl<T: std::marker::Send> AuditLogExt for Result<T, LockKeeperServerError> {
+impl AuditLogExt for Result<OperationResult, LockKeeperServerError> {
     async fn audit_log(
         self,
         channel: &mut ServerChannel,
         context: &Context,
-        secret_id: Option<KeyId>,
         action: ClientAction,
     ) -> Result<(), LockKeeperServerError> {
-        if self.is_err() {
-            // Send error to client
-            let e = self
-                .err()
-                .ok_or_else(|| Status::internal("Unable to unwrap error"))?;
-            tracing::error!("{}", e);
-            if let Err(e) = channel.send_error(e).await {
-                tracing::error!("{}", e);
-            }
-            // Log action
-            context
-                .db
-                .create_log_entry(&context.account_name, secret_id, action, Outcome::Failed)
-                .await?;
-            // Give the client a moment to receive the error before dropping the channel
-            thread::sleep(Duration::from_millis(100));
-            Ok(())
-        } else {
-            Ok(context
+        match self {
+            Ok(op_result) => Ok(context
                 .db
                 .create_log_entry(
                     &context.account_name,
-                    secret_id,
+                    op_result.0,
                     action,
                     Outcome::Successful,
                 )
-                .await?)
+                .await?),
+            Err(e) => {
+                tracing::error!("{}", e);
+                if let Err(e) = channel.send_error(e).await {
+                    tracing::error!("{}", e);
+                }
+                // Log action
+                context
+                    .db
+                    .create_log_entry(&context.account_name, None, action, Outcome::Failed)
+                    .await?;
+                // Give the client a moment to receive the error before dropping the channel
+                thread::sleep(Duration::from_millis(100));
+                Ok(())
+            }
         }
     }
 }

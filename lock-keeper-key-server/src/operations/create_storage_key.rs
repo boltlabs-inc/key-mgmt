@@ -1,6 +1,6 @@
 use crate::{
     error::LockKeeperServerError,
-    server::{Context, Operation},
+    server::{Context, Operation, OperationResult},
 };
 
 use async_trait::async_trait;
@@ -19,10 +19,10 @@ impl Operation for CreateStorageKey {
         self,
         channel: &mut ServerChannel,
         context: &Context,
-    ) -> Result<(), LockKeeperServerError> {
+    ) -> Result<OperationResult, LockKeeperServerError> {
         let user_id = send_user_id(channel, context).await?;
         store_storage_key(user_id, channel, context).await?;
-        Ok(())
+        Ok(OperationResult(None))
     }
 }
 

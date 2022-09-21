@@ -7,7 +7,11 @@ use lock_keeper::{
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status, Streaming};
 
-use crate::{database::log::AuditLogExt, server::Context, LockKeeperServerError};
+use crate::{
+    database::log::AuditLogExt,
+    server::{Context, OperationResult},
+    LockKeeperServerError,
+};
 
 #[async_trait]
 /// A type implementing [`Operation`] can process `tonic` requests using a
@@ -18,7 +22,7 @@ pub(crate) trait Operation: Sized + Send + 'static {
         self,
         channel: &mut ServerChannel,
         context: &Context,
-    ) -> Result<(), LockKeeperServerError>;
+    ) -> Result<OperationResult, LockKeeperServerError>;
 
     /// Takes a request from `tonic` and spawns a new thread to process that
     /// request through the logic defined by the `Operation::operation` method.
@@ -37,7 +41,7 @@ pub(crate) trait Operation: Sized + Send + 'static {
             let _ = self
                 .operation(&mut channel, &context)
                 .await
-                .audit_log(&mut channel, &context, None, action)
+                .audit_log(&mut channel, &context, action)
                 .await;
         });
 

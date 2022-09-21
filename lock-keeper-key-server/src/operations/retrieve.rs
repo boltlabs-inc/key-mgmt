@@ -1,5 +1,5 @@
 use crate::{
-    server::{Context, Operation},
+    server::{Context, Operation, OperationResult},
     LockKeeperServerError,
 };
 
@@ -18,7 +18,7 @@ impl Operation for Retrieve {
         self,
         channel: &mut ServerChannel,
         context: &Context,
-    ) -> Result<(), LockKeeperServerError> {
+    ) -> Result<OperationResult, LockKeeperServerError> {
         // Receive UserId from client
         let request: client::Request = channel.receive().await?;
 
@@ -32,6 +32,6 @@ impl Operation for Retrieve {
         // Serialize KeyId and send to client
         let reply = server::Response { stored_secret };
         channel.send(reply).await?;
-        Ok(())
+        Ok(OperationResult(Some(request.key_id)))
     }
 }

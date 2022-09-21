@@ -14,11 +14,13 @@ use lock_keeper::{
     ClientAction,
 };
 
-use lock_keeper::user::AccountName;
+use lock_keeper::{crypto::KeyId, user::AccountName};
 use rand::{rngs::StdRng, SeedableRng};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tonic::{Request, Response, Status};
+
+pub(crate) struct OperationResult(pub(crate) Option<KeyId>);
 
 #[allow(unused)]
 #[derive(Debug)]

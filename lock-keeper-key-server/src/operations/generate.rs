@@ -1,5 +1,5 @@
 use crate::{
-    server::{Context, Operation},
+    server::{Context, Operation, OperationResult},
     LockKeeperServerError,
 };
 
@@ -19,13 +19,13 @@ impl Operation for Generate {
         self,
         channel: &mut ServerChannel,
         context: &Context,
-    ) -> Result<(), LockKeeperServerError> {
+    ) -> Result<OperationResult, LockKeeperServerError> {
         // Generate step: receive UserId and reply with new KeyId
         let key_id = generate_key(channel, context).await?;
 
         // Store step: receive ciphertext from client and store in DB
         store_key(channel, context, &key_id).await?;
-        Ok(())
+        Ok(OperationResult(Some(key_id)))
     }
 }
 
