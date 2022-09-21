@@ -8,6 +8,7 @@ use crate::{crypto::KeyId, ClientAction};
 use mongodb::bson::DateTime;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display, Formatter};
+use strum::IntoEnumIterator;
 
 /// Options for the outcome of a given action in a [`AuditEvent`]
 #[derive(Debug, Serialize, Deserialize)]
@@ -52,5 +53,31 @@ impl Display for AuditEvent {
             "AuditEvent: User <{:?}> performed action <{:?}> on {} with outcome <{:?}>",
             self.actor, self.action, self.date, self.status
         )
+    }
+}
+
+/// Options for which types of events to retrieve from the key server
+#[derive(Debug, Serialize, Deserialize)]
+pub enum EventType {
+    All,
+    SystemOnly,
+    KeyOnly,
+}
+
+impl EventType {
+    pub fn into_client_actions(self) -> Vec<ClientAction> {
+        let system_only = vec![
+            ClientAction::Authenticate,
+            ClientAction::CreateStorageKey,
+            ClientAction::Register,
+            ClientAction::RetrieveStorageKey,
+        ];
+        match self {
+            Self::All => ClientAction::iter().collect::<Vec<_>>(),
+            Self::SystemOnly => system_only,
+            Self::KeyOnly => ClientAction::iter()
+                .filter(|x| !system_only.contains(x))
+                .collect::<Vec<_>>(),
+        }
     }
 }

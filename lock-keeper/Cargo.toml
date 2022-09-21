@@ -38,6 +38,7 @@ http-serde = "1"
 humantime = "2"
 humantime-serde = "1"
 sha3 = "0.10"
+strum = { version = "0.24.1", features = ["derive"] }
 uuid = "1.1.2"
 webpki = "0.22"
 
