@@ -1,6 +1,6 @@
-//! Audit log entries, fields, and types
+//! Audit events, and associated fields and types
 //!
-//! Includes possible actions to log and outcomes of those actions
+//! Includes possible events to log and outcomes of those events
 
 use crate::user::AccountName;
 
@@ -9,17 +9,17 @@ use mongodb::bson::DateTime;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display, Formatter};
 
-/// Options for the outcome of a given action in a [`LogEntry`]
+/// Options for the outcome of a given action in a [`AuditEvent`]
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Outcome {
     Successful,
     Failed,
 }
 
-/// A single log entry that specifies the actor, action, outcome, and
-/// any related key for a logged event
+/// A single entry that specifies the actor, action, outcome, and
+/// any related key for a logged audit event
 #[derive(Debug, Serialize, Deserialize)]
-pub struct LogEntry {
+pub struct AuditEvent {
     actor: AccountName,
     secret_id: Option<KeyId>,
     date: DateTime,
@@ -27,14 +27,14 @@ pub struct LogEntry {
     outcome: Outcome,
 }
 
-impl LogEntry {
+impl AuditEvent {
     pub fn new(
         actor: AccountName,
         secret_id: Option<KeyId>,
         action: ClientAction,
         outcome: Outcome,
     ) -> Self {
-        LogEntry {
+        AuditEvent {
             actor,
             secret_id,
             date: DateTime::now(),
@@ -44,11 +44,11 @@ impl LogEntry {
     }
 }
 
-impl Display for LogEntry {
+impl Display for AuditEvent {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "LogEntry: User <{:?}> performed action <{:?}> on {} with outcome <{:?}>",
+            "AuditEvent: User <{:?}> performed action <{:?}> on {} with outcome <{:?}>",
             self.actor, self.action, self.date, self.outcome
         )
     }

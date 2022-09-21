@@ -13,7 +13,7 @@ use mongodb::{
 
 use crate::error::LockKeeperServerError;
 
-pub(crate) mod log;
+pub(crate) mod audit_event;
 pub(crate) mod user;
 
 #[derive(Clone, Debug)]

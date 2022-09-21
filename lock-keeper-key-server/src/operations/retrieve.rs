@@ -22,7 +22,6 @@ impl Operation for Retrieve {
         // Receive UserId from client
         let request: client::Request = channel.receive().await?;
 
-        // TODO #232: move this log so that we log the entire operation
         // Find secret based on key_id
         let stored_secret = context
             .db

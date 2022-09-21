@@ -8,7 +8,7 @@ use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status, Streaming};
 
 use crate::{
-    database::log::AuditLogExt,
+    database::audit_event::AuditEventExt,
     server::{Context, OperationResult},
     LockKeeperServerError,
 };
@@ -41,7 +41,7 @@ pub(crate) trait Operation: Sized + Send + 'static {
             let _ = self
                 .operation(&mut channel, &context)
                 .await
-                .audit_log(&mut channel, &context, action)
+                .log_audit_event(&mut channel, &context, action)
                 .await;
         });
 

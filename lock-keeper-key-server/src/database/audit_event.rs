@@ -1,7 +1,7 @@
-//! Module for operations on log entries in the database.
+//! Module for operations on audit events in the database.
 //!
 //! Functions in this module are used to perform CRUD operations
-//! on the [`LogEntry`] model in the MongoDB database.
+//! on the [`AuditEvent`] model in the MongoDB database.
 
 use crate::{
     constants,
@@ -10,7 +10,7 @@ use crate::{
 };
 use async_trait::async_trait;
 use lock_keeper::{
-    audit_log::{LogEntry, Outcome},
+    audit_event::{AuditEvent, Outcome},
     channel::ServerChannel,
     crypto::KeyId,
     user::AccountName,
@@ -21,24 +21,24 @@ use std::{thread, time::Duration};
 use super::Database;
 
 impl Database {
-    /// Create a new [`LogEntry`] for the given actor, action, and outcome
-    pub async fn create_log_entry(
+    /// Create a new [`AuditEvent`] for the given actor, action, and outcome
+    pub async fn create_audit_event(
         &self,
         actor: &AccountName,
         secret_id: Option<KeyId>,
         action: ClientAction,
         outcome: Outcome,
     ) -> Result<(), LockKeeperServerError> {
-        let collection = self.inner.collection::<LogEntry>(constants::LOGS);
-        let new_log = LogEntry::new(actor.clone(), secret_id, action, outcome);
-        let _ = collection.insert_one(new_log, None).await?;
+        let collection = self.inner.collection::<AuditEvent>(constants::AUDIT_EVENTS);
+        let new_event = AuditEvent::new(actor.clone(), secret_id, action, outcome);
+        let _ = collection.insert_one(new_event, None).await?;
         Ok(())
     }
 }
 
 #[async_trait]
-pub trait AuditLogExt {
-    async fn audit_log(
+pub trait AuditEventExt {
+    async fn log_audit_event(
         self,
         channel: &mut ServerChannel,
         context: &Context,
@@ -47,8 +47,8 @@ pub trait AuditLogExt {
 }
 
 #[async_trait]
-impl AuditLogExt for Result<OperationResult, LockKeeperServerError> {
-    async fn audit_log(
+impl AuditEventExt for Result<OperationResult, LockKeeperServerError> {
+    async fn log_audit_event(
         self,
         channel: &mut ServerChannel,
         context: &Context,
@@ -57,7 +57,7 @@ impl AuditLogExt for Result<OperationResult, LockKeeperServerError> {
         match self {
             Ok(op_result) => Ok(context
                 .db
-                .create_log_entry(
+                .create_audit_event(
                     &context.account_name,
                     op_result.0,
                     action,
@@ -72,7 +72,7 @@ impl AuditLogExt for Result<OperationResult, LockKeeperServerError> {
                 // Log action
                 context
                     .db
-                    .create_log_entry(&context.account_name, None, action, Outcome::Failed)
+                    .create_audit_event(&context.account_name, None, action, Outcome::Failed)
                     .await?;
                 // Give the client a moment to receive the error before dropping the channel
                 thread::sleep(Duration::from_millis(100));

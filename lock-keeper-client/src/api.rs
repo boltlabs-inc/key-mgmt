@@ -115,10 +115,11 @@ pub fn retrieve_public_key_by_id(
     todo!()
 }
 
-/// Retrieve the audit log from the key server for a specified asset owner;
-/// optionally, filter for logs associated with the specified [`KeyId`].
+/// Retrieve the log of audit events from the key server for a specified asset
+/// owner; optionally, filter for audit events associated with the specified
+/// [`KeyId`].
 ///
-/// The audit log includes context
+/// The log of audit events includes context
 /// about any action requested and/or taken on the digital asset key, including
 /// which action was requested and by whom, the date, details about approval or
 /// rejection from each key server, the policy engine, and each asset fiduciary
@@ -130,7 +131,7 @@ pub fn retrieve_public_key_by_id(
 ///
 /// Output: if successful, returns a [`String`] representation of the logs.
 #[allow(unused)]
-pub fn retrieve_audit_log(
+pub fn retrieve_audit_event_log(
     user_id: UserId,
     key_id: Option<&KeyId>,
 ) -> Result<String, LockKeeperClientError> {

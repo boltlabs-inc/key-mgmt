@@ -70,7 +70,5 @@ async fn store_key(
     let reply = server::Store { success: true };
     channel.send(reply).await?;
 
-    // TODO #67 (implementation): Log that a new key was generated and stored
-
     Ok(())
 }
