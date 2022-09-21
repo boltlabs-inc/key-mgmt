@@ -25,6 +25,26 @@ impl SigningKeyPair {
         SigningKeyPair
     }
 
+    /// Domain separator for use in serializing signing keypairs.
+    fn domain_separator() -> &'static str {
+        "ECDSA signing key pair over curve secp256k1"
+    }
+
+    /// Retrieve the public portion of the key.
+    fn public_key(&self) -> &SigningPublicKey {
+        &SigningPublicKey
+    }
+
+    /// Compute an ECDSA signature on the given message.
+    pub fn sign<T>(&self, message: &T) -> Signature<T>
+    where
+        T: Into<Vec<u8>>,
+    {
+        Signature {
+            original_type: PhantomData,
+        }
+    }
+
     /// Create a new `SigningKeyPair`. This must be run by the server.
     pub fn remote_generate(
         rng: &mut (impl CryptoRng + RngCore),
@@ -34,14 +54,25 @@ impl SigningKeyPair {
         SigningKeyPair
     }
 
-    /// Domain separator for use in serializing signing keypairs.
-    fn domain_separator() -> &'static str {
-        "ECDSA signing key"
-    }
+    /// Create and encrypt a new signing key. This is part of the local signing
+    /// key generation flow.
+    ///
+    /// This must be run by the client. It takes the following steps:
+    /// 1. Generates a new signing key
+    /// 2. Encrypt it under the [`StorageKey`], using an AEAD scheme
+    pub fn create_and_encrypt(
+        rng: &mut (impl CryptoRng + RngCore),
+        storage_key: &StorageKey,
+        _user_id: &UserId,
+        _key_id: &KeyId,
+    ) -> Result<(SigningKeyPair, Encrypted<SigningKeyPair>), LockKeeperError> {
+        let context = AssociatedData::new();
+        let signing_key = SigningKeyPair::generate(rng, &context);
 
-    /// Retrieve the public portion of the key.
-    fn public_key(&self) -> &SigningPublicKey {
-        &SigningPublicKey
+        Ok((
+            signing_key.clone(),
+            Encrypted::encrypt(rng, &storage_key.0, signing_key, &context)?,
+        ))
     }
 }
 
@@ -61,19 +92,6 @@ impl TryFrom<Vec<u8>> for SigningKeyPair {
             Ok(SigningKeyPair)
         } else {
             Err(CryptoError::ConversionError)
-        }
-    }
-}
-
-#[allow(unused)]
-impl SigningKeyPair {
-    /// Compute an ECDSA signature on the given message.
-    pub fn sign<T>(&self, message: &T) -> Signature<T>
-    where
-        T: Into<Vec<u8>>,
-    {
-        Signature {
-            original_type: PhantomData,
         }
     }
 }
@@ -115,29 +133,6 @@ impl Encrypted<SigningKeyPair> {
     }
 }
 
-impl StorageKey {
-    /// Create and encrypt a new signing key. This is part of the local signing
-    /// key generation flow.
-    ///
-    /// This must be run by the client. It takes the following steps:
-    /// 1. Generates a new signing key
-    /// 2. Encrypt it under the [`StorageKey`], using an AEAD scheme
-    pub fn create_and_encrypt_signing_key(
-        self,
-        rng: &mut (impl CryptoRng + RngCore),
-        _user_id: &UserId,
-        _key_id: &KeyId,
-    ) -> Result<(SigningKeyPair, Encrypted<SigningKeyPair>), LockKeeperError> {
-        let context = AssociatedData::new();
-        let signing_key = SigningKeyPair::generate(rng, &context);
-
-        Ok((
-            signing_key.clone(),
-            Encrypted::encrypt(rng, &self.0, signing_key, &context)?,
-        ))
-    }
-}
-
 #[cfg(test)]
 mod test {
     use crate::{
@@ -171,9 +166,8 @@ mod test {
         let key_id = KeyId::generate(&mut rng, &user_id)?;
 
         // Create and encrypt a secret
-        let (signing_key, encrypted_signing_key) = storage_key
-            .clone()
-            .create_and_encrypt_signing_key(&mut rng, &user_id, &key_id)?;
+        let (signing_key, encrypted_signing_key) =
+            SigningKeyPair::create_and_encrypt(&mut rng, &storage_key, &user_id, &key_id)?;
 
         // Decrypt the secret
         let decrypted_signing_key = encrypted_signing_key.decrypt_secret(storage_key)?;

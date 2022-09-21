@@ -1,7 +1,7 @@
 use crate::{api::arbitrary_secrets::LocalStorage, LockKeeperClient, LockKeeperClientError};
 use lock_keeper::{
     channel::ClientChannel,
-    crypto::{KeyId, StorageKey},
+    crypto::{KeyId, Secret, StorageKey},
     types::generate::{client, server},
     user::UserId,
 };
@@ -51,7 +51,7 @@ async fn generate_and_store(
     key_id: &KeyId,
 ) -> Result<LocalStorage, LockKeeperClientError> {
     // Generate and encrypt secret
-    let (secret, encrypted) = storage_key.create_and_encrypt_secret(rng, user_id, key_id)?;
+    let (secret, encrypted) = Secret::create_and_encrypt(rng, &storage_key, user_id, key_id)?;
     // Serialize and send ciphertext
     let response = client::Store {
         ciphertext: encrypted.clone(),

@@ -38,16 +38,16 @@ impl Encrypted<Secret> {
     }
 }
 
-impl StorageKey {
+impl Secret {
     /// Create and encrypt a new secret. This is part of the
     /// generate a new secret flow.
     ///
     /// This must be run by the client. It takes the following steps:
     /// 1. Generates a new secret
     /// 2. Encrypt it under the [`StorageKey`], using an AEAD scheme
-    pub fn create_and_encrypt_secret(
-        self,
+    pub fn create_and_encrypt(
         rng: &mut (impl CryptoRng + RngCore),
+        storage_key: &StorageKey,
         user_id: &UserId,
         key_id: &KeyId,
     ) -> Result<(Secret, Encrypted<Secret>), LockKeeperError> {
@@ -59,7 +59,7 @@ impl StorageKey {
 
         Ok((
             secret.clone(),
-            Encrypted::encrypt(rng, &self.0, secret, &context)?,
+            Encrypted::encrypt(rng, &storage_key.0, secret, &context)?,
         ))
     }
 }
@@ -80,9 +80,8 @@ mod test {
 
         for _ in 0..100 {
             let key_id = KeyId::generate(&mut rng, &user_id)?;
-            let (secret, _) = storage_key
-                .clone()
-                .create_and_encrypt_secret(&mut rng, &user_id, &key_id)?;
+            let (secret, _) =
+                Secret::create_and_encrypt(&mut rng, &storage_key, &user_id, &key_id)?;
 
             // Convert to Vec<u8> and back
             let secret_vec: Vec<u8> = secret.clone().into();
@@ -103,9 +102,8 @@ mod test {
         let key_id = KeyId::generate(&mut rng, &user_id)?;
 
         // Create and encrypt a secret
-        let (secret, encrypted_secret) = storage_key
-            .clone()
-            .create_and_encrypt_secret(&mut rng, &user_id, &key_id)?;
+        let (secret, encrypted_secret) =
+            Secret::create_and_encrypt(&mut rng, &storage_key, &user_id, &key_id)?;
 
         // Decrypt the secret
         let decrypted_secret = encrypted_secret.decrypt_secret(storage_key)?;
