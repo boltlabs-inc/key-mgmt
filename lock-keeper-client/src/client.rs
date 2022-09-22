@@ -227,8 +227,7 @@ impl LockKeeperClient {
         let (tx, rx) = mpsc::channel(2);
         let mut stream = Request::new(ReceiverStream::new(rx));
 
-        let account_name_val = MetadataValue::try_from(account_name.to_string())
-            .map_err(|_| LockKeeperClientError::InvalidAccount)?;
+        let account_name_val = MetadataValue::try_from(account_name.to_string())?;
         let _ = stream
             .metadata_mut()
             .insert("account_name", account_name_val);

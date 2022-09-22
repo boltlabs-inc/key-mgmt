@@ -1,5 +1,5 @@
 use crate::{
-    server::{Context, Operation, OperationResult},
+    server::{Context, Operation},
     LockKeeperServerError,
 };
 use async_trait::async_trait;
@@ -17,7 +17,7 @@ impl Operation for RetrieveStorageKey {
         self,
         channel: &mut ServerChannel,
         context: &mut Context,
-    ) -> Result<OperationResult, LockKeeperServerError> {
+    ) -> Result<(), LockKeeperServerError> {
         // Receive user ID and retrieve encrypted storage key for that user
         let request: client::Request = channel.receive().await?;
 
@@ -37,6 +37,6 @@ impl Operation for RetrieveStorageKey {
         };
         channel.send(reply).await?;
 
-        Ok(OperationResult(None))
+        Ok(())
     }
 }

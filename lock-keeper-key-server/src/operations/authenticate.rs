@@ -1,6 +1,6 @@
 use crate::{
     error::LockKeeperServerError,
-    server::{Context, Operation, OperationResult},
+    server::{Context, Operation},
 };
 
 use async_trait::async_trait;
@@ -27,7 +27,7 @@ impl Operation for Authenticate {
         self,
         channel: &mut ServerChannel,
         context: &mut Context,
-    ) -> Result<OperationResult, LockKeeperServerError> {
+    ) -> Result<(), LockKeeperServerError> {
         let AuthenticateStartResult {
             login_start_result,
             user_id,
@@ -35,7 +35,7 @@ impl Operation for Authenticate {
         authenticate_finish(channel, login_start_result).await?;
         send_user_id(channel, user_id).await?;
 
-        Ok(OperationResult(None))
+        Ok(())
     }
 }
 

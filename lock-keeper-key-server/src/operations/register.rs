@@ -1,6 +1,6 @@
 use crate::{
     error::LockKeeperServerError,
-    server::{Context, Operation, OperationResult},
+    server::{Context, Operation},
 };
 use std::ops::DerefMut;
 
@@ -23,11 +23,11 @@ impl Operation for Register {
         self,
         channel: &mut ServerChannel,
         context: &mut Context,
-    ) -> Result<OperationResult, LockKeeperServerError> {
+    ) -> Result<(), LockKeeperServerError> {
         let account_name = register_start(channel, context).await?;
         register_finish(&account_name, channel, context).await?;
 
-        Ok(OperationResult(None))
+        Ok(())
     }
 }
 

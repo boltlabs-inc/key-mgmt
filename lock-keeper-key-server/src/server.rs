@@ -20,8 +20,6 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use tonic::{Request, Response, Status};
 
-pub(crate) struct OperationResult(pub(crate) Option<KeyId>);
-
 #[allow(unused)]
 #[derive(Debug)]
 pub struct LockKeeperKeyServer {
