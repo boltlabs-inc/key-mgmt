@@ -1,16 +1,16 @@
 pub mod client {
-    use crate::{audit_event::EventType, crypto::KeyId, impl_message_conversion, user::UserId};
-    use mongodb::bson::DateTime;
+    use crate::{
+        audit_event::{AuditEventOptions, EventType},
+        impl_message_conversion,
+    };
     use serde::{Deserialize, Serialize};
 
     #[derive(Debug, Deserialize, Serialize)]
     /// Query specific set of audit event logs
     pub struct Request {
-        pub user_id: UserId,
+        // TODO spec#132: decide whether user ID needs to be added back in to request
         pub event_type: EventType,
-        pub key_ids: Option<Vec<KeyId>>,
-        pub after_date: Option<DateTime>,
-        pub before_date: Option<DateTime>,
+        pub options: Option<AuditEventOptions>,
     }
 
     impl_message_conversion!(Request);

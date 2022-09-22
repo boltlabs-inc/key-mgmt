@@ -5,7 +5,7 @@
 use crate::user::AccountName;
 
 use crate::{crypto::KeyId, ClientAction};
-use mongodb::bson::DateTime;
+use bson::DateTime;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display, Formatter};
 use strum::IntoEnumIterator;
@@ -70,6 +70,7 @@ impl EventType {
             ClientAction::Authenticate,
             ClientAction::CreateStorageKey,
             ClientAction::Register,
+            ClientAction::RetrieveAuditEvents,
             ClientAction::RetrieveStorageKey,
         ];
         match self {
@@ -80,4 +81,12 @@ impl EventType {
                 .collect::<Vec<_>>(),
         }
     }
+}
+
+/// Options for filtering [`AuditEvent`]s by
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AuditEventOptions {
+    pub key_ids: Option<Vec<KeyId>>,
+    pub after_date: Option<DateTime>,
+    pub before_date: Option<DateTime>,
 }

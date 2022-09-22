@@ -254,6 +254,7 @@ impl LockKeeperClient {
             ClientAction::CreateStorageKey => client.create_storage_key(stream).await,
             ClientAction::Generate => client.generate(stream).await,
             ClientAction::Retrieve => client.retrieve(stream).await,
+            ClientAction::RetrieveAuditEvents => client.retrieve_audit_events(stream).await,
             ClientAction::RetrieveStorageKey => client.retrieve_storage_key(stream).await,
         }?
         .into_inner();
