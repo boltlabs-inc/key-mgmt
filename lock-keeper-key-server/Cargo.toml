@@ -1,6 +1,6 @@
 [package]
 name = "lock-keeper-key-server"
-version = "0.2.0"
+version.workspace = true
 edition = "2021"
 
 [[bin]]
@@ -10,29 +10,33 @@ path = "src/bin/main.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-argon2 = "0.4"
-async-trait = "0.1"
-bincode = "1"
+# Git dependencies
 lock-keeper = { version = "0.2.0", path = "../lock-keeper" }
-futures = "0.3"
-hyper = "0.14"
-mongodb = "2.3.0"
-opaque-ke = { version = "2.0.0-pre.3", features = ["argon2"] }
-prost = "0.11.0"
-rand = "0.8"
-reqwest = "0.11"
-serde = "1"
-serde_with = "1"
-structopt = "0.3"
-thiserror = "1"
-tokio = { version = "1", features = ["full"] }
-tokio-rustls = "0.23"
-tokio-stream = "0.1"
-tonic = "0.8.0"
+
+# Workspace dependencies
+argon2.workspace = true
+async-trait.workspace = true
+bincode.workspace = true
+futures.workspace = true
+hyper.workspace = true
+mongodb.workspace = true
+opaque-ke.workspace = true
+prost.workspace = true
+rand.workspace = true
+serde.workspace = true
+serde_with.workspace = true
+structopt.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tokio-rustls.workspace = true
+tokio-stream.workspace = true
+tonic.workspace = true
+tracing.workspace = true
+tracing-futures.workspace = true
+tracing-subscriber.workspace = true
+
+# Other dependencies
 tower = "0.4"
-tracing = "0.1"
-tracing-futures = "0.2"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [dev-dependencies]
-generic-array = "0.14"
+generic-array.workspace = true

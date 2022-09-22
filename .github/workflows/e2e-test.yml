@@ -21,6 +21,11 @@ jobs:
         uses: arduino/setup-protoc@v1
         with:
           version: '3.x'
+      
+      # Ensure Rust is the latest version
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
 
       - name: Cache
         uses: actions/cache@v2
