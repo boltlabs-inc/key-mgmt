@@ -9,6 +9,7 @@ use crate::{database::Database, error::LockKeeperServerError, operations};
 
 use lock_keeper::{
     config::server::{Config, Service},
+    defaults::server::ACCOUNT_NAME,
     rpc::lock_keeper_rpc_server::LockKeeperRpc,
     types::{Message, MessageStream},
     ClientAction,
@@ -52,7 +53,7 @@ impl LockKeeperKeyServer {
     ) -> Result<Context, Status> {
         let account_name_str = request
             .metadata()
-            .get("account_name")
+            .get(ACCOUNT_NAME)
             .ok_or_else(|| Status::unauthenticated("Account name not found"))?
             .to_str()
             .map_err(|_| Status::unauthenticated("Invalid account name"))?;

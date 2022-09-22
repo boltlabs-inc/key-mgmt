@@ -9,6 +9,7 @@ use lock_keeper::{
     channel::ClientChannel,
     config::client::Config,
     crypto::{OpaqueExportKey, OpaqueSessionKey},
+    defaults::client::ACCOUNT_NAME,
     rpc::lock_keeper_rpc_client::LockKeeperRpcClient,
     user::{AccountName, UserId},
     ClientAction,
@@ -228,9 +229,7 @@ impl LockKeeperClient {
         let mut stream = Request::new(ReceiverStream::new(rx));
 
         let account_name_val = MetadataValue::try_from(account_name.to_string())?;
-        let _ = stream
-            .metadata_mut()
-            .insert("account_name", account_name_val);
+        let _ = stream.metadata_mut().insert(ACCOUNT_NAME, account_name_val);
 
         // Server returns its own channel that is uses to send responses
         let server_response = match action {

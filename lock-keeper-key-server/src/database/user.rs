@@ -7,6 +7,7 @@ use crate::{constants, LockKeeperServerError};
 use lock_keeper::{
     config::opaque::OpaqueCipherSuite,
     crypto::{Encrypted, KeyId, Secret, StorageKey},
+    defaults::server::{ACCOUNT_NAME, USER_ID},
     user::{AccountName, StoredSecret, User, UserId},
 };
 use mongodb::bson::{doc, oid::ObjectId};
@@ -14,10 +15,8 @@ use opaque_ke::ServerRegistration;
 
 use super::Database;
 
-pub const ACCOUNT_NAME: &str = "account_name";
 pub const STORAGE_KEY: &str = "storage_key";
 pub const SECRETS: &str = "secrets";
-pub const USER_ID: &str = "user_id";
 
 impl Database {
     /// Create a new [`User`] with their authentication information and insert

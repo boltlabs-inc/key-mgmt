@@ -4,7 +4,11 @@
 //! they have stored in the key server.
 
 use crate::constants;
-use lock_keeper::{config::server::DatabaseSpec, user::User};
+use lock_keeper::{
+    config::server::DatabaseSpec,
+    defaults::server::{ACCOUNT_NAME, USER_ID},
+    user::User,
+};
 use mongodb::{
     bson::doc,
     options::{ClientOptions, IndexOptions},
@@ -34,14 +38,14 @@ impl Database {
         // Enforce that the user ID is unique
         let enforce_uniqueness = IndexOptions::builder().unique(true).build();
         let user_id_index = IndexModel::builder()
-            .keys(doc! {"user_id": 1})
+            .keys(doc! {USER_ID: 1})
             .options(enforce_uniqueness)
             .build();
 
         // Enforce that the account name is unique
         let enforce_uniqueness = IndexOptions::builder().unique(true).build();
         let account_name_index = IndexModel::builder()
-            .keys(doc! {"account_name": 1})
+            .keys(doc! {ACCOUNT_NAME: 1})
             .options(enforce_uniqueness)
             .build();
 
