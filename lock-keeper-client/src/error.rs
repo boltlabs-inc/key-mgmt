@@ -24,6 +24,8 @@ pub enum LockKeeperClientError {
     #[error("OPAQUE protocol error: {}", .0)]
     OpaqueProtocol(opaque_ke::errors::ProtocolError),
     #[error(transparent)]
+    TonicMetadata(#[from] tonic::metadata::errors::InvalidMetadataValue),
+    #[error(transparent)]
     TonicStatus(Status),
     #[error(transparent)]
     TonicTransport(#[from] tonic::transport::Error),

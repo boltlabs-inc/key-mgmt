@@ -13,7 +13,7 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
-pub mod audit_log;
+pub mod audit_event;
 pub mod blockchain;
 pub mod channel;
 pub mod config;
@@ -36,7 +36,7 @@ pub mod rpc {
 }
 
 /// Options for actions the Lock Keeper client can take.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ClientAction {
     Register,
     Authenticate,

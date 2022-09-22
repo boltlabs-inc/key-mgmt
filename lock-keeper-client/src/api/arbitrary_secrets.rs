@@ -28,9 +28,12 @@ impl LockKeeperClient {
     /// to the user specified by `user_id`
     async fn retrieve_storage_key(&self) -> Result<StorageKey, LockKeeperClientError> {
         // Create channel to send messages to server
-        let mut channel =
-            Self::create_channel(&mut self.tonic_client(), ClientAction::RetrieveStorageKey)
-                .await?;
+        let mut channel = Self::create_channel(
+            &mut self.tonic_client(),
+            ClientAction::RetrieveStorageKey,
+            self.account_name(),
+        )
+        .await?;
 
         // Send UserId to server
         let request = client::Request {
@@ -50,8 +53,12 @@ impl LockKeeperClient {
 
     /// Generate and store an arbitrary secret at the key server
     pub async fn generate_and_store(&self) -> Result<(KeyId, LocalStorage), LockKeeperClientError> {
-        let mut client_channel =
-            Self::create_channel(&mut self.tonic_client(), ClientAction::Generate).await?;
+        let mut client_channel = Self::create_channel(
+            &mut self.tonic_client(),
+            ClientAction::Generate,
+            self.account_name(),
+        )
+        .await?;
         self.handle_generate(&mut client_channel).await
     }
 
@@ -61,8 +68,12 @@ impl LockKeeperClient {
         key_id: &KeyId,
         context: RetrieveContext,
     ) -> Result<RetrieveResult, LockKeeperClientError> {
-        let mut client_channel =
-            Self::create_channel(&mut self.tonic_client(), ClientAction::Retrieve).await?;
+        let mut client_channel = Self::create_channel(
+            &mut self.tonic_client(),
+            ClientAction::Retrieve,
+            self.account_name(),
+        )
+        .await?;
         self.handle_retrieve(&mut client_channel, key_id, context)
             .await
     }

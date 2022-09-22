@@ -16,7 +16,7 @@ impl Operation for RetrieveStorageKey {
     async fn operation(
         self,
         channel: &mut ServerChannel,
-        context: Context,
+        context: &mut Context,
     ) -> Result<(), LockKeeperServerError> {
         // Receive user ID and retrieve encrypted storage key for that user
         let request: client::Request = channel.receive().await?;

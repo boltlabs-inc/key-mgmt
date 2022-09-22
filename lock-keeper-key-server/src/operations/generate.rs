@@ -1,5 +1,4 @@
 use crate::{
-    database::log::AuditLogExt,
     server::{Context, Operation},
     LockKeeperServerError,
 };
@@ -9,8 +8,6 @@ use lock_keeper::{
     channel::ServerChannel,
     crypto::KeyId,
     types::generate::{client, server},
-    user::UserId,
-    ClientAction,
 };
 
 #[derive(Debug)]
@@ -21,16 +18,14 @@ impl Operation for Generate {
     async fn operation(
         self,
         channel: &mut ServerChannel,
-        context: Context,
+        context: &mut Context,
     ) -> Result<(), LockKeeperServerError> {
         // Generate step: receive UserId and reply with new KeyId
-        let (key_id, user_id) = generate_key(channel, &context).await?;
+        let key_id = generate_key(channel, context).await?;
+        context.key_id = Some(key_id.clone());
 
         // Store step: receive ciphertext from client and store in DB
-        store_key(channel, &context, &key_id)
-            .await
-            .audit_log(&context.db, &user_id, Some(key_id), ClientAction::Generate)
-            .await?;
+        store_key(channel, context, &key_id).await?;
         Ok(())
     }
 }
@@ -38,7 +33,7 @@ impl Operation for Generate {
 async fn generate_key(
     channel: &mut ServerChannel,
     context: &Context,
-) -> Result<(KeyId, UserId), LockKeeperServerError> {
+) -> Result<KeyId, LockKeeperServerError> {
     // Receive UserId from client
     let generate_message: client::Generate = channel.receive().await?;
     // Generate new KeyId
@@ -51,7 +46,7 @@ async fn generate_key(
         key_id: key_id.clone(),
     };
     channel.send(reply).await?;
-    Ok((key_id, generate_message.user_id))
+    Ok(key_id)
 }
 
 async fn store_key(
@@ -75,8 +70,6 @@ async fn store_key(
     // Reply with the success:true if successful
     let reply = server::Store { success: true };
     channel.send(reply).await?;
-
-    // TODO #67 (implementation): Log that a new key was generated and stored
 
     Ok(())
 }
