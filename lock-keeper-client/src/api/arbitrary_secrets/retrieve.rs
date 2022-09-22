@@ -36,7 +36,7 @@ impl LockKeeperClient {
         let secret = server_response
             .stored_secret
             .secret
-            .decrypt_secret(storage_key)?;
+            .decrypt_storable(storage_key)?;
 
         // Return appropriate value based on Context
         match context {

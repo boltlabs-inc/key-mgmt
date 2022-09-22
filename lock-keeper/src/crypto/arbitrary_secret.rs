@@ -29,17 +29,6 @@ impl TryFrom<Vec<u8>> for Secret {
     }
 }
 
-impl Encrypted<Secret> {
-    /// Decrypt a secret. This should be run as part of the subprotocol to
-    /// retrieve a secret from the server.
-    ///
-    /// This must be run by the client.
-    pub fn decrypt_secret(self, storage_key: StorageKey) -> Result<Secret, LockKeeperError> {
-        let decrypted = self.decrypt(&storage_key.0)?;
-        Ok(decrypted)
-    }
-}
-
 impl Storable for Secret {
     fn create_and_encrypt(
         rng: &mut (impl CryptoRng + RngCore),
@@ -115,7 +104,7 @@ mod test {
             Secret::create_and_encrypt(&mut rng, &storage_key, &user_id, &key_id)?;
 
         // Decrypt the secret
-        let decrypted_secret = encrypted_secret.decrypt_secret(storage_key)?;
+        let decrypted_secret = encrypted_secret.decrypt_storable(storage_key)?;
         assert_eq!(decrypted_secret, secret);
 
         Ok(())

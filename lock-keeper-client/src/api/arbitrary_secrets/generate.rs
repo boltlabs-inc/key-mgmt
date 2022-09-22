@@ -1,7 +1,7 @@
 use crate::{api::arbitrary_secrets::LocalStorage, LockKeeperClient, LockKeeperClientError};
 use lock_keeper::{
     channel::ClientChannel,
-    crypto::{KeyId, Secret, StorageKey, Storable},
+    crypto::{KeyId, Secret, Storable, StorageKey},
     types::generate::{client, server},
     user::UserId,
 };

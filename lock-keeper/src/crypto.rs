@@ -288,6 +288,22 @@ pub trait Storable: Sized {
     ) -> Self;
 }
 
+impl<T> Encrypted<T>
+where
+    T: Storable + TryFrom<Vec<u8>>,
+    CryptoError: From<<T as TryFrom<Vec<u8>>>::Error>,
+    Vec<u8>: From<T>,
+{
+    /// Decrypt a `Storable`. This should be run as part of the subprotocol to
+    /// retrieve an encrypted secret from the server.
+    ///
+    /// This must be run by the client.
+    pub fn decrypt_storable(self, storage_key: StorageKey) -> Result<T, LockKeeperError> {
+        let decrypted = self.decrypt(&storage_key.0)?;
+        Ok(decrypted)
+    }
+}
+
 #[cfg(test)]
 mod test {
     use std::collections::HashSet;

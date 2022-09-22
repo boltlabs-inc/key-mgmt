@@ -114,20 +114,6 @@ impl<T> Signature<T> {
     }
 }
 
-impl Encrypted<SigningKeyPair> {
-    /// Decrypt a signing key. This should be run as part of the subprotocol to
-    /// retrieve an encrypted signing key from the server.
-    ///
-    /// This must be run by the client.
-    pub fn decrypt_secret(
-        self,
-        storage_key: StorageKey,
-    ) -> Result<SigningKeyPair, LockKeeperError> {
-        let decrypted = self.decrypt(&storage_key.0)?;
-        Ok(decrypted)
-    }
-}
-
 #[cfg(test)]
 mod test {
     use crate::{
@@ -165,7 +151,7 @@ mod test {
             SigningKeyPair::create_and_encrypt(&mut rng, &storage_key, &user_id, &key_id)?;
 
         // Decrypt the secret
-        let decrypted_signing_key = encrypted_signing_key.decrypt_secret(storage_key)?;
+        let decrypted_signing_key = encrypted_signing_key.decrypt_storable(storage_key)?;
         assert_eq!(decrypted_signing_key, signing_key);
 
         Ok(())
