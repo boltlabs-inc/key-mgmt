@@ -2,7 +2,7 @@ use crate::{user::UserId, LockKeeperError};
 use rand::{CryptoRng, RngCore};
 use std::marker::PhantomData;
 
-use super::{generic::AssociatedData, CryptoError, Encrypted, KeyId, StorageKey};
+use super::{generic::AssociatedData, CryptoError, Encrypted, KeyId, Storable, StorageKey};
 
 /// An ECDSA signing key pair, including a public component for verifying
 /// signatures, a private component for creating them, and context about the key
@@ -44,23 +44,18 @@ impl SigningKeyPair {
             original_type: PhantomData,
         }
     }
+}
 
-    /// Create a new `SigningKeyPair`. This must be run by the server.
-    pub fn remote_generate(
-        rng: &mut (impl CryptoRng + RngCore),
-        user_id: &UserId,
-        key_id: &KeyId,
+impl Storable for SigningKeyPair {
+    fn remote_generate(
+        _rng: &mut (impl CryptoRng + RngCore),
+        _user_id: &UserId,
+        _key_id: &KeyId,
     ) -> Self {
         SigningKeyPair
     }
 
-    /// Create and encrypt a new signing key. This is part of the local signing
-    /// key generation flow.
-    ///
-    /// This must be run by the client. It takes the following steps:
-    /// 1. Generates a new signing key
-    /// 2. Encrypt it under the [`StorageKey`], using an AEAD scheme
-    pub fn create_and_encrypt(
+    fn create_and_encrypt(
         rng: &mut (impl CryptoRng + RngCore),
         storage_key: &StorageKey,
         _user_id: &UserId,
@@ -136,7 +131,7 @@ impl Encrypted<SigningKeyPair> {
 #[cfg(test)]
 mod test {
     use crate::{
-        crypto::{CryptoError, KeyId, SigningKeyPair, StorageKey},
+        crypto::{CryptoError, KeyId, SigningKeyPair, Storable, StorageKey},
         user::UserId,
         LockKeeperError,
     };

@@ -263,6 +263,31 @@ impl KeyId {
     }
 }
 
+pub trait Storable: Sized {
+    /// Create and encrypt a new `Storable`. This is part of the
+    /// flow to locally generate and store a new secret.
+    ///
+    /// This must be run by the client. It takes the following steps:
+    /// 1. Generates a new secret
+    /// 2. Encrypt it under the [`StorageKey`], using an AEAD scheme
+    fn create_and_encrypt(
+        rng: &mut (impl CryptoRng + RngCore),
+        storage_key: &StorageKey,
+        user_id: &UserId,
+        key_id: &KeyId,
+    ) -> Result<(Self, Encrypted<Self>), LockKeeperError>;
+
+    /// Create a new `Storable`. This is part of the flow to remotely generate
+    /// a new secret.
+    ///
+    /// This must be run by the server.
+    fn remote_generate(
+        rng: &mut (impl CryptoRng + RngCore),
+        user_id: &UserId,
+        key_id: &KeyId,
+    ) -> Self;
+}
+
 #[cfg(test)]
 mod test {
     use std::collections::HashSet;
