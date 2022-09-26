@@ -12,14 +12,14 @@ impl LockKeeperClient {
         event_type: EventType,
         options: Option<AuditEventOptions>,
     ) -> Result<Vec<AuditEvent>, LockKeeperClientError> {
-        // Generate step: get new KeyId from server
-        // Send UserId to server
-        let generate_message = client::Request {
+        // Send audit event request and filters
+        let client_request = client::Request {
             event_type,
             options,
         };
-        channel.send(generate_message).await?;
+        channel.send(client_request).await?;
 
+        // Receive audit event log and return
         let server_response: server::Response = channel.receive().await?;
 
         Ok(server_response.summary_record)
