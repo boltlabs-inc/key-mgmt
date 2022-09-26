@@ -22,6 +22,7 @@ rand.workspace = true
 rustls.workspace = true
 rustls-pemfile.workspace = true
 serde.workspace = true
+serde_json.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
 tokio-rustls.workspace = true
@@ -44,6 +45,3 @@ webpki = "0.22"
 
 [build-dependencies]
 tonic-build = "0.8.0"
-
-[dev-dependencies]
-serde_json.workspace = true

@@ -85,7 +85,7 @@ macro_rules! impl_message_conversion {
                 type Error = $crate::LockKeeperError;
 
                 fn try_from(value: $crate::types::Message) -> Result<Self, Self::Error> {
-                    Ok(bincode::deserialize(&value.content)?)
+                    Ok(serde_json::from_slice(&value.content)?)
                 }
             }
 
@@ -93,7 +93,7 @@ macro_rules! impl_message_conversion {
                 type Error = $crate::LockKeeperError;
 
                 fn try_from(value: $message_type) -> Result<Self, Self::Error> {
-                    let content = bincode::serialize(&value)?;
+                    let content = serde_json::to_vec(&value)?;
 
                     Ok($crate::types::Message { content })
                 }

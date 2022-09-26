@@ -3,7 +3,6 @@ use crate::{
     LockKeeperServerError,
 };
 use async_trait::async_trait;
-use tonic::Status;
 use lock_keeper::{
     channel::ServerChannel,
     types::retrieve_audit_events::{client, server},
@@ -19,7 +18,7 @@ impl Operation for RetrieveAuditEvents {
         channel: &mut ServerChannel,
         context: &mut Context,
     ) -> Result<(), LockKeeperServerError> {
-        // Receive user ID and options for audit events to return
+        // Receive event type and options for audit events to return
         let request: client::Request = channel.receive().await?;
 
         let audit_events = context

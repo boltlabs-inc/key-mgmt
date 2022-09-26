@@ -54,7 +54,10 @@ impl Database {
     }
 }
 
-fn construct_query_with_options(options: AuditEventOptions, mut query: Document) -> Result<Document, LockKeeperServerError> {
+fn construct_query_with_options(
+    options: AuditEventOptions,
+    mut query: Document,
+) -> Result<Document, LockKeeperServerError> {
     if let Some(key_ids) = options.key_ids {
         let _ = query.insert(SECRET_ID, doc! {"$in": mongodb::bson::to_bson(&key_ids)?});
     }
