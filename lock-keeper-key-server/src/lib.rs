@@ -8,7 +8,6 @@
 pub mod database;
 pub mod error;
 pub mod operations;
-pub mod policy_engine;
 pub mod server;
 
 pub(crate) mod constants;

@@ -6,6 +6,7 @@ use http_body::combinators::UnsyncBoxBody;
 use hyper::client::HttpConnector;
 use hyper_rustls::HttpsConnector;
 use lock_keeper::{
+    audit_event::{AuditEvent, AuditEventOptions, EventType},
     channel::ClientChannel,
     config::client::Config,
     crypto::{OpaqueExportKey, OpaqueSessionKey},
@@ -261,6 +262,38 @@ impl LockKeeperClient {
 
         let mut channel = ClientChannel::create(tx, server_response);
         Ok(channel)
+    }
+
+    /// Retrieve the log of audit events from the key server for the
+    /// authenticated asset owner; optionally, filter for audit events
+    /// associated with the specified [`lock_keeper::crypto::KeyId`].
+    ///
+    /// The log of audit events includes context
+    /// about any action requested and/or taken on the digital asset key,
+    /// including which action was requested and by whom, the date, details
+    /// about approval or rejection from each key server, the policy engine,
+    /// and each asset fiduciary (if relevant), and any other relevant
+    /// details.
+    ///
+    /// The [`UserId`] must match the asset owner authenticated in the
+    /// [`crate::LockKeeperClient`], and if specified, the
+    /// [`lock_keeper::crypto::KeyId`] must correspond to a key owned by the
+    /// [`UserId`].
+    ///
+    /// Output: if successful, returns a [`String`] representation of the logs.
+    pub async fn retrieve_audit_event_log(
+        &self,
+        event_type: EventType,
+        options: AuditEventOptions,
+    ) -> Result<Vec<AuditEvent>, LockKeeperClientError> {
+        let mut client_channel = Self::create_channel(
+            &mut self.tonic_client(),
+            ClientAction::RetrieveAuditEvents,
+            self.account_name(),
+        )
+        .await?;
+        self.handle_retrieve_audit_events(&mut client_channel, event_type, options)
+            .await
     }
 
     /// Close a session.
