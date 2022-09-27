@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":[["EventStatus","Options for the outcome of a given action in a [`AuditEvent`]"]],"struct":[["AuditEvent","A single entry that specifies the actor, action, outcome, and any related key for a logged audit event"]]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":[["Blockchain","Options for type of blockchain."]],"struct":[["ECDSA","The ECDSA signature scheme"]],"trait":[["SignatureScheme","Indicator trait to identify objects that represent a signature scheme."]]};
