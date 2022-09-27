@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":[["create_or_retrieve_server_key_opaque","Retrieves the [`ServerSetup`] used for OPAQUE authentication, creating it if it doesn’t already exist."]]};

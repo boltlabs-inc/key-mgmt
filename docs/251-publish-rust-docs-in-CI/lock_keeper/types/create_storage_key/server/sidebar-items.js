@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":[["CreateStorageKeyResult","Return true if successful"],["SendUserId",""]]};
