@@ -1,0 +1,3 @@
+(function() {var implementors = {};
+implementors["lock_keeper"] = [{"text":"impl CipherSuite for <a class=\"struct\" href=\"lock_keeper/config/opaque/struct.OpaqueCipherSuite.html\" title=\"struct lock_keeper::config::opaque::OpaqueCipherSuite\">OpaqueCipherSuite</a>","synthetic":false,"types":["lock_keeper::config::opaque::OpaqueCipherSuite"]}];
+if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
