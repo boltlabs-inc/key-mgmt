@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":[["AuthenticateFinish","Return true if successful."],["AuthenticateStart","Check if user exists and return OPAQUE message if so"],["SendUserId","Return authenticated user id if authentication worked."]]};

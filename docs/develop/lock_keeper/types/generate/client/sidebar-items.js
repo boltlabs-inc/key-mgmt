@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":[["Generate","pass user ID to server"],["Store","pass user ID and encrypted secret"]]};
