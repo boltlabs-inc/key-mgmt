@@ -46,6 +46,20 @@ impl AuditEvent {
     }
 }
 
+impl AuditEvent {
+    pub fn action(&self) -> ClientAction {
+        self.action.clone()
+    }
+
+    pub fn key_id(&self) -> Option<KeyId> {
+        self.secret_id.clone()
+    }
+
+    pub fn date(&self) -> DateTime {
+        self.date
+    }
+}
+
 impl Display for AuditEvent {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(

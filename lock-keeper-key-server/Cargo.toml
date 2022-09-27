@@ -18,6 +18,7 @@ argon2.workspace = true
 async-trait.workspace = true
 bincode.workspace = true
 clap.workspace = true
+bson.workspace = true
 futures.workspace = true
 hyper.workspace = true
 mongodb.workspace = true

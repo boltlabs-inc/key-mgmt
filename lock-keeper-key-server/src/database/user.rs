@@ -157,70 +157,25 @@ mod test {
 
     use generic_array::{typenum::U64, GenericArray};
     use lock_keeper::{
-        config::{opaque::OpaqueCipherSuite, server::DatabaseSpec},
+        config::server::DatabaseSpec,
         crypto::OpaqueExportKey,
         user::{AccountName, User, UserId},
     };
-    use mongodb::{options::ClientOptions, Client};
-    use opaque_ke::{
-        ClientRegistration, ClientRegistrationFinishParameters, ServerRegistration, ServerSetup,
-    };
     use rand::{CryptoRng, Rng, RngCore};
 
-    use crate::{constants, database::Database, LockKeeperServerError};
-
-    /// Locally simulates OPAQUE registration to get a valid
-    /// `ServerRegistration` for remaining tests.
-    fn server_registration(
-        rng: &mut (impl CryptoRng + RngCore),
-    ) -> ServerRegistration<OpaqueCipherSuite> {
-        let server_setup = ServerSetup::<OpaqueCipherSuite>::new(rng);
-        let client_reg_start_result =
-            ClientRegistration::<OpaqueCipherSuite>::start(rng, b"password").unwrap();
-        let server_reg_start_result = ServerRegistration::<OpaqueCipherSuite>::start(
-            &server_setup,
-            client_reg_start_result.message,
-            b"email@email.com",
-        )
-        .unwrap();
-        let client_reg_finish_result = client_reg_start_result
-            .state
-            .finish(
-                rng,
-                b"password",
-                server_reg_start_result.message,
-                ClientRegistrationFinishParameters::default(),
-            )
-            .unwrap();
-        ServerRegistration::<OpaqueCipherSuite>::finish(client_reg_finish_result.message)
-    }
-
-    // Delete the entire db to avoid leftover issues from previous runs.
-    async fn drop_db(mongodb_uri: &str, db_name: &str) -> Result<(), LockKeeperServerError> {
-        // Parse a connection string into an options struct
-        let client_options = ClientOptions::parse(mongodb_uri).await?;
-        // Get a handle to the deployment
-        let client = Client::with_options(client_options)?;
-        // Get a handle to the database
-        let db = client.database(db_name);
-        db.drop(None).await?;
-
-        Ok(())
-    }
+    use crate::{
+        constants,
+        database::{
+            test::{drop_db, server_registration, setup_db},
+            Database,
+        },
+        LockKeeperServerError,
+    };
 
     #[tokio::test]
     async fn user_findable_by_account_name() -> Result<(), LockKeeperServerError> {
         let mut rng = rand::thread_rng();
-        let mongodb_uri = "mongodb://localhost:27017";
-        let db_name = "user_findable_by_account_name";
-        let db_spec = DatabaseSpec {
-            mongodb_uri: mongodb_uri.to_string(),
-            db_name: db_name.to_string(),
-        };
-
-        // Clean up previous runs and make fresh connection
-        drop_db(mongodb_uri, db_name).await?;
-        let db = Database::connect(&db_spec).await?;
+        let db = setup_db("user_findable_by_account_name").await?;
 
         // Add the "baseline" user.
         let user_id = UserId::new(&mut rng)?;
@@ -240,16 +195,7 @@ mod test {
     #[tokio::test]
     async fn user_findable_by_id() -> Result<(), LockKeeperServerError> {
         let mut rng = rand::thread_rng();
-        let mongodb_uri = "mongodb://localhost:27017";
-        let db_name = "user_findable_by_id";
-        let db_spec = DatabaseSpec {
-            mongodb_uri: mongodb_uri.to_string(),
-            db_name: db_name.to_string(),
-        };
-
-        // Clean up previous runs and make fresh connection
-        drop_db(mongodb_uri, db_name).await?;
-        let db = Database::connect(&db_spec).await?;
+        let db = setup_db("user_findable_by_id").await?;
 
         // Add the "baseline" user.
         let user_id = UserId::new(&mut rng)?;
@@ -333,16 +279,7 @@ mod test {
     #[tokio::test]
     async fn unique_indices_enforced() -> Result<(), LockKeeperServerError> {
         let mut rng = rand::thread_rng();
-        let mongodb_uri = "mongodb://localhost:27017";
-        let db_name = "unique_indices_are_enforced";
-        let db_spec = DatabaseSpec {
-            mongodb_uri: mongodb_uri.to_string(),
-            db_name: db_name.to_string(),
-        };
-
-        // Clean up previous runs and make fresh connection
-        drop_db(mongodb_uri, db_name).await?;
-        let db = Database::connect(&db_spec).await?;
+        let db = setup_db("unique_indices_are_enforced").await?;
 
         // Add the "baseline" user.
         let user_id = UserId::new(&mut rng)?;
@@ -379,16 +316,7 @@ mod test {
     #[tokio::test]
     async fn user_is_deleted() -> Result<(), LockKeeperServerError> {
         let mut rng = rand::thread_rng();
-        let mongodb_uri = "mongodb://localhost:27017";
-        let db_name = "user_is_deleted";
-        let db_spec = DatabaseSpec {
-            mongodb_uri: mongodb_uri.to_string(),
-            db_name: db_name.to_string(),
-        };
-
-        // Clean up previous runs and make fresh connection
-        drop_db(mongodb_uri, db_name).await?;
-        let db = Database::connect(&db_spec).await?;
+        let db = setup_db("user_is_deleted").await?;
 
         // Add the user.
         let user_id = UserId::new(&mut rng)?;
@@ -421,16 +349,7 @@ mod test {
     /// Test that `set_storage_key` works correctly
     async fn storage_key_is_set() -> Result<(), LockKeeperServerError> {
         let mut rng = rand::thread_rng();
-        let mongodb_uri = "mongodb://localhost:27017";
-        let db_name = "storage_key_is_set";
-        let db_spec = DatabaseSpec {
-            mongodb_uri: mongodb_uri.to_string(),
-            db_name: db_name.to_string(),
-        };
-
-        // Clean up previous runs and make fresh connection
-        drop_db(mongodb_uri, db_name).await?;
-        let db = Database::connect(&db_spec).await?;
+        let db = setup_db("storage_key_is_set").await?;
 
         // Add the user.
         let user_id = UserId::new(&mut rng)?;
