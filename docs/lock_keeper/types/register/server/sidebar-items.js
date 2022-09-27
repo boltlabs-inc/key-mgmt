@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"struct":[["RegisterFinish","Return true if successful"],["RegisterStart","Check if user exists and return successful if not"]]};

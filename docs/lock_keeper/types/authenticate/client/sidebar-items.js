@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"struct":[["AuthenticateFinish","Pass account name and registration-finish message from OPAQUE."],["AuthenticateStart","Pass account name and registration-start message from OPAQUE."]]};

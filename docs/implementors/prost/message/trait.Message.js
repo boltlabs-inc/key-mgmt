@@ -1,3 +1,0 @@
-(function() {var implementors = {};
-implementors["lock_keeper"] = [{"text":"impl <a class=\"trait\" href=\"https://docs.rs/prost/0.11/prost/message/trait.Message.html\" title=\"trait prost::message::Message\">Message</a> for <a class=\"struct\" href=\"lock_keeper/rpc/struct.Message.html\" title=\"struct lock_keeper::rpc::Message\">Message</a>","synthetic":false,"types":["lock_keeper::rpc::Message"]}];
-if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
