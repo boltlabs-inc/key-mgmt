@@ -1,0 +1,3 @@
+(function() {var implementors = {};
+implementors["dams"] = [{"text":"impl CipherSuite for <a class=\"struct\" href=\"dams/config/opaque/struct.OpaqueCipherSuite.html\" title=\"struct dams::config::opaque::OpaqueCipherSuite\">OpaqueCipherSuite</a>","synthetic":false,"types":["dams::config::opaque::OpaqueCipherSuite"]}];
+if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

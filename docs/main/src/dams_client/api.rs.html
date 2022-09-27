@@ -1,0 +1,276 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `dams-client/src/api.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>api.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../dams_client/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../dams_client/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../dams_client/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<span id="2">2</span>
+<span id="3">3</span>
+<span id="4">4</span>
+<span id="5">5</span>
+<span id="6">6</span>
+<span id="7">7</span>
+<span id="8">8</span>
+<span id="9">9</span>
+<span id="10">10</span>
+<span id="11">11</span>
+<span id="12">12</span>
+<span id="13">13</span>
+<span id="14">14</span>
+<span id="15">15</span>
+<span id="16">16</span>
+<span id="17">17</span>
+<span id="18">18</span>
+<span id="19">19</span>
+<span id="20">20</span>
+<span id="21">21</span>
+<span id="22">22</span>
+<span id="23">23</span>
+<span id="24">24</span>
+<span id="25">25</span>
+<span id="26">26</span>
+<span id="27">27</span>
+<span id="28">28</span>
+<span id="29">29</span>
+<span id="30">30</span>
+<span id="31">31</span>
+<span id="32">32</span>
+<span id="33">33</span>
+<span id="34">34</span>
+<span id="35">35</span>
+<span id="36">36</span>
+<span id="37">37</span>
+<span id="38">38</span>
+<span id="39">39</span>
+<span id="40">40</span>
+<span id="41">41</span>
+<span id="42">42</span>
+<span id="43">43</span>
+<span id="44">44</span>
+<span id="45">45</span>
+<span id="46">46</span>
+<span id="47">47</span>
+<span id="48">48</span>
+<span id="49">49</span>
+<span id="50">50</span>
+<span id="51">51</span>
+<span id="52">52</span>
+<span id="53">53</span>
+<span id="54">54</span>
+<span id="55">55</span>
+<span id="56">56</span>
+<span id="57">57</span>
+<span id="58">58</span>
+<span id="59">59</span>
+<span id="60">60</span>
+<span id="61">61</span>
+<span id="62">62</span>
+<span id="63">63</span>
+<span id="64">64</span>
+<span id="65">65</span>
+<span id="66">66</span>
+<span id="67">67</span>
+<span id="68">68</span>
+<span id="69">69</span>
+<span id="70">70</span>
+<span id="71">71</span>
+<span id="72">72</span>
+<span id="73">73</span>
+<span id="74">74</span>
+<span id="75">75</span>
+<span id="76">76</span>
+<span id="77">77</span>
+<span id="78">78</span>
+<span id="79">79</span>
+<span id="80">80</span>
+<span id="81">81</span>
+<span id="82">82</span>
+<span id="83">83</span>
+<span id="84">84</span>
+<span id="85">85</span>
+<span id="86">86</span>
+<span id="87">87</span>
+<span id="88">88</span>
+<span id="89">89</span>
+<span id="90">90</span>
+<span id="91">91</span>
+<span id="92">92</span>
+<span id="93">93</span>
+<span id="94">94</span>
+<span id="95">95</span>
+<span id="96">96</span>
+<span id="97">97</span>
+<span id="98">98</span>
+<span id="99">99</span>
+<span id="100">100</span>
+<span id="101">101</span>
+<span id="102">102</span>
+<span id="103">103</span>
+<span id="104">104</span>
+<span id="105">105</span>
+<span id="106">106</span>
+<span id="107">107</span>
+<span id="108">108</span>
+<span id="109">109</span>
+<span id="110">110</span>
+<span id="111">111</span>
+<span id="112">112</span>
+<span id="113">113</span>
+<span id="114">114</span>
+<span id="115">115</span>
+<span id="116">116</span>
+<span id="117">117</span>
+<span id="118">118</span>
+<span id="119">119</span>
+<span id="120">120</span>
+<span id="121">121</span>
+<span id="122">122</span>
+<span id="123">123</span>
+<span id="124">124</span>
+<span id="125">125</span>
+<span id="126">126</span>
+<span id="127">127</span>
+<span id="128">128</span>
+<span id="129">129</span>
+<span id="130">130</span>
+<span id="131">131</span>
+<span id="132">132</span>
+<span id="133">133</span>
+<span id="134">134</span>
+<span id="135">135</span>
+<span id="136">136</span>
+<span id="137">137</span>
+</pre><pre class="rust"><code><span class="doccomment">//! Full implementation of the public API for the DAMS client library.</span>
+<span class="doccomment">//!</span>
+<span class="doccomment">//! This API is designed for use with a local client application - that is, an</span>
+<span class="doccomment">//! application running directly on the device of an asset owner. The inputs</span>
+<span class="doccomment">//! the asset owner provides should be passed directly to this API without being</span>
+<span class="doccomment">//! sent to a separate machine.</span>
+
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod</span> <span class="ident">authenticate</span>;
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod</span> <span class="ident">create_storage_key</span>;
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod</span> <span class="ident">register</span>;
+
+<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">arbitrary_secrets</span>;
+
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::DamsClientError</span>;
+<span class="kw">use</span> <span class="ident">dams</span>::{
+    <span class="ident">blockchain::Blockchain</span>,
+    <span class="ident">crypto::KeyId</span>,
+    <span class="ident">keys</span>::{<span class="ident">KeyInfo</span>, <span class="ident">UsePermission</span>, <span class="ident">UseRestriction</span>, <span class="ident">UserPolicySpecification</span>},
+    <span class="ident">transaction</span>::{<span class="ident">TransactionApprovalRequest</span>, <span class="ident">TransactionSignature</span>},
+    <span class="ident">user::UserId</span>,
+};
+
+<span class="doccomment">/// Generate a new, distributed digital asset key with the given use</span>
+<span class="doccomment">/// parameters for the [`UserId`], and compatible with the specified blockchain.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// The [`UserId`] must be the same user who opened the [`crate::DamsClient`].</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// Output: If successful, returns the [`KeyInfo`] describing the newly created</span>
+<span class="doccomment">/// key.</span>
+<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">unused</span>)]</span>
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">create_digital_asset_key</span>(
+    <span class="ident">user_id</span>: <span class="ident">UserId</span>,
+    <span class="ident">blockchain</span>: <span class="ident">Blockchain</span>,
+    <span class="ident">permission</span>: <span class="kw">impl</span> <span class="ident">UsePermission</span>,
+    <span class="ident">restriction</span>: <span class="kw">impl</span> <span class="ident">UseRestriction</span>,
+) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">KeyInfo</span>, <span class="ident">DamsClientError</span><span class="op">&gt;</span> {
+    <span class="macro">todo!</span>()
+}
+
+<span class="doccomment">/// Set an asset-owner-specified key policy for a delegated key.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// User-specified policies can only be set for</span>
+<span class="doccomment">/// [`SelfCustodial`](dams::keys::SelfCustodial) and</span>
+<span class="doccomment">/// [`Delegated`](dams::keys::Delegated) key types. The [`KeyId`] must</span>
+<span class="doccomment">/// correspond to a key owned by the [`UserId`], and the [`UserId`] must</span>
+<span class="doccomment">/// match the user authenticated in the [`crate::DamsClient`].</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// Output: None, if successful.</span>
+<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">unused</span>)]</span>
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_user_key_policy</span>(
+    <span class="ident">user_id</span>: <span class="ident">UserId</span>,
+    <span class="ident">key_id</span>: <span class="ident">KeyId</span>,
+    <span class="ident">user_policy</span>: <span class="ident">UserPolicySpecification</span>,
+) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">DamsClientError</span><span class="op">&gt;</span> {
+    <span class="macro">todo!</span>()
+}
+
+<span class="doccomment">/// Request a signature on a transaction from the key server.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// Among the parameters in the [`TransactionApprovalRequest`], the [`KeyId`]</span>
+<span class="doccomment">/// must correspond to a key owned by the [`UserId`], and the [`UserId`] must</span>
+<span class="doccomment">/// match the user authenticated in the [`crate::DamsClient`].</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// Assumption: A [`TransactionApprovalRequest`] originates either with the</span>
+<span class="doccomment">/// asset owner or a key fiduciary. This is cryptographically enforced with</span>
+<span class="doccomment">/// an authenticated [`crate::DamsClient`] between the key server and one of the</span>
+<span class="doccomment">/// asset owner or a key fiduciary. This request will fail if the calling party</span>
+<span class="doccomment">/// is not from one of those entities.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// Output: If successful, returns a [`TransactionSignature`] as specified in</span>
+<span class="doccomment">/// the original [`TransactionApprovalRequest`] -- that is, over the</span>
+<span class="doccomment">/// [`Transaction`](dams::transaction::Transaction), and using the key</span>
+<span class="doccomment">/// corresponding to the [`KeyId`].</span>
+<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">unused</span>)]</span>
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">request_transaction_signature</span>(
+    <span class="ident">transaction_approval_request</span>: <span class="ident">TransactionApprovalRequest</span>,
+) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">TransactionSignature</span>, <span class="ident">DamsClientError</span><span class="op">&gt;</span> {
+    <span class="macro">todo!</span>()
+}
+
+<span class="doccomment">/// Retrieve the public key info for all keys associated with the specified</span>
+<span class="doccomment">/// user that are stored at the key server.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// Implementation note: this material may be cached and retrieved from a</span>
+<span class="doccomment">/// machine other than the key server.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// The [`UserId`] must match the asset owner authenticated in the</span>
+<span class="doccomment">/// [`crate::DamsClient`]. This function cannot be used to retrieve keys for a</span>
+<span class="doccomment">/// different user.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// Output: If successful, returns the [`KeyInfo`] for every key belonging to</span>
+<span class="doccomment">/// the user.</span>
+<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">unused</span>)]</span>
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">retrieve_public_keys</span>(<span class="ident">user_id</span>: <span class="ident">UserId</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">KeyInfo</span><span class="op">&gt;</span>, <span class="ident">DamsClientError</span><span class="op">&gt;</span> {
+    <span class="macro">todo!</span>()
+}
+
+<span class="doccomment">/// Retrieve the public key info for the specified key associated with the</span>
+<span class="doccomment">/// user.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// Implementation note: this material may be cached and retrieved from a</span>
+<span class="doccomment">/// machine other than the key server.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// The [`UserId`] must match the asset owner authenticated in the</span>
+<span class="doccomment">/// [`crate::DamsClient`], and the [`KeyId`] must correspond to a key owned by</span>
+<span class="doccomment">/// the [`UserId`].</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// Output: If successful, returns the [`KeyInfo`] for the requested key.</span>
+<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">unused</span>)]</span>
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">retrieve_public_key_by_id</span>(
+    <span class="ident">user_id</span>: <span class="ident">UserId</span>,
+    <span class="ident">key_id</span>: <span class="kw-2">&amp;</span><span class="ident">KeyId</span>,
+) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">KeyInfo</span>, <span class="ident">DamsClientError</span><span class="op">&gt;</span> {
+    <span class="macro">todo!</span>()
+}
+
+<span class="doccomment">/// Retrieve the audit log from the key server for a specified asset owner;</span>
+<span class="doccomment">/// optionally, filter for logs associated with the specified [`KeyId`].</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// The audit log includes context</span>
+<span class="doccomment">/// about any action requested and/or taken on the digital asset key, including</span>
+<span class="doccomment">/// which action was requested and by whom, the date, details about approval or</span>
+<span class="doccomment">/// rejection from each key server, the policy engine, and each asset fiduciary</span>
+<span class="doccomment">/// (if relevant), and any other relevant details.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// The [`UserId`] must match the asset owner authenticated in the</span>
+<span class="doccomment">/// [`crate::DamsClient`], and if specified, the [`KeyId`] must correspond to a</span>
+<span class="doccomment">/// key owned by the [`UserId`].</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// Output: if successful, returns a [`String`] representation of the logs.</span>
+<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">unused</span>)]</span>
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">retrieve_audit_log</span>(
+    <span class="ident">user_id</span>: <span class="ident">UserId</span>,
+    <span class="ident">key_id</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">KeyId</span><span class="op">&gt;</span>,
+) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">DamsClientError</span><span class="op">&gt;</span> {
+    <span class="macro">todo!</span>()
+}
+</code></pre></div>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="dams_client" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>

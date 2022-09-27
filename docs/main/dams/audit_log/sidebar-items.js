@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":[["Outcome","Options for the outcome of a given action in a [`LogEntry`]"]],"struct":[["LogEntry","A single log entry that specifies the actor, action, outcome, and any related key for a logged event"]]};
