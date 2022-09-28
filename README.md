@@ -31,8 +31,9 @@ Refer to the [current design specification](https://github.com/boltlabs-inc/key-
 - A recent version of [stable Rust](https://www.rust-lang.org/) to build the Lock Keeper project. Version 1.64 is the minimum required version.
 - OpenSSL. You should be able to install this using your package manager of choice.
 - `protoc` is required to build .proto files. It can be installed using `brew` for MacOS or `apt install` for Linux. Further instructions [here](https://grpc.io/docs/protoc-installation/).
-- [cargo-make](https://github.com/sagiegurari/cargo-make) can be installed with `cargo install --cargo-make`.
+- [cargo-make](https://github.com/sagiegurari/cargo-make) can be installed with `cargo install cargo-make`.
 - [Docker](https://www.docker.com/).
+- On Linux, you may need to install [Docker Compose](https://docs.docker.com/compose/install/) separately.
 
 If you need to run the server outside of Docker, [MongoDB](https://www.mongodb.com/try/download/community) is also required.
 
@@ -53,11 +54,11 @@ cargo test --all-features --doc --verbose
 
 To run all unit and integration tests:
 
-1. Start the server with:
+1. Start the server. This will compile the project from scratch the first time you run it so it will take a while. It should be faster for future runs.
 ```bash
 cargo make start-server
 ```
-2. Once the server has started, run the tests with:
+2. Once the server has started, run the tests.
 ```bash
 cargo make e2e
 ```
