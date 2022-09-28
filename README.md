@@ -81,7 +81,9 @@ cargo make start-server
 
 ## Running the server locally
 
-To run the server locally, make sure MongoDB is running as above. Then run:
+To run the server locally, first make sure MongoDB is running. You can run MongoDB [in Docker](https://www.mongodb.com/compatibility/docker) or [locally with a config file](https://www.mongodb.com/docs/manual/reference/configuration-options/).
+
+Then run:
 ```bash
 cargo make start-server-local
 ```
