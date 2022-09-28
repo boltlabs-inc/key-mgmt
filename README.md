@@ -35,6 +35,8 @@ Refer to the [current design specification](https://github.com/boltlabs-inc/key-
 - [Docker](https://www.docker.com/).
 - On Linux, you may need to install [Docker Compose](https://docs.docker.com/compose/install/) separately.
 
+In order to use the `cargo make` tasks on Linux, you need to be able to run Docker without `sudo`. You can find instructions for this [here](https://docs.docker.com/engine/install/linux-postinstall/#manage-docker-as-a-non-root-user).
+
 If you need to run the server outside of Docker, [MongoDB](https://www.mongodb.com/try/download/community) is also required.
 
 
