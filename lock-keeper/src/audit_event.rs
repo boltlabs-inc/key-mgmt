@@ -11,7 +11,7 @@ use std::fmt::{Debug, Display, Formatter};
 use strum::IntoEnumIterator;
 
 /// Options for the outcome of a given action in a [`AuditEvent`]
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum EventStatus {
     Started,
     Successful,
@@ -48,11 +48,11 @@ impl AuditEvent {
 
 impl AuditEvent {
     pub fn action(&self) -> ClientAction {
-        self.action.clone()
+        self.action
     }
 
-    pub fn key_id(&self) -> Option<KeyId> {
-        self.secret_id.clone()
+    pub fn key_id(&self) -> Option<&KeyId> {
+        self.secret_id.as_ref()
     }
 
     pub fn date(&self) -> DateTime {
@@ -60,7 +60,7 @@ impl AuditEvent {
     }
 
     pub fn status(&self) -> EventStatus {
-        self.status.clone()
+        self.status
     }
 }
 

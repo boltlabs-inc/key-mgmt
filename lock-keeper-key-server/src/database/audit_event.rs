@@ -30,7 +30,7 @@ impl Database {
         status: EventStatus,
     ) -> Result<(), LockKeeperServerError> {
         let collection = self.inner.collection::<AuditEvent>(constants::AUDIT_EVENTS);
-        let new_event = AuditEvent::new(actor.clone(), secret_id.clone(), action.clone(), status);
+        let new_event = AuditEvent::new(actor.clone(), secret_id.clone(), *action, status);
         let _ = collection.insert_one(new_event, None).await?;
         Ok(())
     }
@@ -135,7 +135,8 @@ mod test {
     }
 
     fn compare_key_ids(audit_events: Vec<AuditEvent>, expected_key_ids: Vec<KeyId>) {
-        let actual_key_ids: Vec<KeyId> = audit_events.iter().map(|a| a.key_id().unwrap()).collect();
+        let actual_key_ids: Vec<&KeyId> =
+            audit_events.iter().map(|a| a.key_id().unwrap()).collect();
         assert!(actual_key_ids
             .iter()
             .all(|item| expected_key_ids.contains(item)));
