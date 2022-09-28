@@ -41,13 +41,11 @@ impl Database {
         &self,
         account_name: &AccountName,
         event_type: EventType,
-        options: Option<AuditEventOptions>,
+        options: AuditEventOptions,
     ) -> Result<Vec<AuditEvent>, LockKeeperServerError> {
         let actions = event_type.into_client_actions();
         let mut query = doc! { ACTOR: account_name.to_string(), ACTION: {"$in": mongodb::bson::to_bson(&actions)?} };
-        if let Some(options) = options {
-            query = construct_query_with_options(options, query)?;
-        }
+        query = construct_query_with_options(options, query)?;
         let collection = self.inner.collection::<AuditEvent>(constants::AUDIT_EVENTS);
         let events = collection.find(query, None).await?;
         let events_vec: Vec<AuditEvent> = events.try_collect().await?;
@@ -161,13 +159,21 @@ mod test {
         let _ = create_random_audit_events(&account_name, &user_id, &mut rng, &db).await?;
         // Retrieve all 3 types of audit events
         let key_only_audit = db
-            .find_audit_events(&account_name, EventType::KeyOnly, None)
+            .find_audit_events(
+                &account_name,
+                EventType::KeyOnly,
+                AuditEventOptions::default(),
+            )
             .await?;
         let system_only_audit = db
-            .find_audit_events(&account_name, EventType::SystemOnly, None)
+            .find_audit_events(
+                &account_name,
+                EventType::SystemOnly,
+                AuditEventOptions::default(),
+            )
             .await?;
         let all_audit = db
-            .find_audit_events(&account_name, EventType::All, None)
+            .find_audit_events(&account_name, EventType::All, AuditEventOptions::default())
             .await?;
 
         // Make sure each type has the correct actions
@@ -196,7 +202,7 @@ mod test {
             before_date: None,
         };
         let key_audit = db
-            .find_audit_events(&account_name, EventType::All, Some(options))
+            .find_audit_events(&account_name, EventType::All, options)
             .await?;
 
         // Make sure only the first 5 key IDs are included
@@ -225,7 +231,7 @@ mod test {
             before_date: None,
         };
         let after_date_audit = db
-            .find_audit_events(&account_name, EventType::All, Some(options))
+            .find_audit_events(&account_name, EventType::All, options)
             .await?;
         // There should only be one log after "now": the one for RetrieveAuditEvents
         // starting
@@ -254,7 +260,7 @@ mod test {
             before_date: Some(before_date),
         };
         let before_date_audit = db
-            .find_audit_events(&account_name, EventType::All, Some(options))
+            .find_audit_events(&account_name, EventType::All, options)
             .await?;
         // There shouldn't be any audit events before the comparison date
         assert_eq!(0, before_date_audit.len());

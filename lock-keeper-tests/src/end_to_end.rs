@@ -1,7 +1,7 @@
 use Operation::{Authenticate, Generate, Register, Retrieve};
 
 use lock_keeper::{
-    audit_event::{EventStatus, EventType},
+    audit_event::{AuditEventOptions, EventStatus, EventType},
     config::client::Config,
     crypto::KeyId,
     user::AccountName,
@@ -354,7 +354,7 @@ impl Test {
 
         // Get audit event log
         let audit_event_log = lock_keeper_client
-            .retrieve_audit_event_log(EventType::All, None)
+            .retrieve_audit_event_log(EventType::All, AuditEventOptions::default())
             .await?;
         // Get the fourth last event, the last 3 are for retrieving audit logs and
         // authenticating

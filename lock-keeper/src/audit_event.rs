@@ -102,7 +102,7 @@ impl EventType {
 }
 
 /// Optional parameters to filter [`AuditEvent`]s by
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct AuditEventOptions {
     pub key_ids: Option<Vec<KeyId>>,
     pub after_date: Option<DateTime>,

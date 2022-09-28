@@ -43,7 +43,7 @@ impl LockKeeperClient {
     pub async fn retrieve_audit_event_log(
         &self,
         event_type: EventType,
-        options: Option<AuditEventOptions>,
+        options: AuditEventOptions,
     ) -> Result<Vec<AuditEvent>, LockKeeperClientError> {
         let mut client_channel = Self::create_channel(
             &mut self.tonic_client(),

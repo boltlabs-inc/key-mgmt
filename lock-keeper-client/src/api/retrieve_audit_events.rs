@@ -10,7 +10,7 @@ impl LockKeeperClient {
         &self,
         channel: &mut ClientChannel,
         event_type: EventType,
-        options: Option<AuditEventOptions>,
+        options: AuditEventOptions,
     ) -> Result<Vec<AuditEvent>, LockKeeperClientError> {
         // Send audit event request and filters
         let client_request = client::Request {

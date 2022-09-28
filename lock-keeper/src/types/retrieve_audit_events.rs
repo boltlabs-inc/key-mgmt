@@ -10,7 +10,7 @@ pub mod client {
     pub struct Request {
         // TODO spec#132: decide whether user ID needs to be added back in to request
         pub event_type: EventType,
-        pub options: Option<AuditEventOptions>,
+        pub options: AuditEventOptions,
     }
 
     impl_message_conversion!(Request);
