@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["LockKeeperRpcServer",""]],"trait":[["LockKeeperRpc","Generated trait containing gRPC methods that should be implemented for use with LockKeeperRpcServer."]]};
+window.SIDEBAR_ITEMS = {"struct":[["LockKeeperRpcServer",""],["_Inner",""]],"trait":[["LockKeeperRpc","Generated trait containing gRPC methods that should be implemented for use with LockKeeperRpcServer."]]};

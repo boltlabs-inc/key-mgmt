@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":[["client",""],["server",""]]};
+window.SIDEBAR_ITEMS = {"fn":[["project_dirs",""]],"mod":[["client",""],["server",""],["shared",""]]};
