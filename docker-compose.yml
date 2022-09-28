@@ -5,9 +5,6 @@ services:
     image: mongo
     container_name: mongodb
     restart: always
-    # environment:
-    #   MONGO_INITDB_ROOT_USERNAME: $MONGODB_USERNAME
-    #   MONGO_INITDB_ROOT_PASSWORD: $MONGODB_PASSWORD
     ports:
       - 27017:27017
 

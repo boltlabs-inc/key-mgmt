@@ -32,7 +32,7 @@ Refer to the [current design specification](https://github.com/boltlabs-inc/key-
 - OpenSSL. You should be able to install this using your package manager of choice.
 - `protoc` is required to build .proto files. It can be installed using `brew` for MacOS or `apt install` for Linux. Further instructions [here](https://grpc.io/docs/protoc-installation/).
 - [cargo-make](https://github.com/sagiegurari/cargo-make) can be installed with `cargo install cargo-make`.
-- [Docker](https://www.docker.com/).
+- [Docker](https://www.docker.com/). 
 - On Linux, you may need to install [Docker Compose](https://docs.docker.com/compose/install/) separately.
 
 In order to use the `cargo make` tasks on Linux, you need to be able to run Docker without `sudo`. You can find instructions for this [here](https://docs.docker.com/engine/install/linux-postinstall/#manage-docker-as-a-non-root-user).
@@ -48,6 +48,9 @@ cargo build --all-features --all-targets
 
 ## Running local tests
 
+We follow test-driven development practices and the test suite should be a close mapping to the functionality we currently implement at any given stage of development.
+
+
 To run the doctests locally:
 
 ```bash
@@ -56,9 +59,9 @@ cargo test --all-features --doc --verbose
 
 To run all unit and integration tests:
 
-1. Start the server. This will compile the project from scratch the first time you run it so it will take a while. It should be faster for future runs.
+1. Start the server running in the background. This will compile the project from scratch the first time you run it so it will take a while. It should be faster for future runs.
 ```bash
-cargo make start-server
+cargo make start
 ```
 2. Once the server has started, run the tests.
 ```bash
@@ -67,10 +70,14 @@ cargo make e2e
 
 The server will be running in the background so you can continue to run integration tests without starting the server again. To stop the server, run:
 ```bash
-cargo make stop-server
+cargo make stop
 ```
 
-We follow test-driven development practices and the test suite should be a close mapping to the functionality we currently implement at any given stage of development.
+If you want to watch server output in real-time, you can run the server in the foreground with:
+```bash
+cargo make start-server
+```
+
 
 ## Running the server locally
 
