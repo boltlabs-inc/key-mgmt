@@ -85,3 +85,18 @@ RUSTDOCFLAGS="-Dwarnings" cargo doc --all-features --no-deps --open
 ```
 
 You can find the API docs in the source of the [client](lock-keeper-client/src/api.rs) and [policy engine](lock-keeper-key-server/src/policy_engine.rs).
+
+## Published Documentation
+
+Documentation from the `main` and `develop` branches is automatically deployed to GitHub Pages any time code is merged. There is a very basic index page for published documentation [here](https://boltlabs-inc.github.io/key-mgmt/).
+
+### `develop` docs
+
+[lock-keeper](https://boltlabs-inc.github.io/key-mgmt/develop/lock_keeper)  
+[lock-keeper-client](https://boltlabs-inc.github.io/key-mgmt/develop/lock_keeper_client)  
+[lock-keeper-key-server](https://boltlabs-inc.github.io/key-mgmt/develop/lock_keeper_key_server)  
+
+### `main` docs
+[dams](https://boltlabs-inc.github.io/key-mgmt/main/dams)  
+[dams-client](https://boltlabs-inc.github.io/key-mgmt/main/dams_client)  
+[dams-key-server](https://boltlabs-inc.github.io/key-mgmt/main/dams_key_server) 

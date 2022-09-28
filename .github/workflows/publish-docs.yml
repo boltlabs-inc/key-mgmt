@@ -1,0 +1,66 @@
+# Builds documentation and publishes it to GitHub Pages via the 
+# `published-documentation` branch of the `key-mgmt` repo.
+name: Publish Docs
+
+on:
+  push:
+    branches: [ main, develop ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
+
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v1
+        with:
+          version: '3.x'
+
+      # Install stable toolchain
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          components: clippy
+          default: true
+
+      - name: Build documentation in current branch
+        run: cargo doc --all-features --no-deps --document-private-items --workspace
+
+      # https://stackoverflow.com/questions/58886293/getting-current-branch-and-commit-hash-in-github-action/61699863#61699863
+      - name: Get branch name and short SHA
+        id: vars
+        shell: bash
+        run: |
+          echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+          echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+
+      - name: Configure git
+        run: |
+          git config --global user.email "CI"
+          git config --global user.name "CI"
+
+      - name: Switch to doc branch and publish
+        run: |
+          git fetch
+          git checkout published-documentation
+          rm -rf "docs/${{ steps.vars.outputs.branch }}"
+          mkdir -p "docs/${{ steps.vars.outputs.branch }}"
+          yes | cp -rf index.html docs/index.html
+          cp -r target/doc/* "docs/${{ steps.vars.outputs.branch }}"
+          git add .
+          git commit -m "Publishing ${{ steps.vars.outputs.sha_short }}"
+          git push
