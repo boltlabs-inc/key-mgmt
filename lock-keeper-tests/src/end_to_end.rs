@@ -315,20 +315,28 @@ impl Test {
             };
 
             // Check whether the process errors matched the expectation.
-            if let Err(e) = outcome {
-                self.check_audit_events(config, EventStatus::Failed, op)
-                    .await?;
-                match &expected_outcome.expected_error {
-                    Some(expected) => {
-                        let expected_string = expected.to_string();
-                        let error_string = e.to_string();
-                        if expected_string != error_string {
-                            return Err(
-                                TestError::IncorrectError(expected_string, error_string).into()
-                            );
+            match outcome {
+                Ok(_) => {
+                    self.check_audit_events(config, EventStatus::Successful, op)
+                        .await?
+                }
+                Err(e) => {
+                    self.check_audit_events(config, EventStatus::Failed, op)
+                        .await?;
+                    match &expected_outcome.expected_error {
+                        Some(expected) => {
+                            let expected_string = expected.to_string();
+                            let error_string = e.to_string();
+                            if expected_string != error_string {
+                                return Err(TestError::IncorrectError(
+                                    expected_string,
+                                    error_string,
+                                )
+                                .into());
+                            }
                         }
+                        None => return Err(TestError::UnexpectedError.into()),
                     }
-                    None => return Err(TestError::UnexpectedError.into()),
                 }
             }
         }
