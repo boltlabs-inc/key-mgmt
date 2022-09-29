@@ -22,6 +22,7 @@ rand.workspace = true
 rustls.workspace = true
 rustls-pemfile.workspace = true
 serde.workspace = true
+serde_json.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
 tokio-rustls.workspace = true
@@ -38,11 +39,9 @@ http-serde = "1"
 humantime = "2"
 humantime-serde = "1"
 sha3 = "0.10"
+strum = { version = "0.24.1", features = ["derive"] }
 uuid = "1.1.2"
 webpki = "0.22"
 
 [build-dependencies]
 tonic-build = "0.8.0"
-
-[dev-dependencies]
-serde_json.workspace = true

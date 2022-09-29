@@ -36,6 +36,8 @@ pub enum LockKeeperError {
     OpaqueProtocol(opaque_ke::errors::ProtocolError),
     #[error(transparent)]
     Rustls(#[from] rustls::Error),
+    #[error(transparent)]
+    SerdeJson(#[from] serde_json::Error),
     #[error("tokio Sender error: {}", .0)]
     TokioSender(String),
     #[error(transparent)]
@@ -75,6 +77,7 @@ impl From<LockKeeperError> for Status {
             | LockKeeperError::InvalidUri(_)
             | LockKeeperError::OpaqueProtocol(_)
             | LockKeeperError::Rustls(_)
+            | LockKeeperError::SerdeJson(_)
             | LockKeeperError::TokioSender(_)
             | LockKeeperError::Toml(_)
             | LockKeeperError::TonicStatus(_)

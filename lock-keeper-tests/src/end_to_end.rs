@@ -1,6 +1,12 @@
 use Operation::{Authenticate, Generate, Register, Retrieve};
 
-use lock_keeper::{config::client::Config, crypto::KeyId, user::AccountName, RetrieveContext};
+use lock_keeper::{
+    audit_event::{AuditEventOptions, EventStatus, EventType},
+    config::client::Config,
+    crypto::KeyId,
+    user::AccountName,
+    ClientAction, RetrieveContext,
+};
 use lock_keeper_client::{
     api::arbitrary_secrets::RetrieveResult, client::Password, LockKeeperClient,
     LockKeeperClientError,
@@ -309,22 +315,69 @@ impl Test {
             };
 
             // Check whether the process errors matched the expectation.
-            if let Err(e) = outcome {
-                match &expected_outcome.expected_error {
-                    Some(expected) => {
-                        let expected_string = expected.to_string();
-                        let error_string = e.to_string();
-                        if expected_string != error_string {
-                            return Err(
-                                TestError::IncorrectError(expected_string, error_string).into()
-                            );
+            match outcome {
+                Ok(_) => {
+                    self.check_audit_events(config, EventStatus::Successful, op)
+                        .await?
+                }
+                Err(e) => {
+                    self.check_audit_events(config, EventStatus::Failed, op)
+                        .await?;
+                    match &expected_outcome.expected_error {
+                        Some(expected) => {
+                            let expected_string = expected.to_string();
+                            let error_string = e.to_string();
+                            if expected_string != error_string {
+                                return Err(TestError::IncorrectError(
+                                    expected_string,
+                                    error_string,
+                                )
+                                .into());
+                            }
                         }
+                        None => return Err(TestError::UnexpectedError.into()),
                     }
-                    None => return Err(TestError::UnexpectedError.into()),
                 }
             }
         }
 
+        Ok(())
+    }
+
+    async fn check_audit_events(
+        &self,
+        config: &Config,
+        expected_status: EventStatus,
+        operation: &Operation,
+    ) -> Result<(), anyhow::Error> {
+        // Map operation to ClientAction (None case is for expected Auth failures)
+        let expected_action = match operation.to_final_client_action(&expected_status) {
+            Some(action) => action,
+            None => return Ok(()),
+        };
+        // Authenticate to LockKeeperClient
+        let lock_keeper_client =
+            LockKeeperClient::authenticated_client(&self.account_name, &self.password, config)
+                .await?;
+
+        // Get audit event log
+        let audit_event_log = lock_keeper_client
+            .retrieve_audit_event_log(EventType::All, AuditEventOptions::default())
+            .await?;
+        // Get the fourth last event, the last 3 are for retrieving audit logs and
+        // authenticating
+        let fourth_last = audit_event_log
+            .len()
+            .checked_sub(4)
+            .map(|i| &audit_event_log[i])
+            .ok_or_else(|| {
+                TestError::InvalidAuditEventLog(
+                    "No last element found in audit event log".to_string(),
+                )
+            })?;
+        // Check that expected status and action match
+        assert_eq!(expected_status, fourth_last.status());
+        assert_eq!(expected_action, fourth_last.action());
         Ok(())
     }
 }
@@ -338,6 +391,8 @@ enum TestError {
 
     #[error("An error occurred while working with test state: {0:?}")]
     TestStateError(String),
+    #[error("An error occurred while reading the audit log: {0:?}")]
+    InvalidAuditEventLog(String),
     #[error(
         "The wrong value was retrieved from the key server:
     expected: {0:?}
@@ -354,6 +409,29 @@ enum Operation {
     Authenticate(Option<Password>),
     Generate,
     Retrieve,
+}
+
+impl Operation {
+    fn to_final_client_action(&self, status: &EventStatus) -> Option<ClientAction> {
+        match self {
+            Self::Authenticate(_) => {
+                if status == &EventStatus::Failed {
+                    None
+                } else {
+                    Some(ClientAction::Authenticate)
+                }
+            }
+            Self::Generate => Some(ClientAction::Generate),
+            Self::Register => {
+                if status == &EventStatus::Successful {
+                    Some(ClientAction::CreateStorageKey)
+                } else {
+                    Some(ClientAction::Register)
+                }
+            }
+            Self::Retrieve => Some(ClientAction::Retrieve),
+        }
+    }
 }
 
 #[derive(Debug)]

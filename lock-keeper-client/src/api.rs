@@ -8,17 +8,53 @@
 pub(crate) mod authenticate;
 pub(crate) mod create_storage_key;
 pub(crate) mod register;
+pub(crate) mod retrieve_audit_events;
 
 pub mod arbitrary_secrets;
 
-use crate::LockKeeperClientError;
+use crate::{LockKeeperClient, LockKeeperClientError};
 use lock_keeper::{
+    audit_event::{AuditEvent, AuditEventOptions, EventType},
     blockchain::Blockchain,
     crypto::KeyId,
     keys::{KeyInfo, UsePermission, UseRestriction, UserPolicySpecification},
     transaction::{TransactionApprovalRequest, TransactionSignature},
     user::UserId,
+    ClientAction,
 };
+
+impl LockKeeperClient {
+    /// Retrieve the log of audit events from the key server for the
+    /// authenticated asset owner; optionally, filter for audit events
+    /// associated with the specified [`KeyId`].
+    ///
+    /// The log of audit events includes context
+    /// about any action requested and/or taken on the digital asset key,
+    /// including which action was requested and by whom, the date, details
+    /// about approval or rejection from each key server, the policy engine,
+    /// and each asset fiduciary (if relevant), and any other relevant
+    /// details.
+    ///
+    /// The [`UserId`] must match the asset owner authenticated in the
+    /// [`crate::LockKeeperClient`], and if specified, the [`KeyId`] must
+    /// correspond to a key owned by the [`UserId`].
+    ///
+    /// Output: if successful, returns a [`String`] representation of the logs.
+    pub async fn retrieve_audit_event_log(
+        &self,
+        event_type: EventType,
+        options: AuditEventOptions,
+    ) -> Result<Vec<AuditEvent>, LockKeeperClientError> {
+        let mut client_channel = Self::create_channel(
+            &mut self.tonic_client(),
+            ClientAction::RetrieveAuditEvents,
+            self.account_name(),
+        )
+        .await?;
+        self.handle_retrieve_audit_events(&mut client_channel, event_type, options)
+            .await
+    }
+}
 
 /// Generate a new, distributed digital asset key with the given use
 /// parameters for the [`UserId`], and compatible with the specified blockchain.
@@ -112,28 +148,5 @@ pub fn retrieve_public_key_by_id(
     user_id: UserId,
     key_id: &KeyId,
 ) -> Result<KeyInfo, LockKeeperClientError> {
-    todo!()
-}
-
-/// Retrieve the log of audit events from the key server for a specified asset
-/// owner; optionally, filter for audit events associated with the specified
-/// [`KeyId`].
-///
-/// The log of audit events includes context
-/// about any action requested and/or taken on the digital asset key, including
-/// which action was requested and by whom, the date, details about approval or
-/// rejection from each key server, the policy engine, and each asset fiduciary
-/// (if relevant), and any other relevant details.
-///
-/// The [`UserId`] must match the asset owner authenticated in the
-/// [`crate::LockKeeperClient`], and if specified, the [`KeyId`] must correspond
-/// to a key owned by the [`UserId`].
-///
-/// Output: if successful, returns a [`String`] representation of the logs.
-#[allow(unused)]
-pub fn retrieve_audit_event_log(
-    user_id: UserId,
-    key_id: Option<&KeyId>,
-) -> Result<String, LockKeeperClientError> {
     todo!()
 }

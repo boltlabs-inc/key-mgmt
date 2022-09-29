@@ -18,6 +18,7 @@ argon2.workspace = true
 async-trait.workspace = true
 bincode.workspace = true
 clap.workspace = true
+bson.workspace = true
 futures.workspace = true
 hyper.workspace = true
 mongodb.workspace = true
@@ -36,6 +37,7 @@ tracing-futures.workspace = true
 tracing-subscriber.workspace = true
 
 # Other dependencies
+strum = { version = "0.24.1", features = ["derive"] }
 tower = "0.4"
 
 [dev-dependencies]

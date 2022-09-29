@@ -88,6 +88,7 @@ impl LockKeeperRpc for LockKeeperKeyServer {
     type CreateStorageKeyStream = MessageStream;
     type GenerateStream = MessageStream;
     type RetrieveStream = MessageStream;
+    type RetrieveAuditEventsStream = MessageStream;
     type RetrieveStorageKeyStream = MessageStream;
 
     async fn health(&self, _: Request<HealthCheck>) -> Result<Response<HealthCheck>, Status> {
@@ -150,6 +151,16 @@ impl LockKeeperRpc for LockKeeperKeyServer {
     ) -> Result<Response<Self::RetrieveStorageKeyStream>, Status> {
         let context = self.context(&request, ClientAction::RetrieveStorageKey)?;
         Ok(operations::RetrieveStorageKey
+            .handle_request(context, request)
+            .await?)
+    }
+
+    async fn retrieve_audit_events(
+        &self,
+        request: Request<tonic::Streaming<Message>>,
+    ) -> Result<Response<Self::RetrieveAuditEventsStream>, Status> {
+        let context = self.context(&request, ClientAction::RetrieveAuditEvents)?;
+        Ok(operations::RetrieveAuditEvents
             .handle_request(context, request)
             .await?)
     }
