@@ -137,6 +137,19 @@
 <span id="137">137</span>
 <span id="138">138</span>
 <span id="139">139</span>
+<span id="140">140</span>
+<span id="141">141</span>
+<span id="142">142</span>
+<span id="143">143</span>
+<span id="144">144</span>
+<span id="145">145</span>
+<span id="146">146</span>
+<span id="147">147</span>
+<span id="148">148</span>
+<span id="149">149</span>
+<span id="150">150</span>
+<span id="151">151</span>
+<span id="152">152</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Full implementation of the public API for the Lock Keeper client library.</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! This API is designed for use with a local client application - that is, an</span>
@@ -147,17 +160,53 @@
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod</span> <span class="ident">authenticate</span>;
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod</span> <span class="ident">create_storage_key</span>;
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod</span> <span class="ident">register</span>;
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod</span> <span class="ident">retrieve_audit_events</span>;
 
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">arbitrary_secrets</span>;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::LockKeeperClientError</span>;
+<span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">LockKeeperClient</span>, <span class="ident">LockKeeperClientError</span>};
 <span class="kw">use</span> <span class="ident">lock_keeper</span>::{
+    <span class="ident">audit_event</span>::{<span class="ident">AuditEvent</span>, <span class="ident">AuditEventOptions</span>, <span class="ident">EventType</span>},
     <span class="ident">blockchain::Blockchain</span>,
     <span class="ident">crypto::KeyId</span>,
     <span class="ident">keys</span>::{<span class="ident">KeyInfo</span>, <span class="ident">UsePermission</span>, <span class="ident">UseRestriction</span>, <span class="ident">UserPolicySpecification</span>},
     <span class="ident">transaction</span>::{<span class="ident">TransactionApprovalRequest</span>, <span class="ident">TransactionSignature</span>},
     <span class="ident">user::UserId</span>,
+    <span class="ident">ClientAction</span>,
 };
+
+<span class="kw">impl</span> <span class="ident">LockKeeperClient</span> {
+    <span class="doccomment">/// Retrieve the log of audit events from the key server for the</span>
+    <span class="doccomment">/// authenticated asset owner; optionally, filter for audit events</span>
+    <span class="doccomment">/// associated with the specified [`KeyId`].</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// The log of audit events includes context</span>
+    <span class="doccomment">/// about any action requested and/or taken on the digital asset key,</span>
+    <span class="doccomment">/// including which action was requested and by whom, the date, details</span>
+    <span class="doccomment">/// about approval or rejection from each key server, the policy engine,</span>
+    <span class="doccomment">/// and each asset fiduciary (if relevant), and any other relevant</span>
+    <span class="doccomment">/// details.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// The [`UserId`] must match the asset owner authenticated in the</span>
+    <span class="doccomment">/// [`crate::LockKeeperClient`], and if specified, the [`KeyId`] must</span>
+    <span class="doccomment">/// correspond to a key owned by the [`UserId`].</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// Output: if successful, returns a [`String`] representation of the logs.</span>
+    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">retrieve_audit_event_log</span>(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        <span class="ident">event_type</span>: <span class="ident">EventType</span>,
+        <span class="ident">options</span>: <span class="ident">AuditEventOptions</span>,
+    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">AuditEvent</span><span class="op">&gt;</span>, <span class="ident">LockKeeperClientError</span><span class="op">&gt;</span> {
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">client_channel</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::create_channel</span>(
+            <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">tonic_client</span>(),
+            <span class="ident">ClientAction::RetrieveAuditEvents</span>,
+            <span class="self">self</span>.<span class="ident">account_name</span>(),
+        )
+        .<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="self">self</span>.<span class="ident">handle_retrieve_audit_events</span>(<span class="kw-2">&amp;mut</span> <span class="ident">client_channel</span>, <span class="ident">event_type</span>, <span class="ident">options</span>)
+            .<span class="kw">await</span>
+    }
+}
 
 <span class="doccomment">/// Generate a new, distributed digital asset key with the given use</span>
 <span class="doccomment">/// parameters for the [`UserId`], and compatible with the specified blockchain.</span>
@@ -251,29 +300,6 @@
     <span class="ident">user_id</span>: <span class="ident">UserId</span>,
     <span class="ident">key_id</span>: <span class="kw-2">&amp;</span><span class="ident">KeyId</span>,
 ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">KeyInfo</span>, <span class="ident">LockKeeperClientError</span><span class="op">&gt;</span> {
-    <span class="macro">todo!</span>()
-}
-
-<span class="doccomment">/// Retrieve the log of audit events from the key server for a specified asset</span>
-<span class="doccomment">/// owner; optionally, filter for audit events associated with the specified</span>
-<span class="doccomment">/// [`KeyId`].</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// The log of audit events includes context</span>
-<span class="doccomment">/// about any action requested and/or taken on the digital asset key, including</span>
-<span class="doccomment">/// which action was requested and by whom, the date, details about approval or</span>
-<span class="doccomment">/// rejection from each key server, the policy engine, and each asset fiduciary</span>
-<span class="doccomment">/// (if relevant), and any other relevant details.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// The [`UserId`] must match the asset owner authenticated in the</span>
-<span class="doccomment">/// [`crate::LockKeeperClient`], and if specified, the [`KeyId`] must correspond</span>
-<span class="doccomment">/// to a key owned by the [`UserId`].</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// Output: if successful, returns a [`String`] representation of the logs.</span>
-<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">unused</span>)]</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">retrieve_audit_event_log</span>(
-    <span class="ident">user_id</span>: <span class="ident">UserId</span>,
-    <span class="ident">key_id</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">KeyId</span><span class="op">&gt;</span>,
-) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">LockKeeperClientError</span><span class="op">&gt;</span> {
     <span class="macro">todo!</span>()
 }
 </code></pre></div>

@@ -82,6 +82,9 @@
 <span id="82">82</span>
 <span id="83">83</span>
 <span id="84">84</span>
+<span id="85">85</span>
+<span id="86">86</span>
+<span id="87">87</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">thiserror::Error</span>;
 <span class="kw">use</span> <span class="ident">tokio::sync::mpsc::error::SendError</span>;
 <span class="kw">use</span> <span class="ident">tonic::Status</span>;
@@ -120,6 +123,8 @@
     <span class="ident">OpaqueProtocol</span>(<span class="ident">opaque_ke::errors::ProtocolError</span>),
     <span class="attribute">#[<span class="ident">error</span>(<span class="ident">transparent</span>)]</span>
     <span class="ident">Rustls</span>(<span class="attribute">#[<span class="ident">from</span>]</span> <span class="ident">rustls::Error</span>),
+    <span class="attribute">#[<span class="ident">error</span>(<span class="ident">transparent</span>)]</span>
+    <span class="ident">SerdeJson</span>(<span class="attribute">#[<span class="ident">from</span>]</span> <span class="ident">serde_json::Error</span>),
     <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;tokio Sender error: {}&quot;</span>, .<span class="number">0</span>)]</span>
     <span class="ident">TokioSender</span>(<span class="ident">String</span>),
     <span class="attribute">#[<span class="ident">error</span>(<span class="ident">transparent</span>)]</span>
@@ -159,6 +164,7 @@
             <span class="op">|</span> <span class="ident">LockKeeperError::InvalidUri</span>(<span class="kw">_</span>)
             <span class="op">|</span> <span class="ident">LockKeeperError::OpaqueProtocol</span>(<span class="kw">_</span>)
             <span class="op">|</span> <span class="ident">LockKeeperError::Rustls</span>(<span class="kw">_</span>)
+            <span class="op">|</span> <span class="ident">LockKeeperError::SerdeJson</span>(<span class="kw">_</span>)
             <span class="op">|</span> <span class="ident">LockKeeperError::TokioSender</span>(<span class="kw">_</span>)
             <span class="op">|</span> <span class="ident">LockKeeperError::Toml</span>(<span class="kw">_</span>)
             <span class="op">|</span> <span class="ident">LockKeeperError::TonicStatus</span>(<span class="kw">_</span>)
