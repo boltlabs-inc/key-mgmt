@@ -60,12 +60,16 @@
 <span id="60">60</span>
 <span id="61">61</span>
 <span id="62">62</span>
+<span id="63">63</span>
+<span id="64">64</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">lock_keeper::LockKeeperError</span>;
 <span class="kw">use</span> <span class="ident">thiserror::Error</span>;
 <span class="kw">use</span> <span class="ident">tonic</span>::{<span class="ident">Code</span>, <span class="ident">Status</span>};
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Error</span>)]</span>
 <span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">LockKeeperClientError</span> {
+    <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;Health check failed&quot;</span>)]</span>
+    <span class="ident">HealthCheckFailed</span>,
     <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;Tried to connect to a server without an https link&quot;</span>)]</span>
     <span class="ident">HttpNotAllowed</span>,
     <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;Server returned failure&quot;</span>)]</span>

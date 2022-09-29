@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":[["cli",""],["constants","Constants used throughout the lock-keeper-key-server."],["database","Database for key-servers."],["error",""],["operations",""],["policy_engine","Black-box policy engine API and supporting types."],["server",""]]};
+window.SIDEBAR_ITEMS = {"mod":[["constants","Constants used throughout the lock-keeper-key-server."],["database","Database for key-servers."],["error",""],["operations",""],["policy_engine","Black-box policy engine API and supporting types."],["server",""]]};

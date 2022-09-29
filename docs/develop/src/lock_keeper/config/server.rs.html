@@ -200,19 +200,6 @@
 <span id="200">200</span>
 <span id="201">201</span>
 <span id="202">202</span>
-<span id="203">203</span>
-<span id="204">204</span>
-<span id="205">205</span>
-<span id="206">206</span>
-<span id="207">207</span>
-<span id="208">208</span>
-<span id="209">209</span>
-<span id="210">210</span>
-<span id="211">211</span>
-<span id="212">212</span>
-<span id="213">213</span>
-<span id="214">214</span>
-<span id="215">215</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">rustls::ServerConfig</span>;
 <span class="kw">use</span> <span class="ident">serde</span>::{<span class="ident">Deserialize</span>, <span class="ident">Serialize</span>};
 <span class="kw">use</span> <span class="ident">std</span>::{
@@ -236,20 +223,7 @@
 <span class="kw">impl</span> <span class="ident">Config</span> {
     <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">load</span>(<span class="ident">config_path</span>: <span class="kw">impl</span> <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">Path</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Config</span>, <span class="ident">LockKeeperError</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="ident">config_string</span> <span class="op">=</span> <span class="ident">tokio::fs::read_to_string</span>(<span class="kw-2">&amp;</span><span class="ident">config_path</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">config</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::from_str</span>(<span class="kw-2">&amp;</span><span class="ident">config_string</span>)<span class="question-mark">?</span>;
-
-        <span class="comment">// Directory containing the configuration path</span>
-        <span class="kw">let</span> <span class="ident">config_dir</span> <span class="op">=</span> <span class="ident">config_path</span>
-            .<span class="ident">as_ref</span>()
-            .<span class="ident">parent</span>()
-            .<span class="ident">expect</span>(<span class="string">&quot;Server configuration path must exist in some parent directory&quot;</span>);
-
-        <span class="comment">// Adjust contained paths to be relative to the config path</span>
-        <span class="kw">for</span> <span class="ident">service</span> <span class="kw">in</span> <span class="ident">config</span>.<span class="ident">services</span>.<span class="ident">as_mut_slice</span>() {
-            <span class="ident">service</span>.<span class="ident">private_key</span> <span class="op">=</span> <span class="ident">config_dir</span>.<span class="ident">join</span>(<span class="kw-2">&amp;</span><span class="ident">service</span>.<span class="ident">private_key</span>);
-            <span class="ident">service</span>.<span class="ident">certificate</span> <span class="op">=</span> <span class="ident">config_dir</span>.<span class="ident">join</span>(<span class="kw-2">&amp;</span><span class="ident">service</span>.<span class="ident">certificate</span>);
-        }
-
+        <span class="kw">let</span> <span class="ident">config</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::from_str</span>(<span class="kw-2">&amp;</span><span class="ident">config_string</span>)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(<span class="ident">config</span>)
     }
 }

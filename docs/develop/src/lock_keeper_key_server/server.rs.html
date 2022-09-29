@@ -149,6 +149,11 @@
 <span id="149">149</span>
 <span id="150">150</span>
 <span id="151">151</span>
+<span id="152">152</span>
+<span id="153">153</span>
+<span id="154">154</span>
+<span id="155">155</span>
+<span id="156">156</span>
 </pre><pre class="rust"><code><span class="kw">mod</span> <span class="ident">operation</span>;
 <span class="kw">mod</span> <span class="ident">service</span>;
 
@@ -160,13 +165,14 @@
 
 <span class="kw">use</span> <span class="ident">lock_keeper</span>::{
     <span class="ident">config::server</span>::{<span class="ident">Config</span>, <span class="ident">Service</span>},
+    <span class="ident">crypto::KeyId</span>,
     <span class="ident">defaults::server::ACCOUNT_NAME</span>,
-    <span class="ident">rpc::lock_keeper_rpc_server::LockKeeperRpc</span>,
+    <span class="ident">rpc</span>::{<span class="ident">lock_keeper_rpc_server::LockKeeperRpc</span>, <span class="ident">HealthCheck</span>},
     <span class="ident">types</span>::{<span class="ident">Message</span>, <span class="ident">MessageStream</span>},
+    <span class="ident">user::AccountName</span>,
     <span class="ident">ClientAction</span>,
 };
 
-<span class="kw">use</span> <span class="ident">lock_keeper</span>::{<span class="ident">crypto::KeyId</span>, <span class="ident">user::AccountName</span>};
 <span class="kw">use</span> <span class="ident">rand</span>::{<span class="ident">rngs::StdRng</span>, <span class="ident">SeedableRng</span>};
 <span class="kw">use</span> <span class="ident">std::sync::Arc</span>;
 <span class="kw">use</span> <span class="ident">tokio::sync::Mutex</span>;
@@ -239,6 +245,10 @@
     <span class="kw">type</span> <span class="ident">GenerateStream</span> <span class="op">=</span> <span class="ident">MessageStream</span>;
     <span class="kw">type</span> <span class="ident">RetrieveStream</span> <span class="op">=</span> <span class="ident">MessageStream</span>;
     <span class="kw">type</span> <span class="ident">RetrieveStorageKeyStream</span> <span class="op">=</span> <span class="ident">MessageStream</span>;
+
+    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">health</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="kw">_</span>: <span class="ident">Request</span><span class="op">&lt;</span><span class="ident">HealthCheck</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Response</span><span class="op">&lt;</span><span class="ident">HealthCheck</span><span class="op">&gt;</span>, <span class="ident">Status</span><span class="op">&gt;</span> {
+        <span class="prelude-val">Ok</span>(<span class="ident">Response::new</span>(<span class="ident">HealthCheck</span> { <span class="ident">check</span>: <span class="bool-val">true</span> }))
+    }
 
     <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">register</span>(
         <span class="kw-2">&amp;</span><span class="self">self</span>,

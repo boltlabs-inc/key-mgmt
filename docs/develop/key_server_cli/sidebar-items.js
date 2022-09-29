@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":[["Cli",""]],"fn":[["main",""]]};
+window.SIDEBAR_ITEMS = {"fn":[["main",""]],"struct":[["Cli",""]]};
