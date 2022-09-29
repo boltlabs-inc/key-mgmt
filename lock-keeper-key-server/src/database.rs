@@ -57,10 +57,4 @@ impl Database {
 
         Ok(Self { inner: db })
     }
-
-    /// Drop the inner database
-    // TODO #224: Remove when docker is set up for integration tests
-    pub async fn drop(&self) -> Result<(), LockKeeperServerError> {
-        Ok(self.inner.drop(None).await?)
-    }
 }

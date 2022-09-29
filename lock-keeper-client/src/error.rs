@@ -4,6 +4,8 @@ use tonic::{Code, Status};
 
 #[derive(Debug, Error)]
 pub enum LockKeeperClientError {
+    #[error("Health check failed")]
+    HealthCheckFailed,
     #[error("Tried to connect to a server without an https link")]
     HttpNotAllowed,
     #[error("Server returned failure")]

@@ -9,13 +9,14 @@ use crate::{database::Database, error::LockKeeperServerError, operations};
 
 use lock_keeper::{
     config::server::{Config, Service},
+    crypto::KeyId,
     defaults::server::ACCOUNT_NAME,
-    rpc::lock_keeper_rpc_server::LockKeeperRpc,
+    rpc::{lock_keeper_rpc_server::LockKeeperRpc, HealthCheck},
     types::{Message, MessageStream},
+    user::AccountName,
     ClientAction,
 };
 
-use lock_keeper::{crypto::KeyId, user::AccountName};
 use rand::{rngs::StdRng, SeedableRng};
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -88,6 +89,10 @@ impl LockKeeperRpc for LockKeeperKeyServer {
     type GenerateStream = MessageStream;
     type RetrieveStream = MessageStream;
     type RetrieveStorageKeyStream = MessageStream;
+
+    async fn health(&self, _: Request<HealthCheck>) -> Result<Response<HealthCheck>, Status> {
+        Ok(Response::new(HealthCheck { check: true }))
+    }
 
     async fn register(
         &self,

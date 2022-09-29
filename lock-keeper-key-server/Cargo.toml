@@ -17,6 +17,7 @@ lock-keeper = { version = "0.2.0", path = "../lock-keeper" }
 argon2.workspace = true
 async-trait.workspace = true
 bincode.workspace = true
+clap.workspace = true
 futures.workspace = true
 hyper.workspace = true
 mongodb.workspace = true
@@ -25,7 +26,6 @@ prost.workspace = true
 rand.workspace = true
 serde.workspace = true
 serde_with.workspace = true
-structopt.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
 tokio-rustls.workspace = true

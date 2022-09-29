@@ -2,6 +2,7 @@ syntax = "proto3";
 package lock_keeper_rpc;
 
 service LockKeeperRpc {
+  rpc Health (HealthCheck) returns (HealthCheck);
   rpc Register (stream Message) returns (stream Message);
   rpc Authenticate (stream Message) returns (stream Message);
   rpc CreateStorageKey (stream Message) returns (stream Message);
@@ -12,4 +13,8 @@ service LockKeeperRpc {
 
 message Message {
   bytes content = 1;
+}
+
+message HealthCheck {
+  bool check = 1;
 }

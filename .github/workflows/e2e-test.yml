@@ -14,14 +14,11 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Start MongoDB
-        uses: supercharge/mongodb-github-action@1.7.0
-
       - name: Install Protoc
         uses: arduino/setup-protoc@v1
         with:
           version: '3.x'
-      
+
       # Ensure Rust is the latest version
       - uses: actions-rs/toolchain@v1
         with:
@@ -36,7 +33,14 @@ jobs:
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
 
-      - name: Run tests
-        run: |
-          cd lock-keeper-tests
-          cargo test --all-features --all-targets --verbose
+      - name: Install cargo-make
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: --debug cargo-make
+
+      - name: Start Server
+        run: cargo make start-server-detached
+          
+      - name: Run Tests
+        run: cargo make e2e

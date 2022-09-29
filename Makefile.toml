@@ -1,0 +1,59 @@
+[config]
+default_to_workspace = false
+
+# Server tasks
+
+# Shorthand task to start server in the background.
+[tasks.start]
+alias = "start-server-detached"
+
+# Shorthand task to stop a server running in the background.
+[tasks.stop]
+alias = "stop-server"
+
+# Shorthand task to destroy the docker containers for a server.
+[tasks.teardown]
+alias = "teardown-server"
+
+# Start a key server and monitor its output.
+[tasks.start-server]
+command = "docker"
+args = ["compose", "up", "--build", "mongodb", "key_server"]
+dependencies = ["certs"]
+
+# Start a key server in the background.
+[tasks.start-server-detached]
+command = "docker"
+args = ["compose", "up", "--build", "mongodb", "key_server", "--detach", "--wait"]
+dependencies = ["certs"]
+
+# Stop a key server running in the background.
+[tasks.stop-server]
+command = "docker"
+args = ["compose", "stop"]
+
+# Destroy the docker containers for a server.
+[tasks.teardown-server]
+command = "docker"
+args = ["compose", "down"]
+
+# Start a server running on your local machine without Docker.
+[tasks.start-server-local]
+command = "cargo"
+args = ["run", "--bin", "key-server-cli", "./dev/local/Server.toml"]
+dependencies = ["certs"]
+
+# Run end-to-end tests against a server that can be accessed via localhost.
+# Servers running in Docker satisfy this requirement.
+[tasks.e2e]
+command = "cargo"
+args = ["run", "--bin", "lock-keeper-tests", "./dev/local/Client.toml"]
+
+# Generate certificates in the dev directory at the root of this repo.
+[tasks.certs]
+command = "cargo"
+args = ["make", "generate-certificates", "./dev"]
+
+# Generate certificates in the directory specified by the first command line argument.
+[tasks.generate-certificates]
+script = { file = "dev/generate-certificates" }
