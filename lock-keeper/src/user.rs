@@ -72,6 +72,18 @@ impl Display for AccountName {
     }
 }
 
+impl From<AccountName> for String {
+    fn from(account_name: AccountName) -> Self {
+        account_name.0
+    }
+}
+
+impl AsRef<str> for AccountName {
+    fn as_ref(&self) -> &str {
+        &self.0
+    }
+}
+
 impl FromStr for AccountName {
     type Err = LockKeeperError;
 

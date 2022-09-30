@@ -43,6 +43,11 @@ command = "cargo"
 args = ["run", "--bin", "key-server-cli", "./dev/local/Server.toml"]
 dependencies = ["certs"]
 
+# Run the interactive client.
+[tasks.lkic]
+command = "cargo"
+args = ["run", "--bin", "lkic"]
+
 # Run end-to-end tests against a server that can be accessed via localhost.
 # Servers running in Docker satisfy this requirement.
 [tasks.e2e]

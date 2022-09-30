@@ -93,6 +93,21 @@ Tests can be run against a local server with:
 cargo make e2e
 ```
 
+## Running the interactive client
+
+Lock Keeper comes with an interactive client called `lkic` that can be used to interact with a key server for basic testing and troubleshooting.
+See the `lkic` crate for more information.
+
+First start the key server:
+```bash
+cargo make start
+```
+
+Then run `lkic`:
+```bash
+cargo make lkic
+```
+
 ## Troubleshooting
 
 If you get a `no space left on device` error from Docker, try running:
