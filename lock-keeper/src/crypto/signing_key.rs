@@ -1,4 +1,5 @@
 use crate::{types::database::user::UserId, LockKeeperError};
+use k256::ecdsa::{SigningKey, VerifyingKey};
 use rand::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
@@ -13,13 +14,14 @@ use super::{generic::AssociatedData, CryptoError, Encrypted, KeyId, StorageKey};
 #[allow(unused)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SigningKeyPair {
+    signing_key: SigningKey,
     context: AssociatedData,
 }
 
 /// The public component of an ECDSA signing key, and context about the key.
 #[allow(unused)]
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SigningPublicKey;
+pub struct SigningPublicKey(VerifyingKey);
 
 /// Temporary type to represent a remotely generated encrypted
 /// [`SigningKeyPair`]
@@ -48,7 +50,8 @@ impl From<PlaceholderEncryptedSigningKeyPair> for SigningKeyPair {
 impl SigningKeyPair {
     /// Create a new `SigningKeyPair` with the given associated data.
     fn generate(rng: &mut (impl CryptoRng + RngCore), context: &AssociatedData) -> Self {
-        SigningKeyPair {
+        Self {
+            signing_key: SigningKey::random(rng),
             context: context.clone(),
         }
     }
@@ -59,8 +62,8 @@ impl SigningKeyPair {
     }
 
     /// Retrieve the public portion of the key.
-    fn public_key(&self) -> &SigningPublicKey {
-        &SigningPublicKey
+    fn public_key(&self) -> SigningPublicKey {
+        SigningPublicKey(self.signing_key.verifying_key())
     }
 
     fn context(&self) -> &AssociatedData {
@@ -87,7 +90,7 @@ impl SigningKeyPair {
             .with_bytes(user_id.clone())
             .with_bytes(key_id.clone())
             .with_str("server-generated");
-        SigningKeyPair { context }
+        Self::generate(rng, &context)
     }
 
     /// Create a `SigningKeyPair` from an imported key and encrypt it for
@@ -113,14 +116,14 @@ impl SigningKeyPair {
             .with_str("imported key");
 
         // TODO #235: use the actual key material in the key pair.
-        let signing_key = SigningKeyPair {
-            context: context.clone(),
-        };
+        todo!("convert key material bytes to signing key pair");
 
+        /*
         Ok((
             signing_key.clone(),
             Encrypted::encrypt(rng, &storage_key.0, signing_key, &context)?,
         ))
+        */
     }
 
     /// Create and encrypt a new signing key for storage at
@@ -184,7 +187,8 @@ impl Import {
             .with_str("imported key");
 
         // TODO #235: use the actual key material in the key pair.
-        Ok(SigningKeyPair { context })
+        //Ok(SigningKeyPair { context })
+        Err(CryptoError::ConversionError.into())
     }
 }
 
@@ -219,9 +223,12 @@ impl Export {
 impl From<SigningKeyPair> for Vec<u8> {
     fn from(key_pair: SigningKeyPair) -> Self {
         let domain_separator_bytes: Vec<u8> = SigningKeyPair::domain_separator().into();
+        let signing_key = key_pair.signing_key.to_bytes();
 
         domain_separator_bytes
             .into_iter()
+            .chain(std::iter::once(signing_key.len() as u8))
+            .chain(signing_key)
             .chain::<Vec<u8>>(key_pair.context.into())
             .collect()
     }
@@ -243,15 +250,30 @@ impl TryFrom<Vec<u8>> for SigningKeyPair {
             return Err(CryptoError::ConversionError);
         }
 
+        // len || signing key
+        let signing_key_len = *value
+            .get(separator_offset)
+            .ok_or(CryptoError::ConversionError)? as usize;
+        let signing_key_offset = separator_offset + 1;
+        let signing_key_end = signing_key_offset + signing_key_len;
+        let signing_key_bytes = value
+            .get(signing_key_offset..signing_key_end)
+            .ok_or(CryptoError::ConversionError)?;
+        let signing_key =
+            SigningKey::from_bytes(signing_key_bytes).map_err(|_| CryptoError::ConversionError)?;
+
         // AssociatedData `try_into` handles length prepending
-        let context_offset = separator_offset;
+        let context_offset = signing_key_end;
         let context_bytes = value
             .get(context_offset..)
             .ok_or(CryptoError::ConversionError)?
             .to_vec();
         let context: AssociatedData = context_bytes.try_into()?;
 
-        Ok(Self { context })
+        Ok(Self {
+            signing_key,
+            context,
+        })
     }
 }
 
@@ -297,6 +319,28 @@ mod test {
     use super::*;
     use rand::Rng;
 
+    use crate::{
+        crypto::{generic::AssociatedData, CryptoError, KeyId, SigningKeyPair, StorageKey},
+        types::database::user::UserId,
+        LockKeeperError,
+    };
+    use k256::ecdsa::SigningKey;
+
+    #[test]
+    fn signing_keys_conversion_works() {
+        let mut rng = rand::thread_rng();
+        for _ in 0..1000 {
+            let signing_key = SigningKey::random(&mut rng);
+            let bytes = signing_key.to_bytes();
+            let output_key = SigningKey::from_bytes(&bytes).unwrap();
+            assert_eq!(signing_key, output_key);
+
+            let byte_vec: Vec<u8> = signing_key.to_bytes().into_iter().collect();
+            let output_key = SigningKey::from_bytes(&byte_vec).unwrap();
+            assert_eq!(signing_key, output_key);
+        }
+    }
+
     #[test]
     fn signing_key_to_vec_u8_conversion_works() -> Result<(), CryptoError> {
         let mut rng = rand::thread_rng();
@@ -337,9 +381,7 @@ mod test {
         let mut rng = rand::thread_rng();
 
         let generic_message = "every message has the same signature".as_bytes().to_vec();
-        let signing_key = SigningKeyPair {
-            context: AssociatedData::new(),
-        };
+        let signing_key = SigningKeyPair::generate(&mut rng, &AssociatedData::new());
         let trivial_signature = signing_key.sign(&generic_message);
         let public_key = signing_key.public_key();
 
@@ -351,7 +393,7 @@ mod test {
             .map(|len| -> Vec<u8> { std::iter::repeat_with(|| rng.gen()).take(len).collect() })
             .map(|msg| signing_key.sign(&msg))
             .all(
-                |sig| trivial_signature == sig && sig.verify(public_key, &generic_message).is_ok()
+                |sig| trivial_signature == sig && sig.verify(&public_key, &generic_message).is_ok()
             ));
     }
 
