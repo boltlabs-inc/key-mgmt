@@ -3,9 +3,12 @@
 use std::str::FromStr;
 
 use lock_keeper::RetrieveContext;
-use lock_keeper_client::{api::arbitrary_secrets::RetrieveResult, LockKeeperClient};
+use lock_keeper_client::LockKeeperClient;
 
-use crate::state::{Credentials, State};
+use crate::{
+    state::{Credentials, State},
+    storage::Entry,
+};
 
 const REGISTER_FORMAT: &str = "register [account_name] [password]";
 const AUTHENTICATE_FORMAT: &str = "authenticate [account_name] [password]";
@@ -133,14 +136,16 @@ impl Command {
                     .retrieve(&entry.key_id, RetrieveContext::LocalOnly)
                     .await?;
 
-                if !matches!(retrieve_result, RetrieveResult::None) {
-                    state.storage.store_named(
-                        credentials.account_name.clone(),
-                        &name,
-                        (entry.key_id.clone(), retrieve_result),
-                    )?;
-                    println!("Updated: {name}");
-                }
+                let retrieve_entry: Entry = (entry.key_id.clone(), retrieve_result).into();
+                println!("Retrieved: {name}");
+                println!("{retrieve_entry}");
+
+                state.storage.store_named(
+                    credentials.account_name.clone(),
+                    &name,
+                    retrieve_entry,
+                )?;
+                println!("Updated: {name}");
             }
             Command::Print { name } => {
                 let credentials = state

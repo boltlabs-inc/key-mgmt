@@ -20,3 +20,4 @@ tracing-subscriber.workspace = true
 
 # Other dependencies
 anyhow = "1"
+hex = "0.4"

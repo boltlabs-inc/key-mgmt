@@ -261,6 +261,11 @@ impl KeyId {
                 .map_err(|_| CryptoError::ConversionError)?,
         )))
     }
+
+    // Returns a slice of the contained bytes.
+    pub fn as_bytes(&self) -> &[u8] {
+        &*self.0
+    }
 }
 
 #[cfg(test)]

@@ -202,8 +202,22 @@ pub struct Entry {
 
 impl Display for Entry {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "key_id: {:?}", self.key_id)?;
-        writeln!(f, "data: {:?}", self.data)?;
+        let key_id_hex = hex::encode(self.key_id.as_bytes());
+        let data_hex = match &self.data {
+            RetrieveResult::None => "None".to_string(),
+            RetrieveResult::ArbitraryKey(local_storage) => {
+                let bytes = local_storage_bytes(local_storage).map_err(|e| {
+                    // Avoid error inception
+                    let _ = writeln!(f, "{e}");
+                    std::fmt::Error
+                })?;
+                format!("Arbitrary Key - {}", hex::encode(&bytes))
+            }
+            RetrieveResult::ExportedKey(key) => format!("Exported Key - {}", hex::encode(key)),
+        };
+
+        writeln!(f, "key_id: {}", key_id_hex)?;
+        writeln!(f, "data: {}", data_hex)?;
         Ok(())
     }
 }
@@ -219,4 +233,14 @@ impl From<(KeyId, LocalStorage)> for Entry {
         let data = RetrieveResult::ArbitraryKey(local_storage);
         Self { key_id, data }
     }
+}
+
+fn local_storage_bytes(local_storage: &LocalStorage) -> anyhow::Result<Vec<u8>> {
+    let json = serde_json::to_value(local_storage)?;
+    let key = json
+        .pointer("/secret/material")
+        .ok_or_else(|| anyhow!("Error converting LocalStorage to bytes"))?
+        .clone();
+    let bytes: Vec<u8> = serde_json::from_value(key)?;
+    Ok(bytes)
 }
