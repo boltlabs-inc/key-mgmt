@@ -23,6 +23,8 @@ pub enum CryptoError {
     RandomNumberGeneratorFailed,
     #[error("Conversion error")]
     ConversionError,
+    #[error("Signature did not verify")]
+    VerificationFailed,
 
     #[cfg(test)]
     #[error(transparent)]
@@ -36,7 +38,7 @@ pub(super) struct AssociatedData(Vec<u8>);
 
 impl Default for AssociatedData {
     fn default() -> Self {
-        Self("Version 0.2.".as_bytes().to_vec())
+        Self(b"Version 0.2.".to_vec())
     }
 }
 

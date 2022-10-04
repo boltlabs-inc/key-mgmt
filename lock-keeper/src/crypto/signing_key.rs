@@ -1,5 +1,8 @@
 use crate::{types::database::user::UserId, LockKeeperError};
-use k256::ecdsa::{SigningKey, VerifyingKey};
+use k256::{
+    ecdsa::{self, SigningKey, VerifyingKey},
+    schnorr::signature::{Signer, Verifier},
+};
 use rand::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
@@ -71,11 +74,9 @@ impl SigningKeyPair {
     }
 
     /// Compute an ECDSA signature on the given message.
-    pub fn sign<T>(&self, message: &T) -> Signature<T>
-    where
-        T: Into<Vec<u8>>,
-    {
+    pub fn sign<T: AsRef<[u8]>>(&self, message: &T) -> Signature<T> {
         Signature {
+            signature: self.signing_key.sign(message.as_ref()),
             original_type: PhantomData,
         }
     }
@@ -282,21 +283,21 @@ impl TryFrom<Vec<u8>> for SigningKeyPair {
 #[allow(unused)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Signature<T> {
+    signature: ecdsa::Signature,
     original_type: PhantomData<T>,
 }
 
 impl<T> Signature<T> {
     /// Verify that the signature is over the given message under the
     /// `SigningPublicKey`.
-    pub fn verify(
-        &self,
-        _public_key: &SigningPublicKey,
-        _message: &T,
-    ) -> Result<(), LockKeeperError>
+    pub fn verify(&self, public_key: &SigningPublicKey, message: &T) -> Result<(), LockKeeperError>
     where
-        T: Into<Vec<u8>>,
+        T: AsRef<[u8]>,
     {
-        Ok(())
+        Ok(public_key
+            .0
+            .verify(message.as_ref(), &self.signature)
+            .map_err(|_| CryptoError::VerificationFailed)?)
     }
 }
 
@@ -318,13 +319,16 @@ impl Encrypted<SigningKeyPair> {
 mod test {
     use super::*;
     use rand::Rng;
+    use std::marker::PhantomData;
 
     use crate::{
         crypto::{generic::AssociatedData, CryptoError, KeyId, SigningKeyPair, StorageKey},
         types::database::user::UserId,
         LockKeeperError,
     };
-    use k256::ecdsa::SigningKey;
+    use k256::{ecdsa::SigningKey, schnorr::signature::Signature as EcdsaSignature};
+
+    use super::Signature;
 
     #[test]
     fn signing_keys_conversion_works() {
@@ -375,26 +379,77 @@ mod test {
     }
 
     #[test]
-    fn signing_is_trivial() {
-        // This tests that the signature scheme is _broken_. It should be removed once
-        // signing is correctly implemented.
+    fn signing_works() {
         let mut rng = rand::thread_rng();
 
-        let generic_message = "every message has the same signature".as_bytes().to_vec();
         let signing_key = SigningKeyPair::generate(&mut rng, &AssociatedData::new());
-        let trivial_signature = signing_key.sign(&generic_message);
         let public_key = signing_key.public_key();
 
-        // Make 100 random messages and verify that
-        // 1. They all produce the same, trivial signature
-        // 2. They all verify -- to the wrong message, even!
-        assert!((0..100)
+        // Signatures on random messages must verify
+        assert!((0..1000)
             .into_iter()
             .map(|len| -> Vec<u8> { std::iter::repeat_with(|| rng.gen()).take(len).collect() })
-            .map(|msg| signing_key.sign(&msg))
-            .all(
-                |sig| trivial_signature == sig && sig.verify(&public_key, &generic_message).is_ok()
-            ));
+            .map(|msg| (signing_key.sign(&msg), msg))
+            .all(|(sig, msg)| sig.verify(&public_key, &msg).is_ok()));
+    }
+
+    #[test]
+    fn signing_requires_correct_message() {
+        let mut rng = rand::thread_rng();
+
+        let signing_key = SigningKeyPair::generate(&mut rng, &AssociatedData::new());
+        let public_key = signing_key.public_key();
+        let message = b"signatures won't verify with a bad message".to_vec();
+        let sig = signing_key.sign(&message);
+
+        let bad_msg = b"this is obviously not the same message".to_vec();
+        assert!(sig.verify(&public_key, &bad_msg).is_err());
+        assert!(sig.verify(&public_key, &message).is_ok());
+    }
+
+    #[test]
+    fn signing_requires_correct_public_key() {
+        let mut rng = rand::thread_rng();
+
+        let signing_key = SigningKeyPair::generate(&mut rng, &AssociatedData::new());
+        let message = b"signatures won't verify with a bad public key".to_vec();
+        let sig = signing_key.sign(&message);
+
+        let bad_key = SigningKeyPair::generate(&mut rng, &AssociatedData::new()).public_key();
+        assert!(sig.verify(&bad_key, &message).is_err());
+        assert!(sig.verify(&signing_key.public_key(), &message).is_ok());
+    }
+
+    #[test]
+    fn signature_bits_cannot_be_flipped() {
+        let mut rng = rand::thread_rng();
+
+        let signing_key = SigningKeyPair::generate(&mut rng, &AssociatedData::new());
+        let message = b"the signature on this message will get tweaked".to_vec();
+        let sig = signing_key.sign(&message);
+        let sig_bytes = sig.signature.as_bytes();
+
+        // try flipping some of the bits
+        for i in 0..sig_bytes.len() {
+            let mut tweaked = sig_bytes.to_vec();
+            tweaked[i] ^= 1;
+
+            // either the signature won't parse...
+            let signature = match k256::ecdsa::Signature::from_bytes(&tweaked) {
+                Ok(sig) => sig,
+                Err(_) => continue,
+            };
+            let tweaked_sig = Signature {
+                signature,
+                original_type: PhantomData,
+            };
+
+            // ...or the signature won't verify.
+            assert!(tweaked_sig
+                .verify(&signing_key.public_key(), &message)
+                .is_err());
+        }
+        assert!(sig.verify(&signing_key.public_key(), &message).is_ok());
     }
 
     #[test]
