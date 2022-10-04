@@ -15,7 +15,6 @@ mod retrieve;
 pub enum RetrieveResult {
     None,
     ArbitraryKey(LocalStorage),
-    ExportedKey(Vec<u8>),
 }
 
 #[derive(Debug, Deserialize, Serialize)]

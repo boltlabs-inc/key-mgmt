@@ -50,7 +50,6 @@ pub enum ClientAction {
 pub enum RetrieveContext {
     Null,
     LocalOnly,
-    Export,
 }
 
 /// Logs used to verify that an operation completed in the integration tests.

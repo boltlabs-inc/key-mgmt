@@ -290,13 +290,6 @@ impl Test {
                             original_local_storage_json,
                             Value::Null,
                         )),
-                        RetrieveResult::ExportedKey(exported) => {
-                            let exported_json = serde_json::to_value(exported)?;
-                            Err(TestError::InvalidValueRetrieved(
-                                original_local_storage_json,
-                                exported_json,
-                            ))
-                        }
                         RetrieveResult::ArbitraryKey(local_storage) => {
                             let new_local_storage_json = serde_json::to_value(local_storage)?;
                             if original_local_storage_json != new_local_storage_json {
