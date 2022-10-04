@@ -250,10 +250,11 @@ impl LockKeeperClient {
 
         // Server returns its own channel that is uses to send responses
         let server_response = match action {
-            ClientAction::Register => client.register(stream).await,
             ClientAction::Authenticate => client.authenticate(stream).await,
             ClientAction::CreateStorageKey => client.create_storage_key(stream).await,
+            ClientAction::Export => client.retrieve(stream).await,
             ClientAction::Generate => client.generate(stream).await,
+            ClientAction::Register => client.register(stream).await,
             ClientAction::Retrieve => client.retrieve(stream).await,
             ClientAction::RetrieveAuditEvents => client.retrieve_audit_events(stream).await,
             ClientAction::RetrieveStorageKey => client.retrieve_storage_key(stream).await,
