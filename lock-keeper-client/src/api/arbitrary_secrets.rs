@@ -19,7 +19,7 @@ pub enum RetrieveResult {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct LocalStorage {
-    pub(crate) secret: Secret,
+    pub secret: Secret,
 }
 
 impl LockKeeperClient {

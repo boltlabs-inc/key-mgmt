@@ -17,6 +17,7 @@ use lock_keeper::{
     ClientAction,
 };
 
+use lock_keeper::defaults::server::ACTION;
 use rand::{rngs::StdRng, SeedableRng};
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -47,18 +48,25 @@ impl LockKeeperKeyServer {
         })
     }
 
-    pub fn context(
-        &self,
-        request: &Request<tonic::Streaming<Message>>,
-        action: ClientAction,
-    ) -> Result<Context, Status> {
-        let account_name_str = request
-            .metadata()
-            .get(ACCOUNT_NAME)
-            .ok_or_else(|| Status::unauthenticated("Account name not found"))?
-            .to_str()
-            .map_err(|_| Status::unauthenticated("Invalid account name"))?;
+    pub fn context(&self, request: &Request<tonic::Streaming<Message>>) -> Result<Context, Status> {
+        // Parse AccountName from metadata
+        let account_name_str = Self::str_from_metadata(
+            request,
+            ACCOUNT_NAME,
+            Status::unauthenticated("Account name not found"),
+            Status::unauthenticated("Invalid account name"),
+        )?;
         let account_name = AccountName::from_str(account_name_str)?;
+
+        // Parse ClientAction from metadata
+        let action_str = Self::str_from_metadata(
+            request,
+            ACTION,
+            Status::invalid_argument("Client action not found"),
+            Status::invalid_argument("Invalid client action"),
+        )?;
+        eprintln!("ACTION: {:?}", action_str);
+        let action = ClientAction::from_str(action_str)?;
 
         Ok(Context {
             db: self.db.clone(),
@@ -68,6 +76,21 @@ impl LockKeeperKeyServer {
             action,
             key_id: None,
         })
+    }
+
+    fn str_from_metadata<'a>(
+        request: &'a Request<tonic::Streaming<Message>>,
+        key: &'a str,
+        option_err: Status,
+        str_err: Status,
+    ) -> Result<&'a str, Status> {
+        let val_str = request
+            .metadata()
+            .get(key)
+            .ok_or(option_err)?
+            .to_str()
+            .map_err(|_| str_err)?;
+        Ok(val_str)
     }
 }
 
@@ -99,7 +122,7 @@ impl LockKeeperRpc for LockKeeperKeyServer {
         &self,
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::RegisterStream>, Status> {
-        let context = self.context(&request, ClientAction::Register)?;
+        let context = self.context(&request)?;
         Ok(operations::Register
             .handle_request(context, request)
             .await?)
@@ -109,7 +132,7 @@ impl LockKeeperRpc for LockKeeperKeyServer {
         &self,
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::AuthenticateStream>, Status> {
-        let context = self.context(&request, ClientAction::Authenticate)?;
+        let context = self.context(&request)?;
         Ok(operations::Authenticate
             .handle_request(context, request)
             .await?)
@@ -119,7 +142,7 @@ impl LockKeeperRpc for LockKeeperKeyServer {
         &self,
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::CreateStorageKeyStream>, Status> {
-        let context = self.context(&request, ClientAction::CreateStorageKey)?;
+        let context = self.context(&request)?;
         Ok(operations::CreateStorageKey
             .handle_request(context, request)
             .await?)
@@ -129,7 +152,7 @@ impl LockKeeperRpc for LockKeeperKeyServer {
         &self,
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::GenerateStream>, Status> {
-        let context = self.context(&request, ClientAction::Generate)?;
+        let context = self.context(&request)?;
         Ok(operations::Generate
             .handle_request(context, request)
             .await?)
@@ -139,7 +162,7 @@ impl LockKeeperRpc for LockKeeperKeyServer {
         &self,
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::RetrieveStream>, Status> {
-        let context = self.context(&request, ClientAction::Retrieve)?;
+        let context = self.context(&request)?;
         Ok(operations::Retrieve
             .handle_request(context, request)
             .await?)
@@ -149,7 +172,7 @@ impl LockKeeperRpc for LockKeeperKeyServer {
         &self,
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::RetrieveStorageKeyStream>, Status> {
-        let context = self.context(&request, ClientAction::RetrieveStorageKey)?;
+        let context = self.context(&request)?;
         Ok(operations::RetrieveStorageKey
             .handle_request(context, request)
             .await?)
@@ -159,7 +182,7 @@ impl LockKeeperRpc for LockKeeperKeyServer {
         &self,
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::RetrieveAuditEventsStream>, Status> {
-        let context = self.context(&request, ClientAction::RetrieveAuditEvents)?;
+        let context = self.context(&request)?;
         Ok(operations::RetrieveAuditEvents
             .handle_request(context, request)
             .await?)

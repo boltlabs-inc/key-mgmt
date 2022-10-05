@@ -11,8 +11,9 @@
 #![forbid(rustdoc::broken_intra_doc_links)]
 
 use serde::{Deserialize, Serialize};
-use std::fmt;
+use std::{fmt, str::FromStr};
 use strum::EnumIter;
+use tonic::Status;
 
 pub mod audit_event;
 pub mod channel;
@@ -44,6 +45,24 @@ pub enum ClientAction {
     Retrieve,
     RetrieveAuditEvents,
     RetrieveStorageKey,
+}
+
+impl FromStr for ClientAction {
+    type Err = Status;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "Authenticate" => Ok(ClientAction::Authenticate),
+            "CreateStorageKey" => Ok(ClientAction::CreateStorageKey),
+            "Export" => Ok(ClientAction::Export),
+            "Generate" => Ok(ClientAction::Generate),
+            "Register" => Ok(ClientAction::Register),
+            "Retrieve" => Ok(ClientAction::Retrieve),
+            "RetrieveAuditEvents" => Ok(ClientAction::RetrieveAuditEvents),
+            "RetrieveStorageKey" => Ok(ClientAction::RetrieveStorageKey),
+            _ => Err(Status::invalid_argument("Invalid client action")),
+        }
+    }
 }
 
 /// Options for the asset owner's intended use of a secret
