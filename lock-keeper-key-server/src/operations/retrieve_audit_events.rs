@@ -4,8 +4,8 @@ use crate::{
 };
 use async_trait::async_trait;
 use lock_keeper::{
-    channel::ServerChannel,
-    types::retrieve_audit_events::{client, server},
+    infrastructure::channel::ServerChannel,
+    types::operations::retrieve_audit_events::{client, server},
 };
 
 #[derive(Debug)]

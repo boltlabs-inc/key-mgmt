@@ -1,8 +1,10 @@
 use crate::{LockKeeperClient, LockKeeperClientError};
 use lock_keeper::{
-    audit_event::{AuditEvent, AuditEventOptions, EventType},
-    channel::ClientChannel,
-    types::retrieve_audit_events::{client, server},
+    infrastructure::channel::ClientChannel,
+    types::{
+        audit_event::{AuditEvent, AuditEventOptions, EventType},
+        operations::retrieve_audit_events::{client, server},
+    },
 };
 
 impl LockKeeperClient {

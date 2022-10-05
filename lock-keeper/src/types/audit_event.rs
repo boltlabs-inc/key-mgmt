@@ -2,9 +2,9 @@
 //!
 //! Includes possible events to log and statuses of those events
 
-use crate::user::AccountName;
+use crate::types::{operations::ClientAction, user::AccountName};
 
-use crate::{crypto::KeyId, ClientAction};
+use crate::crypto::KeyId;
 use bson::DateTime;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display, Formatter};

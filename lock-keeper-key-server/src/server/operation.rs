@@ -1,8 +1,7 @@
 use async_trait::async_trait;
 use lock_keeper::{
-    audit_event::EventStatus,
-    channel::ServerChannel,
-    types::{Message, MessageStream},
+    infrastructure::channel::ServerChannel,
+    types::{audit_event::EventStatus, Message, MessageStream},
 };
 use std::{thread, time::Duration};
 use tokio_stream::wrappers::ReceiverStream;

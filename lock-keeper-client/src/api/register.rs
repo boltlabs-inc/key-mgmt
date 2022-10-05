@@ -3,11 +3,13 @@ use crate::{
     LockKeeperClientError,
 };
 use lock_keeper::{
-    channel::ClientChannel,
     config::opaque::OpaqueCipherSuite,
     crypto::OpaqueExportKey,
-    types::register::{client, server},
-    user::AccountName,
+    infrastructure::channel::ClientChannel,
+    types::{
+        operations::register::{client, server},
+        user::AccountName,
+    },
 };
 use opaque_ke::{
     ClientRegistration, ClientRegistrationFinishParameters, ClientRegistrationStartResult,

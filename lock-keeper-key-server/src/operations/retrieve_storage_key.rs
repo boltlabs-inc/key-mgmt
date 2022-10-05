@@ -4,8 +4,8 @@ use crate::{
 };
 use async_trait::async_trait;
 use lock_keeper::{
-    channel::ServerChannel,
-    types::retrieve_storage_key::{client, server},
+    infrastructure::channel::ServerChannel,
+    types::operations::retrieve_storage_key::{client, server},
 };
 
 #[derive(Debug)]

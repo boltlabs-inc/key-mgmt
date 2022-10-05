@@ -1,16 +1,17 @@
 use crate::{
     error::LockKeeperServerError,
-    server::{Context, Operation},
+    server::{opaque_storage::create_or_retrieve_server_key_opaque, Context, Operation},
 };
 use std::ops::DerefMut;
 
 use async_trait::async_trait;
 use lock_keeper::{
-    channel::ServerChannel,
     config::opaque::OpaqueCipherSuite,
-    opaque_storage::create_or_retrieve_server_key_opaque,
-    types::register::{client, server},
-    user::{AccountName, UserId},
+    infrastructure::channel::ServerChannel,
+    types::{
+        operations::register::{client, server},
+        user::{AccountName, UserId},
+    },
 };
 use opaque_ke::ServerRegistration;
 

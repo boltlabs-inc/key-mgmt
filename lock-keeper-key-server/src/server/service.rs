@@ -5,7 +5,6 @@ use hyper::server::conn::Http;
 use lock_keeper::{
     config::server::{Config, Service},
     rpc::lock_keeper_rpc_server::LockKeeperRpcServer,
-    TestLogs,
 };
 use std::{net::SocketAddr, sync::Arc};
 use tokio::{
@@ -56,7 +55,6 @@ async fn start_service(
     let rpc_server = LockKeeperKeyServer::new(db, config, service)?;
     let addr = rpc_server.service.address;
     let port = rpc_server.service.port;
-    info!("{}", TestLogs::ServerSpawned(format!("{}:{}", addr, port)));
 
     let svc = Server::builder()
         .add_service(LockKeeperRpcServer::new(rpc_server))

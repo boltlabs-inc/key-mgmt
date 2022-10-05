@@ -6,14 +6,18 @@ use http_body::combinators::UnsyncBoxBody;
 use hyper::client::HttpConnector;
 use hyper_rustls::HttpsConnector;
 use lock_keeper::{
-    channel::ClientChannel,
     config::client::Config,
+    constants::headers::{ACCOUNT_NAME, ACTION},
     crypto::{OpaqueExportKey, OpaqueSessionKey, StorageKey},
-    defaults::client::{ACCOUNT_NAME, ACTION},
+    infrastructure::channel::ClientChannel,
     rpc::lock_keeper_rpc_client::LockKeeperRpcClient,
-    types::retrieve_storage_key::{client, server},
-    user::{AccountName, UserId},
-    ClientAction,
+    types::{
+        operations::{
+            retrieve_storage_key::{client, server},
+            ClientAction,
+        },
+        user::{AccountName, UserId},
+    },
 };
 use rand::{rngs::StdRng, SeedableRng};
 use std::{str::FromStr, sync::Arc};

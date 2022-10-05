@@ -1,11 +1,13 @@
 use Operation::{Authenticate, Export, Generate, Register, Retrieve, SetFakeKeyId};
 
 use lock_keeper::{
-    audit_event::{AuditEventOptions, EventStatus, EventType},
     config::client::Config,
     crypto::KeyId,
-    user::AccountName,
-    ClientAction, RetrieveContext,
+    types::{
+        audit_event::{AuditEventOptions, EventStatus, EventType},
+        operations::{retrieve::RetrieveContext, ClientAction},
+        user::AccountName,
+    },
 };
 use lock_keeper_client::{
     api::{LocalStorage, RetrieveResult},

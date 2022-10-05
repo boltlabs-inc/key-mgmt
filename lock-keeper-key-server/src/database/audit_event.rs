@@ -6,10 +6,12 @@
 use crate::{constants, LockKeeperServerError};
 use futures::TryStreamExt;
 use lock_keeper::{
-    audit_event::{AuditEvent, AuditEventOptions, EventStatus, EventType},
     crypto::KeyId,
-    user::AccountName,
-    ClientAction,
+    types::{
+        audit_event::{AuditEvent, AuditEventOptions, EventStatus, EventType},
+        operations::ClientAction,
+        user::AccountName,
+    },
 };
 use mongodb::bson::{doc, Document};
 
@@ -72,20 +74,12 @@ fn construct_query_with_options(
 
 #[cfg(test)]
 mod test {
-    use crate::{
-        database::{
-            test::{server_registration, setup_db},
-            Database,
-        },
-        LockKeeperServerError,
-    };
+    use super::*;
+
+    use crate::database::test::{server_registration, setup_db};
+
     use bson::DateTime;
-    use lock_keeper::{
-        audit_event::{AuditEvent, AuditEventOptions, EventStatus, EventType},
-        crypto::KeyId,
-        user::{AccountName, UserId},
-        ClientAction,
-    };
+    use lock_keeper::types::user::UserId;
     use rand::{seq::SliceRandom, CryptoRng, RngCore};
     use std::str::FromStr;
     use strum::IntoEnumIterator;

@@ -14,11 +14,13 @@ mod retrieve_audit_events;
 
 use crate::{client::Password, LockKeeperClient, LockKeeperClientError};
 use lock_keeper::{
-    audit_event::{AuditEvent, AuditEventOptions, EventType},
     config::client::Config,
     crypto::{KeyId, Secret},
-    user::AccountName,
-    ClientAction, RetrieveContext,
+    types::{
+        audit_event::{AuditEvent, AuditEventOptions, EventType},
+        operations::{retrieve::RetrieveContext, ClientAction},
+        user::AccountName,
+    },
 };
 use rand::{rngs::StdRng, SeedableRng};
 use serde::{Deserialize, Serialize};
@@ -169,10 +171,10 @@ impl LockKeeperClient {
     /// and each asset fiduciary (if relevant), and any other relevant
     /// details.
     ///
-    /// The [`lock_keeper::user::UserId`] must match the asset owner
+    /// The [`lock_keeper::types::user::UserId`] must match the asset owner
     /// authenticated in the [`crate::LockKeeperClient`], and if specified,
     /// the [`KeyId`] must correspond to a key owned by the
-    /// [`lock_keeper::user::UserId`].
+    /// [`lock_keeper::types::user::UserId`].
     ///
     /// Output: if successful, returns a [`String`] representation of the logs.
     pub async fn retrieve_audit_event_log(

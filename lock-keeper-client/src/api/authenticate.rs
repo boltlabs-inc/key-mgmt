@@ -2,11 +2,13 @@ use crate::client::{AuthenticateResult, LockKeeperClient, Password};
 
 use crate::LockKeeperClientError;
 use lock_keeper::{
-    channel::ClientChannel,
     config::opaque::OpaqueCipherSuite,
     crypto::OpaqueSessionKey,
-    types::authenticate::{client, server},
-    user::{AccountName, UserId},
+    infrastructure::channel::ClientChannel,
+    types::{
+        operations::authenticate::{client, server},
+        user::{AccountName, UserId},
+    },
 };
 use opaque_ke::{
     ClientLogin, ClientLoginFinishParameters, ClientLoginFinishResult, ClientLoginStartResult,

@@ -6,9 +6,9 @@
 use crate::{constants, LockKeeperServerError};
 use lock_keeper::{
     config::opaque::OpaqueCipherSuite,
+    constants::headers::{ACCOUNT_NAME, USER_ID},
     crypto::{Encrypted, KeyId, Secret, StorageKey},
-    defaults::server::{ACCOUNT_NAME, USER_ID},
-    user::{AccountName, StoredSecret, User, UserId},
+    types::user::{AccountName, StoredSecret, User, UserId},
 };
 use mongodb::bson::{doc, oid::ObjectId};
 use opaque_ke::ServerRegistration;
@@ -159,7 +159,7 @@ mod test {
     use lock_keeper::{
         config::server::DatabaseSpec,
         crypto::OpaqueExportKey,
-        user::{AccountName, User, UserId},
+        types::user::{AccountName, User, UserId},
     };
     use rand::{CryptoRng, Rng, RngCore};
 

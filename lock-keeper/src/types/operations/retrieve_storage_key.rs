@@ -1,5 +1,5 @@
 pub mod client {
-    use crate::{impl_message_conversion, user::UserId};
+    use crate::{impl_message_conversion, types::user::UserId};
     use serde::{Deserialize, Serialize};
 
     #[derive(Debug, Deserialize, Serialize)]

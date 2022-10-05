@@ -1,3 +1,4 @@
+pub(crate) mod opaque_storage;
 mod operation;
 mod service;
 
@@ -9,15 +10,13 @@ use crate::{database::Database, error::LockKeeperServerError, operations};
 
 use lock_keeper::{
     config::server::{Config, Service},
+    constants::headers::ACCOUNT_NAME,
     crypto::KeyId,
-    defaults::server::ACCOUNT_NAME,
     rpc::{lock_keeper_rpc_server::LockKeeperRpc, HealthCheck},
-    types::{Message, MessageStream},
-    user::AccountName,
-    ClientAction,
+    types::{operations::ClientAction, user::AccountName, Message, MessageStream},
 };
 
-use lock_keeper::defaults::server::ACTION;
+use lock_keeper::constants::headers::ACTION;
 use rand::{rngs::StdRng, SeedableRng};
 use std::sync::Arc;
 use tokio::sync::Mutex;
