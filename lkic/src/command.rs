@@ -276,6 +276,10 @@ command: print [key_name]
 aliases: p
 description: Prints all stored information about the given key.
 
+command: list
+aliases: ls
+description: Prints stored information about every key associated with the current account.
+
 command: help
 aliases: h
 description: Prints help text.
