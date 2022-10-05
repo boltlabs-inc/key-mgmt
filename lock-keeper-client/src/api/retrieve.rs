@@ -1,5 +1,5 @@
 use crate::{
-    api::arbitrary_secrets::{LocalStorage, RetrieveResult},
+    api::{LocalStorage, RetrieveResult},
     LockKeeperClient, LockKeeperClientError,
 };
 use lock_keeper::{

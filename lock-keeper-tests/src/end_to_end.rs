@@ -8,7 +8,7 @@ use lock_keeper::{
     ClientAction, RetrieveContext,
 };
 use lock_keeper_client::{
-    api::arbitrary_secrets::{LocalStorage, RetrieveResult},
+    api::{LocalStorage, RetrieveResult},
     client::Password,
     LockKeeperClient, LockKeeperClientError,
 };
