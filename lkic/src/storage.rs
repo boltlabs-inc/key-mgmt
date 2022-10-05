@@ -115,6 +115,7 @@ impl Storage {
     fn load(path: impl AsRef<Path>) -> anyhow::Result<HashMap<String, UserStore>> {
         let mut result = HashMap::new();
 
+        fs::create_dir_all(path.as_ref())?;
         let paths = fs::read_dir(path.as_ref())?;
 
         for path in paths {
