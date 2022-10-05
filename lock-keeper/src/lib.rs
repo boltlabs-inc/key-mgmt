@@ -15,17 +15,14 @@ use std::fmt;
 use strum::EnumIter;
 
 pub mod audit_event;
-pub mod blockchain;
 pub mod channel;
 pub mod config;
 pub mod crypto;
 pub mod defaults;
 pub mod error;
-pub mod keys;
 pub mod opaque_storage;
 pub mod pem_utils;
 pub mod timeout;
-pub mod transaction;
 pub mod types;
 pub mod user;
 
