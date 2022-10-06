@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "lkic",
     "lock-keeper",
     "lock-keeper-client",
     "lock-keeper-key-server",
