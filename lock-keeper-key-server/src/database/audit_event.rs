@@ -148,6 +148,7 @@ mod test {
     }
 
     #[tokio::test]
+    #[ignore]
     async fn event_type_filter_works() -> Result<(), LockKeeperServerError> {
         // Setup db for this test
         let db = setup_db("event_type_filter_works").await?;
@@ -186,6 +187,7 @@ mod test {
     }
 
     #[tokio::test]
+    #[ignore]
     async fn key_id_filter_works() -> Result<(), LockKeeperServerError> {
         // Setup db for this test
         let db = setup_db("key_id_filter_works").await?;
@@ -213,6 +215,7 @@ mod test {
     }
 
     #[tokio::test]
+    #[ignore]
     async fn after_date_filter_works() -> Result<(), LockKeeperServerError> {
         // Use timestamp as comparison date
         let after_date = DateTime::now();
@@ -242,6 +245,7 @@ mod test {
     }
 
     #[tokio::test]
+    #[ignore]
     async fn before_date_filter_works() -> Result<(), LockKeeperServerError> {
         // Use timestamp as comparison date
         let before_date = DateTime::now();
