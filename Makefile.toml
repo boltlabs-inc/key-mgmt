@@ -1,7 +1,7 @@
 [config]
 default_to_workspace = false
 
-# Server tasks
+# -- Server Tasks --
 
 # Shorthand task to start server in the background.
 [tasks.start]
@@ -43,16 +43,55 @@ command = "cargo"
 args = ["run", "--bin", "key-server-cli", "./dev/local/Server.toml"]
 dependencies = ["certs"]
 
-# Run the interactive client.
-[tasks.lkic]
-command = "cargo"
-args = ["run", "--bin", "lkic"]
+# -- Testing Tasks --
 
 # Run end-to-end tests against a server that can be accessed via localhost.
 # Servers running in Docker satisfy this requirement.
 [tasks.e2e]
 command = "cargo"
 args = ["run", "--bin", "lock-keeper-tests", "./dev/local/Client.toml"]
+
+# -- CI Tasks --
+[tasks.ci]
+dependencies = ["ci-format", "ci-clippy", "ci-build", "ci-tests", "ci-doc-tests", "ci-docs", "ci-database-tests"]
+
+[tasks.ci-format]
+toolchain = "nightly"
+command = "cargo"
+args = ["fmt", "--all", "--check"]
+
+[tasks.ci-clippy]
+command = "cargo"
+args = ["clippy", "--all-features", "--all-targets", "--workspace", "--", "-Dwarnings"]
+
+[tasks.ci-build]
+command = "cargo"
+args = ["build", "--all-features", "--all-targets", "--workspace"]
+
+[tasks.ci-tests]
+command = "cargo"
+args = ["test", "--all-features", "--lib", "--bins", "--workspace"]
+
+[tasks.ci-doc-tests]
+command = "cargo"
+args = ["test", "--all-features", "--doc", "--workspace"]
+
+[tasks.ci-docs]
+command = "cargo"
+env = { "RUSTDOCFLAGS" = "-Dwarnings" }
+args = ["doc", "--all-features", "--no-deps", "--workspace"]
+
+# TODO: Remove with #268
+[tasks.ci-database-tests]
+command = "cargo"
+args = ["test", "--all-features", "--lib", "--bins", "--workspace", "--", "--ignored"]
+
+# -- Utility Tasks --
+
+# Run the interactive client.
+[tasks.lkic]
+command = "cargo"
+args = ["run", "--bin", "lkic"]
 
 # Generate certificates in the dev directory at the root of this repo.
 [tasks.certs]

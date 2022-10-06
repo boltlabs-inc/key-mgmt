@@ -31,7 +31,7 @@ async fn wait_for_server(config: &Config) {
             Err(_) => {
                 println!("Server connection failed. Retrying in {:?}", RETRY_DELAY);
                 if i == 0 {
-                    println!("Did you remember to run `cargo make run-server`?")
+                    println!("Did you remember to run `cargo make start`?")
                 }
                 std::thread::sleep(RETRY_DELAY);
             }
