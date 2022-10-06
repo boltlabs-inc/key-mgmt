@@ -1,4 +1,4 @@
-use Operation::{Authenticate, Export, Generate, Register, Retrieve};
+use Operation::{Authenticate, Export, Generate, Register, Retrieve, SetFakeKeyId};
 
 use lock_keeper::{
     audit_event::{AuditEventOptions, EventStatus, EventType},
@@ -12,7 +12,7 @@ use lock_keeper_client::{
     client::Password,
     LockKeeperClient, LockKeeperClientError,
 };
-use rand::{distributions::Alphanumeric, Rng};
+use rand::{distributions::Alphanumeric, rngs::StdRng, Rng, SeedableRng};
 use serde::Serialize;
 use serde_json::Value;
 use std::{collections::HashMap, str::FromStr};
@@ -172,6 +172,29 @@ async fn tests() -> Vec<Test> {
             ],
         ),
         Test::new(
+            "Retrieving a non-existent secret fails",
+            vec![
+                (
+                    Register,
+                    Outcome {
+                        expected_error: None,
+                    },
+                ),
+                (
+                    SetFakeKeyId,
+                    Outcome {
+                        expected_error: None,
+                    },
+                ),
+                (
+                    Retrieve,
+                    Outcome {
+                        expected_error: Some(LockKeeperClientError::InvalidAccount),
+                    },
+                ),
+            ],
+        ),
+        Test::new(
             "Export a secret",
             vec![
                 (
@@ -190,6 +213,29 @@ async fn tests() -> Vec<Test> {
                     Export,
                     Outcome {
                         expected_error: None,
+                    },
+                ),
+            ],
+        ),
+        Test::new(
+            "Exporting a non-existent secret fails",
+            vec![
+                (
+                    Register,
+                    Outcome {
+                        expected_error: None,
+                    },
+                ),
+                (
+                    SetFakeKeyId,
+                    Outcome {
+                        expected_error: None,
+                    },
+                ),
+                (
+                    Export,
+                    Outcome {
+                        expected_error: Some(LockKeeperClientError::InvalidAccount),
                     },
                 ),
             ],
@@ -266,6 +312,20 @@ impl Test {
     async fn execute(&mut self, config: &Config) -> Result<(), anyhow::Error> {
         for (op, expected_outcome) in &self.operations {
             let outcome: Result<(), anyhow::Error> = match op {
+                SetFakeKeyId => {
+                    // Authenticate
+                    let lock_keeper_client = LockKeeperClient::authenticated_client(
+                        &self.account_name,
+                        &self.password,
+                        config,
+                    )
+                    .await?;
+                    // Create fake KeyId and set to GENERATED_ID
+                    let mut rng = StdRng::from_entropy();
+                    let key_id = KeyId::generate(&mut rng, lock_keeper_client.user_id())?;
+                    self.state.set(GENERATED_ID, key_id)?;
+                    Ok(())
+                }
                 Register => LockKeeperClient::register(&self.account_name, &self.password, config)
                     .await
                     .map_err(|e| e.into()),
@@ -291,26 +351,30 @@ impl Test {
                     // Get KeyId from state and run export
                     let key_id_json = self.state.get(GENERATED_ID)?;
                     let key_id: KeyId = serde_json::from_value(key_id_json.clone())?;
-                    let res = lock_keeper_client.export_key(&key_id).await?;
-                    // Compare generated key and exported key material
-                    let original_local_storage_json = self.state.get(GENERATED_KEY)?.clone();
-                    let original_local_storage_bytes: Vec<u8> =
-                        serde_json::from_value::<LocalStorage>(
-                            original_local_storage_json.clone(),
-                        )?
-                        .secret
-                        .into();
-                    let res_json = serde_json::to_value(res.clone())?;
-                    if original_local_storage_bytes != res {
-                        Err(TestError::InvalidValueRetrieved(
-                            original_local_storage_json,
-                            res_json,
-                        ))
-                    } else {
-                        Ok(())
-                    }?;
-
-                    Ok(())
+                    match lock_keeper_client.export_key(&key_id).await {
+                        Ok(res) => {
+                            // Compare generated key and exported key material
+                            let original_local_storage_json =
+                                self.state.get(GENERATED_KEY)?.clone();
+                            let original_local_storage_bytes: Vec<u8> =
+                                serde_json::from_value::<LocalStorage>(
+                                    original_local_storage_json.clone(),
+                                )?
+                                .secret
+                                .into();
+                            let res_json = serde_json::to_value(res.clone())?;
+                            if original_local_storage_bytes != res {
+                                Err(TestError::InvalidValueRetrieved(
+                                    original_local_storage_json,
+                                    res_json,
+                                )
+                                .into())
+                            } else {
+                                Ok(())
+                            }
+                        }
+                        Err(e) => Err(anyhow::Error::from(e)),
+                    }
                 }
                 Generate => {
                     // Authenticate and run generate
@@ -322,8 +386,8 @@ impl Test {
                     .await?;
                     let (key_id, local_storage) = lock_keeper_client.generate_and_store().await?;
                     // Store generated key ID and local storage object to state
-                    self.state.set(GENERATED_ID.to_string(), key_id)?;
-                    self.state.set(GENERATED_KEY.to_string(), local_storage)
+                    self.state.set(GENERATED_ID, key_id)?;
+                    self.state.set(GENERATED_KEY, local_storage)
                 }
                 Retrieve => {
                     // Authenticate
@@ -336,31 +400,38 @@ impl Test {
                     // Get KeyId from state and run retrieve
                     let key_id_json = self.state.get(GENERATED_ID)?;
                     let key_id: KeyId = serde_json::from_value(key_id_json.clone())?;
-                    let res = lock_keeper_client
-                        .retrieve(&key_id, RetrieveContext::LocalOnly)
-                        .await?;
-                    let original_local_storage_json = self.state.get(GENERATED_KEY)?.clone();
 
                     // Ensure result matches what was stored in generate
-                    match res {
-                        RetrieveResult::None => Err(TestError::InvalidValueRetrieved(
-                            original_local_storage_json,
-                            Value::Null,
-                        )),
-                        RetrieveResult::ArbitraryKey(local_storage) => {
-                            let new_local_storage_json = serde_json::to_value(local_storage)?;
-                            if original_local_storage_json != new_local_storage_json {
-                                Err(TestError::InvalidValueRetrieved(
+                    match lock_keeper_client
+                        .retrieve(&key_id, RetrieveContext::LocalOnly)
+                        .await
+                    {
+                        Ok(res) => {
+                            let original_local_storage_json =
+                                self.state.get(GENERATED_KEY)?.clone();
+                            match res {
+                                RetrieveResult::None => Err(TestError::InvalidValueRetrieved(
                                     original_local_storage_json,
-                                    new_local_storage_json,
-                                ))
-                            } else {
-                                Ok(())
+                                    Value::Null,
+                                )
+                                .into()),
+                                RetrieveResult::ArbitraryKey(local_storage) => {
+                                    let new_local_storage_json =
+                                        serde_json::to_value(local_storage)?;
+                                    if original_local_storage_json != new_local_storage_json {
+                                        Err(TestError::InvalidValueRetrieved(
+                                            original_local_storage_json,
+                                            new_local_storage_json,
+                                        )
+                                        .into())
+                                    } else {
+                                        Ok(())
+                                    }
+                                }
                             }
                         }
-                    }?;
-
-                    Ok(())
+                        Err(e) => Err(anyhow::Error::from(e)),
+                    }
                 }
             };
 
@@ -460,6 +531,7 @@ enum Operation {
     Generate,
     Register,
     Retrieve,
+    SetFakeKeyId,
 }
 
 impl Operation {
@@ -482,6 +554,7 @@ impl Operation {
                 }
             }
             Self::Retrieve => Some(ClientAction::Retrieve),
+            Self::SetFakeKeyId => None,
         }
     }
 }
