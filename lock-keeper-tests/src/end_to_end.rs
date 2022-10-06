@@ -249,6 +249,23 @@ async fn tests() -> Vec<Test> {
                 ),
             ],
         ),
+        Test::new(
+            "Remote generate a secret",
+            vec![
+                (
+                    Register,
+                    Outcome {
+                        expected_error: None,
+                    },
+                ),
+                (
+                    RemoteGenerate,
+                    Outcome {
+                        expected_error: None,
+                    },
+                ),
+            ],
+        ),
     ]
 }
 
@@ -444,6 +461,20 @@ impl Test {
                         Err(e) => Err(anyhow::Error::from(e)),
                     }
                 }
+                RemoteGenerate => {
+                    // Authenticate and run remote generate
+                    let lock_keeper_client = LockKeeperClient::authenticated_client(
+                        &self.account_name,
+                        &self.password,
+                        config,
+                    )
+                    .await?;
+                    let key_id = lock_keeper_client.remote_generate().await?;
+                    // Store generated key ID
+                    self.state.set(GENERATED_ID, key_id)?;
+
+                    Ok(())
+                }
             };
 
             // Check whether the process errors matched the expectation.
@@ -542,6 +573,7 @@ enum Operation {
     Export,
     Generate,
     Register,
+    RemoteGenerate,
     Retrieve,
     SetFakeKeyId,
 }
@@ -565,6 +597,7 @@ impl Operation {
                     Some(ClientAction::Register)
                 }
             }
+            Self::RemoteGenerate => Some(ClientAction::RemoteGenerate),
             Self::Retrieve => Some(ClientAction::Retrieve),
             Self::SetFakeKeyId => None,
         }

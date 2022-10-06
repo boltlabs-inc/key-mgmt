@@ -40,6 +40,8 @@ pub enum LockKeeperServerError {
     #[error("OPAQUE protocol error: {}", .0)]
     OpaqueProtocol(opaque_ke::errors::ProtocolError),
     #[error(transparent)]
+    StrumParseError(#[from] strum::ParseError),
+    #[error(transparent)]
     TonicStatus(#[from] tonic::Status),
     #[error(transparent)]
     TonicTransport(#[from] tonic::transport::Error),
@@ -58,6 +60,7 @@ impl From<LockKeeperServerError> for Status {
             LockKeeperServerError::AccountAlreadyRegistered
             | LockKeeperServerError::InvalidAccount
             | LockKeeperServerError::KeyNotFound => Status::invalid_argument(error.to_string()),
+
             LockKeeperServerError::StorageKeyAlreadySet
             | LockKeeperServerError::StorageKeyNotSet => Status::internal(error.to_string()),
 
@@ -75,6 +78,7 @@ impl From<LockKeeperServerError> for Status {
             | LockKeeperServerError::Bincode(_)
             | LockKeeperServerError::OpaqueProtocol(_)
             | LockKeeperServerError::EnvVar(_)
+            | LockKeeperServerError::StrumParseError(_)
             | LockKeeperServerError::MongoDb(_) => Status::internal("Internal server error"),
         }
     }

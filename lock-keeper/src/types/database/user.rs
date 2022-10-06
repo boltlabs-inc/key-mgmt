@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use std::{fmt::Display, str::FromStr, vec::IntoIter};
 use uuid::Uuid;
 
-use super::secrets::StoredSecret;
+use super::secrets::StoredSecrets;
 
 /// Unique ID for a user.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
@@ -104,7 +104,7 @@ pub struct User {
     pub user_id: UserId,
     pub account_name: AccountName,
     pub storage_key: Option<Encrypted<StorageKey>>,
-    pub secrets: Vec<StoredSecret>,
+    pub secrets: StoredSecrets,
     pub server_registration: ServerRegistration<OpaqueCipherSuite>,
 }
 
@@ -118,7 +118,7 @@ impl User {
             user_id,
             account_name,
             storage_key: None,
-            secrets: Vec::new(),
+            secrets: StoredSecrets::default(),
             server_registration,
         }
     }

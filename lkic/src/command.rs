@@ -32,6 +32,9 @@ pub enum Command {
     Retrieve {
         name: String,
     },
+    RemoteGenerate {
+        name: Option<String>,
+    },
     Print {
         name: String,
     },
@@ -147,6 +150,41 @@ impl Command {
                 )?;
                 println!("Updated: {name}");
             }
+            Command::RemoteGenerate { name } => {
+                let credentials = state
+                    .credentials
+                    .as_ref()
+                    .ok_or_else(|| anyhow::anyhow!("Not authenticated"))?;
+
+                // Authenticate user to the key server
+                let lock_keeper_client = LockKeeperClient::authenticated_client(
+                    &credentials.account_name,
+                    &credentials.password,
+                    &state.config,
+                )
+                .await?;
+
+                // If successful, proceed to generate a secret with the established session
+                let key_id = lock_keeper_client.remote_generate().await?;
+
+                // Store Key Id
+                match name {
+                    Some(name) => {
+                        state.storage.store_named(
+                            credentials.account_name.clone(),
+                            &name,
+                            key_id,
+                        )?;
+                        println!("Stored: {name}");
+                    }
+                    None => {
+                        let name = state
+                            .storage
+                            .store(credentials.account_name.clone(), key_id)?;
+                        println!("Stored: {name}");
+                    }
+                }
+            }
             Command::Print { name } => {
                 let credentials = state
                     .credentials
@@ -231,6 +269,11 @@ impl FromStr for Command {
                         .ok_or_else(|| anyhow::anyhow!("Expected: {RETRIEVE_FORMAT}"))?
                         .to_string();
                     Ok(Self::Retrieve { name })
+                }
+                "remote-generate" | "rgen" | "rg" => {
+                    let name = split.next().map(ToString::to_string);
+
+                    Ok(Self::RemoteGenerate { name })
                 }
                 "print" | "p" => {
                     let name = split

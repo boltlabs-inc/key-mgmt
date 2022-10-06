@@ -9,6 +9,7 @@ mod authenticate;
 mod create_storage_key;
 mod generate;
 mod register;
+mod remote_generate;
 mod retrieve;
 mod retrieve_audit_events;
 
@@ -158,6 +159,17 @@ impl LockKeeperClient {
         .await?;
         self.handle_retrieve(&mut client_channel, key_id, context)
             .await
+    }
+
+    /// Request that the server generate a new signing key
+    pub async fn remote_generate(&self) -> Result<KeyId, LockKeeperClientError> {
+        let mut client_channel = Self::create_channel(
+            &mut self.tonic_client(),
+            ClientAction::RemoteGenerate,
+            self.account_name(),
+        )
+        .await?;
+        self.handle_remote_generate(&mut client_channel).await
     }
 
     /// Retrieve the log of audit events from the key server for the
