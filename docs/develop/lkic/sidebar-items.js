@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":[["main",""]],"mod":[["app",""],["cli","Command-line arguments"],["command","Types for parsing and handling commands received as user input."],["state","Types for the state of the running application and any related types contained in the state."],["storage","Local storage types for in-memory and on-disk storage of key information."]]};

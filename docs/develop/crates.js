@@ -1,1 +1,1 @@
-window.ALL_CRATES = ["key_server_cli","lock_keeper","lock_keeper_client","lock_keeper_key_server","lock_keeper_tests"];
+window.ALL_CRATES = ["key_server_cli","lkic","lock_keeper","lock_keeper_client","lock_keeper_key_server","lock_keeper_tests"];
