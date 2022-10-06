@@ -173,6 +173,7 @@ mod test {
     };
 
     #[tokio::test]
+    #[ignore]
     async fn user_findable_by_account_name() -> Result<(), LockKeeperServerError> {
         let mut rng = rand::thread_rng();
         let db = setup_db("user_findable_by_account_name").await?;
@@ -193,6 +194,7 @@ mod test {
     }
 
     #[tokio::test]
+    #[ignore]
     async fn user_findable_by_id() -> Result<(), LockKeeperServerError> {
         let mut rng = rand::thread_rng();
         let db = setup_db("user_findable_by_id").await?;
@@ -219,6 +221,7 @@ mod test {
     }
 
     #[tokio::test]
+    #[ignore]
     async fn multiple_connections_do_not_overwrite_db() -> Result<(), LockKeeperServerError> {
         let mut rng = rand::thread_rng();
         let mongodb_uri = "mongodb://localhost:27017";
@@ -277,6 +280,7 @@ mod test {
     }
 
     #[tokio::test]
+    #[ignore]
     async fn unique_indices_enforced() -> Result<(), LockKeeperServerError> {
         let mut rng = rand::thread_rng();
         let db = setup_db("unique_indices_are_enforced").await?;
@@ -314,6 +318,7 @@ mod test {
     }
 
     #[tokio::test]
+    #[ignore]
     async fn user_is_deleted() -> Result<(), LockKeeperServerError> {
         let mut rng = rand::thread_rng();
         let db = setup_db("user_is_deleted").await?;
@@ -346,6 +351,7 @@ mod test {
     }
 
     #[tokio::test]
+    #[ignore]
     /// Test that `set_storage_key` works correctly
     async fn storage_key_is_set() -> Result<(), LockKeeperServerError> {
         let mut rng = rand::thread_rng();
