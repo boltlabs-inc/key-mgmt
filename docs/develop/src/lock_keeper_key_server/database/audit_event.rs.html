@@ -269,6 +269,10 @@
 <span id="269">269</span>
 <span id="270">270</span>
 <span id="271">271</span>
+<span id="272">272</span>
+<span id="273">273</span>
+<span id="274">274</span>
+<span id="275">275</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Module for operations on audit events in the database.</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! Functions in this module are used to perform CRUD operations</span>
@@ -419,6 +423,7 @@
     }
 
     <span class="attribute">#[<span class="ident">tokio::test</span>]</span>
+    <span class="attribute">#[<span class="ident">ignore</span>]</span>
     <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">event_type_filter_works</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">LockKeeperServerError</span><span class="op">&gt;</span> {
         <span class="comment">// Setup db for this test</span>
         <span class="kw">let</span> <span class="ident">db</span> <span class="op">=</span> <span class="ident">setup_db</span>(<span class="string">&quot;event_type_filter_works&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
@@ -457,6 +462,7 @@
     }
 
     <span class="attribute">#[<span class="ident">tokio::test</span>]</span>
+    <span class="attribute">#[<span class="ident">ignore</span>]</span>
     <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">key_id_filter_works</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">LockKeeperServerError</span><span class="op">&gt;</span> {
         <span class="comment">// Setup db for this test</span>
         <span class="kw">let</span> <span class="ident">db</span> <span class="op">=</span> <span class="ident">setup_db</span>(<span class="string">&quot;key_id_filter_works&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
@@ -484,6 +490,7 @@
     }
 
     <span class="attribute">#[<span class="ident">tokio::test</span>]</span>
+    <span class="attribute">#[<span class="ident">ignore</span>]</span>
     <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">after_date_filter_works</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">LockKeeperServerError</span><span class="op">&gt;</span> {
         <span class="comment">// Use timestamp as comparison date</span>
         <span class="kw">let</span> <span class="ident">after_date</span> <span class="op">=</span> <span class="ident">DateTime::now</span>();
@@ -513,6 +520,7 @@
     }
 
     <span class="attribute">#[<span class="ident">tokio::test</span>]</span>
+    <span class="attribute">#[<span class="ident">ignore</span>]</span>
     <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">before_date_filter_works</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">LockKeeperServerError</span><span class="op">&gt;</span> {
         <span class="comment">// Use timestamp as comparison date</span>
         <span class="kw">let</span> <span class="ident">before_date</span> <span class="op">=</span> <span class="ident">DateTime::now</span>();
