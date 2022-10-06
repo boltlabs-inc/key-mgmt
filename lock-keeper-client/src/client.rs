@@ -6,12 +6,12 @@ use http_body::combinators::UnsyncBoxBody;
 use hyper::client::HttpConnector;
 use hyper_rustls::HttpsConnector;
 use lock_keeper::{
-    audit_event::{AuditEvent, AuditEventOptions, EventType},
     channel::ClientChannel,
     config::client::Config,
-    crypto::{OpaqueExportKey, OpaqueSessionKey},
-    defaults::client::ACCOUNT_NAME,
+    crypto::{OpaqueExportKey, OpaqueSessionKey, StorageKey},
+    defaults::client::{ACCOUNT_NAME, ACTION},
     rpc::lock_keeper_rpc_client::LockKeeperRpcClient,
+    types::retrieve_storage_key::{client, server},
     user::{AccountName, UserId},
     ClientAction,
 };
@@ -92,31 +92,15 @@ impl LockKeeperClient {
         &self.account_name
     }
 
-    pub fn tonic_client(&self) -> LockKeeperRpcClient<LockKeeperRpcClientInner> {
+    pub(crate) fn tonic_client(&self) -> LockKeeperRpcClient<LockKeeperRpcClientInner> {
         self.tonic_client.clone()
-    }
-
-    pub async fn health(config: &Config) -> Result<(), LockKeeperClientError> {
-        use lock_keeper::rpc::HealthCheck;
-
-        let mut client = Self::connect(config).await?;
-        match client.health(HealthCheck { check: true }).await {
-            Ok(response) => {
-                if response.into_inner() == (HealthCheck { check: true }) {
-                    Ok(())
-                } else {
-                    Err(LockKeeperClientError::HealthCheckFailed)
-                }
-            }
-            Err(_) => Err(LockKeeperClientError::HealthCheckFailed),
-        }
     }
 
     /// Create a `tonic` client object and return it to the client app.
     ///
     /// The returned client should be stored as part of the [`LockKeeperClient`]
     /// state.
-    async fn connect(
+    pub(crate) async fn connect(
         config: &Config,
     ) -> Result<LockKeeperRpcClient<LockKeeperRpcClientInner>, LockKeeperClientError> {
         let address = config.server_location()?;
@@ -139,22 +123,7 @@ impl LockKeeperClient {
         Ok(rpc_client)
     }
 
-    /// Authenticate to the Lock Keeper key server as a previously registered
-    /// user.
-    ///
-    /// Output: If successful, returns a [`LockKeeperClient`].
-    pub async fn authenticated_client(
-        account_name: &AccountName,
-        password: &Password,
-        config: &Config,
-    ) -> Result<Self, LockKeeperClientError> {
-        let mut rng = StdRng::from_entropy();
-        let server_location = config.server_location()?;
-        let mut client = Self::connect(config).await?;
-        Self::authenticate(client, account_name, password, config).await
-    }
-
-    async fn authenticate(
+    pub(crate) async fn authenticate(
         mut client: LockKeeperRpcClient<LockKeeperRpcClientInner>,
         account_name: &AccountName,
         password: &Password,
@@ -191,48 +160,6 @@ impl LockKeeperClient {
         }
     }
 
-    /// Register a new user who has not yet interacted with the service.
-    ///
-    /// This only needs to be called once per user; future sessions can be
-    /// created with [`LockKeeperClient::authenticated_client()`].
-    ///
-    /// Output: Returns Ok if successful. To perform further operations, use
-    /// [`Self::authenticated_client()`].
-    pub async fn register(
-        account_name: &AccountName,
-        password: &Password,
-        config: &Config,
-    ) -> Result<(), LockKeeperClientError> {
-        let mut rng = StdRng::from_entropy();
-        let server_location = config.server_location()?;
-        let mut client = Self::connect(config).await?;
-        let mut client_channel =
-            Self::create_channel(&mut client, ClientAction::Register, account_name).await?;
-        let result =
-            Self::handle_registration(client_channel, &mut rng, account_name, password).await;
-        match result {
-            Ok(export_key) => {
-                let mut client = Self::authenticate(client, account_name, password, config).await?;
-
-                // After authenticating we can create the storage key
-                let mut client_channel = Self::create_channel(
-                    &mut client.tonic_client,
-                    ClientAction::CreateStorageKey,
-                    account_name,
-                )
-                .await?;
-                Self::handle_create_storage_key(client_channel, &mut rng, account_name, export_key)
-                    .await;
-
-                Ok(())
-            }
-            Err(e) => {
-                error!("{:?}", e);
-                Err(e)
-            }
-        }
-    }
-
     /// Helper to create the appropriate [`ClientChannel`] to send to tonic
     /// handler functions based on the client's action.
     pub(crate) async fn create_channel(
@@ -245,15 +172,19 @@ impl LockKeeperClient {
         let (tx, rx) = mpsc::channel(2);
         let mut stream = Request::new(ReceiverStream::new(rx));
 
+        // Set AccountName and Action in metadata
         let account_name_val = MetadataValue::try_from(account_name.to_string())?;
+        let action_val = MetadataValue::try_from(format!("{:?}", action))?;
         let _ = stream.metadata_mut().insert(ACCOUNT_NAME, account_name_val);
+        let _ = stream.metadata_mut().insert(ACTION, action_val);
 
         // Server returns its own channel that is uses to send responses
         let server_response = match action {
-            ClientAction::Register => client.register(stream).await,
             ClientAction::Authenticate => client.authenticate(stream).await,
             ClientAction::CreateStorageKey => client.create_storage_key(stream).await,
+            ClientAction::Export => client.retrieve(stream).await,
             ClientAction::Generate => client.generate(stream).await,
+            ClientAction::Register => client.register(stream).await,
             ClientAction::Retrieve => client.retrieve(stream).await,
             ClientAction::RetrieveAuditEvents => client.retrieve_audit_events(stream).await,
             ClientAction::RetrieveStorageKey => client.retrieve_storage_key(stream).await,
@@ -264,42 +195,37 @@ impl LockKeeperClient {
         Ok(channel)
     }
 
-    /// Retrieve the log of audit events from the key server for the
-    /// authenticated asset owner; optionally, filter for audit events
-    /// associated with the specified [`lock_keeper::crypto::KeyId`].
-    ///
-    /// The log of audit events includes context
-    /// about any action requested and/or taken on the digital asset key,
-    /// including which action was requested and by whom, the date, details
-    /// about approval or rejection from each key server, the policy engine,
-    /// and each asset fiduciary (if relevant), and any other relevant
-    /// details.
-    ///
-    /// The [`UserId`] must match the asset owner authenticated in the
-    /// [`crate::LockKeeperClient`], and if specified, the
-    /// [`lock_keeper::crypto::KeyId`] must correspond to a key owned by the
-    /// [`UserId`].
-    ///
-    /// Output: if successful, returns a [`String`] representation of the logs.
-    pub async fn retrieve_audit_event_log(
-        &self,
-        event_type: EventType,
-        options: AuditEventOptions,
-    ) -> Result<Vec<AuditEvent>, LockKeeperClientError> {
-        let mut client_channel = Self::create_channel(
-            &mut self.tonic_client(),
-            ClientAction::RetrieveAuditEvents,
-            self.account_name(),
-        )
-        .await?;
-        self.handle_retrieve_audit_events(&mut client_channel, event_type, options)
-            .await
-    }
-
     /// Close a session.
     ///
     /// Outputs: None, if successful.
     pub fn close(self) -> Result<(), LockKeeperClientError> {
         todo!()
+    }
+
+    /// Retrieve the [`lock_keeper::crypto::Encrypted<StorageKey>`] that belongs
+    /// to the user specified by `user_id`
+    pub(crate) async fn retrieve_storage_key(&self) -> Result<StorageKey, LockKeeperClientError> {
+        // Create channel to send messages to server
+        let mut channel = Self::create_channel(
+            &mut self.tonic_client(),
+            ClientAction::RetrieveStorageKey,
+            self.account_name(),
+        )
+        .await?;
+
+        // Send UserId to server
+        let request = client::Request {
+            user_id: self.user_id().clone(),
+        };
+        channel.send(request).await?;
+
+        // Get encrypted storage key from server
+        let response: server::Response = channel.receive().await?;
+
+        // Decrypt storage_key
+        let storage_key = response
+            .ciphertext
+            .decrypt_storage_key(self.export_key.clone(), self.user_id())?;
+        Ok(storage_key)
     }
 }

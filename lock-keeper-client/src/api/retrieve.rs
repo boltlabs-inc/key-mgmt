@@ -1,5 +1,5 @@
 use crate::{
-    api::arbitrary_secrets::{LocalStorage, RetrieveResult},
+    api::{LocalStorage, RetrieveResult},
     LockKeeperClient, LockKeeperClientError,
 };
 use lock_keeper::{
@@ -32,20 +32,18 @@ impl LockKeeperClient {
         // Get StoredSecret from server
         let server_response: server::Response = channel.receive().await?;
 
-        // Decrypt secret
-        let secret = server_response
-            .stored_secret
-            .secret
-            .decrypt_secret(storage_key)?;
-
         // Return appropriate value based on Context
         match context {
             RetrieveContext::Null => Ok(RetrieveResult::None),
             RetrieveContext::LocalOnly => {
+                // Decrypt secret
+                let secret = server_response
+                    .stored_secret
+                    .secret
+                    .decrypt_secret(storage_key)?;
                 let wrapped_secret = LocalStorage { secret };
                 Ok(RetrieveResult::ArbitraryKey(wrapped_secret))
             }
-            RetrieveContext::Export => Ok(RetrieveResult::ExportedKey(secret.into())),
         }
     }
 }

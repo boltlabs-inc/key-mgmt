@@ -1,4 +1,4 @@
-use crate::{api::arbitrary_secrets::LocalStorage, LockKeeperClient, LockKeeperClientError};
+use crate::{api::LocalStorage, LockKeeperClient, LockKeeperClientError};
 use lock_keeper::{
     channel::ClientChannel,
     crypto::{KeyId, Secret, StorageKey},

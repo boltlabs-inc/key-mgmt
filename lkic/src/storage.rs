@@ -9,7 +9,7 @@ use std::{
 
 use anyhow::anyhow;
 use lock_keeper::crypto::KeyId;
-use lock_keeper_client::api::arbitrary_secrets::{LocalStorage, RetrieveResult};
+use lock_keeper_client::api::{LocalStorage, RetrieveResult};
 use serde::{Deserialize, Serialize};
 
 /// Container for all locally stored key data.
@@ -214,7 +214,6 @@ impl Display for Entry {
                 })?;
                 format!("Arbitrary Key - {}", hex::encode(&bytes))
             }
-            RetrieveResult::ExportedKey(key) => format!("Exported Key - {}", hex::encode(key)),
         };
 
         writeln!(f, "key_id: {}", key_id_hex)?;
