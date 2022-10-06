@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":[["RetrieveResult","Ways of returning a key from the retrieval process based on usage [`RetrieveContext`]"]],"mod":[["generate",""],["retrieve",""]],"struct":[["LocalStorage",""]]};

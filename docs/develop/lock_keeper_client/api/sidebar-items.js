@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":[["arbitrary_secrets",""],["authenticate",""],["create_storage_key",""],["register",""],["retrieve_audit_events",""]]};
+window.SIDEBAR_ITEMS = {"enum":[["RetrieveResult","Ways of returning a key from the retrieval process based on usage [`RetrieveContext`]"]],"mod":[["authenticate",""],["create_storage_key",""],["generate",""],["register",""],["retrieve",""],["retrieve_audit_events",""]],"struct":[["LocalStorage",""]]};
