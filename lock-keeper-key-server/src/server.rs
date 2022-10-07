@@ -64,7 +64,6 @@ impl LockKeeperKeyServer {
             Status::invalid_argument("Client action not found"),
             Status::invalid_argument("Invalid client action"),
         )?;
-        eprintln!("ACTION: {:?}", action_str);
         let action = ClientAction::from_str(action_str)?;
 
         Ok(Context {
