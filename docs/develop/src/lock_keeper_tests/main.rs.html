@@ -73,7 +73,7 @@
             <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
                 <span class="macro">println!</span>(<span class="string">&quot;Server connection failed. Retrying in {:?}&quot;</span>, <span class="ident">RETRY_DELAY</span>);
                 <span class="kw">if</span> <span class="ident">i</span> <span class="op">==</span> <span class="number">0</span> {
-                    <span class="macro">println!</span>(<span class="string">&quot;Did you remember to run `cargo make run-server`?&quot;</span>)
+                    <span class="macro">println!</span>(<span class="string">&quot;Did you remember to run `cargo make start`?&quot;</span>)
                 }
                 <span class="ident">std::thread::sleep</span>(<span class="ident">RETRY_DELAY</span>);
             }
