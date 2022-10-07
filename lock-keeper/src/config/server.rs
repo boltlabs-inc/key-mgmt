@@ -1,14 +1,12 @@
 use rustls::ServerConfig;
 use serde::{Deserialize, Serialize};
 use std::{
-    net::{IpAddr, Ipv4Addr},
+    net::IpAddr,
     path::{Path, PathBuf},
     str::FromStr,
 };
 
 use crate::{error::LockKeeperError, infrastructure::pem_utils};
-
-pub const DEFAULT_FILE: &str = "Server.toml";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
@@ -46,9 +44,7 @@ pub struct DatabaseSpec {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct Service {
-    #[serde(default = "address")]
     pub address: IpAddr,
-    #[serde(default = "port")]
     pub port: u16,
     pub private_key: PathBuf,
     pub certificate: PathBuf,
@@ -69,14 +65,6 @@ impl Service {
 
         Ok(tls)
     }
-}
-
-const fn address() -> IpAddr {
-    IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1))
-}
-
-const fn port() -> u16 {
-    1113
 }
 
 #[cfg(test)]
@@ -124,53 +112,6 @@ mod tests {
 
         assert_eq!(address, IpAddr::from_str("127.0.0.2").unwrap());
         assert_eq!(port, 1114);
-        assert_eq!(private_key, PathBuf::from("tests/gen/localhost.key"));
-        assert_eq!(certificate, PathBuf::from("tests/gen/localhost.crt"));
-        assert_eq!(opaque_path, PathBuf::from("tests/gen/opaque"));
-        assert_eq!(
-            opaque_server_key,
-            PathBuf::from("tests/gen/opaque/server_setup")
-        );
-    }
-
-    #[test]
-    fn config_defaults() {
-        let config_str = r#"
-            [[service]]
-            private_key = "tests/gen/localhost.key"
-            certificate = "tests/gen/localhost.crt"
-            opaque_path = "tests/gen/opaque"
-            opaque_server_key = "tests/gen/opaque/server_setup"
-
-            [database]
-            mongodb_uri = "mongodb://localhost:27017"
-            db_name = "lock-keeper-test-db"
-        "#;
-
-        // Destructure so the test breaks when fields are added
-        let Config {
-            mut services,
-            database:
-                DatabaseSpec {
-                    mongodb_uri,
-                    db_name,
-                },
-        } = Config::from_str(config_str).unwrap();
-
-        assert_eq!(mongodb_uri, "mongodb://localhost:27017");
-        assert_eq!(db_name, "lock-keeper-test-db");
-
-        let Service {
-            address,
-            port,
-            private_key,
-            certificate,
-            opaque_path,
-            opaque_server_key,
-        } = services.pop().unwrap();
-
-        assert_eq!(address, IpAddr::from_str("127.0.0.1").unwrap());
-        assert_eq!(port, 1113);
         assert_eq!(private_key, PathBuf::from("tests/gen/localhost.key"));
         assert_eq!(certificate, PathBuf::from("tests/gen/localhost.crt"));
         assert_eq!(opaque_path, PathBuf::from("tests/gen/opaque"));
