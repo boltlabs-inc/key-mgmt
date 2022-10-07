@@ -7,7 +7,7 @@ use hyper::client::HttpConnector;
 use hyper_rustls::HttpsConnector;
 use lock_keeper::{
     config::client::Config,
-    constants::headers::{ACCOUNT_NAME, ACTION},
+    constants::{ACCOUNT_NAME, ACTION},
     crypto::{OpaqueExportKey, OpaqueSessionKey, StorageKey},
     infrastructure::channel::ClientChannel,
     rpc::lock_keeper_rpc_client::LockKeeperRpcClient,

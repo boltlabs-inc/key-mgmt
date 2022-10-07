@@ -6,7 +6,7 @@
 use crate::{constants, LockKeeperServerError};
 use lock_keeper::{
     config::opaque::OpaqueCipherSuite,
-    constants::headers::{ACCOUNT_NAME, USER_ID},
+    constants::{ACCOUNT_NAME, USER_ID},
     crypto::{Encrypted, KeyId, Secret, StorageKey},
     types::user::{AccountName, StoredSecret, User, UserId},
 };

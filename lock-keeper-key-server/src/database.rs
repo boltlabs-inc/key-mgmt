@@ -6,7 +6,7 @@
 use crate::constants;
 use lock_keeper::{
     config::server::DatabaseSpec,
-    constants::headers::{ACCOUNT_NAME, USER_ID},
+    constants::{ACCOUNT_NAME, USER_ID},
     types::user::User,
 };
 use mongodb::{

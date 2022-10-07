@@ -10,13 +10,12 @@ use crate::{database::Database, error::LockKeeperServerError, operations};
 
 use lock_keeper::{
     config::server::{Config, Service},
-    constants::headers::ACCOUNT_NAME,
+    constants::{ACCOUNT_NAME, ACTION},
     crypto::KeyId,
     rpc::{lock_keeper_rpc_server::LockKeeperRpc, HealthCheck},
     types::{operations::ClientAction, user::AccountName, Message, MessageStream},
 };
 
-use lock_keeper::constants::headers::ACTION;
 use rand::{rngs::StdRng, SeedableRng};
 use std::sync::Arc;
 use tokio::sync::Mutex;
