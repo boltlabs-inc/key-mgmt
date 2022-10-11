@@ -50,12 +50,36 @@ impl Secret {
         storage_key: &StorageKey,
         user_id: &UserId,
         key_id: &KeyId,
-    ) -> Result<(Secret, Encrypted<Secret>), LockKeeperError> {
+    ) -> Result<(Self, Encrypted<Self>), LockKeeperError> {
         let context = AssociatedData::new()
             .with_bytes(user_id.clone())
             .with_bytes(key_id.clone())
             .with_str("client-generated");
         let secret = Secret(generic::Secret::generate(rng, 32, context.clone()));
+
+        Ok((
+            secret.clone(),
+            Encrypted::encrypt(rng, &storage_key.0, secret, &context)?,
+        ))
+    }
+
+    /// Create a `Secret` from an imported key and encrypt it for
+    /// storage at a server.
+    ///
+    /// This is part of the import flow and must be run by the client.
+    pub fn import_and_encrypt(
+        secret_material: &[u8],
+        rng: &mut (impl CryptoRng + RngCore),
+        storage_key: &StorageKey,
+        user_id: &UserId,
+        key_id: &KeyId,
+    ) -> Result<(Self, Encrypted<Self>), LockKeeperError> {
+        let context = AssociatedData::new()
+            .with_bytes(user_id.clone())
+            .with_bytes(key_id.clone())
+            .with_str("imported key");
+
+        let secret = Secret(generic::Secret::try_from(secret_material.to_vec())?);
 
         Ok((
             secret.clone(),

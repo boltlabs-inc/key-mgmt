@@ -54,6 +54,31 @@ impl SigningKeyPair {
         SigningKeyPair
     }
 
+    /// Create a `SigningKeyPair` from an imported key and encrypt it for
+    /// storage at a server.
+    ///
+    /// This is part of the import flow and must be run by the client.
+    pub fn import_and_encrypt(
+        _key_material: &[u8],
+        rng: &mut (impl CryptoRng + RngCore),
+        storage_key: &StorageKey,
+        user_id: &UserId,
+        key_id: &KeyId,
+    ) -> Result<(Self, Encrypted<Self>), LockKeeperError> {
+        let context = AssociatedData::new()
+            .with_bytes(user_id.clone())
+            .with_bytes(key_id.clone())
+            .with_str("imported key");
+
+        // TODO #235: use the actual key material and the context.
+        let signing_key = SigningKeyPair;
+
+        Ok((
+            signing_key.clone(),
+            Encrypted::encrypt(rng, &storage_key.0, signing_key, &context)?,
+        ))
+    }
+
     /// Create and encrypt a new signing key. This is part of the local signing
     /// key generation flow.
     ///
