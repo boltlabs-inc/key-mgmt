@@ -1,12 +1,14 @@
-# Runs a daily security audit of dependencies using `cargo audit`, an issue gets created for vulnerabilities detected
+# Runs `cargo audit` when dependencies change
 name: Security audit
 on:
-  workflow_dispatch:
-  schedule:
-    - cron: '0 0 * * *'
+  push:
+    paths: 
+      - '**/Cargo.toml'
+      - '**/Cargo.lock'
 jobs:
-  audit:
+  security_audit:
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v1
       - uses: actions-rs/audit-check@v1
