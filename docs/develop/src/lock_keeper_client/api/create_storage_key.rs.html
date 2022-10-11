@@ -58,12 +58,16 @@
 <span id="58">58</span>
 <span id="59">59</span>
 <span id="60">60</span>
+<span id="61">61</span>
+<span id="62">62</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">client::LockKeeperClient</span>, <span class="ident">LockKeeperClientError</span>};
 <span class="kw">use</span> <span class="ident">lock_keeper</span>::{
-    <span class="ident">channel::ClientChannel</span>,
     <span class="ident">crypto::OpaqueExportKey</span>,
-    <span class="ident">types::create_storage_key</span>::{<span class="ident">client</span>, <span class="ident">server</span>},
-    <span class="ident">user</span>::{<span class="ident">AccountName</span>, <span class="ident">UserId</span>},
+    <span class="ident">infrastructure::channel::ClientChannel</span>,
+    <span class="ident">types</span>::{
+        <span class="ident">operations::create_storage_key</span>::{<span class="ident">client</span>, <span class="ident">server</span>},
+        <span class="ident">user</span>::{<span class="ident">AccountName</span>, <span class="ident">UserId</span>},
+    },
 };
 <span class="kw">use</span> <span class="ident">rand</span>::{<span class="ident">CryptoRng</span>, <span class="ident">RngCore</span>};
 

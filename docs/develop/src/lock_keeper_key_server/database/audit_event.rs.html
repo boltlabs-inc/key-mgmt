@@ -267,12 +267,6 @@
 <span id="267">267</span>
 <span id="268">268</span>
 <span id="269">269</span>
-<span id="270">270</span>
-<span id="271">271</span>
-<span id="272">272</span>
-<span id="273">273</span>
-<span id="274">274</span>
-<span id="275">275</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Module for operations on audit events in the database.</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! Functions in this module are used to perform CRUD operations</span>
@@ -281,10 +275,12 @@
 <span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">constants</span>, <span class="ident">LockKeeperServerError</span>};
 <span class="kw">use</span> <span class="ident">futures::TryStreamExt</span>;
 <span class="kw">use</span> <span class="ident">lock_keeper</span>::{
-    <span class="ident">audit_event</span>::{<span class="ident">AuditEvent</span>, <span class="ident">AuditEventOptions</span>, <span class="ident">EventStatus</span>, <span class="ident">EventType</span>},
     <span class="ident">crypto::KeyId</span>,
-    <span class="ident">user::AccountName</span>,
-    <span class="ident">ClientAction</span>,
+    <span class="ident">types</span>::{
+        <span class="ident">audit_event</span>::{<span class="ident">AuditEvent</span>, <span class="ident">AuditEventOptions</span>, <span class="ident">EventStatus</span>, <span class="ident">EventType</span>},
+        <span class="ident">operations::ClientAction</span>,
+        <span class="ident">user::AccountName</span>,
+    },
 };
 <span class="kw">use</span> <span class="ident">mongodb::bson</span>::{<span class="ident">doc</span>, <span class="ident">Document</span>};
 
@@ -347,20 +343,12 @@
 
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
 <span class="kw">mod</span> <span class="ident">test</span> {
-    <span class="kw">use</span> <span class="kw">crate</span>::{
-        <span class="ident">database</span>::{
-            <span class="ident">test</span>::{<span class="ident">server_registration</span>, <span class="ident">setup_db</span>},
-            <span class="ident">Database</span>,
-        },
-        <span class="ident">LockKeeperServerError</span>,
-    };
+    <span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
+
+    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::database::test</span>::{<span class="ident">server_registration</span>, <span class="ident">setup_db</span>};
+
     <span class="kw">use</span> <span class="ident">bson::DateTime</span>;
-    <span class="kw">use</span> <span class="ident">lock_keeper</span>::{
-        <span class="ident">audit_event</span>::{<span class="ident">AuditEvent</span>, <span class="ident">AuditEventOptions</span>, <span class="ident">EventStatus</span>, <span class="ident">EventType</span>},
-        <span class="ident">crypto::KeyId</span>,
-        <span class="ident">user</span>::{<span class="ident">AccountName</span>, <span class="ident">UserId</span>},
-        <span class="ident">ClientAction</span>,
-    };
+    <span class="kw">use</span> <span class="ident">lock_keeper::types::user::UserId</span>;
     <span class="kw">use</span> <span class="ident">rand</span>::{<span class="ident">seq::SliceRandom</span>, <span class="ident">CryptoRng</span>, <span class="ident">RngCore</span>};
     <span class="kw">use</span> <span class="ident">std::str::FromStr</span>;
     <span class="kw">use</span> <span class="ident">strum::IntoEnumIterator</span>;

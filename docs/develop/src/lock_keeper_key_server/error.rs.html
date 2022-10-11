@@ -71,6 +71,14 @@
 <span id="71">71</span>
 <span id="72">72</span>
 <span id="73">73</span>
+<span id="74">74</span>
+<span id="75">75</span>
+<span id="76">76</span>
+<span id="77">77</span>
+<span id="78">78</span>
+<span id="79">79</span>
+<span id="80">80</span>
+<span id="81">81</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">thiserror::Error</span>;
 <span class="kw">use</span> <span class="ident">tonic::Status</span>;
 
@@ -78,6 +86,10 @@
 <span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">LockKeeperServerError</span> {
     <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;Could not get service.&quot;</span>)]</span>
     <span class="ident">MissingService</span>,
+
+    <span class="comment">// Infrastructure errors</span>
+    <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;Invalid OPAQUE directory&quot;</span>)]</span>
+    <span class="ident">InvalidOpaqueDirectory</span>,
 
     <span class="comment">// Protocol errors</span>
     <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;Account already registered&quot;</span>)]</span>
@@ -93,23 +105,25 @@
 
     <span class="comment">// Wrapped errors</span>
     <span class="attribute">#[<span class="ident">error</span>(<span class="ident">transparent</span>)]</span>
-    <span class="ident">LockKeeper</span>(<span class="attribute">#[<span class="ident">from</span>]</span> <span class="ident">lock_keeper::LockKeeperError</span>),
+    <span class="ident">Bincode</span>(<span class="attribute">#[<span class="ident">from</span>]</span> <span class="ident">bincode::Error</span>),
+    <span class="attribute">#[<span class="ident">error</span>(<span class="ident">transparent</span>)]</span>
+    <span class="ident">Bson</span>(<span class="attribute">#[<span class="ident">from</span>]</span> <span class="ident">mongodb::bson::ser::Error</span>),
+    <span class="attribute">#[<span class="ident">error</span>(<span class="ident">transparent</span>)]</span>
+    <span class="ident">EnvVar</span>(<span class="attribute">#[<span class="ident">from</span>]</span> <span class="ident">std::env::VarError</span>),
     <span class="attribute">#[<span class="ident">error</span>(<span class="ident">transparent</span>)]</span>
     <span class="ident">Hyper</span>(<span class="attribute">#[<span class="ident">from</span>]</span> <span class="ident">hyper::Error</span>),
     <span class="attribute">#[<span class="ident">error</span>(<span class="ident">transparent</span>)]</span>
     <span class="ident">Io</span>(<span class="attribute">#[<span class="ident">from</span>]</span> <span class="ident">std::io::Error</span>),
     <span class="attribute">#[<span class="ident">error</span>(<span class="ident">transparent</span>)]</span>
-    <span class="ident">Bson</span>(<span class="attribute">#[<span class="ident">from</span>]</span> <span class="ident">mongodb::bson::ser::Error</span>),
+    <span class="ident">LockKeeper</span>(<span class="attribute">#[<span class="ident">from</span>]</span> <span class="ident">lock_keeper::LockKeeperError</span>),
+    <span class="attribute">#[<span class="ident">error</span>(<span class="ident">transparent</span>)]</span>
+    <span class="ident">MongoDb</span>(<span class="attribute">#[<span class="ident">from</span>]</span> <span class="ident">mongodb::error::Error</span>),
     <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;OPAQUE protocol error: {}&quot;</span>, .<span class="number">0</span>)]</span>
     <span class="ident">OpaqueProtocol</span>(<span class="ident">opaque_ke::errors::ProtocolError</span>),
     <span class="attribute">#[<span class="ident">error</span>(<span class="ident">transparent</span>)]</span>
     <span class="ident">TonicStatus</span>(<span class="attribute">#[<span class="ident">from</span>]</span> <span class="ident">tonic::Status</span>),
     <span class="attribute">#[<span class="ident">error</span>(<span class="ident">transparent</span>)]</span>
     <span class="ident">TonicTransport</span>(<span class="attribute">#[<span class="ident">from</span>]</span> <span class="ident">tonic::transport::Error</span>),
-    <span class="attribute">#[<span class="ident">error</span>(<span class="ident">transparent</span>)]</span>
-    <span class="ident">EnvVar</span>(<span class="attribute">#[<span class="ident">from</span>]</span> <span class="ident">std::env::VarError</span>),
-    <span class="attribute">#[<span class="ident">error</span>(<span class="ident">transparent</span>)]</span>
-    <span class="ident">MongoDb</span>(<span class="attribute">#[<span class="ident">from</span>]</span> <span class="ident">mongodb::error::Error</span>),
 }
 
 <span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">opaque_ke::errors::ProtocolError</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">LockKeeperServerError</span> {
@@ -137,7 +151,9 @@
             <span class="ident">LockKeeperServerError::MissingService</span>
             <span class="op">|</span> <span class="ident">LockKeeperServerError::Hyper</span>(<span class="kw">_</span>)
             <span class="op">|</span> <span class="ident">LockKeeperServerError::Io</span>(<span class="kw">_</span>)
+            <span class="op">|</span> <span class="ident">LockKeeperServerError::InvalidOpaqueDirectory</span>
             <span class="op">|</span> <span class="ident">LockKeeperServerError::Bson</span>(<span class="kw">_</span>)
+            <span class="op">|</span> <span class="ident">LockKeeperServerError::Bincode</span>(<span class="kw">_</span>)
             <span class="op">|</span> <span class="ident">LockKeeperServerError::OpaqueProtocol</span>(<span class="kw">_</span>)
             <span class="op">|</span> <span class="ident">LockKeeperServerError::EnvVar</span>(<span class="kw">_</span>)
             <span class="op">|</span> <span class="ident">LockKeeperServerError::MongoDb</span>(<span class="kw">_</span>) =&gt; <span class="ident">Status::internal</span>(<span class="string">&quot;Internal server error&quot;</span>),

@@ -80,12 +80,9 @@
 <span id="80">80</span>
 <span id="81">81</span>
 <span id="82">82</span>
-<span id="83">83</span>
-<span id="84">84</span>
-<span id="85">85</span>
-<span id="86">86</span>
-<span id="87">87</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">thiserror::Error</span>;
+</pre><pre class="rust"><code><span class="doccomment">//! Error type for all errors returned to code outside of this crate.</span>
+
+<span class="kw">use</span> <span class="ident">thiserror::Error</span>;
 <span class="kw">use</span> <span class="ident">tokio::sync::mpsc::error::SendError</span>;
 <span class="kw">use</span> <span class="ident">tonic::Status</span>;
 
@@ -95,6 +92,10 @@
 <span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">LockKeeperError</span> {
     <span class="attribute">#[<span class="ident">error</span>(<span class="ident">transparent</span>)]</span>
     <span class="ident">Crypto</span>(<span class="attribute">#[<span class="ident">from</span>]</span> <span class="ident">CryptoError</span>),
+
+    <span class="comment">// Request errors</span>
+    <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;Invalid client action&quot;</span>)]</span>
+    <span class="ident">InvalidClientAction</span>,
 
     <span class="comment">// Channel errors</span>
     <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;Invalid message&quot;</span>)]</span>
@@ -106,15 +107,7 @@
     <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;Invalid private key&quot;</span>)]</span>
     <span class="ident">InvalidPrivateKey</span>,
 
-    <span class="comment">// OPAQUE errors</span>
-    <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;Could not create opaque path directory&quot;</span>)]</span>
-    <span class="ident">InvalidOpaqueDirectory</span>,
-    <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;Could not open user&#39;s home directory&quot;</span>)]</span>
-    <span class="ident">ProjectDirs</span>,
-
     <span class="comment">// Wrapped errors</span>
-    <span class="attribute">#[<span class="ident">error</span>(<span class="ident">transparent</span>)]</span>
-    <span class="ident">Bincode</span>(<span class="attribute">#[<span class="ident">from</span>]</span> <span class="ident">bincode::Error</span>),
     <span class="attribute">#[<span class="ident">error</span>(<span class="ident">transparent</span>)]</span>
     <span class="ident">Io</span>(<span class="attribute">#[<span class="ident">from</span>]</span> <span class="ident">std::io::Error</span>),
     <span class="attribute">#[<span class="ident">error</span>(<span class="ident">transparent</span>)]</span>
@@ -153,12 +146,9 @@
             <span class="comment">// Errors that are safe to return to the client</span>
             <span class="ident">LockKeeperError::InvalidMessage</span> =&gt; <span class="ident">Status::invalid_argument</span>(<span class="ident">error</span>.<span class="ident">to_string</span>()),
             <span class="ident">LockKeeperError::NoMessageReceived</span> =&gt; <span class="ident">Status::deadline_exceeded</span>(<span class="ident">error</span>.<span class="ident">to_string</span>()),
-
             <span class="comment">// Errors that the client should not see</span>
-            <span class="ident">LockKeeperError::Crypto</span>(<span class="kw">_</span>)
-            <span class="op">|</span> <span class="ident">LockKeeperError::InvalidOpaqueDirectory</span>
-            <span class="op">|</span> <span class="ident">LockKeeperError::ProjectDirs</span>
-            <span class="op">|</span> <span class="ident">LockKeeperError::Bincode</span>(<span class="kw">_</span>)
+            <span class="ident">LockKeeperError::InvalidClientAction</span>
+            <span class="op">|</span> <span class="ident">LockKeeperError::Crypto</span>(<span class="kw">_</span>)
             <span class="op">|</span> <span class="ident">LockKeeperError::Io</span>(<span class="kw">_</span>)
             <span class="op">|</span> <span class="ident">LockKeeperError::InvalidPrivateKey</span>
             <span class="op">|</span> <span class="ident">LockKeeperError::InvalidUri</span>(<span class="kw">_</span>)

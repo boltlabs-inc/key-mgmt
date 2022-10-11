@@ -569,14 +569,18 @@
 <span id="569">569</span>
 <span id="570">570</span>
 <span id="571">571</span>
+<span id="572">572</span>
+<span id="573">573</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">Operation</span>::{<span class="ident">Authenticate</span>, <span class="ident">Export</span>, <span class="ident">Generate</span>, <span class="ident">Register</span>, <span class="ident">Retrieve</span>, <span class="ident">SetFakeKeyId</span>};
 
 <span class="kw">use</span> <span class="ident">lock_keeper</span>::{
-    <span class="ident">audit_event</span>::{<span class="ident">AuditEventOptions</span>, <span class="ident">EventStatus</span>, <span class="ident">EventType</span>},
     <span class="ident">config::client::Config</span>,
     <span class="ident">crypto::KeyId</span>,
-    <span class="ident">user::AccountName</span>,
-    <span class="ident">ClientAction</span>, <span class="ident">RetrieveContext</span>,
+    <span class="ident">types</span>::{
+        <span class="ident">audit_event</span>::{<span class="ident">AuditEventOptions</span>, <span class="ident">EventStatus</span>, <span class="ident">EventType</span>},
+        <span class="ident">operations</span>::{<span class="ident">retrieve::RetrieveContext</span>, <span class="ident">ClientAction</span>},
+        <span class="ident">user::AccountName</span>,
+    },
 };
 <span class="kw">use</span> <span class="ident">lock_keeper_client</span>::{
     <span class="ident">api</span>::{<span class="ident">LocalStorage</span>, <span class="ident">RetrieveResult</span>},

@@ -80,9 +80,9 @@
 
 <span class="kw">use</span> <span class="ident">async_trait::async_trait</span>;
 <span class="kw">use</span> <span class="ident">lock_keeper</span>::{
-    <span class="ident">channel::ServerChannel</span>,
     <span class="ident">crypto::KeyId</span>,
-    <span class="ident">types::generate</span>::{<span class="ident">client</span>, <span class="ident">server</span>},
+    <span class="ident">infrastructure::channel::ServerChannel</span>,
+    <span class="ident">types::operations::generate</span>::{<span class="ident">client</span>, <span class="ident">server</span>},
 };
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>

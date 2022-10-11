@@ -106,15 +106,19 @@
 <span id="106">106</span>
 <span id="107">107</span>
 <span id="108">108</span>
+<span id="109">109</span>
+<span id="110">110</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::client</span>::{<span class="ident">AuthenticateResult</span>, <span class="ident">LockKeeperClient</span>, <span class="ident">Password</span>};
 
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::LockKeeperClientError</span>;
 <span class="kw">use</span> <span class="ident">lock_keeper</span>::{
-    <span class="ident">channel::ClientChannel</span>,
     <span class="ident">config::opaque::OpaqueCipherSuite</span>,
     <span class="ident">crypto::OpaqueSessionKey</span>,
-    <span class="ident">types::authenticate</span>::{<span class="ident">client</span>, <span class="ident">server</span>},
-    <span class="ident">user</span>::{<span class="ident">AccountName</span>, <span class="ident">UserId</span>},
+    <span class="ident">infrastructure::channel::ClientChannel</span>,
+    <span class="ident">types</span>::{
+        <span class="ident">operations::authenticate</span>::{<span class="ident">client</span>, <span class="ident">server</span>},
+        <span class="ident">user</span>::{<span class="ident">AccountName</span>, <span class="ident">UserId</span>},
+    },
 };
 <span class="kw">use</span> <span class="ident">opaque_ke</span>::{
     <span class="ident">ClientLogin</span>, <span class="ident">ClientLoginFinishParameters</span>, <span class="ident">ClientLoginFinishResult</span>, <span class="ident">ClientLoginStartResult</span>,

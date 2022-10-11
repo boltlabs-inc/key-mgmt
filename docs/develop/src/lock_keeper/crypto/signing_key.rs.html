@@ -195,11 +195,7 @@
 <span id="195">195</span>
 <span id="196">196</span>
 <span id="197">197</span>
-<span id="198">198</span>
-<span id="199">199</span>
-<span id="200">200</span>
-<span id="201">201</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">user::UserId</span>, <span class="ident">LockKeeperError</span>};
+</pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">types::user::UserId</span>, <span class="ident">LockKeeperError</span>};
 <span class="kw">use</span> <span class="ident">rand</span>::{<span class="ident">CryptoRng</span>, <span class="ident">RngCore</span>};
 <span class="kw">use</span> <span class="ident">std::marker::PhantomData</span>;
 
@@ -336,11 +332,7 @@
 
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
 <span class="kw">mod</span> <span class="ident">test</span> {
-    <span class="kw">use</span> <span class="kw">crate</span>::{
-        <span class="ident">crypto</span>::{<span class="ident">CryptoError</span>, <span class="ident">KeyId</span>, <span class="ident">SigningKeyPair</span>, <span class="ident">StorageKey</span>},
-        <span class="ident">user::UserId</span>,
-        <span class="ident">LockKeeperError</span>,
-    };
+    <span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
     <span class="kw">use</span> <span class="ident">rand::Rng</span>;
 
     <span class="attribute">#[<span class="ident">test</span>]</span>

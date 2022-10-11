@@ -185,10 +185,8 @@
 <span id="185">185</span>
 <span id="186">186</span>
 <span id="187">187</span>
-<span id="188">188</span>
-<span id="189">189</span>
-<span id="190">190</span>
-</pre><pre class="rust"><code><span class="kw">mod</span> <span class="ident">operation</span>;
+</pre><pre class="rust"><code><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod</span> <span class="ident">opaque_storage</span>;
+<span class="kw">mod</span> <span class="ident">operation</span>;
 <span class="kw">mod</span> <span class="ident">service</span>;
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use</span> <span class="ident">operation::Operation</span>;
@@ -199,15 +197,12 @@
 
 <span class="kw">use</span> <span class="ident">lock_keeper</span>::{
     <span class="ident">config::server</span>::{<span class="ident">Config</span>, <span class="ident">Service</span>},
+    <span class="ident">constants</span>::{<span class="ident">ACCOUNT_NAME</span>, <span class="ident">ACTION</span>},
     <span class="ident">crypto::KeyId</span>,
-    <span class="ident">defaults::server::ACCOUNT_NAME</span>,
     <span class="ident">rpc</span>::{<span class="ident">lock_keeper_rpc_server::LockKeeperRpc</span>, <span class="ident">HealthCheck</span>},
-    <span class="ident">types</span>::{<span class="ident">Message</span>, <span class="ident">MessageStream</span>},
-    <span class="ident">user::AccountName</span>,
-    <span class="ident">ClientAction</span>,
+    <span class="ident">types</span>::{<span class="ident">operations::ClientAction</span>, <span class="ident">user::AccountName</span>, <span class="ident">Message</span>, <span class="ident">MessageStream</span>},
 };
 
-<span class="kw">use</span> <span class="ident">lock_keeper::defaults::server::ACTION</span>;
 <span class="kw">use</span> <span class="ident">rand</span>::{<span class="ident">rngs::StdRng</span>, <span class="ident">SeedableRng</span>};
 <span class="kw">use</span> <span class="ident">std::sync::Arc</span>;
 <span class="kw">use</span> <span class="ident">tokio::sync::Mutex</span>;
@@ -255,7 +250,6 @@
             <span class="ident">Status::invalid_argument</span>(<span class="string">&quot;Client action not found&quot;</span>),
             <span class="ident">Status::invalid_argument</span>(<span class="string">&quot;Invalid client action&quot;</span>),
         )<span class="question-mark">?</span>;
-        <span class="macro">eprintln!</span>(<span class="string">&quot;ACTION: {:?}&quot;</span>, <span class="ident">action_str</span>);
         <span class="kw">let</span> <span class="ident">action</span> <span class="op">=</span> <span class="ident">ClientAction::from_str</span>(<span class="ident">action_str</span>)<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(<span class="ident">Context</span> {

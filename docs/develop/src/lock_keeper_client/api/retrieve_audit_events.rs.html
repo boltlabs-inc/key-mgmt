@@ -25,11 +25,15 @@
 <span id="25">25</span>
 <span id="26">26</span>
 <span id="27">27</span>
+<span id="28">28</span>
+<span id="29">29</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">LockKeeperClient</span>, <span class="ident">LockKeeperClientError</span>};
 <span class="kw">use</span> <span class="ident">lock_keeper</span>::{
-    <span class="ident">audit_event</span>::{<span class="ident">AuditEvent</span>, <span class="ident">AuditEventOptions</span>, <span class="ident">EventType</span>},
-    <span class="ident">channel::ClientChannel</span>,
-    <span class="ident">types::retrieve_audit_events</span>::{<span class="ident">client</span>, <span class="ident">server</span>},
+    <span class="ident">infrastructure::channel::ClientChannel</span>,
+    <span class="ident">types</span>::{
+        <span class="ident">audit_event</span>::{<span class="ident">AuditEvent</span>, <span class="ident">AuditEventOptions</span>, <span class="ident">EventType</span>},
+        <span class="ident">operations::retrieve_audit_events</span>::{<span class="ident">client</span>, <span class="ident">server</span>},
+    },
 };
 
 <span class="kw">impl</span> <span class="ident">LockKeeperClient</span> {

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":[["authenticate",""],["create_storage_key",""],["generate",""],["register",""],["retrieve",""],["retrieve_audit_events",""],["retrieve_storage_key",""]],"type":[["MessageStream",""]]};
+window.SIDEBAR_ITEMS = {"mod":[["audit_event","Audit events, and associated fields and types"],["operations","Types related to server operations and the protocols they execute."],["user","Models for the first pass of MongoDB integration."]],"type":[["MessageStream",""]]};

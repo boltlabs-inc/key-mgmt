@@ -407,9 +407,9 @@
 <span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">constants</span>, <span class="ident">LockKeeperServerError</span>};
 <span class="kw">use</span> <span class="ident">lock_keeper</span>::{
     <span class="ident">config::opaque::OpaqueCipherSuite</span>,
+    <span class="ident">constants</span>::{<span class="ident">ACCOUNT_NAME</span>, <span class="ident">USER_ID</span>},
     <span class="ident">crypto</span>::{<span class="ident">Encrypted</span>, <span class="ident">KeyId</span>, <span class="ident">Secret</span>, <span class="ident">StorageKey</span>},
-    <span class="ident">defaults::server</span>::{<span class="ident">ACCOUNT_NAME</span>, <span class="ident">USER_ID</span>},
-    <span class="ident">user</span>::{<span class="ident">AccountName</span>, <span class="ident">StoredSecret</span>, <span class="ident">User</span>, <span class="ident">UserId</span>},
+    <span class="ident">types::user</span>::{<span class="ident">AccountName</span>, <span class="ident">StoredSecret</span>, <span class="ident">User</span>, <span class="ident">UserId</span>},
 };
 <span class="kw">use</span> <span class="ident">mongodb::bson</span>::{<span class="ident">doc</span>, <span class="ident">oid::ObjectId</span>};
 <span class="kw">use</span> <span class="ident">opaque_ke::ServerRegistration</span>;
@@ -560,7 +560,7 @@
     <span class="kw">use</span> <span class="ident">lock_keeper</span>::{
         <span class="ident">config::server::DatabaseSpec</span>,
         <span class="ident">crypto::OpaqueExportKey</span>,
-        <span class="ident">user</span>::{<span class="ident">AccountName</span>, <span class="ident">User</span>, <span class="ident">UserId</span>},
+        <span class="ident">types::user</span>::{<span class="ident">AccountName</span>, <span class="ident">User</span>, <span class="ident">UserId</span>},
     };
     <span class="kw">use</span> <span class="ident">rand</span>::{<span class="ident">CryptoRng</span>, <span class="ident">Rng</span>, <span class="ident">RngCore</span>};
 

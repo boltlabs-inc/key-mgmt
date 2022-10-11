@@ -71,12 +71,10 @@
 <span id="71">71</span>
 <span id="72">72</span>
 <span id="73">73</span>
-<span id="74">74</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">async_trait::async_trait</span>;
 <span class="kw">use</span> <span class="ident">lock_keeper</span>::{
-    <span class="ident">audit_event::EventStatus</span>,
-    <span class="ident">channel::ServerChannel</span>,
-    <span class="ident">types</span>::{<span class="ident">Message</span>, <span class="ident">MessageStream</span>},
+    <span class="ident">infrastructure::channel::ServerChannel</span>,
+    <span class="ident">types</span>::{<span class="ident">audit_event::EventStatus</span>, <span class="ident">Message</span>, <span class="ident">MessageStream</span>},
 };
 <span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">thread</span>, <span class="ident">time::Duration</span>};
 <span class="kw">use</span> <span class="ident">tokio_stream::wrappers::ReceiverStream</span>;

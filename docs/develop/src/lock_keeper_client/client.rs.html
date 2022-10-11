@@ -229,6 +229,10 @@
 <span id="229">229</span>
 <span id="230">230</span>
 <span id="231">231</span>
+<span id="232">232</span>
+<span id="233">233</span>
+<span id="234">234</span>
+<span id="235">235</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Client object to interact with the key server.</span>
 
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::LockKeeperClientError</span>;
@@ -237,14 +241,18 @@
 <span class="kw">use</span> <span class="ident">hyper::client::HttpConnector</span>;
 <span class="kw">use</span> <span class="ident">hyper_rustls::HttpsConnector</span>;
 <span class="kw">use</span> <span class="ident">lock_keeper</span>::{
-    <span class="ident">channel::ClientChannel</span>,
     <span class="ident">config::client::Config</span>,
+    <span class="ident">constants</span>::{<span class="ident">ACCOUNT_NAME</span>, <span class="ident">ACTION</span>},
     <span class="ident">crypto</span>::{<span class="ident">OpaqueExportKey</span>, <span class="ident">OpaqueSessionKey</span>, <span class="ident">StorageKey</span>},
-    <span class="ident">defaults::client</span>::{<span class="ident">ACCOUNT_NAME</span>, <span class="ident">ACTION</span>},
+    <span class="ident">infrastructure::channel::ClientChannel</span>,
     <span class="ident">rpc::lock_keeper_rpc_client::LockKeeperRpcClient</span>,
-    <span class="ident">types::retrieve_storage_key</span>::{<span class="ident">client</span>, <span class="ident">server</span>},
-    <span class="ident">user</span>::{<span class="ident">AccountName</span>, <span class="ident">UserId</span>},
-    <span class="ident">ClientAction</span>,
+    <span class="ident">types</span>::{
+        <span class="ident">operations</span>::{
+            <span class="ident">retrieve_storage_key</span>::{<span class="ident">client</span>, <span class="ident">server</span>},
+            <span class="ident">ClientAction</span>,
+        },
+        <span class="ident">user</span>::{<span class="ident">AccountName</span>, <span class="ident">UserId</span>},
+    },
 };
 <span class="kw">use</span> <span class="ident">rand</span>::{<span class="ident">rngs::StdRng</span>, <span class="ident">SeedableRng</span>};
 <span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">str::FromStr</span>, <span class="ident">sync::Arc</span>};

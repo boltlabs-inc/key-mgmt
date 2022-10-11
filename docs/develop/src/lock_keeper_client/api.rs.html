@@ -190,6 +190,8 @@
 <span id="190">190</span>
 <span id="191">191</span>
 <span id="192">192</span>
+<span id="193">193</span>
+<span id="194">194</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Full implementation of the public API for the Lock Keeper client library.</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! This API is designed for use with a local client application - that is, an</span>
@@ -206,11 +208,13 @@
 
 <span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">client::Password</span>, <span class="ident">LockKeeperClient</span>, <span class="ident">LockKeeperClientError</span>};
 <span class="kw">use</span> <span class="ident">lock_keeper</span>::{
-    <span class="ident">audit_event</span>::{<span class="ident">AuditEvent</span>, <span class="ident">AuditEventOptions</span>, <span class="ident">EventType</span>},
     <span class="ident">config::client::Config</span>,
     <span class="ident">crypto</span>::{<span class="ident">KeyId</span>, <span class="ident">Secret</span>},
-    <span class="ident">user::AccountName</span>,
-    <span class="ident">ClientAction</span>, <span class="ident">RetrieveContext</span>,
+    <span class="ident">types</span>::{
+        <span class="ident">audit_event</span>::{<span class="ident">AuditEvent</span>, <span class="ident">AuditEventOptions</span>, <span class="ident">EventType</span>},
+        <span class="ident">operations</span>::{<span class="ident">retrieve::RetrieveContext</span>, <span class="ident">ClientAction</span>},
+        <span class="ident">user::AccountName</span>,
+    },
 };
 <span class="kw">use</span> <span class="ident">rand</span>::{<span class="ident">rngs::StdRng</span>, <span class="ident">SeedableRng</span>};
 <span class="kw">use</span> <span class="ident">serde</span>::{<span class="ident">Deserialize</span>, <span class="ident">Serialize</span>};
@@ -361,10 +365,10 @@
     <span class="doccomment">/// and each asset fiduciary (if relevant), and any other relevant</span>
     <span class="doccomment">/// details.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// The [`lock_keeper::user::UserId`] must match the asset owner</span>
+    <span class="doccomment">/// The [`lock_keeper::types::user::UserId`] must match the asset owner</span>
     <span class="doccomment">/// authenticated in the [`crate::LockKeeperClient`], and if specified,</span>
     <span class="doccomment">/// the [`KeyId`] must correspond to a key owned by the</span>
-    <span class="doccomment">/// [`lock_keeper::user::UserId`].</span>
+    <span class="doccomment">/// [`lock_keeper::types::user::UserId`].</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// Output: if successful, returns a [`String`] representation of the logs.</span>
     <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">retrieve_audit_event_log</span>(

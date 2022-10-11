@@ -78,16 +78,20 @@
 <span id="78">78</span>
 <span id="79">79</span>
 <span id="80">80</span>
+<span id="81">81</span>
+<span id="82">82</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">crate</span>::{
     <span class="ident">client</span>::{<span class="ident">LockKeeperClient</span>, <span class="ident">Password</span>},
     <span class="ident">LockKeeperClientError</span>,
 };
 <span class="kw">use</span> <span class="ident">lock_keeper</span>::{
-    <span class="ident">channel::ClientChannel</span>,
     <span class="ident">config::opaque::OpaqueCipherSuite</span>,
     <span class="ident">crypto::OpaqueExportKey</span>,
-    <span class="ident">types::register</span>::{<span class="ident">client</span>, <span class="ident">server</span>},
-    <span class="ident">user::AccountName</span>,
+    <span class="ident">infrastructure::channel::ClientChannel</span>,
+    <span class="ident">types</span>::{
+        <span class="ident">operations::register</span>::{<span class="ident">client</span>, <span class="ident">server</span>},
+        <span class="ident">user::AccountName</span>,
+    },
 };
 <span class="kw">use</span> <span class="ident">opaque_ke</span>::{
     <span class="ident">ClientRegistration</span>, <span class="ident">ClientRegistrationFinishParameters</span>, <span class="ident">ClientRegistrationStartResult</span>,

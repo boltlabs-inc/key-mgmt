@@ -106,19 +106,21 @@
 <span id="106">106</span>
 <span id="107">107</span>
 <span id="108">108</span>
+<span id="109">109</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">crate</span>::{
     <span class="ident">error::LockKeeperServerError</span>,
-    <span class="ident">server</span>::{<span class="ident">Context</span>, <span class="ident">Operation</span>},
+    <span class="ident">server</span>::{<span class="ident">opaque_storage::create_or_retrieve_server_key_opaque</span>, <span class="ident">Context</span>, <span class="ident">Operation</span>},
 };
 <span class="kw">use</span> <span class="ident">std::ops::DerefMut</span>;
 
 <span class="kw">use</span> <span class="ident">async_trait::async_trait</span>;
 <span class="kw">use</span> <span class="ident">lock_keeper</span>::{
-    <span class="ident">channel::ServerChannel</span>,
     <span class="ident">config::opaque::OpaqueCipherSuite</span>,
-    <span class="ident">opaque_storage::create_or_retrieve_server_key_opaque</span>,
-    <span class="ident">types::register</span>::{<span class="ident">client</span>, <span class="ident">server</span>},
-    <span class="ident">user</span>::{<span class="ident">AccountName</span>, <span class="ident">UserId</span>},
+    <span class="ident">infrastructure::channel::ServerChannel</span>,
+    <span class="ident">types</span>::{
+        <span class="ident">operations::register</span>::{<span class="ident">client</span>, <span class="ident">server</span>},
+        <span class="ident">user</span>::{<span class="ident">AccountName</span>, <span class="ident">UserId</span>},
+    },
 };
 <span class="kw">use</span> <span class="ident">opaque_ke::ServerRegistration</span>;
 

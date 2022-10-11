@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":[["ACCOUNT_NAME",""],["ACTION",""],["LOCAL_SERVER_URI",""],["USER_ID",""]]};
