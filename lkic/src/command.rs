@@ -2,7 +2,7 @@
 
 use std::str::FromStr;
 
-use lock_keeper::RetrieveContext;
+use lock_keeper::types::operations::retrieve::RetrieveContext;
 use lock_keeper_client::LockKeeperClient;
 
 use crate::{

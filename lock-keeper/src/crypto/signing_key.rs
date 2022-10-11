@@ -1,4 +1,4 @@
-use crate::{user::UserId, LockKeeperError};
+use crate::{types::user::UserId, LockKeeperError};
 use rand::{CryptoRng, RngCore};
 use std::marker::PhantomData;
 
@@ -135,11 +135,7 @@ impl Encrypted<SigningKeyPair> {
 
 #[cfg(test)]
 mod test {
-    use crate::{
-        crypto::{CryptoError, KeyId, SigningKeyPair, StorageKey},
-        user::UserId,
-        LockKeeperError,
-    };
+    use super::*;
     use rand::Rng;
 
     #[test]

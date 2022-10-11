@@ -1,14 +1,12 @@
-pub mod authenticate;
-pub mod create_storage_key;
-pub mod generate;
-pub mod register;
-pub mod retrieve;
-pub mod retrieve_audit_events;
-pub mod retrieve_storage_key;
+//! Type definitions that are shared between crates but have little to no logic.
+
+pub mod audit_event;
+pub mod operations;
+pub mod user;
+
+pub use crate::rpc::Message;
 
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::Status;
-
-pub use crate::rpc::Message;
 
 pub type MessageStream = ReceiverStream<Result<Message, Status>>;

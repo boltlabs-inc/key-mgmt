@@ -6,8 +6,8 @@
 use crate::constants;
 use lock_keeper::{
     config::server::DatabaseSpec,
-    defaults::server::{ACCOUNT_NAME, USER_ID},
-    user::User,
+    constants::{ACCOUNT_NAME, USER_ID},
+    types::user::User,
 };
 use mongodb::{
     bson::doc,

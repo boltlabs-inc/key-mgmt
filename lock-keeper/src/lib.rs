@@ -10,85 +10,18 @@
 #![warn(unused)]
 #![forbid(rustdoc::broken_intra_doc_links)]
 
-use serde::{Deserialize, Serialize};
-use std::{fmt, str::FromStr};
-use strum::EnumIter;
-use tonic::Status;
-
-pub mod audit_event;
-pub mod channel;
 pub mod config;
+pub mod constants;
 pub mod crypto;
-pub mod defaults;
 pub mod error;
-pub mod opaque_storage;
-pub mod pem_utils;
-pub mod timeout;
+pub mod infrastructure;
 pub mod types;
-pub mod user;
 
 pub use error::LockKeeperError;
 
 #[allow(clippy::all)]
 pub mod rpc {
     tonic::include_proto!("lock_keeper_rpc");
-}
-
-/// Options for actions the Lock Keeper client can take.
-#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq, EnumIter)]
-pub enum ClientAction {
-    Authenticate,
-    CreateStorageKey,
-    Export,
-    Generate,
-    Register,
-    Retrieve,
-    RetrieveAuditEvents,
-    RetrieveStorageKey,
-}
-
-impl FromStr for ClientAction {
-    type Err = Status;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "Authenticate" => Ok(ClientAction::Authenticate),
-            "CreateStorageKey" => Ok(ClientAction::CreateStorageKey),
-            "Export" => Ok(ClientAction::Export),
-            "Generate" => Ok(ClientAction::Generate),
-            "Register" => Ok(ClientAction::Register),
-            "Retrieve" => Ok(ClientAction::Retrieve),
-            "RetrieveAuditEvents" => Ok(ClientAction::RetrieveAuditEvents),
-            "RetrieveStorageKey" => Ok(ClientAction::RetrieveStorageKey),
-            _ => Err(Status::invalid_argument("Invalid client action")),
-        }
-    }
-}
-
-/// Options for the asset owner's intended use of a secret
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub enum RetrieveContext {
-    Null,
-    LocalOnly,
-}
-
-/// Logs used to verify that an operation completed in the integration tests.
-#[derive(Debug)]
-pub enum TestLogs {
-    /// Server successfully serving at address described by parameter.
-    ServerSpawned(String),
-}
-
-impl fmt::Display for TestLogs {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                TestLogs::ServerSpawned(addr) => format!("serving on: {:?}", addr),
-            }
-        )
-    }
 }
 
 /// Generates `TryFrom` implementations to and from the `Message` type for a

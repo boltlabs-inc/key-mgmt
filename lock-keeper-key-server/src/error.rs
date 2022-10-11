@@ -6,6 +6,10 @@ pub enum LockKeeperServerError {
     #[error("Could not get service.")]
     MissingService,
 
+    // Infrastructure errors
+    #[error("Invalid OPAQUE directory")]
+    InvalidOpaqueDirectory,
+
     // Protocol errors
     #[error("Account already registered")]
     AccountAlreadyRegistered,
@@ -20,23 +24,25 @@ pub enum LockKeeperServerError {
 
     // Wrapped errors
     #[error(transparent)]
-    LockKeeper(#[from] lock_keeper::LockKeeperError),
+    Bincode(#[from] bincode::Error),
+    #[error(transparent)]
+    Bson(#[from] mongodb::bson::ser::Error),
+    #[error(transparent)]
+    EnvVar(#[from] std::env::VarError),
     #[error(transparent)]
     Hyper(#[from] hyper::Error),
     #[error(transparent)]
     Io(#[from] std::io::Error),
     #[error(transparent)]
-    Bson(#[from] mongodb::bson::ser::Error),
+    LockKeeper(#[from] lock_keeper::LockKeeperError),
+    #[error(transparent)]
+    MongoDb(#[from] mongodb::error::Error),
     #[error("OPAQUE protocol error: {}", .0)]
     OpaqueProtocol(opaque_ke::errors::ProtocolError),
     #[error(transparent)]
     TonicStatus(#[from] tonic::Status),
     #[error(transparent)]
     TonicTransport(#[from] tonic::transport::Error),
-    #[error(transparent)]
-    EnvVar(#[from] std::env::VarError),
-    #[error(transparent)]
-    MongoDb(#[from] mongodb::error::Error),
 }
 
 impl From<opaque_ke::errors::ProtocolError> for LockKeeperServerError {
@@ -64,7 +70,9 @@ impl From<LockKeeperServerError> for Status {
             LockKeeperServerError::MissingService
             | LockKeeperServerError::Hyper(_)
             | LockKeeperServerError::Io(_)
+            | LockKeeperServerError::InvalidOpaqueDirectory
             | LockKeeperServerError::Bson(_)
+            | LockKeeperServerError::Bincode(_)
             | LockKeeperServerError::OpaqueProtocol(_)
             | LockKeeperServerError::EnvVar(_)
             | LockKeeperServerError::MongoDb(_) => Status::internal("Internal server error"),

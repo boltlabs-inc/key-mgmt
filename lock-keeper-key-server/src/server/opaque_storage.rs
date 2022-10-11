@@ -1,13 +1,12 @@
-use crate::{
-    config::{opaque::OpaqueCipherSuite, server::Service},
-    error::LockKeeperError,
-};
+use lock_keeper::config::{opaque::OpaqueCipherSuite, server::Service};
 use opaque_ke::{keypair::PrivateKey, Ristretto255, ServerSetup};
 use rand::rngs::StdRng;
 use std::{
     fs::File,
     io::{Read, Write},
 };
+
+use crate::LockKeeperServerError;
 
 /// Retrieves the [`ServerSetup`] used for OPAQUE authentication, creating it if
 /// it doesn't already exist.
@@ -16,7 +15,7 @@ use std::{
 pub fn create_or_retrieve_server_key_opaque(
     rng: &mut StdRng,
     service: &Service,
-) -> Result<ServerSetup<OpaqueCipherSuite, PrivateKey<Ristretto255>>, LockKeeperError> {
+) -> Result<ServerSetup<OpaqueCipherSuite, PrivateKey<Ristretto255>>, LockKeeperServerError> {
     let server_key_file = File::open(&service.opaque_server_key);
     match server_key_file {
         // Server key file doesn't exist yet, create new
@@ -26,7 +25,7 @@ pub fn create_or_retrieve_server_key_opaque(
                 &service
                     .opaque_server_key
                     .parent()
-                    .ok_or(LockKeeperError::InvalidOpaqueDirectory)?,
+                    .ok_or(LockKeeperServerError::InvalidOpaqueDirectory)?,
             )?;
             let mut file = File::create(&service.opaque_server_key)?;
             file.write_all(bincode::serialize(&server_setup)?.as_slice())?;
@@ -47,7 +46,7 @@ pub fn create_or_retrieve_server_key_opaque(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::server::Service;
+    use lock_keeper::config::server::Service;
     use rand::SeedableRng;
     use std::{
         env::temp_dir,
@@ -61,10 +60,6 @@ mod tests {
         let service = &Service {
             address: IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
             port: 0,
-            connection_timeout: None,
-            max_pending_connection_retries: 0,
-            message_timeout: Default::default(),
-            max_message_length: 0,
             private_key: Default::default(),
             certificate: Default::default(),
             opaque_path: temp_dir().join("opaque"),

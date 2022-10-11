@@ -1,9 +1,11 @@
 use crate::{client::LockKeeperClient, LockKeeperClientError};
 use lock_keeper::{
-    channel::ClientChannel,
     crypto::OpaqueExportKey,
-    types::create_storage_key::{client, server},
-    user::{AccountName, UserId},
+    infrastructure::channel::ClientChannel,
+    types::{
+        operations::create_storage_key::{client, server},
+        user::{AccountName, UserId},
+    },
 };
 use rand::{CryptoRng, RngCore};
 

@@ -1,9 +1,11 @@
 use crate::{api::LocalStorage, LockKeeperClient, LockKeeperClientError};
 use lock_keeper::{
-    channel::ClientChannel,
     crypto::{KeyId, Secret, StorageKey},
-    types::generate::{client, server},
-    user::UserId,
+    infrastructure::channel::ClientChannel,
+    types::{
+        operations::generate::{client, server},
+        user::UserId,
+    },
 };
 use rand::rngs::StdRng;
 

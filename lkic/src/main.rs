@@ -9,8 +9,6 @@ use lock_keeper::config::client::Config;
 
 #[tokio::main]
 pub async fn main() {
-    tracing_subscriber::fmt();
-
     let cli = cli::Cli::parse();
     let config = Config::load(&cli.config).await.unwrap();
 

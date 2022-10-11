@@ -5,9 +5,9 @@ use crate::{
 
 use async_trait::async_trait;
 use lock_keeper::{
-    channel::ServerChannel,
     crypto::KeyId,
-    types::generate::{client, server},
+    infrastructure::channel::ServerChannel,
+    types::operations::generate::{client, server},
 };
 
 #[derive(Debug)]

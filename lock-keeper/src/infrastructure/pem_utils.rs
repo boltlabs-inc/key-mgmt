@@ -1,3 +1,5 @@
+//! Convenience functions for dealing with PEM files.
+
 use std::path::Path;
 
 use rustls::{Certificate, PrivateKey};

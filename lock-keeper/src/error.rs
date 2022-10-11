@@ -1,3 +1,5 @@
+//! Error type for all errors returned to code outside of this crate.
+
 use thiserror::Error;
 use tokio::sync::mpsc::error::SendError;
 use tonic::Status;
@@ -9,6 +11,10 @@ pub enum LockKeeperError {
     #[error(transparent)]
     Crypto(#[from] CryptoError),
 
+    // Request errors
+    #[error("Invalid client action")]
+    InvalidClientAction,
+
     // Channel errors
     #[error("Invalid message")]
     InvalidMessage,
@@ -19,15 +25,7 @@ pub enum LockKeeperError {
     #[error("Invalid private key")]
     InvalidPrivateKey,
 
-    // OPAQUE errors
-    #[error("Could not create opaque path directory")]
-    InvalidOpaqueDirectory,
-    #[error("Could not open user's home directory")]
-    ProjectDirs,
-
     // Wrapped errors
-    #[error(transparent)]
-    Bincode(#[from] bincode::Error),
     #[error(transparent)]
     Io(#[from] std::io::Error),
     #[error(transparent)]
@@ -66,12 +64,9 @@ impl From<LockKeeperError> for Status {
             // Errors that are safe to return to the client
             LockKeeperError::InvalidMessage => Status::invalid_argument(error.to_string()),
             LockKeeperError::NoMessageReceived => Status::deadline_exceeded(error.to_string()),
-
             // Errors that the client should not see
-            LockKeeperError::Crypto(_)
-            | LockKeeperError::InvalidOpaqueDirectory
-            | LockKeeperError::ProjectDirs
-            | LockKeeperError::Bincode(_)
+            LockKeeperError::InvalidClientAction
+            | LockKeeperError::Crypto(_)
             | LockKeeperError::Io(_)
             | LockKeeperError::InvalidPrivateKey
             | LockKeeperError::InvalidUri(_)

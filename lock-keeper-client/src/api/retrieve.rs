@@ -3,10 +3,9 @@ use crate::{
     LockKeeperClient, LockKeeperClientError,
 };
 use lock_keeper::{
-    channel::ClientChannel,
     crypto::KeyId,
-    types::retrieve::{client, server},
-    RetrieveContext,
+    infrastructure::channel::ClientChannel,
+    types::operations::retrieve::{client, server, RetrieveContext},
 };
 
 impl LockKeeperClient {

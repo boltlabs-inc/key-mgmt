@@ -1,4 +1,4 @@
-use crate::{defaults::client::LOCAL_SERVER_URI, error::LockKeeperError, pem_utils};
+use crate::{constants::LOCAL_SERVER_URI, error::LockKeeperError, infrastructure::pem_utils};
 use rustls::{ClientConfig, RootCertStore};
 use serde::{Deserialize, Serialize};
 use std::{

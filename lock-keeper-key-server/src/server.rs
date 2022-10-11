@@ -1,3 +1,4 @@
+pub(crate) mod opaque_storage;
 mod operation;
 mod service;
 
@@ -9,15 +10,12 @@ use crate::{database::Database, error::LockKeeperServerError, operations};
 
 use lock_keeper::{
     config::server::{Config, Service},
+    constants::{ACCOUNT_NAME, ACTION},
     crypto::KeyId,
-    defaults::server::ACCOUNT_NAME,
     rpc::{lock_keeper_rpc_server::LockKeeperRpc, HealthCheck},
-    types::{Message, MessageStream},
-    user::AccountName,
-    ClientAction,
+    types::{operations::ClientAction, user::AccountName, Message, MessageStream},
 };
 
-use lock_keeper::defaults::server::ACTION;
 use rand::{rngs::StdRng, SeedableRng};
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -65,7 +63,6 @@ impl LockKeeperKeyServer {
             Status::invalid_argument("Client action not found"),
             Status::invalid_argument("Invalid client action"),
         )?;
-        eprintln!("ACTION: {:?}", action_str);
         let action = ClientAction::from_str(action_str)?;
 
         Ok(Context {

@@ -1,4 +1,4 @@
-use crate::{user::UserId, LockKeeperError};
+use crate::{types::user::UserId, LockKeeperError};
 use rand::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
@@ -66,11 +66,7 @@ impl Secret {
 
 #[cfg(test)]
 mod test {
-    use crate::{
-        crypto::{KeyId, Secret, StorageKey},
-        user::UserId,
-        LockKeeperError,
-    };
+    use super::*;
 
     #[test]
     fn secret_to_vec_u8_conversion_works() -> Result<(), LockKeeperError> {
