@@ -252,6 +252,19 @@ impl Secret {
             context,
         }
     }
+
+    /// Create a new secret from its constituent parts.
+    /// This is unchecked; use with care.
+    pub(super) fn from_parts(secret_material: &[u8], context: &AssociatedData) -> Self {
+        Self {
+            material: secret_material.to_vec(),
+            context: context.clone(),
+        }
+    }
+
+    pub(super) fn context(&self) -> &AssociatedData {
+        &self.context
+    }
 }
 
 impl From<Secret> for Vec<u8> {

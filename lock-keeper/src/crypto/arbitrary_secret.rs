@@ -79,18 +79,25 @@ impl Secret {
             .with_bytes(key_id.clone())
             .with_str("imported key");
 
-        let secret = Secret(generic::Secret::try_from(secret_material.to_vec())?);
+        let secret = Secret(generic::Secret::from_parts(secret_material, &context));
 
         Ok((
             secret.clone(),
             Encrypted::encrypt(rng, &storage_key.0, secret, &context)?,
         ))
     }
+
+    /// Retrieve the context for the secret.
+    #[allow(unused)]
+    fn context(&self) -> &AssociatedData {
+        self.0.context()
+    }
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
+    use rand::Rng;
 
     #[test]
     fn secret_to_vec_u8_conversion_works() -> Result<(), LockKeeperError> {
@@ -128,6 +135,45 @@ mod test {
         // Decrypt the secret
         let decrypted_secret = encrypted_secret.decrypt_secret(storage_key)?;
         assert_eq!(decrypted_secret, secret);
+
+        Ok(())
+    }
+
+    #[test]
+    fn imported_keys_are_labelled() -> Result<(), LockKeeperError> {
+        let mut rng = rand::thread_rng();
+        let storage_key = StorageKey::generate(&mut rng);
+
+        let user_id = UserId::new(&mut rng)?;
+        let key_id = KeyId::generate(&mut rng, &user_id)?;
+
+        // Convenient, inefficient method to check whether one vector contains another.
+        let contains = |container: Vec<u8>, subset: Vec<u8>| -> bool {
+            container.windows(subset.len()).any(|c| c == subset)
+        };
+
+        // Create and encrypt a secret -- not imported.
+        let (secret, _) = Secret::create_and_encrypt(&mut rng, &storage_key, &user_id, &key_id)?;
+
+        assert!(!contains(
+            secret.context().to_owned().into(),
+            "imported".as_bytes().into()
+        ));
+
+        // Use the imported creation function
+        let secret_material: [u8; 32] = rng.gen();
+        let (imported_secret, _) = Secret::import_and_encrypt(
+            &secret_material,
+            &mut rng,
+            &storage_key,
+            &user_id,
+            &key_id,
+        )?;
+
+        assert!(contains(
+            imported_secret.context().to_owned().into(),
+            "imported".as_bytes().into()
+        ));
 
         Ok(())
     }

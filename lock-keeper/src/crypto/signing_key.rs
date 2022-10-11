@@ -11,7 +11,9 @@ use super::{generic::AssociatedData, CryptoError, Encrypted, KeyId, StorageKey};
 /// This can be generated locally by the client or remotely by the server.
 #[allow(unused)]
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SigningKeyPair;
+pub struct SigningKeyPair {
+    context: AssociatedData,
+}
 
 /// The public component of an ECDSA signing key, and context about the key.
 #[allow(unused)]
@@ -21,8 +23,10 @@ pub struct SigningPublicKey;
 #[allow(unused)]
 impl SigningKeyPair {
     /// Create a new `SigningKeyPair` with the given associated data.
-    fn generate(rng: &mut (impl CryptoRng + RngCore), associated_data: &AssociatedData) -> Self {
-        SigningKeyPair
+    fn generate(rng: &mut (impl CryptoRng + RngCore), context: &AssociatedData) -> Self {
+        SigningKeyPair {
+            context: context.clone(),
+        }
     }
 
     /// Domain separator for use in serializing signing keypairs.
@@ -33,6 +37,10 @@ impl SigningKeyPair {
     /// Retrieve the public portion of the key.
     fn public_key(&self) -> &SigningPublicKey {
         &SigningPublicKey
+    }
+
+    fn context(&self) -> &AssociatedData {
+        &self.context
     }
 
     /// Compute an ECDSA signature on the given message.
@@ -51,7 +59,11 @@ impl SigningKeyPair {
         user_id: &UserId,
         key_id: &KeyId,
     ) -> Self {
-        SigningKeyPair
+        let context = AssociatedData::new()
+            .with_bytes(user_id.clone())
+            .with_bytes(key_id.clone())
+            .with_str("server-generated");
+        SigningKeyPair { context }
     }
 
     /// Create a `SigningKeyPair` from an imported key and encrypt it for
@@ -71,7 +83,9 @@ impl SigningKeyPair {
             .with_str("imported key");
 
         // TODO #235: use the actual key material and the context.
-        let signing_key = SigningKeyPair;
+        let signing_key = SigningKeyPair {
+            context: context.clone(),
+        };
 
         Ok((
             signing_key.clone(),
@@ -114,7 +128,9 @@ impl TryFrom<Vec<u8>> for SigningKeyPair {
         // The signing key is just be the domain separator, serialized.
         let expected: Vec<u8> = SigningKeyPair::domain_separator().into();
         if value.iter().zip(expected.iter()).all(|(v, u)| v == u) {
-            Ok(SigningKeyPair)
+            Ok(SigningKeyPair {
+                context: AssociatedData::new(),
+            })
         } else {
             Err(CryptoError::ConversionError)
         }
@@ -168,12 +184,15 @@ mod test {
         for _ in 0..1000 {
             // Trivial - the serializiation doesn't include anything beyond the domain
             // separator.
-            let vec: Vec<u8> = SigningKeyPair.into();
+            let original = SigningKeyPair {
+                context: AssociatedData::new(),
+            };
+            let vec: Vec<u8> = original.clone().into();
             assert_eq!(vec.len(), SigningKeyPair::domain_separator().len());
 
             // Works - you get the same nothing back.
             let output_key = vec.try_into()?;
-            assert_eq!(SigningKeyPair, output_key);
+            assert_eq!(original, output_key);
         }
         Ok(())
     }
@@ -204,7 +223,9 @@ mod test {
         let mut rng = rand::thread_rng();
 
         let generic_message = "every message has the same signature".as_bytes().to_vec();
-        let signing_key = SigningKeyPair;
+        let signing_key = SigningKeyPair {
+            context: AssociatedData::new(),
+        };
         let trivial_signature = signing_key.sign(&generic_message);
         let public_key = signing_key.public_key();
 
@@ -218,5 +239,53 @@ mod test {
             .all(
                 |sig| trivial_signature == sig && sig.verify(public_key, &generic_message).is_ok()
             ));
+    }
+
+    #[test]
+    fn imported_keys_are_labelled() -> Result<(), LockKeeperError> {
+        let mut rng = rand::thread_rng();
+        let storage_key = StorageKey::generate(&mut rng);
+
+        let user_id = UserId::new(&mut rng)?;
+        let key_id = KeyId::generate(&mut rng, &user_id)?;
+
+        // Convenient, inefficient method to check whether one vector contains another.
+        let contains = |container: Vec<u8>, subset: Vec<u8>| -> bool {
+            container.windows(subset.len()).any(|c| c == subset)
+        };
+
+        let imported: Vec<u8> = "imported".as_bytes().into();
+
+        // Create and encrypt a key pair -- not imported.
+        let (secret, _) =
+            SigningKeyPair::create_and_encrypt(&mut rng, &storage_key, &user_id, &key_id)?;
+
+        assert!(!contains(
+            secret.context().to_owned().into(),
+            imported.clone()
+        ));
+
+        // Remote generate a key pair -- not imported.
+        let secret = SigningKeyPair::remote_generate(&mut rng, &user_id, &key_id);
+        let context: Vec<u8> = secret.context().to_owned().into();
+        assert!(!contains(context.clone(), imported.clone()));
+        assert!(contains(context, "server-generated".as_bytes().into()));
+
+        // Use the imported creation function
+        let secret_material: [u8; 32] = rng.gen();
+        let (imported_secret, _) = SigningKeyPair::import_and_encrypt(
+            &secret_material,
+            &mut rng,
+            &storage_key,
+            &user_id,
+            &key_id,
+        )?;
+
+        assert!(contains(
+            imported_secret.context().to_owned().into(),
+            imported
+        ));
+
+        Ok(())
     }
 }
