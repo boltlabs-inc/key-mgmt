@@ -78,6 +78,12 @@ If you want to watch server output in real-time, you can run the server in the f
 cargo make start-server
 ```
 
+Running the test binary directly offer some extra command line options.
+
+To only run tests whose name contains certain words, use the `--filter` option
+```bash
+cargo run --bin lock-keeper-tests -- --filter generate --filter retrieve
+```
 
 ## Running the server locally
 

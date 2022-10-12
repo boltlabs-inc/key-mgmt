@@ -1,7 +1,8 @@
+pub mod config;
 pub mod end_to_end;
 
 use clap::Parser;
-use lock_keeper::config::client::Config;
+use config::Config;
 use lock_keeper_client::LockKeeperClient;
 use std::{path::PathBuf, time::Duration};
 
@@ -12,13 +13,16 @@ const RETRY_DELAY: Duration = Duration::from_secs(10);
 
 #[derive(Debug, Parser)]
 pub struct Cli {
+    #[clap(default_value = "./dev/local/Client.toml")]
     pub client_config: PathBuf,
+    #[clap(long = "filter")]
+    pub filters: Option<Vec<String>>,
 }
 
 #[tokio::main]
 pub async fn main() {
     let cli = Cli::parse();
-    let config = Config::load(&cli.client_config).await.unwrap();
+    let config = Config::try_from(cli).unwrap();
     wait_for_server(&config).await;
     end_to_end_tests(&config).await;
 }
@@ -26,7 +30,7 @@ pub async fn main() {
 async fn wait_for_server(config: &Config) {
     for i in 0..NUM_RETRIES {
         println!("Attempting to connect to server...");
-        match LockKeeperClient::health(config).await {
+        match LockKeeperClient::health(&config.client_config).await {
             Ok(_) => return,
             Err(_) => {
                 println!("Server connection failed. Retrying in {:?}", RETRY_DELAY);

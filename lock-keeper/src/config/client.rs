@@ -17,8 +17,8 @@ pub struct Config {
 }
 
 impl Config {
-    pub async fn load(config_path: impl AsRef<Path>) -> Result<Config, LockKeeperError> {
-        let config_string = tokio::fs::read_to_string(&config_path).await?;
+    pub fn load(config_path: impl AsRef<Path>) -> Result<Config, LockKeeperError> {
+        let config_string = std::fs::read_to_string(&config_path)?;
         let config = Self::from_str(&config_string)?;
         Ok(config)
     }
