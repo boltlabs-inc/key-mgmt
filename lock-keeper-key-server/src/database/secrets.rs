@@ -36,6 +36,27 @@ impl Database {
         Ok(())
     }
 
+    /// Add a [`StoredSigningKeyPair`] to a [`User`]'s list of arbitrary
+    /// secrets
+    pub async fn add_server_imported_signing_key(
+        &self,
+        user_id: &UserId,
+        secret: SigningKeyPair,
+        key_id: KeyId,
+    ) -> Result<(), LockKeeperServerError> {
+        let collection = self.inner.collection::<User>(constants::USERS);
+        let stored_secret = StoredSigningKeyPair::new(secret, key_id);
+        let stored_secret_bson = mongodb::bson::to_bson(&stored_secret)?;
+        let filter = doc! { USER_ID: user_id };
+        let update =
+            doc! { "$push":  { "secrets.server_created_signing_keys": stored_secret_bson } };
+        let _ = collection
+            .find_one_and_update(filter, update, None)
+            .await?
+            .ok_or(LockKeeperServerError::InvalidAccount)?;
+        Ok(())
+    }
+
     /// Get a [`User`]'s [`StoredEncryptedSecret`] based on its [`KeyId`]
     pub async fn get_user_secret(
         &self,

@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 pub struct StoredSecrets {
     pub arbitrary_secrets: Vec<StoredEncryptedSecret>,
     pub signing_keys: Vec<StoredEncryptedSigningKeyPair>,
-    pub server_generated_signing_keys: Vec<StoredSigningKeyPair>,
+    pub server_created_signing_keys: Vec<StoredSigningKeyPair>,
 }
 
 /// Wrapper around an [`Encrypted<Secret>`] and its [`KeyId`]

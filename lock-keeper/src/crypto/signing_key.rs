@@ -169,7 +169,7 @@ impl Import {
         self,
         user_id: &UserId,
         key_id: &KeyId,
-    ) -> Result<SigningKeyPair, CryptoError> {
+    ) -> Result<SigningKeyPair, LockKeeperError> {
         let context = AssociatedData::new()
             .with_bytes(user_id.clone())
             .with_bytes(key_id.clone())

@@ -110,6 +110,7 @@ impl LockKeeperRpc for LockKeeperKeyServer {
     type AuthenticateStream = MessageStream;
     type CreateStorageKeyStream = MessageStream;
     type GenerateStream = MessageStream;
+    type ImportSigningKeyStream = MessageStream;
     type RemoteGenerateStream = MessageStream;
     type RetrieveStream = MessageStream;
     type RetrieveAuditEventsStream = MessageStream;
@@ -155,6 +156,16 @@ impl LockKeeperRpc for LockKeeperKeyServer {
     ) -> Result<Response<Self::GenerateStream>, Status> {
         let context = self.context(&request)?;
         Ok(operations::Generate
+            .handle_request(context, request)
+            .await?)
+    }
+
+    async fn import_signing_key(
+        &self,
+        request: Request<tonic::Streaming<Message>>,
+    ) -> Result<Response<Self::ImportSigningKeyStream>, Status> {
+        let context = self.context(&request)?;
+        Ok(operations::ImportSigningKey
             .handle_request(context, request)
             .await?)
     }
