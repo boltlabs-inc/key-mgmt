@@ -1,7 +1,5 @@
-use Operation::{Authenticate, Export, Generate, Register, Retrieve, SetFakeKeyId};
-
 use lock_keeper::{
-    config::client::Config,
+    config::client,
     crypto::KeyId,
     types::{
         audit_event::{AuditEventOptions, EventStatus, EventType},
@@ -20,12 +18,14 @@ use serde_json::Value;
 use std::{collections::HashMap, str::FromStr};
 use thiserror::Error;
 
+use crate::config::Config;
+
 const USER: &str = "user";
 const PASSWORD: &str = "password";
 const GENERATED_ID: &str = "generated_key_id";
 const GENERATED_KEY: &str = "generated_key";
 
-pub async fn end_to_end_tests(client_config: &Config) {
+pub async fn end_to_end_tests(config: &Config) {
     // Run every test, printing out details if it fails
     let tests = tests().await;
     println!("Executing {} tests", tests.len());
@@ -33,7 +33,12 @@ pub async fn end_to_end_tests(client_config: &Config) {
 
     for mut test in tests {
         println!("\n\ntest integration_tests::{} ... ", test.name);
-        let result = test.execute(client_config).await;
+        if !config.filters.matches(&test.name) {
+            println!("skipped");
+            continue;
+        }
+
+        let result = test.execute(&config.client_config).await;
         if let Err(error) = &result {
             println!("failed with error: {:?}", error)
         } else {
@@ -66,6 +71,8 @@ pub async fn end_to_end_tests(client_config: &Config) {
 /// Assumption: none of these will cause a fatal error to the long-running
 /// processes (server).
 async fn tests() -> Vec<Test> {
+    use Operation::*;
+
     vec![
         Test::new(
             "Register the same user twice user",
@@ -311,7 +318,9 @@ impl Test {
         }
     }
 
-    async fn execute(&mut self, config: &Config) -> Result<(), anyhow::Error> {
+    async fn execute(&mut self, config: &client::Config) -> Result<(), anyhow::Error> {
+        use Operation::*;
+
         for (op, expected_outcome) in &self.operations {
             let outcome: Result<(), anyhow::Error> = match op {
                 SetFakeKeyId => {
@@ -469,7 +478,7 @@ impl Test {
 
     async fn check_audit_events(
         &self,
-        config: &Config,
+        config: &client::Config,
         expected_status: EventStatus,
         operation: &Operation,
     ) -> Result<(), anyhow::Error> {
@@ -487,6 +496,7 @@ impl Test {
         let audit_event_log = lock_keeper_client
             .retrieve_audit_event_log(EventType::All, AuditEventOptions::default())
             .await?;
+
         // Get the fourth last event, the last 3 are for retrieving audit logs and
         // authenticating
         let fourth_last = audit_event_log

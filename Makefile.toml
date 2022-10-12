@@ -15,6 +15,10 @@ alias = "stop-server"
 [tasks.teardown]
 alias = "teardown-server"
 
+# Stops the server, recompiles it, and restarts it
+[tasks.restart]
+dependencies = ["stop", "start"]
+
 # Start a key server and monitor its output.
 [tasks.start-server]
 command = "docker"
