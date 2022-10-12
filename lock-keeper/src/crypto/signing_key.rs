@@ -11,7 +11,7 @@ use super::{generic::AssociatedData, CryptoError, Encrypted, KeyId, StorageKey};
 ///
 /// This can be generated locally by the client or remotely by the server.
 #[allow(unused)]
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SigningKeyPair {
     context: AssociatedData,
 }
