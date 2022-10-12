@@ -5,7 +5,7 @@ use std::convert::TryFrom;
 
 use crate::crypto::{
     generic::{self, AssociatedData, CryptoError},
-    Encrypted, Import, Importable, KeyId, StorageKey,
+    Encrypted, KeyId, StorageKey,
 };
 
 /// An arbitrary secret.
@@ -98,28 +98,6 @@ impl Secret {
     }
 }
 
-impl Import {
-    /// Convert an [`Import`] into a [`Secret`] with appropriate context.
-    ///
-    /// This is part of the import to key server only flow and must be called by
-    /// the server.
-    pub fn into_secret(self, user_id: &UserId, key_id: &KeyId) -> Result<Secret, CryptoError> {
-        if self.key_type() != Importable::ArbitrarySecret {
-            Err(CryptoError::ConversionError)
-        } else {
-            let context = AssociatedData::new()
-                .with_bytes(user_id.clone())
-                .with_bytes(key_id.clone())
-                .with_str("imported key");
-
-            Ok(Secret(generic::Secret::from_parts(
-                &self.into_material(),
-                &context,
-            )))
-        }
-    }
-}
-
 #[cfg(test)]
 mod test {
     use super::*;
@@ -161,28 +139,6 @@ mod test {
         // Decrypt the secret
         let decrypted_secret = encrypted_secret.decrypt_secret(storage_key)?;
         assert_eq!(decrypted_secret, secret);
-
-        Ok(())
-    }
-
-    #[test]
-    fn into_secret_works() -> Result<(), LockKeeperError> {
-        let mut rng = rand::thread_rng();
-
-        let user_id = UserId::new(&mut rng)?;
-        let key_id = KeyId::generate(&mut rng, &user_id)?;
-
-        let key_material: [u8; 32] = rng.gen();
-        let import = Import::new(&key_material, Importable::ArbitrarySecret);
-
-        // With normal arguments, it contains the expected secret material
-        let secret = import.into_secret(&user_id, &key_id)?;
-        let bytes: Vec<u8> = secret.into();
-        assert!(bytes.windows(32).any(|c| c == key_material));
-
-        // Key type must be correct
-        let wrong_type = Import::new(&key_material, Importable::SigningKey);
-        assert!(wrong_type.into_secret(&user_id, &key_id).is_err());
 
         Ok(())
     }
@@ -247,11 +203,6 @@ mod test {
             &key_id,
         )?;
         assert!(contains_str(imported_secret, "imported"));
-
-        // Use the remote-import creation function
-        let import = Import::new(&secret_material, Importable::ArbitrarySecret);
-        let key_pair = import.into_secret(&user_id, &key_id)?;
-        assert!(contains_str(key_pair, "imported"));
 
         Ok(())
     }

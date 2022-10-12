@@ -1,10 +1,9 @@
 use crate::{types::user::UserId, LockKeeperError};
 use rand::{CryptoRng, RngCore};
+use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
 
-use super::{
-    generic::AssociatedData, CryptoError, Encrypted, Import, Importable, KeyId, StorageKey,
-};
+use super::{generic::AssociatedData, CryptoError, Encrypted, KeyId, StorageKey};
 
 /// An ECDSA signing key pair, including a public component for verifying
 /// signatures, a private component for creating them, and context about the key
@@ -72,7 +71,12 @@ impl SigningKeyPair {
     /// storage at a server, under a key known only to the client.
     ///
     /// This is part of the local import with remote backup flow and must be run
-    /// by the client.
+    /// by the client. In this flow, the key server will only recieve an
+    /// [`Encrypted<SigningKeyPair>`], not the cleartext.
+    ///
+    /// This function takes the following steps:
+    /// 1. Format the `key_material` as a signing key
+    /// 2. Encrypt it under the [`StorageKey`], using an AEAD scheme
     pub fn import_and_encrypt(
         _key_material: &[u8],
         rng: &mut (impl CryptoRng + RngCore),
@@ -96,10 +100,14 @@ impl SigningKeyPair {
         ))
     }
 
-    /// Create and encrypt a new signing key. This is part of the local signing
-    /// key generation flow.
+    /// Create and encrypt a new signing key for storage at
+    /// a server, under a key known only to the client.
     ///
-    /// This must be run by the client. It takes the following steps:
+    /// This is part of the local signing key generation flow and must be run by
+    /// the client. In this flow the key server will only recieve an
+    /// [`Encrypted<SigningKeyPair>`], not the cleartext.
+    ///
+    /// This function takes the following steps:
     /// 1. Generates a new signing key
     /// 2. Encrypt it under the [`StorageKey`], using an AEAD scheme
     pub fn create_and_encrypt(
@@ -107,7 +115,7 @@ impl SigningKeyPair {
         storage_key: &StorageKey,
         user_id: &UserId,
         key_id: &KeyId,
-    ) -> Result<(SigningKeyPair, Encrypted<SigningKeyPair>), LockKeeperError> {
+    ) -> Result<(Self, Encrypted<Self>), LockKeeperError> {
         let context = AssociatedData::new()
             .with_bytes(user_id.clone())
             .with_bytes(key_id.clone())
@@ -121,29 +129,39 @@ impl SigningKeyPair {
     }
 }
 
+/// Raw material for an imported signing key.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Import {
+    pub material: Vec<u8>,
+}
+
+impl From<&[u8]> for Import {
+    fn from(bytes: &[u8]) -> Self {
+        Self {
+            material: bytes.into(),
+        }
+    }
+}
+
 impl Import {
     /// Convert an [`Import`] into a [`SigningKeyPair`] with appropriate
     /// context.
     ///
-    /// This is part of the import to key server only flow and must be called by
-    /// the server.
+    /// This is part of the flow to send an imported key in cleartext to the key
+    /// server and must be called by the server.
     #[allow(unused)]
     pub fn into_signing_key(
         self,
         user_id: &UserId,
         key_id: &KeyId,
     ) -> Result<SigningKeyPair, CryptoError> {
-        if self.key_type() != Importable::SigningKey {
-            Err(CryptoError::ConversionError)
-        } else {
-            let context = AssociatedData::new()
-                .with_bytes(user_id.clone())
-                .with_bytes(key_id.clone())
-                .with_str("imported key");
+        let context = AssociatedData::new()
+            .with_bytes(user_id.clone())
+            .with_bytes(key_id.clone())
+            .with_str("imported key");
 
-            // TODO #235: use the actual key material in the key pair.
-            Ok(SigningKeyPair { context })
-        }
+        // TODO #235: use the actual key material in the key pair.
+        Ok(SigningKeyPair { context })
     }
 }
 
@@ -294,7 +312,7 @@ mod test {
         let key_id = KeyId::generate(&mut rng, &user_id)?;
 
         let key_material: [u8; 32] = rng.gen();
-        let import = Import::new(&key_material, Importable::SigningKey);
+        let import: Import = key_material.as_ref().into();
 
         // With normal arguments, it just works
         let key_pair = import.into_signing_key(&user_id, &key_id)?;
@@ -306,10 +324,6 @@ mod test {
         // assert.
         let bytes: Vec<u8> = key_pair.into();
         assert!(!bytes.windows(32).any(|c| c == key_material));
-
-        // Key type must be correct
-        let wrong_type = Import::new(&key_material, Importable::ArbitrarySecret);
-        assert!(wrong_type.into_signing_key(&user_id, &key_id).is_err());
 
         // TODO #235: test any additional constraints on the key material.
 
@@ -324,7 +338,7 @@ mod test {
         let user_id = UserId::new(&mut rng)?;
         let key_id = KeyId::generate(&mut rng, &user_id)?;
 
-        let key_material: [u8; 32] = rng.gen();
+        let key_material = rng.gen::<[u8; 32]>().to_vec();
         let (key, encrypted_key) = SigningKeyPair::import_and_encrypt(
             &key_material,
             &mut rng,
@@ -376,7 +390,7 @@ mod test {
         assert!(contains_str(secret, "server-generated"));
 
         // Use the local-import creation function
-        let key_material: [u8; 32] = rng.gen();
+        let key_material = rng.gen::<[u8; 32]>().to_vec();
         let (imported_secret, _) = SigningKeyPair::import_and_encrypt(
             &key_material,
             &mut rng,
@@ -387,7 +401,7 @@ mod test {
         assert!(contains_str(imported_secret, "imported"));
 
         // Use the remote-import creation function
-        let import = Import::new(&key_material, Importable::SigningKey);
+        let import: Import = key_material.as_slice().into();
         let key_pair = import.into_signing_key(&user_id, &key_id)?;
         assert!(contains_str(key_pair, "imported"));
 
