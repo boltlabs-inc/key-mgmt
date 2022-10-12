@@ -3,6 +3,7 @@
 pub mod authenticate;
 pub mod create_storage_key;
 pub mod generate;
+pub mod import_signing_key;
 pub mod register;
 pub mod remote_generate;
 pub mod retrieve;
@@ -21,6 +22,7 @@ pub enum ClientAction {
     CreateStorageKey,
     Export,
     Generate,
+    ImportSigningKey,
     Register,
     RemoteGenerate,
     Retrieve,
