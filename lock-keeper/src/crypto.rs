@@ -268,6 +268,41 @@ impl KeyId {
     }
 }
 
+/// The set of types that can be imported into the system, either to the key
+/// server only or as a local import with remote backup.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum Importable {
+    ArbitrarySecret,
+    SigningKey,
+}
+
+/// Raw material for imported key types.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Import {
+    material: Vec<u8>,
+    key_type: Importable,
+}
+
+impl Import {
+    /// Wrap key material as an import.
+    pub fn new(material: &[u8], key_type: Importable) -> Self {
+        Self {
+            material: material.into(),
+            key_type,
+        }
+    }
+
+    /// Retrieve the key type.
+    pub fn key_type(&self) -> Importable {
+        self.key_type
+    }
+
+    /// Extract the key material.
+    pub fn into_material(self) -> Vec<u8> {
+        self.material
+    }
+}
+
 #[cfg(test)]
 mod test {
     use std::collections::HashSet;

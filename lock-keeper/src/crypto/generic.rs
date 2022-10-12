@@ -262,6 +262,11 @@ impl Secret {
         }
     }
 
+    /// Retrieve the context for this secret.
+    ///
+    /// This is currently only used in testing, but it is fine to make it
+    /// publicly accessible if necessary.
+    #[cfg(test)]
     pub(super) fn context(&self) -> &AssociatedData {
         &self.context
     }

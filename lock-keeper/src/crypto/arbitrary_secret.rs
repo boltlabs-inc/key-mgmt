@@ -5,7 +5,7 @@ use std::convert::TryFrom;
 
 use crate::crypto::{
     generic::{self, AssociatedData, CryptoError},
-    Encrypted, KeyId, StorageKey,
+    Encrypted, Import, Importable, KeyId, StorageKey,
 };
 
 /// An arbitrary secret.
@@ -64,9 +64,10 @@ impl Secret {
     }
 
     /// Create a `Secret` from an imported key and encrypt it for
-    /// storage at a server.
+    /// storage at a server, under a key known only to the client.
     ///
-    /// This is part of the import flow and must be run by the client.
+    /// This is part of the local import with remote backup flow and must be run
+    /// by the client.
     pub fn import_and_encrypt(
         secret_material: &[u8],
         rng: &mut (impl CryptoRng + RngCore),
@@ -88,9 +89,34 @@ impl Secret {
     }
 
     /// Retrieve the context for the secret.
-    #[allow(unused)]
+    ///
+    /// This is only used in testing right now, but it would be fine to make it
+    /// public.
+    #[cfg(test)]
     fn context(&self) -> &AssociatedData {
         self.0.context()
+    }
+}
+
+impl Import {
+    /// Convert an [`Import`] into a [`Secret`] with appropriate context.
+    ///
+    /// This is part of the import to key server only flow and must be called by
+    /// the server.
+    pub fn into_secret(self, user_id: &UserId, key_id: &KeyId) -> Result<Secret, CryptoError> {
+        if self.key_type() != Importable::ArbitrarySecret {
+            Err(CryptoError::ConversionError)
+        } else {
+            let context = AssociatedData::new()
+                .with_bytes(user_id.clone())
+                .with_bytes(key_id.clone())
+                .with_str("imported key");
+
+            Ok(Secret(generic::Secret::from_parts(
+                &self.into_material(),
+                &context,
+            )))
+        }
     }
 }
 
@@ -140,6 +166,57 @@ mod test {
     }
 
     #[test]
+    fn into_secret_works() -> Result<(), LockKeeperError> {
+        let mut rng = rand::thread_rng();
+
+        let user_id = UserId::new(&mut rng)?;
+        let key_id = KeyId::generate(&mut rng, &user_id)?;
+
+        let key_material: [u8; 32] = rng.gen();
+        let import = Import::new(&key_material, Importable::ArbitrarySecret);
+
+        // With normal arguments, it contains the expected secret material
+        let secret = import.into_secret(&user_id, &key_id)?;
+        let bytes: Vec<u8> = secret.into();
+        assert!(bytes.windows(32).any(|c| c == key_material));
+
+        // Key type must be correct
+        let wrong_type = Import::new(&key_material, Importable::SigningKey);
+        assert!(wrong_type.into_secret(&user_id, &key_id).is_err());
+
+        Ok(())
+    }
+
+    #[test]
+    fn import_and_encrypt_encrypts_correct_key() -> Result<(), LockKeeperError> {
+        let mut rng = rand::thread_rng();
+        let storage_key = StorageKey::generate(&mut rng);
+
+        let user_id = UserId::new(&mut rng)?;
+        let key_id = KeyId::generate(&mut rng, &user_id)?;
+
+        let secret_material: [u8; 32] = rng.gen();
+        let (secret, encrypted_secret) = Secret::import_and_encrypt(
+            &secret_material,
+            &mut rng,
+            &storage_key,
+            &user_id,
+            &key_id,
+        )?;
+
+        // Make sure encrypted secret matches secret
+        let decrypted_secret = encrypted_secret.decrypt_secret(storage_key)?;
+        assert_eq!(secret, decrypted_secret);
+
+        // Make sure secret matches input secret material (e.g. the secret material
+        // appears somewhere within the serialization).
+        let bytes: Vec<u8> = secret.into();
+        assert!(bytes.windows(32).any(|c| c == secret_material));
+
+        Ok(())
+    }
+
+    #[test]
     fn imported_keys_are_labelled() -> Result<(), LockKeeperError> {
         let mut rng = rand::thread_rng();
         let storage_key = StorageKey::generate(&mut rng);
@@ -147,20 +224,20 @@ mod test {
         let user_id = UserId::new(&mut rng)?;
         let key_id = KeyId::generate(&mut rng, &user_id)?;
 
-        // Convenient, inefficient method to check whether one vector contains another.
-        let contains = |container: Vec<u8>, subset: Vec<u8>| -> bool {
-            container.windows(subset.len()).any(|c| c == subset)
+        // Convenient, inefficient method to check whether the AD for a key pair
+        // contains a given string
+        let contains_str = |container: Secret, subset: &'static str| -> bool {
+            let container_ad: Vec<u8> = container.context().to_owned().into();
+            let subset: Vec<u8> = subset.as_bytes().into();
+            container_ad.windows(subset.len()).any(|c| c == subset)
         };
 
         // Create and encrypt a secret -- not imported.
         let (secret, _) = Secret::create_and_encrypt(&mut rng, &storage_key, &user_id, &key_id)?;
+        assert!(!contains_str(secret.clone(), "imported"));
+        assert!(contains_str(secret, "client-generated"));
 
-        assert!(!contains(
-            secret.context().to_owned().into(),
-            "imported".as_bytes().into()
-        ));
-
-        // Use the imported creation function
+        // Use the local-import creation function
         let secret_material: [u8; 32] = rng.gen();
         let (imported_secret, _) = Secret::import_and_encrypt(
             &secret_material,
@@ -169,11 +246,12 @@ mod test {
             &user_id,
             &key_id,
         )?;
+        assert!(contains_str(imported_secret, "imported"));
 
-        assert!(contains(
-            imported_secret.context().to_owned().into(),
-            "imported".as_bytes().into()
-        ));
+        // Use the remote-import creation function
+        let import = Import::new(&secret_material, Importable::ArbitrarySecret);
+        let key_pair = import.into_secret(&user_id, &key_id)?;
+        assert!(contains_str(key_pair, "imported"));
 
         Ok(())
     }
