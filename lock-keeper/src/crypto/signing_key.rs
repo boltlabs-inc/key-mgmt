@@ -71,7 +71,7 @@ impl SigningKeyPair {
     /// storage at a server, under a key known only to the client.
     ///
     /// This is part of the local import with remote backup flow and must be run
-    /// by the client. In this flow, the key server will only recieve an
+    /// by the client. In this flow, the key server will only receive an
     /// [`Encrypted<SigningKeyPair>`], not the cleartext.
     ///
     /// This function takes the following steps:
@@ -104,7 +104,7 @@ impl SigningKeyPair {
     /// a server, under a key known only to the client.
     ///
     /// This is part of the local signing key generation flow and must be run by
-    /// the client. In this flow the key server will only recieve an
+    /// the client. In this flow the key server will only receive an
     /// [`Encrypted<SigningKeyPair>`], not the cleartext.
     ///
     /// This function takes the following steps:
