@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":[["NUM_RETRIES",""],["RETRY_DELAY",""]],"fn":[["main",""],["wait_for_server",""]],"mod":[["end_to_end",""]],"struct":[["Cli",""]]};
+window.SIDEBAR_ITEMS = {"constant":[["NUM_RETRIES",""],["RETRY_DELAY",""]],"fn":[["main",""],["wait_for_server",""]],"mod":[["config",""],["end_to_end",""]],"struct":[["Cli",""]]};
