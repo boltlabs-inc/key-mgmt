@@ -13,7 +13,7 @@ use sha3::{Digest, Sha3_256};
 use std::{array::IntoIter, convert::TryFrom};
 use tracing::error;
 
-use crate::types::user::UserId;
+use crate::types::database::user::UserId;
 
 mod arbitrary_secret;
 mod generic;

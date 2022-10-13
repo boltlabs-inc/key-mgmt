@@ -7,7 +7,7 @@ use crate::constants;
 use lock_keeper::{
     config::server::DatabaseSpec,
     constants::{ACCOUNT_NAME, USER_ID},
-    types::user::User,
+    types::database::user::User,
 };
 use mongodb::{
     bson::doc,
@@ -18,6 +18,7 @@ use mongodb::{
 use crate::error::LockKeeperServerError;
 
 pub(crate) mod audit_event;
+pub(crate) mod secrets;
 pub(crate) mod user;
 
 #[derive(Clone, Debug)]

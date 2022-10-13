@@ -1,4 +1,4 @@
-use crate::{types::user::UserId, LockKeeperError};
+use crate::{types::database::user::UserId, LockKeeperError};
 use rand::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;

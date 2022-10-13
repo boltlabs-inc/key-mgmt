@@ -2,7 +2,7 @@ pub mod client {
     use crate::{
         crypto::{Encrypted, StorageKey},
         impl_message_conversion,
-        types::user::{AccountName, UserId},
+        types::database::user::{AccountName, UserId},
     };
     use serde::{Deserialize, Serialize};
 
@@ -22,7 +22,7 @@ pub mod client {
 }
 
 pub mod server {
-    use crate::{impl_message_conversion, types::user::UserId};
+    use crate::{impl_message_conversion, types::database::user::UserId};
     use serde::{Deserialize, Serialize};
 
     #[derive(Debug, Deserialize, Serialize)]

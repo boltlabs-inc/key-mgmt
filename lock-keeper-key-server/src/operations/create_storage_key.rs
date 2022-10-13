@@ -7,8 +7,8 @@ use async_trait::async_trait;
 use lock_keeper::{
     infrastructure::channel::ServerChannel,
     types::{
+        database::user::UserId,
         operations::create_storage_key::{client, server},
-        user::UserId,
     },
 };
 

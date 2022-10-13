@@ -7,8 +7,8 @@ use crate::{constants, LockKeeperServerError};
 use lock_keeper::{
     config::opaque::OpaqueCipherSuite,
     constants::{ACCOUNT_NAME, USER_ID},
-    crypto::{Encrypted, KeyId, Secret, StorageKey},
-    types::user::{AccountName, StoredSecret, User, UserId},
+    crypto::{Encrypted, StorageKey},
+    types::database::user::{AccountName, User, UserId},
 };
 use mongodb::bson::{doc, oid::ObjectId};
 use opaque_ke::ServerRegistration;
@@ -16,7 +16,6 @@ use opaque_ke::ServerRegistration;
 use super::Database;
 
 pub const STORAGE_KEY: &str = "storage_key";
-pub const SECRETS: &str = "secrets";
 
 impl Database {
     /// Create a new [`User`] with their authentication information and insert
@@ -74,52 +73,6 @@ impl Database {
         }
     }
 
-    /// Add a [`StoredSecret`] to a [`User`]'s list of arbitrary secrets
-    pub async fn add_user_secret(
-        &self,
-        user_id: &UserId,
-        secret: Encrypted<Secret>,
-        key_id: KeyId,
-    ) -> Result<(), LockKeeperServerError> {
-        let collection = self.inner.collection::<User>(constants::USERS);
-        let stored_secret = StoredSecret::new(secret, key_id);
-        let stored_secret_bson = mongodb::bson::to_bson(&stored_secret)?;
-        let filter = doc! { USER_ID: user_id };
-        let update = doc! { "$push": { SECRETS: stored_secret_bson } };
-        let _ = collection
-            .find_one_and_update(filter, update, None)
-            .await?
-            .ok_or(LockKeeperServerError::InvalidAccount)?;
-        Ok(())
-    }
-
-    /// Get a [`User`]'s [`StoredSecret`] based on its [`KeyId`]
-    pub async fn get_user_secret(
-        &self,
-        user_id: &UserId,
-        key_id: &KeyId,
-    ) -> Result<StoredSecret, LockKeeperServerError> {
-        // Get user collection
-        let collection = self.inner.collection::<User>(constants::USERS);
-        // Match on UserId and KeyId, update "retrieved" field to true
-        let key_id_bson = mongodb::bson::to_bson(key_id)?;
-        let filter = doc! { USER_ID: user_id, "secrets.key_id": key_id_bson };
-        let update = doc! { "$set": { "secrets.$.retrieved": true } };
-        let user = collection
-            .find_one_and_update(filter, update, None)
-            .await?
-            .ok_or(LockKeeperServerError::InvalidAccount)?;
-
-        // Filter found user to return stored secret
-        let stored_secret = user
-            .secrets
-            .into_iter()
-            .find(|x| x.key_id == *key_id)
-            .ok_or(LockKeeperServerError::KeyNotFound)?;
-
-        Ok(stored_secret)
-    }
-
     /// Set the `storage_key` field for the [`User`] associated with a given
     /// [`UserId`]
     /// ## Errors
@@ -159,7 +112,7 @@ mod test {
     use lock_keeper::{
         config::server::DatabaseSpec,
         crypto::OpaqueExportKey,
-        types::user::{AccountName, User, UserId},
+        types::database::user::{AccountName, User, UserId},
     };
     use rand::{CryptoRng, Rng, RngCore};
 

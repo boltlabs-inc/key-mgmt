@@ -1,6 +1,7 @@
 pub mod client {
     use crate::{
-        config::opaque::OpaqueCipherSuite, impl_message_conversion, types::user::AccountName,
+        config::opaque::OpaqueCipherSuite, impl_message_conversion,
+        types::database::user::AccountName,
     };
     use opaque_ke::{CredentialFinalization, CredentialRequest};
     use serde::{Deserialize, Serialize};
@@ -23,7 +24,9 @@ pub mod client {
 }
 
 pub mod server {
-    use crate::{config::opaque::OpaqueCipherSuite, impl_message_conversion, types::user::UserId};
+    use crate::{
+        config::opaque::OpaqueCipherSuite, impl_message_conversion, types::database::user::UserId,
+    };
     use opaque_ke::CredentialResponse;
     use serde::{Deserialize, Serialize};
 

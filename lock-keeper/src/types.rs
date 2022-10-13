@@ -1,8 +1,8 @@
 //! Type definitions that are shared between crates but have little to no logic.
 
 pub mod audit_event;
+pub mod database;
 pub mod operations;
-pub mod user;
 
 pub use crate::rpc::Message;
 

@@ -18,8 +18,8 @@ use lock_keeper::{
     crypto::{KeyId, Secret},
     types::{
         audit_event::{AuditEvent, AuditEventOptions, EventType},
+        database::user::AccountName,
         operations::{retrieve::RetrieveContext, ClientAction},
-        user::AccountName,
     },
 };
 use rand::{rngs::StdRng, SeedableRng};
@@ -171,10 +171,10 @@ impl LockKeeperClient {
     /// and each asset fiduciary (if relevant), and any other relevant
     /// details.
     ///
-    /// The [`lock_keeper::types::user::UserId`] must match the asset owner
-    /// authenticated in the [`crate::LockKeeperClient`], and if specified,
-    /// the [`KeyId`] must correspond to a key owned by the
-    /// [`lock_keeper::types::user::UserId`].
+    /// The [`lock_keeper::types::database::user::UserId`] must match the asset
+    /// owner authenticated in the [`crate::LockKeeperClient`], and if
+    /// specified, the [`KeyId`] must correspond to a key owned by the
+    /// [`lock_keeper::types::database::user::UserId`].
     ///
     /// Output: if successful, returns a [`String`] representation of the logs.
     pub async fn retrieve_audit_event_log(

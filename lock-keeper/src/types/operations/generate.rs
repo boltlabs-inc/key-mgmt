@@ -2,7 +2,7 @@ pub mod client {
     use crate::{
         crypto::{Encrypted, Secret},
         impl_message_conversion,
-        types::user::UserId,
+        types::database::user::UserId,
     };
     use serde::{Deserialize, Serialize};
 

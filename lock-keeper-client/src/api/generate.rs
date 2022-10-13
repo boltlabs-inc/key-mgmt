@@ -3,8 +3,8 @@ use lock_keeper::{
     crypto::{KeyId, Secret, StorageKey},
     infrastructure::channel::ClientChannel,
     types::{
+        database::user::UserId,
         operations::generate::{client, server},
-        user::UserId,
     },
 };
 use rand::rngs::StdRng;

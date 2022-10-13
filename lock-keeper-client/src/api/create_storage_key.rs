@@ -3,8 +3,8 @@ use lock_keeper::{
     crypto::OpaqueExportKey,
     infrastructure::channel::ClientChannel,
     types::{
+        database::user::{AccountName, UserId},
         operations::create_storage_key::{client, server},
-        user::{AccountName, UserId},
     },
 };
 use rand::{CryptoRng, RngCore};

@@ -13,7 +13,7 @@ use lock_keeper::{
     constants::{ACCOUNT_NAME, ACTION},
     crypto::KeyId,
     rpc::{lock_keeper_rpc_server::LockKeeperRpc, HealthCheck},
-    types::{operations::ClientAction, user::AccountName, Message, MessageStream},
+    types::{database::user::AccountName, operations::ClientAction, Message, MessageStream},
 };
 
 use rand::{rngs::StdRng, SeedableRng};
@@ -46,7 +46,10 @@ impl LockKeeperKeyServer {
         })
     }
 
-    pub fn context(&self, request: &Request<tonic::Streaming<Message>>) -> Result<Context, Status> {
+    pub fn context(
+        &self,
+        request: &Request<tonic::Streaming<Message>>,
+    ) -> Result<Context, LockKeeperServerError> {
         // Parse AccountName from metadata
         let account_name_str = Self::str_from_metadata(
             request,

@@ -9,8 +9,8 @@ use lock_keeper::{
     config::opaque::OpaqueCipherSuite,
     infrastructure::channel::ServerChannel,
     types::{
+        database::user::{AccountName, UserId},
         operations::register::{client, server},
-        user::{AccountName, UserId},
     },
 };
 use opaque_ke::ServerRegistration;

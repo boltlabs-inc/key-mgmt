@@ -3,8 +3,8 @@ use lock_keeper::{
     crypto::KeyId,
     types::{
         audit_event::{AuditEventOptions, EventStatus, EventType},
+        database::user::AccountName,
         operations::{retrieve::RetrieveContext, ClientAction},
-        user::AccountName,
     },
 };
 use lock_keeper_client::{
