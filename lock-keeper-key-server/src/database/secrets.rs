@@ -105,4 +105,33 @@ impl Database {
             .ok_or(LockKeeperServerError::InvalidAccount)?;
         Ok(())
     }
+
+    /// Get a [`User`]'s [`StoredSigningKeyPair`] based on its [`KeyId`]
+    pub async fn get_user_signing_key(
+        &self,
+        user_id: &UserId,
+        key_id: &KeyId,
+    ) -> Result<StoredSigningKeyPair, LockKeeperServerError> {
+        // Get user collection
+        let collection = self.inner.collection::<User>(constants::USERS);
+        // Match on UserId and KeyId, update "retrieved" field to true
+        let key_id_bson = mongodb::bson::to_bson(key_id)?;
+        let filter =
+            doc! { USER_ID: user_id, "secrets.server_created_signing_keys.key_id": key_id_bson };
+        let update = doc! { "$set": { "secrets.server_created_signing_keys.$.retrieved": true } };
+        let user = collection
+            .find_one_and_update(filter, update, None)
+            .await?
+            .ok_or(LockKeeperServerError::InvalidAccount)?;
+
+        // Filter found user to return stored secret
+        let stored_secret = user
+            .secrets
+            .server_created_signing_keys
+            .into_iter()
+            .find(|x| x.key_id == *key_id)
+            .ok_or(LockKeeperServerError::KeyNotFound)?;
+
+        Ok(stored_secret)
+    }
 }

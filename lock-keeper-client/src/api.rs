@@ -17,7 +17,7 @@ mod retrieve_audit_events;
 use crate::{client::Password, LockKeeperClient, LockKeeperClientError};
 use lock_keeper::{
     config::client::Config,
-    crypto::{KeyId, PlaceholderEncryptedSigningKeyPair, Secret},
+    crypto::{KeyId, PlaceholderEncryptedSigningKeyPair, Secret, SigningKeyPair},
     types::{
         audit_event::{AuditEvent, AuditEventOptions, EventType},
         database::user::AccountName,
@@ -158,8 +158,11 @@ impl LockKeeperClient {
         // Return secret as bytes
         match secret {
             RetrieveResult::None => Err(LockKeeperClientError::ExportFailed),
-            RetrieveResult::ArbitraryKey(local_storage) => Ok(local_storage.secret.into()),
-            RetrieveResult::SigningKey(_) => Err(LockKeeperClientError::InvalidKeyRetrieved),
+            RetrieveResult::ArbitraryKey(_) => Err(LockKeeperClientError::InvalidKeyRetrieved),
+            RetrieveResult::SigningKey(signing_key) => {
+                let signing_key: SigningKeyPair = signing_key.into();
+                Ok(signing_key.into())
+            }
         }
     }
 

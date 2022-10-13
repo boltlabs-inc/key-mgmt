@@ -36,6 +36,14 @@ impl From<SigningKeyPair> for PlaceholderEncryptedSigningKeyPair {
     }
 }
 
+impl From<PlaceholderEncryptedSigningKeyPair> for SigningKeyPair {
+    fn from(key_pair: PlaceholderEncryptedSigningKeyPair) -> Self {
+        Self {
+            context: key_pair.context,
+        }
+    }
+}
+
 #[allow(unused)]
 impl SigningKeyPair {
     /// Create a new `SigningKeyPair` with the given associated data.
