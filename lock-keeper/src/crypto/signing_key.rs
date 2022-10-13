@@ -147,13 +147,13 @@ impl SigningKeyPair {
 /// Raw material for an imported signing key.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Import {
-    pub material: Vec<u8>,
+    pub key_material: Vec<u8>,
 }
 
 impl From<&[u8]> for Import {
     fn from(bytes: &[u8]) -> Self {
         Self {
-            material: bytes.into(),
+            key_material: bytes.into(),
         }
     }
 }

@@ -11,9 +11,7 @@ impl LockKeeperClient {
         channel: &mut ClientChannel,
         key_material: Vec<u8>,
     ) -> Result<KeyId, LockKeeperClientError> {
-        let key_material = Import {
-            material: key_material,
-        };
+        let key_material = Import { key_material };
         // Send UserId and key material to server
         let request = client::Request {
             user_id: self.user_id().clone(),

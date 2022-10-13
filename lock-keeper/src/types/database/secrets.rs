@@ -29,7 +29,10 @@ impl StoredEncryptedSecret {
     }
 }
 
-/// Wrapper around an [`Encrypted<SigningKeyPair>`] and its [`KeyId`]
+/// Wrapper around an [`Encrypted<SigningKeyPair>`] and its [`KeyId`].
+///
+/// This is used to hold signing key pairs encrypted by the client before being
+/// sent by the server.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct StoredEncryptedSigningKeyPair {
     pub signing_key: Encrypted<SigningKeyPair>,
@@ -48,8 +51,10 @@ impl StoredEncryptedSigningKeyPair {
 }
 
 /// Wrapper around an [`SigningKeyPair`] and its [`KeyId`]
+///
+/// This is used to hold signing key pairs sent by the client in the clear and
+/// encrypted by the server.
 #[derive(Debug, Deserialize, Serialize)]
-#[allow(unused)]
 pub struct StoredSigningKeyPair {
     pub signing_key: PlaceholderEncryptedSigningKeyPair,
     pub key_id: KeyId,
