@@ -1,6 +1,6 @@
 //! Database models for secrets
 
-use crate::crypto::{Encrypted, KeyId, Secret, SigningKeyPair};
+use crate::crypto::{Encrypted, KeyId, PlaceholderEncryptedSigningKeyPair, Secret, SigningKeyPair};
 use serde::{Deserialize, Serialize};
 
 /// Holds user's stored secrets of all types
@@ -51,7 +51,7 @@ impl StoredEncryptedSigningKeyPair {
 #[derive(Debug, Deserialize, Serialize)]
 #[allow(unused)]
 pub struct StoredSigningKeyPair {
-    pub signing_key: SigningKeyPair,
+    pub signing_key: PlaceholderEncryptedSigningKeyPair,
     pub key_id: KeyId,
     pub retrieved: bool,
 }
@@ -59,7 +59,7 @@ pub struct StoredSigningKeyPair {
 impl StoredSigningKeyPair {
     pub fn new(secret: SigningKeyPair, key_id: KeyId) -> Self {
         Self {
-            signing_key: secret,
+            signing_key: secret.into(),
             key_id,
             retrieved: false,
         }
