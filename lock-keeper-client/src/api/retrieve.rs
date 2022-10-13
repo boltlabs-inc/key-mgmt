@@ -45,4 +45,34 @@ impl LockKeeperClient {
             }
         }
     }
+
+    pub(crate) async fn handle_retrieve_signing_key(
+        &self,
+        channel: &mut ClientChannel,
+        key_id: &KeyId,
+        context: RetrieveContext,
+    ) -> Result<RetrieveResult, LockKeeperClientError> {
+        // TODO spec#39 look up key ID in local storage before making request to server
+
+        // Send UserId to server
+        let request = client::RequestSigningKey {
+            user_id: self.user_id().clone(),
+            key_id: key_id.clone(),
+            context: context.clone(),
+        };
+        channel.send(request).await?;
+
+        // Get StoredSecret from server
+        let server_response: server::ResponseSigningKey = channel.receive().await?;
+
+        // Return appropriate value based on Context
+        match context {
+            RetrieveContext::Null => Ok(RetrieveResult::None),
+            RetrieveContext::LocalOnly => {
+                // Decrypt secret
+                let secret = server_response.stored_secret.signing_key;
+                Ok(RetrieveResult::SigningKey(secret))
+            }
+        }
+    }
 }

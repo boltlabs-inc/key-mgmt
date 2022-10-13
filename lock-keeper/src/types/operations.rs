@@ -21,11 +21,13 @@ pub enum ClientAction {
     Authenticate,
     CreateStorageKey,
     Export,
+    ExportSingingKey,
     Generate,
     ImportSigningKey,
     Register,
     RemoteGenerate,
     Retrieve,
     RetrieveAuditEvents,
+    RetrieveSigningKey,
     RetrieveStorageKey,
 }

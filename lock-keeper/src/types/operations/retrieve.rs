@@ -21,11 +21,21 @@ pub mod client {
         pub context: RetrieveContext,
     }
 
-    impl_message_conversion!(Request);
+    #[derive(Debug, Deserialize, Serialize)]
+    pub struct RequestSigningKey {
+        pub user_id: UserId,
+        pub key_id: KeyId,
+        pub context: RetrieveContext,
+    }
+
+    impl_message_conversion!(Request, RequestSigningKey);
 }
 
 pub mod server {
-    use crate::{impl_message_conversion, types::database::secrets::StoredEncryptedSecret};
+    use crate::{
+        impl_message_conversion,
+        types::database::secrets::{StoredEncryptedSecret, StoredSigningKeyPair},
+    };
     use serde::{Deserialize, Serialize};
 
     #[derive(Debug, Deserialize, Serialize)]
@@ -34,5 +44,11 @@ pub mod server {
         pub stored_secret: StoredEncryptedSecret,
     }
 
-    impl_message_conversion!(Response);
+    #[derive(Debug, Deserialize, Serialize)]
+    /// return new requested key and key ID
+    pub struct ResponseSigningKey {
+        pub stored_secret: StoredSigningKeyPair,
+    }
+
+    impl_message_conversion!(Response, ResponseSigningKey);
 }

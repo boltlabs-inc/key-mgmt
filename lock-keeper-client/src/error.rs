@@ -19,6 +19,8 @@ pub enum LockKeeperClientError {
     InvalidAccount,
     #[error("Invalid login")]
     InvalidLogin,
+    #[error("Invalid key retrieved")]
+    InvalidKeyRetrieved,
 
     // Wrapped errors
     #[error(transparent)]
