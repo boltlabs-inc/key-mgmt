@@ -8,8 +8,8 @@ use lock_keeper::{
     config::opaque::OpaqueCipherSuite,
     infrastructure::channel::ServerChannel,
     types::{
+        database::user::UserId,
         operations::authenticate::{client, server},
-        user::UserId,
     },
 };
 use opaque_ke::{ServerLogin, ServerLoginStartParameters, ServerLoginStartResult};

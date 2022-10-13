@@ -4,7 +4,7 @@
 use std::path::PathBuf;
 
 use crate::storage::Storage;
-use lock_keeper::{config::client::Config, types::user::AccountName};
+use lock_keeper::{config::client::Config, types::database::user::AccountName};
 use lock_keeper_client::client::Password;
 
 /// In-memory state for a running application

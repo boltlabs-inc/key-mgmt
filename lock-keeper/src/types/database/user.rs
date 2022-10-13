@@ -1,11 +1,8 @@
-//! Models for the first pass of MongoDB integration.
-//!
-//! Includes structs for the various models found in the first round of Mongo
-//! integration. This module will likely be split by model into sub-modules.
+//! Database models for users and user-related fields
 
 use crate::{
     config::opaque::OpaqueCipherSuite,
-    crypto::{CryptoError, Encrypted, KeyId, Secret, StorageKey},
+    crypto::{CryptoError, Encrypted, StorageKey},
     LockKeeperError,
 };
 
@@ -15,6 +12,8 @@ use rand::{CryptoRng, Rng, RngCore};
 use serde::{Deserialize, Serialize};
 use std::{fmt::Display, str::FromStr, vec::IntoIter};
 use uuid::Uuid;
+
+use super::secrets::StoredSecret;
 
 /// Unique ID for a user.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
@@ -95,24 +94,6 @@ impl FromStr for AccountName {
 impl AccountName {
     pub fn as_bytes(&self) -> &[u8] {
         self.0.as_bytes()
-    }
-}
-
-/// Wrapper around an [`Encrypted<Secret>`] and its [`KeyId`]
-#[derive(Debug, Deserialize, Serialize)]
-pub struct StoredSecret {
-    pub secret: Encrypted<Secret>,
-    pub key_id: KeyId,
-    pub retrieved: bool,
-}
-
-impl StoredSecret {
-    pub fn new(secret: Encrypted<Secret>, key_id: KeyId) -> Self {
-        Self {
-            secret,
-            key_id,
-            retrieved: false,
-        }
     }
 }
 

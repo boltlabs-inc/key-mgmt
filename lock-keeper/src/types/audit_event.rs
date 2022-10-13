@@ -2,7 +2,7 @@
 //!
 //! Includes possible events to log and statuses of those events
 
-use crate::types::{operations::ClientAction, user::AccountName};
+use crate::types::{database::user::AccountName, operations::ClientAction};
 
 use crate::crypto::KeyId;
 use bson::DateTime;

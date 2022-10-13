@@ -6,8 +6,8 @@ use lock_keeper::{
     crypto::OpaqueSessionKey,
     infrastructure::channel::ClientChannel,
     types::{
+        database::user::{AccountName, UserId},
         operations::authenticate::{client, server},
-        user::{AccountName, UserId},
     },
 };
 use opaque_ke::{

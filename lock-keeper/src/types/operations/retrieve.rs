@@ -8,7 +8,7 @@ pub enum RetrieveContext {
 }
 
 pub mod client {
-    use crate::{crypto::KeyId, impl_message_conversion, types::user::UserId};
+    use crate::{crypto::KeyId, impl_message_conversion, types::database::user::UserId};
     use serde::{Deserialize, Serialize};
 
     use super::RetrieveContext;
@@ -25,7 +25,7 @@ pub mod client {
 }
 
 pub mod server {
-    use crate::{impl_message_conversion, types::user::StoredSecret};
+    use crate::{impl_message_conversion, types::database::secrets::StoredSecret};
     use serde::{Deserialize, Serialize};
 
     #[derive(Debug, Deserialize, Serialize)]

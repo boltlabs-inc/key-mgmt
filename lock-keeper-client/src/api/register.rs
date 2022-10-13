@@ -7,8 +7,8 @@ use lock_keeper::{
     crypto::OpaqueExportKey,
     infrastructure::channel::ClientChannel,
     types::{
+        database::user::AccountName,
         operations::register::{client, server},
-        user::AccountName,
     },
 };
 use opaque_ke::{

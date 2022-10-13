@@ -1,6 +1,7 @@
 pub mod client {
     use crate::{
-        config::opaque::OpaqueCipherSuite, impl_message_conversion, types::user::AccountName,
+        config::opaque::OpaqueCipherSuite, impl_message_conversion,
+        types::database::user::AccountName,
     };
     use opaque_ke::{RegistrationRequest, RegistrationUpload};
     use serde::{Deserialize, Serialize};

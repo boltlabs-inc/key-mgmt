@@ -12,11 +12,11 @@ use lock_keeper::{
     infrastructure::channel::ClientChannel,
     rpc::lock_keeper_rpc_client::LockKeeperRpcClient,
     types::{
+        database::user::{AccountName, UserId},
         operations::{
             retrieve_storage_key::{client, server},
             ClientAction,
         },
-        user::{AccountName, UserId},
     },
 };
 use rand::{rngs::StdRng, SeedableRng};

@@ -9,8 +9,8 @@ use lock_keeper::{
     crypto::KeyId,
     types::{
         audit_event::{AuditEvent, AuditEventOptions, EventStatus, EventType},
+        database::user::AccountName,
         operations::ClientAction,
-        user::AccountName,
     },
 };
 use mongodb::bson::{doc, Document};
@@ -79,7 +79,7 @@ mod test {
     use crate::database::test::{server_registration, setup_db};
 
     use bson::DateTime;
-    use lock_keeper::types::user::UserId;
+    use lock_keeper::types::database::user::UserId;
     use rand::{seq::SliceRandom, CryptoRng, RngCore};
     use std::str::FromStr;
     use strum::IntoEnumIterator;
