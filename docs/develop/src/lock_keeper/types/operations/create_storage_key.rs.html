@@ -43,7 +43,7 @@
     <span class="kw">use</span> <span class="kw">crate</span>::{
         <span class="ident">crypto</span>::{<span class="ident">Encrypted</span>, <span class="ident">StorageKey</span>},
         <span class="ident">impl_message_conversion</span>,
-        <span class="ident">types::user</span>::{<span class="ident">AccountName</span>, <span class="ident">UserId</span>},
+        <span class="ident">types::database::user</span>::{<span class="ident">AccountName</span>, <span class="ident">UserId</span>},
     };
     <span class="kw">use</span> <span class="ident">serde</span>::{<span class="ident">Deserialize</span>, <span class="ident">Serialize</span>};
 
@@ -63,7 +63,7 @@
 }
 
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">server</span> {
-    <span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">impl_message_conversion</span>, <span class="ident">types::user::UserId</span>};
+    <span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">impl_message_conversion</span>, <span class="ident">types::database::user::UserId</span>};
     <span class="kw">use</span> <span class="ident">serde</span>::{<span class="ident">Deserialize</span>, <span class="ident">Serialize</span>};
 
     <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Deserialize</span>, <span class="ident">Serialize</span>)]</span>

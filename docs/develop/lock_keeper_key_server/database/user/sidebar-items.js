@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":[["SECRETS",""],["STORAGE_KEY",""]]};
+window.SIDEBAR_ITEMS = {"constant":[["STORAGE_KEY",""]]};

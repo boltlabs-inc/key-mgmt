@@ -278,8 +278,8 @@
     <span class="ident">crypto::KeyId</span>,
     <span class="ident">types</span>::{
         <span class="ident">audit_event</span>::{<span class="ident">AuditEvent</span>, <span class="ident">AuditEventOptions</span>, <span class="ident">EventStatus</span>, <span class="ident">EventType</span>},
+        <span class="ident">database::user::AccountName</span>,
         <span class="ident">operations::ClientAction</span>,
-        <span class="ident">user::AccountName</span>,
     },
 };
 <span class="kw">use</span> <span class="ident">mongodb::bson</span>::{<span class="ident">doc</span>, <span class="ident">Document</span>};
@@ -348,7 +348,7 @@
     <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::database::test</span>::{<span class="ident">server_registration</span>, <span class="ident">setup_db</span>};
 
     <span class="kw">use</span> <span class="ident">bson::DateTime</span>;
-    <span class="kw">use</span> <span class="ident">lock_keeper::types::user::UserId</span>;
+    <span class="kw">use</span> <span class="ident">lock_keeper::types::database::user::UserId</span>;
     <span class="kw">use</span> <span class="ident">rand</span>::{<span class="ident">seq::SliceRandom</span>, <span class="ident">CryptoRng</span>, <span class="ident">RngCore</span>};
     <span class="kw">use</span> <span class="ident">std::str::FromStr</span>;
     <span class="kw">use</span> <span class="ident">strum::IntoEnumIterator</span>;

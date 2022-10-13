@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":[["audit_event","Audit events, and associated fields and types"],["operations","Types related to server operations and the protocols they execute."],["user","Models for the first pass of MongoDB integration."]],"type":[["MessageStream",""]]};
+window.SIDEBAR_ITEMS = {"mod":[["audit_event","Audit events, and associated fields and types"],["database","Models for data stored in the database"],["operations","Types related to server operations and the protocols they execute."]],"type":[["MessageStream",""]]};
