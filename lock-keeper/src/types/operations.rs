@@ -21,7 +21,7 @@ pub enum ClientAction {
     Authenticate,
     CreateStorageKey,
     Export,
-    ExportSingingKey,
+    ExportSigningKey,
     Generate,
     ImportSigningKey,
     Register,

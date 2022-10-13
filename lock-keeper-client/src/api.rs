@@ -147,13 +147,13 @@ impl LockKeeperClient {
         // Create channel: this will internally be a `retrieve` channel
         let mut client_channel = Self::create_channel(
             &mut self.tonic_client(),
-            ClientAction::Export,
+            ClientAction::ExportSigningKey,
             self.account_name(),
         )
         .await?;
         // Get local-only secret
         let secret = self
-            .handle_retrieve(&mut client_channel, key_id, RetrieveContext::LocalOnly)
+            .handle_retrieve_signing_key(&mut client_channel, key_id, RetrieveContext::LocalOnly)
             .await?;
         // Return secret as bytes
         match secret {

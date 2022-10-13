@@ -187,7 +187,7 @@ impl LockKeeperClient {
             ClientAction::Authenticate => client.authenticate(stream).await,
             ClientAction::CreateStorageKey => client.create_storage_key(stream).await,
             ClientAction::Export => client.retrieve(stream).await,
-            ClientAction::ExportSingingKey => client.retrieve_signing_key(stream).await,
+            ClientAction::ExportSigningKey => client.retrieve_signing_key(stream).await,
             ClientAction::Generate => client.generate(stream).await,
             ClientAction::ImportSigningKey => client.import_signing_key(stream).await,
             ClientAction::Register => client.register(stream).await,

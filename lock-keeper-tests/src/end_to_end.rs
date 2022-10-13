@@ -22,9 +22,8 @@ use crate::config::Config;
 
 const USER: &str = "user";
 const PASSWORD: &str = "password";
-const GENERATED_ID: &str = "generated_key_id";
-const GENERATED_KEY: &str = "generated_key";
-const IMPORTED_ID: &str = "imported_key_id";
+const KEY_ID: &str = "generated_key_id";
+const KEY_MATERIAL: &str = "generated_key";
 
 pub async fn end_to_end_tests(config: &Config) {
     // Run every test, printing out details if it fails
@@ -284,6 +283,75 @@ async fn tests() -> Vec<Test> {
                 ),
             ],
         ),
+        Test::new(
+            "Export a signing key",
+            vec![
+                (
+                    Register,
+                    Outcome {
+                        expected_error: None,
+                    },
+                ),
+                (
+                    ImportSigningKey,
+                    Outcome {
+                        expected_error: None,
+                    },
+                ),
+                (
+                    ExportSigningKey,
+                    Outcome {
+                        expected_error: None,
+                    },
+                ),
+            ],
+        ),
+        Test::new(
+            "Exporting a secret using 'export_signing_key' fails",
+            vec![
+                (
+                    Register,
+                    Outcome {
+                        expected_error: None,
+                    },
+                ),
+                (
+                    Generate,
+                    Outcome {
+                        expected_error: None,
+                    },
+                ),
+                (
+                    ExportSigningKey,
+                    Outcome {
+                        expected_error: Some(LockKeeperClientError::InvalidAccount),
+                    },
+                ),
+            ],
+        ),
+        Test::new(
+            "Exporting a non-existent signing key fails",
+            vec![
+                (
+                    Register,
+                    Outcome {
+                        expected_error: None,
+                    },
+                ),
+                (
+                    SetFakeKeyId,
+                    Outcome {
+                        expected_error: None,
+                    },
+                ),
+                (
+                    ExportSigningKey,
+                    Outcome {
+                        expected_error: Some(LockKeeperClientError::InvalidAccount),
+                    },
+                ),
+            ],
+        ),
     ]
 }
 
@@ -369,7 +437,7 @@ impl Test {
                     // Create fake KeyId and set to GENERATED_ID
                     let mut rng = StdRng::from_entropy();
                     let key_id = KeyId::generate(&mut rng, lock_keeper_client.user_id())?;
-                    self.state.set(GENERATED_ID, key_id)?;
+                    self.state.set(KEY_ID, key_id)?;
                     Ok(())
                 }
                 Register => LockKeeperClient::register(&self.account_name, &self.password, config)
@@ -395,13 +463,13 @@ impl Test {
                     .await?;
 
                     // Get KeyId from state and run export
-                    let key_id_json = self.state.get(GENERATED_ID)?;
+                    let key_id_json = self.state.get(KEY_ID)?;
                     let key_id: KeyId = serde_json::from_value(key_id_json.clone())?;
                     match lock_keeper_client.export_key(&key_id).await {
                         Ok(res) => {
                             // Compare generated key and exported key material
                             let original_local_storage_json =
-                                self.state.get(GENERATED_KEY)?.clone();
+                                self.state.get(KEY_MATERIAL)?.clone();
                             let original_local_storage_bytes: Vec<u8> =
                                 serde_json::from_value::<LocalStorage>(
                                     original_local_storage_json.clone(),
@@ -422,6 +490,24 @@ impl Test {
                         Err(e) => Err(anyhow::Error::from(e)),
                     }
                 }
+                ExportSigningKey => {
+                    // Authenticate
+                    let lock_keeper_client = LockKeeperClient::authenticated_client(
+                        &self.account_name,
+                        &self.password,
+                        config,
+                    )
+                    .await?;
+
+                    // Get KeyId from state and run export
+                    let key_id_json = self.state.get(KEY_ID)?;
+                    let key_id: KeyId = serde_json::from_value(key_id_json.clone())?;
+                    lock_keeper_client
+                        .export_signing_key(&key_id)
+                        .await
+                        .map(|_| ())
+                        .map_err(|e| e.into())
+                }
                 Generate => {
                     // Authenticate and run generate
                     let lock_keeper_client = LockKeeperClient::authenticated_client(
@@ -432,8 +518,8 @@ impl Test {
                     .await?;
                     let (key_id, local_storage) = lock_keeper_client.generate_and_store().await?;
                     // Store generated key ID and local storage object to state
-                    self.state.set(GENERATED_ID, key_id)?;
-                    self.state.set(GENERATED_KEY, local_storage)
+                    self.state.set(KEY_ID, key_id)?;
+                    self.state.set(KEY_MATERIAL, local_storage)
                 }
                 ImportSigningKey => {
                     // Authenticate and run generate
@@ -446,7 +532,7 @@ impl Test {
                     let random_bytes = rand::thread_rng().gen::<[u8; 32]>().to_vec();
                     let key_id = lock_keeper_client.import_signing_key(random_bytes).await?;
                     // Store generated key ID to state
-                    self.state.set(IMPORTED_ID, key_id)
+                    self.state.set(KEY_ID, key_id)
                 }
                 Retrieve => {
                     // Authenticate
@@ -457,7 +543,7 @@ impl Test {
                     )
                     .await?;
                     // Get KeyId from state and run retrieve
-                    let key_id_json = self.state.get(GENERATED_ID)?;
+                    let key_id_json = self.state.get(KEY_ID)?;
                     let key_id: KeyId = serde_json::from_value(key_id_json.clone())?;
 
                     // Ensure result matches what was stored in generate
@@ -467,7 +553,7 @@ impl Test {
                     {
                         Ok(res) => {
                             let original_local_storage_json =
-                                self.state.get(GENERATED_KEY)?.clone();
+                                self.state.get(KEY_MATERIAL)?.clone();
                             match res {
                                 RetrieveResult::None => Err(TestError::InvalidValueRetrieved(
                                     original_local_storage_json,
@@ -487,6 +573,14 @@ impl Test {
                                         Ok(())
                                     }
                                 }
+                                RetrieveResult::SigningKey(signing_key) => {
+                                    let new_local_storage_json = serde_json::to_value(signing_key)?;
+                                    Err(TestError::InvalidValueRetrieved(
+                                        original_local_storage_json,
+                                        new_local_storage_json,
+                                    )
+                                    .into())
+                                }
                             }
                         }
                         Err(e) => Err(anyhow::Error::from(e)),
@@ -502,7 +596,7 @@ impl Test {
                     .await?;
                     let key_id = lock_keeper_client.remote_generate().await?;
                     // Store generated key ID
-                    self.state.set(GENERATED_ID, key_id)?;
+                    self.state.set(KEY_ID, key_id)?;
 
                     Ok(())
                 }
@@ -602,6 +696,7 @@ enum TestError {
 enum Operation {
     Authenticate(Option<Password>),
     Export,
+    ExportSigningKey,
     Generate,
     ImportSigningKey,
     Register,
@@ -621,6 +716,7 @@ impl Operation {
                 }
             }
             Self::Export => Some(ClientAction::Export),
+            Self::ExportSigningKey => Some(ClientAction::ExportSigningKey),
             Self::Generate => Some(ClientAction::Generate),
             Self::ImportSigningKey => Some(ClientAction::ImportSigningKey),
             Self::Register => {

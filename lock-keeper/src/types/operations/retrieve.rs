@@ -39,13 +39,13 @@ pub mod server {
     use serde::{Deserialize, Serialize};
 
     #[derive(Debug, Deserialize, Serialize)]
-    /// return new requested key and key ID
+    /// return requested key and key ID
     pub struct Response {
         pub stored_secret: StoredEncryptedSecret,
     }
 
     #[derive(Debug, Deserialize, Serialize)]
-    /// return new requested key and key ID
+    /// return requested signing key and key ID
     pub struct ResponseSigningKey {
         pub stored_secret: StoredSigningKeyPair,
     }
