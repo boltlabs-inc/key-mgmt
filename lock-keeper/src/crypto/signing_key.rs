@@ -21,7 +21,8 @@ pub struct SigningKeyPair {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SigningPublicKey;
 
-/// Temporary type to represent a remotely generated encrypted [`SigningKeyPair`]
+/// Temporary type to represent a remotely generated encrypted
+/// [`SigningKeyPair`]
 #[derive(Debug, Deserialize, Serialize)]
 pub struct PlaceholderEncryptedSigningKeyPair {
     context: AssociatedData,
