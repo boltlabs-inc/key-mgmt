@@ -38,7 +38,7 @@ impl Operation for ImportSigningKey {
         // Check validity of ciphertext and store in DB
         context
             .db
-            .add_server_imported_signing_key(&request.user_id, signing_key, key_id.clone())
+            .add_remote_secret(&request.user_id, signing_key, key_id.clone())
             .await?;
 
         // Serialize KeyId and send to client
