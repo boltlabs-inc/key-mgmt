@@ -14,11 +14,13 @@ lock-keeper-client = { version = "0.2.0", path = "../lock-keeper-client", featur
 # Workspace dependencies
 clap.workspace = true
 futures.workspace = true
+generic-array.workspace = true
 mongodb.workspace = true
 opaque-ke.workspace = true
 rand.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+strum.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
 tonic.workspace = true
@@ -27,4 +29,5 @@ tracing-futures.workspace = true
 tracing-subscriber.workspace = true
 
 # Other dependencies
-anyhow = "1"
+anyhow = "1.0"
+colored = "2.0"

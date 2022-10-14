@@ -1,3 +1,6 @@
+//! End-to-end testing framework and test definitions
+
+use colored::Colorize;
 use lock_keeper::{
     config::client,
     crypto::KeyId,
@@ -12,37 +15,37 @@ use lock_keeper_client::{
     client::Password,
     LockKeeperClient, LockKeeperClientError,
 };
-use rand::{distributions::Alphanumeric, rngs::StdRng, Rng, SeedableRng};
+use rand::{rngs::StdRng, Rng, SeedableRng};
 use serde::Serialize;
 use serde_json::Value;
 use std::{collections::HashMap, str::FromStr};
 use thiserror::Error;
 
-use crate::config::Config;
+use crate::{config::Config, utils::tagged};
 
 const USER: &str = "user";
 const PASSWORD: &str = "password";
 const KEY_ID: &str = "generated_key_id";
 const KEY_MATERIAL: &str = "generated_key";
 
-pub async fn end_to_end_tests(config: &Config) {
+pub async fn run_tests(config: &Config) {
     // Run every test, printing out details if it fails
     let tests = tests().await;
     println!("Executing {} tests", tests.len());
     let mut results = Vec::new();
 
     for mut test in tests {
-        println!("\n\ntest integration_tests::{} ... ", test.name);
+        println!("\n\ntest {} ... ", test.name);
         if !config.filters.matches(&test.name) {
-            println!("skipped");
+            println!("{}", "skipped".bright_blue());
             continue;
         }
 
         let result = test.execute(&config.client_config).await;
         if let Err(error) = &result {
-            println!("failed with error: {:?}", error)
+            println!("{}: {:?}", "failed with error".red(), error)
         } else {
-            println!("ok")
+            println!("{}", "ok".green())
         }
 
         results.push(TestResult {
@@ -399,18 +402,9 @@ struct Test {
 }
 
 impl Test {
-    fn generate_tag() -> String {
-        rand::thread_rng()
-            .sample_iter(&Alphanumeric)
-            .take(7)
-            .map(char::from)
-            .collect()
-    }
-
     fn new(name: impl Into<String>, operations: Vec<(Operation, Outcome)>) -> Self {
-        let tag = Self::generate_tag();
-        let account_name = AccountName::from_str(format!("{}-{}", USER, tag).as_str()).unwrap();
-        let password = Password::from_str(format!("{}-{}", PASSWORD, tag).as_str()).unwrap();
+        let account_name = AccountName::from_str(&tagged(USER)).unwrap();
+        let password = Password::from_str(&tagged(PASSWORD)).unwrap();
 
         Self {
             name: name.into(),
@@ -602,10 +596,15 @@ impl Test {
 
             // Check whether the process errors matched the expectation.
             match outcome {
-                Ok(_) => {
-                    self.check_audit_events(config, EventStatus::Successful, op)
-                        .await?
-                }
+                Ok(_) => match &expected_outcome.expected_error {
+                    Some(expected) => {
+                        Err(TestError::UnexpectedSuccess(expected.to_string()).into())
+                    }
+                    None => {
+                        self.check_audit_events(config, EventStatus::Successful, op)
+                            .await
+                    }
+                }?,
                 Err(e) => {
                     self.check_audit_events(config, EventStatus::Failed, op)
                         .await?;
@@ -663,14 +662,25 @@ impl Test {
                 )
             })?;
         // Check that expected status and action match
-        assert_eq!(expected_status, fourth_last.status());
-        assert_eq!(expected_action, fourth_last.action());
-        Ok(())
+        let actual_status = fourth_last.status();
+        let actual_action = fourth_last.action();
+        if expected_status != actual_status {
+            Err(TestError::InvalidAuditEventLog("Incorrect status".to_string()).into())
+        } else if expected_action != actual_action {
+            Err(TestError::InvalidAuditEventLog("Incorrect action".to_string()).into())
+        } else {
+            Ok(())
+        }
     }
 }
 
 #[derive(Debug, Error)]
 enum TestError {
+    #[error(
+        "An error was expected but none was returned:
+    expected: {0:?}"
+    )]
+    UnexpectedSuccess(String),
     #[error("An error was returned when none was expected")]
     UnexpectedError,
     #[error("Incorrect error. Expected: {}. Got: {}.", .0, .1)]
@@ -683,7 +693,7 @@ enum TestError {
     #[error(
         "The wrong value was retrieved from the key server:
     expected: {0:?}
-    got: {1:?}"
+    actual: {1:?}"
     )]
     InvalidValueRetrieved(Value, Value),
 }
