@@ -17,7 +17,7 @@ alias = "teardown-server"
 
 # Stops the server, recompiles it, and restarts it
 [tasks.restart]
-dependencies = ["stop", "start"]
+dependencies = ["teardown", "start"]
 
 # Start a key server and monitor its output.
 [tasks.start-server]
@@ -39,7 +39,7 @@ args = ["compose", "stop"]
 # Destroy the docker containers for a server.
 [tasks.teardown-server]
 command = "docker"
-args = ["compose", "down"]
+args = ["compose", "down", "--rmi", "local", "--volumes", "--remove-orphans"]
 
 # Start a server running on your local machine without Docker.
 [tasks.start-server-local]
@@ -81,8 +81,8 @@ command = "cargo"
 args = ["test", "--all-features", "--doc", "--workspace"]
 
 [tasks.ci-docs]
-command = "cargo"
 env = { "RUSTDOCFLAGS" = "-Dwarnings" }
+command = "cargo"
 args = ["doc", "--all-features", "--no-deps", "--workspace"]
 
 # TODO: Remove with #268

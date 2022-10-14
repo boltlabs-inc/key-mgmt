@@ -17,6 +17,7 @@ use tracing::{error, info};
 
 /// Starts a full Lock Keeper server stack based on the given config.
 pub async fn start_lock_keeper_server(config: Config) -> Result<(), LockKeeperServerError> {
+    tracing::info!("Starting Lock Keeper key server");
     let db = Database::connect(&config.database).await?;
     // Collect the futures for the result of running each specified server
     let mut server_futures: FuturesUnordered<_> = config
@@ -24,6 +25,8 @@ pub async fn start_lock_keeper_server(config: Config) -> Result<(), LockKeeperSe
         .iter()
         .map(|service| start_service(service, &config, &db))
         .collect();
+
+    tracing::info!("Lock Keeper key server started");
 
     // Wait for the server to finish
     tokio::select! {

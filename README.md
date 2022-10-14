@@ -118,7 +118,13 @@ cargo make lkic
 
 If you get a `no space left on device` error from Docker, try running:
 ```bash
-docker system prune
+docker image prune -a
+docker volume prune
+```
+
+If this doesn't help, you can do a full system prune. This will delete your cache and your next build will take a long time.
+```bash
+docker system prune -a --volumes
 ```
 
 ## Build documentation
