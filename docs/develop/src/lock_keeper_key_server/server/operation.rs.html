@@ -71,6 +71,7 @@
 <span id="71">71</span>
 <span id="72">72</span>
 <span id="73">73</span>
+<span id="74">74</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">async_trait::async_trait</span>;
 <span class="kw">use</span> <span class="ident">lock_keeper</span>::{
     <span class="ident">infrastructure::channel::ServerChannel</span>,
@@ -102,6 +103,7 @@
         <span class="ident">context</span>: <span class="ident">Context</span>,
         <span class="ident">request</span>: <span class="ident">Request</span><span class="op">&lt;</span><span class="ident">Streaming</span><span class="op">&lt;</span><span class="ident">Message</span><span class="op">&gt;</span><span class="op">&gt;</span>,
     ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Response</span><span class="op">&lt;</span><span class="ident">MessageStream</span><span class="op">&gt;</span>, <span class="ident">Status</span><span class="op">&gt;</span> {
+        <span class="macro">tracing::info!</span>(<span class="string">&quot;Handling action: {}&quot;</span>, <span class="ident">context</span>.<span class="ident">action</span>);
         <span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">channel</span>, <span class="ident">rx</span>) <span class="op">=</span> <span class="ident">ServerChannel::create</span>(<span class="ident">request</span>.<span class="ident">into_inner</span>());
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">context</span> <span class="op">=</span> <span class="ident">context</span>;
 

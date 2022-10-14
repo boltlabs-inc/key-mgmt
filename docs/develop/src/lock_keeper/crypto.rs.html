@@ -499,7 +499,7 @@
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">arbitrary_secret::Secret</span>;
 <span class="kw">use</span> <span class="ident">generic</span>::{<span class="ident">AssociatedData</span>, <span class="ident">EncryptionKey</span>};
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">generic</span>::{<span class="ident">CryptoError</span>, <span class="ident">Encrypted</span>};
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">signing_key::SigningKeyPair</span>;
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">signing_key</span>::{<span class="ident">PlaceholderEncryptedSigningKeyPair</span>, <span class="ident">SigningKeyPair</span>};
 
 <span class="doccomment">/// A session key is produced as shared output for client and server from</span>
 <span class="doccomment">/// OPAQUE.</span>

@@ -142,7 +142,7 @@
 <span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">fmt::Display</span>, <span class="ident">str::FromStr</span>, <span class="ident">vec::IntoIter</span>};
 <span class="kw">use</span> <span class="ident">uuid::Uuid</span>;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::secrets::StoredSecret</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::secrets::StoredSecrets</span>;
 
 <span class="doccomment">/// Unique ID for a user.</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">Serialize</span>, <span class="ident">Deserialize</span>, <span class="ident">Default</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>)]</span>
@@ -233,7 +233,7 @@
     <span class="kw">pub</span> <span class="ident">user_id</span>: <span class="ident">UserId</span>,
     <span class="kw">pub</span> <span class="ident">account_name</span>: <span class="ident">AccountName</span>,
     <span class="kw">pub</span> <span class="ident">storage_key</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Encrypted</span><span class="op">&lt;</span><span class="ident">StorageKey</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="kw">pub</span> <span class="ident">secrets</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">StoredSecret</span><span class="op">&gt;</span>,
+    <span class="kw">pub</span> <span class="ident">secrets</span>: <span class="ident">StoredSecrets</span>,
     <span class="kw">pub</span> <span class="ident">server_registration</span>: <span class="ident">ServerRegistration</span><span class="op">&lt;</span><span class="ident">OpaqueCipherSuite</span><span class="op">&gt;</span>,
 }
 
@@ -247,7 +247,7 @@
             <span class="ident">user_id</span>,
             <span class="ident">account_name</span>,
             <span class="ident">storage_key</span>: <span class="prelude-val">None</span>,
-            <span class="ident">secrets</span>: <span class="ident">Vec::new</span>(),
+            <span class="ident">secrets</span>: <span class="ident">StoredSecrets::default</span>(),
             <span class="ident">server_registration</span>,
         }
     }

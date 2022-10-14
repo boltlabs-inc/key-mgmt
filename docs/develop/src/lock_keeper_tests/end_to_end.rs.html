@@ -581,6 +581,39 @@
 <span id="581">581</span>
 <span id="582">582</span>
 <span id="583">583</span>
+<span id="584">584</span>
+<span id="585">585</span>
+<span id="586">586</span>
+<span id="587">587</span>
+<span id="588">588</span>
+<span id="589">589</span>
+<span id="590">590</span>
+<span id="591">591</span>
+<span id="592">592</span>
+<span id="593">593</span>
+<span id="594">594</span>
+<span id="595">595</span>
+<span id="596">596</span>
+<span id="597">597</span>
+<span id="598">598</span>
+<span id="599">599</span>
+<span id="600">600</span>
+<span id="601">601</span>
+<span id="602">602</span>
+<span id="603">603</span>
+<span id="604">604</span>
+<span id="605">605</span>
+<span id="606">606</span>
+<span id="607">607</span>
+<span id="608">608</span>
+<span id="609">609</span>
+<span id="610">610</span>
+<span id="611">611</span>
+<span id="612">612</span>
+<span id="613">613</span>
+<span id="614">614</span>
+<span id="615">615</span>
+<span id="616">616</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">lock_keeper</span>::{
     <span class="ident">config::client</span>,
     <span class="ident">crypto::KeyId</span>,
@@ -832,6 +865,23 @@
                 ),
             ],
         ),
+        <span class="ident">Test::new</span>(
+            <span class="string">&quot;Remote generate a secret&quot;</span>,
+            <span class="macro">vec!</span>[
+                (
+                    <span class="ident">Register</span>,
+                    <span class="ident">Outcome</span> {
+                        <span class="ident">expected_error</span>: <span class="prelude-val">None</span>,
+                    },
+                ),
+                (
+                    <span class="ident">RemoteGenerate</span>,
+                    <span class="ident">Outcome</span> {
+                        <span class="ident">expected_error</span>: <span class="prelude-val">None</span>,
+                    },
+                ),
+            ],
+        ),
     ]
 }
 
@@ -1027,6 +1077,20 @@
                         <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; <span class="prelude-val">Err</span>(<span class="ident">anyhow::Error::from</span>(<span class="ident">e</span>)),
                     }
                 }
+                <span class="ident">RemoteGenerate</span> =&gt; {
+                    <span class="comment">// Authenticate and run remote generate</span>
+                    <span class="kw">let</span> <span class="ident">lock_keeper_client</span> <span class="op">=</span> <span class="ident">LockKeeperClient::authenticated_client</span>(
+                        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">account_name</span>,
+                        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">password</span>,
+                        <span class="ident">config</span>,
+                    )
+                    .<span class="kw">await</span><span class="question-mark">?</span>;
+                    <span class="kw">let</span> <span class="ident">key_id</span> <span class="op">=</span> <span class="ident">lock_keeper_client</span>.<span class="ident">remote_generate</span>().<span class="kw">await</span><span class="question-mark">?</span>;
+                    <span class="comment">// Store generated key ID</span>
+                    <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">set</span>(<span class="ident">GENERATED_ID</span>, <span class="ident">key_id</span>)<span class="question-mark">?</span>;
+
+                    <span class="prelude-val">Ok</span>(())
+                }
             };
 
             <span class="comment">// Check whether the process errors matched the expectation.</span>
@@ -1125,6 +1189,7 @@
     <span class="ident">Export</span>,
     <span class="ident">Generate</span>,
     <span class="ident">Register</span>,
+    <span class="ident">RemoteGenerate</span>,
     <span class="ident">Retrieve</span>,
     <span class="ident">SetFakeKeyId</span>,
 }
@@ -1148,6 +1213,7 @@
                     <span class="prelude-val">Some</span>(<span class="ident">ClientAction::Register</span>)
                 }
             }
+            <span class="ident"><span class="self">Self</span>::RemoteGenerate</span> =&gt; <span class="prelude-val">Some</span>(<span class="ident">ClientAction::RemoteGenerate</span>),
             <span class="ident"><span class="self">Self</span>::Retrieve</span> =&gt; <span class="prelude-val">Some</span>(<span class="ident">ClientAction::Retrieve</span>),
             <span class="ident"><span class="self">Self</span>::SetFakeKeyId</span> =&gt; <span class="prelude-val">None</span>,
         }

@@ -79,6 +79,10 @@
 <span id="79">79</span>
 <span id="80">80</span>
 <span id="81">81</span>
+<span id="82">82</span>
+<span id="83">83</span>
+<span id="84">84</span>
+<span id="85">85</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">thiserror::Error</span>;
 <span class="kw">use</span> <span class="ident">tonic::Status</span>;
 
@@ -121,6 +125,8 @@
     <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;OPAQUE protocol error: {}&quot;</span>, .<span class="number">0</span>)]</span>
     <span class="ident">OpaqueProtocol</span>(<span class="ident">opaque_ke::errors::ProtocolError</span>),
     <span class="attribute">#[<span class="ident">error</span>(<span class="ident">transparent</span>)]</span>
+    <span class="ident">StrumParseError</span>(<span class="attribute">#[<span class="ident">from</span>]</span> <span class="ident">strum::ParseError</span>),
+    <span class="attribute">#[<span class="ident">error</span>(<span class="ident">transparent</span>)]</span>
     <span class="ident">TonicStatus</span>(<span class="attribute">#[<span class="ident">from</span>]</span> <span class="ident">tonic::Status</span>),
     <span class="attribute">#[<span class="ident">error</span>(<span class="ident">transparent</span>)]</span>
     <span class="ident">TonicTransport</span>(<span class="attribute">#[<span class="ident">from</span>]</span> <span class="ident">tonic::transport::Error</span>),
@@ -139,6 +145,7 @@
             <span class="ident">LockKeeperServerError::AccountAlreadyRegistered</span>
             <span class="op">|</span> <span class="ident">LockKeeperServerError::InvalidAccount</span>
             <span class="op">|</span> <span class="ident">LockKeeperServerError::KeyNotFound</span> =&gt; <span class="ident">Status::invalid_argument</span>(<span class="ident">error</span>.<span class="ident">to_string</span>()),
+
             <span class="ident">LockKeeperServerError::StorageKeyAlreadySet</span>
             <span class="op">|</span> <span class="ident">LockKeeperServerError::StorageKeyNotSet</span> =&gt; <span class="ident">Status::internal</span>(<span class="ident">error</span>.<span class="ident">to_string</span>()),
 
@@ -156,6 +163,7 @@
             <span class="op">|</span> <span class="ident">LockKeeperServerError::Bincode</span>(<span class="kw">_</span>)
             <span class="op">|</span> <span class="ident">LockKeeperServerError::OpaqueProtocol</span>(<span class="kw">_</span>)
             <span class="op">|</span> <span class="ident">LockKeeperServerError::EnvVar</span>(<span class="kw">_</span>)
+            <span class="op">|</span> <span class="ident">LockKeeperServerError::StrumParseError</span>(<span class="kw">_</span>)
             <span class="op">|</span> <span class="ident">LockKeeperServerError::MongoDb</span>(<span class="kw">_</span>) =&gt; <span class="ident">Status::internal</span>(<span class="string">&quot;Internal server error&quot;</span>),
         }
     }
