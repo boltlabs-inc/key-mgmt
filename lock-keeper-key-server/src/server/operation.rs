@@ -29,6 +29,7 @@ pub(crate) trait Operation: Sized + Send + 'static {
         context: Context,
         request: Request<Streaming<Message>>,
     ) -> Result<Response<MessageStream>, Status> {
+        tracing::info!("Handling action: {}", context.action);
         let (mut channel, rx) = ServerChannel::create(request.into_inner());
         let mut context = context;
 

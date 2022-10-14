@@ -25,13 +25,13 @@ pub mod client {
 }
 
 pub mod server {
-    use crate::{impl_message_conversion, types::database::secrets::StoredSecret};
+    use crate::{impl_message_conversion, types::database::secrets::StoredEncryptedSecret};
     use serde::{Deserialize, Serialize};
 
     #[derive(Debug, Deserialize, Serialize)]
     /// return new requested key and key ID
     pub struct Response {
-        pub stored_secret: StoredSecret,
+        pub stored_secret: StoredEncryptedSecret,
     }
 
     impl_message_conversion!(Response);

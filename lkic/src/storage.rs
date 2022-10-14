@@ -235,6 +235,13 @@ impl From<(KeyId, LocalStorage)> for Entry {
     }
 }
 
+impl From<KeyId> for Entry {
+    fn from(key_id: KeyId) -> Self {
+        let data = RetrieveResult::None;
+        Self { key_id, data }
+    }
+}
+
 fn local_storage_bytes(local_storage: &LocalStorage) -> anyhow::Result<Vec<u8>> {
     let json = serde_json::to_value(local_storage)?;
     let key = json

@@ -189,6 +189,7 @@ impl LockKeeperClient {
             ClientAction::Export => client.retrieve(stream).await,
             ClientAction::Generate => client.generate(stream).await,
             ClientAction::Register => client.register(stream).await,
+            ClientAction::RemoteGenerate => client.remote_generate(stream).await,
             ClientAction::Retrieve => client.retrieve(stream).await,
             ClientAction::RetrieveAuditEvents => client.retrieve_audit_events(stream).await,
             ClientAction::RetrieveStorageKey => client.retrieve_storage_key(stream).await,

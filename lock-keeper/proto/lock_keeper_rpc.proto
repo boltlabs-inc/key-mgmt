@@ -7,6 +7,7 @@ service LockKeeperRpc {
   rpc Authenticate (stream Message) returns (stream Message);
   rpc CreateStorageKey (stream Message) returns (stream Message);
   rpc Generate (stream Message) returns (stream Message);
+  rpc RemoteGenerate (stream Message) returns (stream Message);
   rpc Retrieve (stream Message) returns (stream Message);
   rpc RetrieveAuditEvents (stream Message) returns (stream Message);
   rpc RetrieveStorageKey (stream Message) returns (stream Message);
