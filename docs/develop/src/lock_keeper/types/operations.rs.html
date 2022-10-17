@@ -27,11 +27,14 @@
 <span id="27">27</span>
 <span id="28">28</span>
 <span id="29">29</span>
+<span id="30">30</span>
+<span id="31">31</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Types related to server operations and the protocols they execute.</span>
 
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">authenticate</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">create_storage_key</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">generate</span>;
+<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">import_signing_key</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">register</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">remote_generate</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">retrieve</span>;
@@ -50,6 +53,7 @@
     <span class="ident">CreateStorageKey</span>,
     <span class="ident">Export</span>,
     <span class="ident">Generate</span>,
+    <span class="ident">ImportSigningKey</span>,
     <span class="ident">Register</span>,
     <span class="ident">RemoteGenerate</span>,
     <span class="ident">Retrieve</span>,

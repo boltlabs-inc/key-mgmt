@@ -204,6 +204,22 @@
 <span id="204">204</span>
 <span id="205">205</span>
 <span id="206">206</span>
+<span id="207">207</span>
+<span id="208">208</span>
+<span id="209">209</span>
+<span id="210">210</span>
+<span id="211">211</span>
+<span id="212">212</span>
+<span id="213">213</span>
+<span id="214">214</span>
+<span id="215">215</span>
+<span id="216">216</span>
+<span id="217">217</span>
+<span id="218">218</span>
+<span id="219">219</span>
+<span id="220">220</span>
+<span id="221">221</span>
+<span id="222">222</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Full implementation of the public API for the Lock Keeper client library.</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! This API is designed for use with a local client application - that is, an</span>
@@ -214,6 +230,7 @@
 <span class="kw">mod</span> <span class="ident">authenticate</span>;
 <span class="kw">mod</span> <span class="ident">create_storage_key</span>;
 <span class="kw">mod</span> <span class="ident">generate</span>;
+<span class="kw">mod</span> <span class="ident">import_signing_key</span>;
 <span class="kw">mod</span> <span class="ident">register</span>;
 <span class="kw">mod</span> <span class="ident">remote_generate</span>;
 <span class="kw">mod</span> <span class="ident">retrieve</span>;
@@ -349,6 +366,21 @@
         )
         .<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="self">self</span>.<span class="ident">handle_generate</span>(<span class="kw-2">&amp;mut</span> <span class="ident">client_channel</span>).<span class="kw">await</span>
+    }
+
+    <span class="doccomment">/// Import signing key material to the key server</span>
+    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">import_signing_key</span>(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        <span class="ident">key_material</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>,
+    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">KeyId</span>, <span class="ident">LockKeeperClientError</span><span class="op">&gt;</span> {
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">client_channel</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::create_channel</span>(
+            <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">tonic_client</span>(),
+            <span class="ident">ClientAction::ImportSigningKey</span>,
+            <span class="self">self</span>.<span class="ident">account_name</span>(),
+        )
+        .<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="self">self</span>.<span class="ident">handle_import_signing_key</span>(<span class="kw-2">&amp;mut</span> <span class="ident">client_channel</span>, <span class="ident">key_material</span>)
+            .<span class="kw">await</span>
     }
 
     <span class="doccomment">/// Retrieve an arbitrary secret from the key server by [`KeyId`]</span>
