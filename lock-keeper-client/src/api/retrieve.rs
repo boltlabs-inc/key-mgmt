@@ -9,6 +9,8 @@ use lock_keeper::{
 };
 
 impl LockKeeperClient {
+    /// Handles the retrieval of arbitrary secrets
+    /// ([`lock_keeper::crypto::Secret`]) only.
     pub(crate) async fn handle_retrieve(
         &self,
         channel: &mut ClientChannel,
@@ -46,6 +48,8 @@ impl LockKeeperClient {
         }
     }
 
+    /// Handles the retrieval of signing keys
+    /// ([`lock_keeper::crypto::SigningKeyPair`]) only.
     pub(crate) async fn handle_retrieve_signing_key(
         &self,
         channel: &mut ClientChannel,
@@ -62,17 +66,15 @@ impl LockKeeperClient {
         };
         channel.send(request).await?;
 
-        // Get StoredSecret from server
+        // Get Export type back from server
         let server_response: server::ResponseSigningKey = channel.receive().await?;
 
         // Return appropriate value based on Context
         match context {
             RetrieveContext::Null => Ok(RetrieveResult::None),
-            RetrieveContext::LocalOnly => {
-                // Decrypt secret
-                let secret = server_response.stored_secret.signing_key;
-                Ok(RetrieveResult::SigningKey(secret))
-            }
+            RetrieveContext::LocalOnly => Ok(RetrieveResult::SigningKey(
+                server_response.exported_signing_key,
+            )),
         }
     }
 }

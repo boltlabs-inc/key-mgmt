@@ -468,8 +468,7 @@ impl Test {
                     match lock_keeper_client.export_key(&key_id).await {
                         Ok(res) => {
                             // Compare generated key and exported key material
-                            let original_local_storage_json =
-                                self.state.get(KEY_MATERIAL)?.clone();
+                            let original_local_storage_json = self.state.get(KEY_MATERIAL)?.clone();
                             let original_local_storage_bytes: Vec<u8> =
                                 serde_json::from_value::<LocalStorage>(
                                     original_local_storage_json.clone(),
@@ -552,8 +551,7 @@ impl Test {
                         .await
                     {
                         Ok(res) => {
-                            let original_local_storage_json =
-                                self.state.get(KEY_MATERIAL)?.clone();
+                            let original_local_storage_json = self.state.get(KEY_MATERIAL)?.clone();
                             match res {
                                 RetrieveResult::None => Err(TestError::InvalidValueRetrieved(
                                     original_local_storage_json,

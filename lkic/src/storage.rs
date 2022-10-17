@@ -8,7 +8,7 @@ use std::{
 };
 
 use anyhow::anyhow;
-use lock_keeper::crypto::{KeyId, PlaceholderEncryptedSigningKeyPair};
+use lock_keeper::crypto::{Export, KeyId};
 use lock_keeper_client::api::{LocalStorage, RetrieveResult};
 use serde::{Deserialize, Serialize};
 
@@ -260,10 +260,10 @@ fn local_storage_bytes(local_storage: &LocalStorage) -> anyhow::Result<Vec<u8>> 
     Ok(bytes)
 }
 
-fn signing_key_bytes(signing_key: &PlaceholderEncryptedSigningKeyPair) -> anyhow::Result<Vec<u8>> {
+fn signing_key_bytes(signing_key: &Export) -> anyhow::Result<Vec<u8>> {
     let json = serde_json::to_value(signing_key)?;
     let key = json
-        .pointer("/context")
+        .pointer("/key_material")
         .ok_or_else(|| anyhow!("Error converting SigningKey to bytes"))?
         .clone();
     let bytes: Vec<u8> = serde_json::from_value(key)?;

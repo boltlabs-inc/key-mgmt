@@ -17,7 +17,7 @@ mod retrieve_audit_events;
 use crate::{client::Password, LockKeeperClient, LockKeeperClientError};
 use lock_keeper::{
     config::client::Config,
-    crypto::{KeyId, PlaceholderEncryptedSigningKeyPair, Secret, SigningKeyPair},
+    crypto::{Export, KeyId, Secret},
     types::{
         audit_event::{AuditEvent, AuditEventOptions, EventType},
         database::user::AccountName,
@@ -34,7 +34,7 @@ use tracing::error;
 pub enum RetrieveResult {
     None,
     ArbitraryKey(LocalStorage),
-    SigningKey(PlaceholderEncryptedSigningKeyPair),
+    SigningKey(Export),
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -143,7 +143,7 @@ impl LockKeeperClient {
     pub async fn export_signing_key(
         &self,
         key_id: &KeyId,
-    ) -> Result<Vec<u8>, LockKeeperClientError> {
+    ) -> Result<Export, LockKeeperClientError> {
         // Create channel: this will internally be a `retrieve` channel
         let mut client_channel = Self::create_channel(
             &mut self.tonic_client(),
@@ -159,10 +159,7 @@ impl LockKeeperClient {
         match secret {
             RetrieveResult::None => Err(LockKeeperClientError::ExportFailed),
             RetrieveResult::ArbitraryKey(_) => Err(LockKeeperClientError::InvalidKeyRetrieved),
-            RetrieveResult::SigningKey(signing_key) => {
-                let signing_key: SigningKeyPair = signing_key.into();
-                Ok(signing_key.into())
-            }
+            RetrieveResult::SigningKey(signing_key) => Ok(signing_key),
         }
     }
 

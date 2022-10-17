@@ -188,6 +188,34 @@ impl Import {
     }
 }
 
+/// Raw material for an exported signing key.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Export {
+    pub key_material: Vec<u8>,
+}
+
+impl From<SigningKeyPair> for Export {
+    fn from(key_pair: SigningKeyPair) -> Self {
+        Self {
+            key_material: key_pair.into(),
+        }
+    }
+}
+
+impl Export {
+    // TODO #235: Once the signing key pair has a way to hold key material,
+    // copy the key material and associated data from `Export` directly to the
+    // corresponding fields in the `SigningKeyPair`. Do not put the key material
+    // into the associated data field -- they have very different security
+    // properties!
+    pub fn into_signing_key(self) -> Result<SigningKeyPair, LockKeeperError> {
+        let associated_data = self.key_material.try_into()?;
+        Ok(SigningKeyPair {
+            context: associated_data,
+        })
+    }
+}
+
 impl From<SigningKeyPair> for Vec<u8> {
     fn from(key_pair: SigningKeyPair) -> Self {
         let domain_separator_bytes: Vec<u8> = SigningKeyPair::domain_separator().into();
