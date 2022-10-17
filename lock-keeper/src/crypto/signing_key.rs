@@ -9,6 +9,11 @@ use std::marker::PhantomData;
 
 use super::{generic::AssociatedData, CryptoError, Encrypted, KeyId, StorageKey};
 
+/// Things that can be signed must implement the `Signable` trait.
+pub trait Signable: AsRef<[u8]> {}
+
+impl<T> Signable for T where T: AsRef<[u8]> {}
+
 /// An ECDSA signing key pair, including a public component for verifying
 /// signatures, a private component for creating them, and context about the key
 /// pair.
@@ -84,7 +89,7 @@ impl SigningKeyPair {
     }
 
     /// Compute an ECDSA signature on the given message.
-    pub fn sign<T: AsRef<[u8]>>(&self, message: &T) -> Signature<T> {
+    pub fn sign<T: Signable>(&self, message: &T) -> Signature<T> {
         Signature {
             signature: self.signing_key.sign(message.as_ref()),
             original_type: PhantomData,
@@ -314,7 +319,7 @@ impl<T> Signature<T> {
     /// `SigningPublicKey`.
     pub fn verify(&self, public_key: &SigningPublicKey, message: &T) -> Result<(), LockKeeperError>
     where
-        T: AsRef<[u8]>,
+        T: Signable,
     {
         Ok(public_key
             .0
