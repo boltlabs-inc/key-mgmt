@@ -31,7 +31,7 @@ impl Operation for RetrieveSigningKey {
             .await?;
 
         // Convert from signing key to Export, serialize and send
-        let signing_key_pair: SigningKeyPair = stored_secret.signing_key.into();
+        let signing_key_pair: SigningKeyPair = stored_secret.signing_key.try_into()?;
         let exported_signing_key = Export::from(signing_key_pair);
         let reply = server::ResponseSigningKey {
             exported_signing_key,

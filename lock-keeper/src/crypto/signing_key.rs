@@ -14,7 +14,6 @@ use super::{generic::AssociatedData, CryptoError, Encrypted, KeyId, StorageKey};
 /// pair.
 ///
 /// This can be generated locally by the client or remotely by the server.
-#[allow(unused)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SigningKeyPair {
     signing_key: SigningKey,
@@ -27,29 +26,35 @@ pub struct SigningKeyPair {
 pub struct SigningPublicKey(VerifyingKey);
 
 /// Temporary type to represent a remotely generated encrypted
-/// [`SigningKeyPair`]
+/// [`SigningKeyPair`].
+///
+/// This should only be "decrypted" by the server.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct PlaceholderEncryptedSigningKeyPair {
+    signing_key: Vec<u8>,
     context: AssociatedData,
 }
 
 impl From<SigningKeyPair> for PlaceholderEncryptedSigningKeyPair {
     fn from(key_pair: SigningKeyPair) -> Self {
         Self {
+            signing_key: key_pair.signing_key.to_bytes().to_vec(),
             context: key_pair.context,
         }
     }
 }
 
-impl From<PlaceholderEncryptedSigningKeyPair> for SigningKeyPair {
-    fn from(key_pair: PlaceholderEncryptedSigningKeyPair) -> Self {
-        Self {
+impl TryFrom<PlaceholderEncryptedSigningKeyPair> for SigningKeyPair {
+    type Error = LockKeeperError;
+    fn try_from(key_pair: PlaceholderEncryptedSigningKeyPair) -> Result<Self, Self::Error> {
+        Ok(Self {
+            signing_key: SigningKey::from_bytes(key_pair.signing_key.as_slice())
+                .map_err(|_| CryptoError::ConversionError)?,
             context: key_pair.context,
-        }
+        })
     }
 }
 
-#[allow(unused)]
 impl SigningKeyPair {
     /// Create a new `SigningKeyPair` with the given associated data.
     fn generate(rng: &mut (impl CryptoRng + RngCore), context: &AssociatedData) -> Self {
@@ -65,10 +70,15 @@ impl SigningKeyPair {
     }
 
     /// Retrieve the public portion of the key.
+    ///
+    /// This method could be made public if necessary.
+    #[cfg(test)]
     fn public_key(&self) -> SigningPublicKey {
         SigningPublicKey(self.signing_key.verifying_key())
     }
 
+    /// Retrieve the context associated with the signing key.
+    #[cfg(test)]
     fn context(&self) -> &AssociatedData {
         &self.context
     }
@@ -101,11 +111,15 @@ impl SigningKeyPair {
     /// by the client. In this flow, the key server will only receive an
     /// [`Encrypted<SigningKeyPair>`], not the cleartext.
     ///
+    /// `key_material` should be a scalar value formatted in big endian. See
+    /// [k256 documentation](https://docs.rs/k256/latest/k256/ecdsa/struct.SigningKey.html#method.from_bytes)
+    /// for details.
+    ///
     /// This function takes the following steps:
     /// 1. Format the `key_material` as a signing key
     /// 2. Encrypt it under the [`StorageKey`], using an AEAD scheme
     pub fn import_and_encrypt(
-        _key_material: &[u8],
+        key_material: &[u8],
         rng: &mut (impl CryptoRng + RngCore),
         storage_key: &StorageKey,
         user_id: &UserId,
@@ -116,15 +130,16 @@ impl SigningKeyPair {
             .with_bytes(key_id.clone())
             .with_str("imported key");
 
-        // TODO #235: use the actual key material in the key pair.
-        todo!("convert key material bytes to signing key pair");
+        let signing_key = Self {
+            signing_key: SigningKey::from_bytes(key_material)
+                .map_err(|_| CryptoError::ConversionError)?,
+            context: context.clone(),
+        };
 
-        /*
         Ok((
             signing_key.clone(),
             Encrypted::encrypt(rng, &storage_key.0, signing_key, &context)?,
         ))
-        */
     }
 
     /// Create and encrypt a new signing key for storage at
@@ -176,7 +191,10 @@ impl Import {
     ///
     /// This is part of the flow to send an imported key in cleartext to the key
     /// server and must be called by the server.
-    #[allow(unused)]
+    ///
+    /// This will fail if `material` is not a scalar value formatted in big
+    /// endian. See [k256 documentation](https://docs.rs/k256/latest/k256/ecdsa/struct.SigningKey.html#method.from_bytes)
+    /// for details.
     pub fn into_signing_key(
         self,
         user_id: &UserId,
@@ -187,9 +205,13 @@ impl Import {
             .with_bytes(key_id.clone())
             .with_str("imported key");
 
-        // TODO #235: use the actual key material in the key pair.
-        //Ok(SigningKeyPair { context })
-        Err(CryptoError::ConversionError.into())
+        let signing_key =
+            SigningKey::from_bytes(&self.key_material).map_err(|_| CryptoError::ConversionError)?;
+
+        Ok(SigningKeyPair {
+            signing_key,
+            context,
+        })
     }
 }
 
@@ -197,26 +219,27 @@ impl Import {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Export {
     pub key_material: Vec<u8>,
+    pub context: Vec<u8>,
 }
 
 impl From<SigningKeyPair> for Export {
     fn from(key_pair: SigningKeyPair) -> Self {
         Self {
-            key_material: key_pair.into(),
+            key_material: key_pair.signing_key.to_bytes().to_vec(),
+            context: key_pair.context.into(),
         }
     }
 }
 
 impl Export {
-    // TODO #235: Once the signing key pair has a way to hold key material,
-    // copy the key material and associated data from `Export` directly to the
-    // corresponding fields in the `SigningKeyPair`. Do not put the key material
-    // into the associated data field -- they have very different security
-    // properties!
+    /// Convert `Export` into a [`SigningKeyPair`].
     pub fn into_signing_key(self) -> Result<SigningKeyPair, LockKeeperError> {
-        let associated_data = self.key_material.try_into()?;
+        let signing_key = SigningKey::from_bytes(self.key_material.as_slice())
+            .map_err(|_| CryptoError::ConversionError)?;
+        let context = self.context.try_into()?;
         Ok(SigningKeyPair {
-            context: associated_data,
+            signing_key,
+            context,
         })
     }
 }
@@ -280,7 +303,6 @@ impl TryFrom<Vec<u8>> for SigningKeyPair {
 
 /// A signature on an object of type `T`, encrypted under the ECDSA signature
 /// scheme.
-#[allow(unused)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Signature<T> {
     signature: ecdsa::Signature,
@@ -357,6 +379,49 @@ mod test {
             assert_eq!(key, output_key);
         }
         Ok(())
+    }
+
+    #[test]
+    fn export_conversion_works() {
+        let mut rng = rand::thread_rng();
+        let context = AssociatedData::new().with_str("a key for trying export");
+        let key = SigningKeyPair::generate(&mut rng, &context);
+
+        let export: Export = key.clone().into();
+        let output_key: SigningKeyPair = export.into_signing_key().unwrap();
+
+        assert_eq!(key, output_key);
+    }
+
+    #[test]
+    fn import_conversion_works() -> Result<(), LockKeeperError> {
+        let mut rng = rand::thread_rng();
+        let context = AssociatedData::new().with_str("a key for trying import");
+        let key = SigningKeyPair::generate(&mut rng, &context);
+
+        let raw_bytes = key.signing_key.to_bytes();
+        let import: Import = raw_bytes.as_slice().into();
+
+        let user_id = UserId::new(&mut rng)?;
+        let key_id = KeyId::generate(&mut rng, &user_id)?;
+        let output_key: SigningKeyPair = import.into_signing_key(&user_id, &key_id)?;
+
+        // Make sure the key material matches. The associated data doesn't have to match
+        // because it's manually incorrect in the original key.
+        assert_eq!(key.signing_key, output_key.signing_key);
+        Ok(())
+    }
+
+    #[test]
+    fn placeholder_encryption_conversion_works() {
+        let mut rng = rand::thread_rng();
+        let context = AssociatedData::new().with_str("a key to fake-encrypt");
+        let key = SigningKeyPair::generate(&mut rng, &context);
+
+        let placeholder: PlaceholderEncryptedSigningKeyPair = key.clone().into();
+        let output_key: SigningKeyPair = placeholder.try_into().unwrap();
+
+        assert_eq!(key, output_key);
     }
 
     #[test]
@@ -465,15 +530,20 @@ mod test {
         // With normal arguments, it just works
         let key_pair = import.into_signing_key(&user_id, &key_id)?;
 
-        // TODO #235: Make sure key matches input key material (e.g. the secret material
+        // Make sure key matches input key material (e.g. the secret material
         // appears somewhere within the serialization).
-        // NB: At time of writing, the signing key pair doesn't hold key material. When
-        // it gets added, this test should start failing. Take out the ! in the
-        // assert.
         let bytes: Vec<u8> = key_pair.into();
-        assert!(!bytes.windows(32).any(|c| c == key_material));
+        assert!(bytes.windows(32).any(|c| c == key_material));
 
-        // TODO #235: test any additional constraints on the key material.
+        // Key material must be the right size
+        let not_enough_key_material: [u8; 12] = rng.gen();
+        let short_import: Import = not_enough_key_material.as_ref().into();
+        assert!(short_import.into_signing_key(&user_id, &key_id).is_err());
+
+        let too_much_key_material: Vec<u8> =
+            std::iter::repeat_with(|| rng.gen()).take(64).collect();
+        let long_import: Import = too_much_key_material.as_slice().into();
+        assert!(long_import.into_signing_key(&user_id, &key_id).is_err());
 
         Ok(())
     }
@@ -486,7 +556,7 @@ mod test {
         let user_id = UserId::new(&mut rng)?;
         let key_id = KeyId::generate(&mut rng, &user_id)?;
 
-        let key_material = rng.gen::<[u8; 32]>().to_vec();
+        let key_material = SigningKey::random(rng.clone()).to_bytes().to_vec();
         let (key, encrypted_key) = SigningKeyPair::import_and_encrypt(
             &key_material,
             &mut rng,
@@ -499,13 +569,10 @@ mod test {
         let decrypted_key = encrypted_key.decrypt_secret(storage_key)?;
         assert_eq!(key, decrypted_key);
 
-        // TODO #235: Make sure key matches input key material (e.g. the secret material
+        // Make sure key matches input key material (e.g. the secret material
         // appears somewhere within the serialization).
-        // NB: At time of writing, the signing key pair doesn't hold key material. When
-        // it gets added, this test should start failing. Take out the ! in the
-        // assert.
         let bytes: Vec<u8> = key.into();
-        assert!(!bytes.windows(32).any(|c| c == key_material));
+        assert!(bytes.windows(32).any(|c| c == key_material));
 
         Ok(())
     }
@@ -538,7 +605,7 @@ mod test {
         assert!(contains_str(secret, "server-generated"));
 
         // Use the local-import creation function
-        let key_material = rng.gen::<[u8; 32]>().to_vec();
+        let key_material = SigningKey::random(rng.clone()).to_bytes();
         let (imported_secret, _) = SigningKeyPair::import_and_encrypt(
             &key_material,
             &mut rng,

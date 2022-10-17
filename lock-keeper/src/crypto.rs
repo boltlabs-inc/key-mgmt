@@ -22,7 +22,9 @@ mod signing_key;
 pub use arbitrary_secret::Secret;
 use generic::{AssociatedData, EncryptionKey};
 pub use generic::{CryptoError, Encrypted};
-pub use signing_key::{Export, Import, PlaceholderEncryptedSigningKeyPair, SigningKeyPair};
+pub use signing_key::{
+    Export, Import, PlaceholderEncryptedSigningKeyPair, Signature, SigningKeyPair,
+};
 
 /// A session key is produced as shared output for client and server from
 /// OPAQUE.
