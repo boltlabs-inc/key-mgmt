@@ -11,7 +11,7 @@ use super::{generic::AssociatedData, CryptoError, Encrypted, KeyId, StorageKey};
 ///
 /// This can be generated locally by the client or remotely by the server.
 #[allow(unused)]
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SigningKeyPair {
     context: AssociatedData,
 }
@@ -147,13 +147,13 @@ impl SigningKeyPair {
 /// Raw material for an imported signing key.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Import {
-    pub material: Vec<u8>,
+    pub key_material: Vec<u8>,
 }
 
 impl From<&[u8]> for Import {
     fn from(bytes: &[u8]) -> Self {
         Self {
-            material: bytes.into(),
+            key_material: bytes.into(),
         }
     }
 }
@@ -169,7 +169,7 @@ impl Import {
         self,
         user_id: &UserId,
         key_id: &KeyId,
-    ) -> Result<SigningKeyPair, CryptoError> {
+    ) -> Result<SigningKeyPair, LockKeeperError> {
         let context = AssociatedData::new()
             .with_bytes(user_id.clone())
             .with_bytes(key_id.clone())

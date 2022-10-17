@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 pub struct StoredSecrets {
     pub arbitrary_secrets: Vec<StoredEncryptedSecret>,
     pub signing_keys: Vec<StoredEncryptedSigningKeyPair>,
-    pub server_generated_signing_keys: Vec<StoredSigningKeyPair>,
+    pub server_created_signing_keys: Vec<StoredSigningKeyPair>,
 }
 
 /// Wrapper around an [`Encrypted<Secret>`] and its [`KeyId`]
@@ -29,7 +29,10 @@ impl StoredEncryptedSecret {
     }
 }
 
-/// Wrapper around an [`Encrypted<SigningKeyPair>`] and its [`KeyId`]
+/// Wrapper around an [`Encrypted<SigningKeyPair>`] and its [`KeyId`].
+///
+/// This is used to hold signing key pairs encrypted by the client before being
+/// sent by the server.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct StoredEncryptedSigningKeyPair {
     pub signing_key: Encrypted<SigningKeyPair>,
@@ -48,8 +51,10 @@ impl StoredEncryptedSigningKeyPair {
 }
 
 /// Wrapper around an [`SigningKeyPair`] and its [`KeyId`]
+///
+/// This is used to hold signing key pairs sent by the client in the clear and
+/// encrypted by the server.
 #[derive(Debug, Deserialize, Serialize)]
-#[allow(unused)]
 pub struct StoredSigningKeyPair {
     pub signing_key: PlaceholderEncryptedSigningKeyPair,
     pub key_id: KeyId,

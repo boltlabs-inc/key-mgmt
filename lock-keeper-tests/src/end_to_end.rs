@@ -24,6 +24,7 @@ const USER: &str = "user";
 const PASSWORD: &str = "password";
 const GENERATED_ID: &str = "generated_key_id";
 const GENERATED_KEY: &str = "generated_key";
+const IMPORTED_ID: &str = "imported_key_id";
 
 pub async fn end_to_end_tests(config: &Config) {
     // Run every test, printing out details if it fails
@@ -266,6 +267,23 @@ async fn tests() -> Vec<Test> {
                 ),
             ],
         ),
+        Test::new(
+            "Import a signing key",
+            vec![
+                (
+                    Register,
+                    Outcome {
+                        expected_error: None,
+                    },
+                ),
+                (
+                    ImportSigningKey,
+                    Outcome {
+                        expected_error: None,
+                    },
+                ),
+            ],
+        ),
     ]
 }
 
@@ -416,6 +434,19 @@ impl Test {
                     // Store generated key ID and local storage object to state
                     self.state.set(GENERATED_ID, key_id)?;
                     self.state.set(GENERATED_KEY, local_storage)
+                }
+                ImportSigningKey => {
+                    // Authenticate and run generate
+                    let lock_keeper_client = LockKeeperClient::authenticated_client(
+                        &self.account_name,
+                        &self.password,
+                        config,
+                    )
+                    .await?;
+                    let random_bytes = rand::thread_rng().gen::<[u8; 32]>().to_vec();
+                    let key_id = lock_keeper_client.import_signing_key(random_bytes).await?;
+                    // Store generated key ID to state
+                    self.state.set(IMPORTED_ID, key_id)
                 }
                 Retrieve => {
                     // Authenticate
@@ -572,6 +603,7 @@ enum Operation {
     Authenticate(Option<Password>),
     Export,
     Generate,
+    ImportSigningKey,
     Register,
     RemoteGenerate,
     Retrieve,
@@ -590,6 +622,7 @@ impl Operation {
             }
             Self::Export => Some(ClientAction::Export),
             Self::Generate => Some(ClientAction::Generate),
+            Self::ImportSigningKey => Some(ClientAction::ImportSigningKey),
             Self::Register => {
                 if status == &EventStatus::Successful {
                     Some(ClientAction::CreateStorageKey)

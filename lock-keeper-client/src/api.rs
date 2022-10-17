@@ -8,6 +8,7 @@
 mod authenticate;
 mod create_storage_key;
 mod generate;
+mod import_signing_key;
 mod register;
 mod remote_generate;
 mod retrieve;
@@ -143,6 +144,21 @@ impl LockKeeperClient {
         )
         .await?;
         self.handle_generate(&mut client_channel).await
+    }
+
+    /// Import signing key material to the key server
+    pub async fn import_signing_key(
+        &self,
+        key_material: Vec<u8>,
+    ) -> Result<KeyId, LockKeeperClientError> {
+        let mut client_channel = Self::create_channel(
+            &mut self.tonic_client(),
+            ClientAction::ImportSigningKey,
+            self.account_name(),
+        )
+        .await?;
+        self.handle_import_signing_key(&mut client_channel, key_material)
+            .await
     }
 
     /// Retrieve an arbitrary secret from the key server by [`KeyId`]
