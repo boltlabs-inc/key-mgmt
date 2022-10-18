@@ -741,7 +741,20 @@
 <span id="741">741</span>
 <span id="742">742</span>
 <span id="743">743</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">lock_keeper</span>::{
+<span id="744">744</span>
+<span id="745">745</span>
+<span id="746">746</span>
+<span id="747">747</span>
+<span id="748">748</span>
+<span id="749">749</span>
+<span id="750">750</span>
+<span id="751">751</span>
+<span id="752">752</span>
+<span id="753">753</span>
+</pre><pre class="rust"><code><span class="doccomment">//! End-to-end testing framework and test definitions</span>
+
+<span class="kw">use</span> <span class="ident">colored::Colorize</span>;
+<span class="kw">use</span> <span class="ident">lock_keeper</span>::{
     <span class="ident">config::client</span>,
     <span class="ident">crypto::KeyId</span>,
     <span class="ident">types</span>::{
@@ -755,37 +768,37 @@
     <span class="ident">client::Password</span>,
     <span class="ident">LockKeeperClient</span>, <span class="ident">LockKeeperClientError</span>,
 };
-<span class="kw">use</span> <span class="ident">rand</span>::{<span class="ident">distributions::Alphanumeric</span>, <span class="ident">rngs::StdRng</span>, <span class="ident">Rng</span>, <span class="ident">SeedableRng</span>};
+<span class="kw">use</span> <span class="ident">rand</span>::{<span class="ident">rngs::StdRng</span>, <span class="ident">Rng</span>, <span class="ident">SeedableRng</span>};
 <span class="kw">use</span> <span class="ident">serde::Serialize</span>;
 <span class="kw">use</span> <span class="ident">serde_json::Value</span>;
 <span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">collections::HashMap</span>, <span class="ident">str::FromStr</span>};
 <span class="kw">use</span> <span class="ident">thiserror::Error</span>;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::config::Config</span>;
+<span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">config::Config</span>, <span class="ident">utils::tagged</span>};
 
 <span class="kw">const</span> <span class="ident">USER</span>: <span class="kw-2">&amp;</span><span class="ident">str</span> <span class="op">=</span> <span class="string">&quot;user&quot;</span>;
 <span class="kw">const</span> <span class="ident">PASSWORD</span>: <span class="kw-2">&amp;</span><span class="ident">str</span> <span class="op">=</span> <span class="string">&quot;password&quot;</span>;
 <span class="kw">const</span> <span class="ident">KEY_ID</span>: <span class="kw-2">&amp;</span><span class="ident">str</span> <span class="op">=</span> <span class="string">&quot;generated_key_id&quot;</span>;
 <span class="kw">const</span> <span class="ident">KEY_MATERIAL</span>: <span class="kw-2">&amp;</span><span class="ident">str</span> <span class="op">=</span> <span class="string">&quot;generated_key&quot;</span>;
 
-<span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">end_to_end_tests</span>(<span class="ident">config</span>: <span class="kw-2">&amp;</span><span class="ident">Config</span>) {
+<span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">run_tests</span>(<span class="ident">config</span>: <span class="kw-2">&amp;</span><span class="ident">Config</span>) {
     <span class="comment">// Run every test, printing out details if it fails</span>
     <span class="kw">let</span> <span class="ident">tests</span> <span class="op">=</span> <span class="ident">tests</span>().<span class="kw">await</span>;
     <span class="macro">println!</span>(<span class="string">&quot;Executing {} tests&quot;</span>, <span class="ident">tests</span>.<span class="ident">len</span>());
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">results</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
 
     <span class="kw">for</span> <span class="kw-2">mut</span> <span class="ident">test</span> <span class="kw">in</span> <span class="ident">tests</span> {
-        <span class="macro">println!</span>(<span class="string">&quot;\n\ntest integration_tests::{} ... &quot;</span>, <span class="ident">test</span>.<span class="ident">name</span>);
+        <span class="macro">println!</span>(<span class="string">&quot;\n\ntest {} ... &quot;</span>, <span class="ident">test</span>.<span class="ident">name</span>);
         <span class="kw">if</span> <span class="op">!</span><span class="ident">config</span>.<span class="ident">filters</span>.<span class="ident">matches</span>(<span class="kw-2">&amp;</span><span class="ident">test</span>.<span class="ident">name</span>) {
-            <span class="macro">println!</span>(<span class="string">&quot;skipped&quot;</span>);
+            <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, <span class="string">&quot;skipped&quot;</span>.<span class="ident">bright_blue</span>());
             <span class="kw">continue</span>;
         }
 
         <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> <span class="ident">test</span>.<span class="ident">execute</span>(<span class="kw-2">&amp;</span><span class="ident">config</span>.<span class="ident">client_config</span>).<span class="kw">await</span>;
         <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Err</span>(<span class="ident">error</span>) <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">result</span> {
-            <span class="macro">println!</span>(<span class="string">&quot;failed with error: {:?}&quot;</span>, <span class="ident">error</span>)
+            <span class="macro">println!</span>(<span class="string">&quot;{}: {:?}&quot;</span>, <span class="string">&quot;failed with error&quot;</span>.<span class="ident">red</span>(), <span class="ident">error</span>)
         } <span class="kw">else</span> {
-            <span class="macro">println!</span>(<span class="string">&quot;ok&quot;</span>)
+            <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, <span class="string">&quot;ok&quot;</span>.<span class="ident">green</span>())
         }
 
         <span class="ident">results</span>.<span class="ident">push</span>(<span class="ident">TestResult</span> {
@@ -1142,18 +1155,9 @@
 }
 
 <span class="kw">impl</span> <span class="ident">Test</span> {
-    <span class="kw">fn</span> <span class="ident">generate_tag</span>() -&gt; <span class="ident">String</span> {
-        <span class="ident">rand::thread_rng</span>()
-            .<span class="ident">sample_iter</span>(<span class="kw-2">&amp;</span><span class="ident">Alphanumeric</span>)
-            .<span class="ident">take</span>(<span class="number">7</span>)
-            .<span class="ident">map</span>(<span class="ident">char::from</span>)
-            .<span class="ident">collect</span>()
-    }
-
     <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">name</span>: <span class="kw">impl</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>, <span class="ident">operations</span>: <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">Operation</span>, <span class="ident">Outcome</span>)<span class="op">&gt;</span>) -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="ident">tag</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::generate_tag</span>();
-        <span class="kw">let</span> <span class="ident">account_name</span> <span class="op">=</span> <span class="ident">AccountName::from_str</span>(<span class="macro">format!</span>(<span class="string">&quot;{}-{}&quot;</span>, <span class="ident">USER</span>, <span class="ident">tag</span>).<span class="ident">as_str</span>()).<span class="ident">unwrap</span>();
-        <span class="kw">let</span> <span class="ident">password</span> <span class="op">=</span> <span class="ident">Password::from_str</span>(<span class="macro">format!</span>(<span class="string">&quot;{}-{}&quot;</span>, <span class="ident">PASSWORD</span>, <span class="ident">tag</span>).<span class="ident">as_str</span>()).<span class="ident">unwrap</span>();
+        <span class="kw">let</span> <span class="ident">account_name</span> <span class="op">=</span> <span class="ident">AccountName::from_str</span>(<span class="kw-2">&amp;</span><span class="ident">tagged</span>(<span class="ident">USER</span>)).<span class="ident">unwrap</span>();
+        <span class="kw">let</span> <span class="ident">password</span> <span class="op">=</span> <span class="ident">Password::from_str</span>(<span class="kw-2">&amp;</span><span class="ident">tagged</span>(<span class="ident">PASSWORD</span>)).<span class="ident">unwrap</span>();
 
         <span class="self">Self</span> {
             <span class="ident">name</span>: <span class="ident">name</span>.<span class="ident">into</span>(),
@@ -1345,10 +1349,15 @@
 
             <span class="comment">// Check whether the process errors matched the expectation.</span>
             <span class="kw">match</span> <span class="ident">outcome</span> {
-                <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; {
-                    <span class="self">self</span>.<span class="ident">check_audit_events</span>(<span class="ident">config</span>, <span class="ident">EventStatus::Successful</span>, <span class="ident">op</span>)
-                        .<span class="kw">await</span><span class="question-mark">?</span>
-                }
+                <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="kw">match</span> <span class="kw-2">&amp;</span><span class="ident">expected_outcome</span>.<span class="ident">expected_error</span> {
+                    <span class="prelude-val">Some</span>(<span class="ident">expected</span>) =&gt; {
+                        <span class="prelude-val">Err</span>(<span class="ident">TestError::UnexpectedSuccess</span>(<span class="ident">expected</span>.<span class="ident">to_string</span>()).<span class="ident">into</span>())
+                    }
+                    <span class="prelude-val">None</span> =&gt; {
+                        <span class="self">self</span>.<span class="ident">check_audit_events</span>(<span class="ident">config</span>, <span class="ident">EventStatus::Successful</span>, <span class="ident">op</span>)
+                            .<span class="kw">await</span>
+                    }
+                }<span class="question-mark">?</span>,
                 <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
                     <span class="self">self</span>.<span class="ident">check_audit_events</span>(<span class="ident">config</span>, <span class="ident">EventStatus::Failed</span>, <span class="ident">op</span>)
                         .<span class="kw">await</span><span class="question-mark">?</span>;
@@ -1406,14 +1415,25 @@
                 )
             })<span class="question-mark">?</span>;
         <span class="comment">// Check that expected status and action match</span>
-        <span class="macro">assert_eq!</span>(<span class="ident">expected_status</span>, <span class="ident">fourth_last</span>.<span class="ident">status</span>());
-        <span class="macro">assert_eq!</span>(<span class="ident">expected_action</span>, <span class="ident">fourth_last</span>.<span class="ident">action</span>());
-        <span class="prelude-val">Ok</span>(())
+        <span class="kw">let</span> <span class="ident">actual_status</span> <span class="op">=</span> <span class="ident">fourth_last</span>.<span class="ident">status</span>();
+        <span class="kw">let</span> <span class="ident">actual_action</span> <span class="op">=</span> <span class="ident">fourth_last</span>.<span class="ident">action</span>();
+        <span class="kw">if</span> <span class="ident">expected_status</span> <span class="op">!</span><span class="op">=</span> <span class="ident">actual_status</span> {
+            <span class="prelude-val">Err</span>(<span class="ident">TestError::InvalidAuditEventLog</span>(<span class="string">&quot;Incorrect status&quot;</span>.<span class="ident">to_string</span>()).<span class="ident">into</span>())
+        } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">expected_action</span> <span class="op">!</span><span class="op">=</span> <span class="ident">actual_action</span> {
+            <span class="prelude-val">Err</span>(<span class="ident">TestError::InvalidAuditEventLog</span>(<span class="string">&quot;Incorrect action&quot;</span>.<span class="ident">to_string</span>()).<span class="ident">into</span>())
+        } <span class="kw">else</span> {
+            <span class="prelude-val">Ok</span>(())
+        }
     }
 }
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Error</span>)]</span>
 <span class="kw">enum</span> <span class="ident">TestError</span> {
+    <span class="attribute">#[<span class="ident">error</span>(
+        <span class="string">&quot;An error was expected but none was returned:
+    expected: {0:?}&quot;</span>
+    )]</span>
+    <span class="ident">UnexpectedSuccess</span>(<span class="ident">String</span>),
     <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;An error was returned when none was expected&quot;</span>)]</span>
     <span class="ident">UnexpectedError</span>,
     <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;Incorrect error. Expected: {}. Got: {}.&quot;</span>, .<span class="number">0</span>, .<span class="number">1</span>)]</span>
@@ -1426,7 +1446,7 @@
     <span class="attribute">#[<span class="ident">error</span>(
         <span class="string">&quot;The wrong value was retrieved from the key server:
     expected: {0:?}
-    got: {1:?}&quot;</span>
+    actual: {1:?}&quot;</span>
     )]</span>
     <span class="ident">InvalidValueRetrieved</span>(<span class="ident">Value</span>, <span class="ident">Value</span>),
 }

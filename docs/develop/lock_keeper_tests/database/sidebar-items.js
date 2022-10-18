@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":[["USERS_TABLE",""]],"fn":[["run_tests",""]],"mod":[["audit_event","Integration tests for audit event objects in the database"],["user","Integration tests for user objects in the database"]],"struct":[["TestDatabase",""]]};
