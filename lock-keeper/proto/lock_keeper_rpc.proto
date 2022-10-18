@@ -11,6 +11,7 @@ service LockKeeperRpc {
   rpc ImportSigningKey (stream Message) returns (stream Message);
   rpc Retrieve (stream Message) returns (stream Message);
   rpc RetrieveAuditEvents (stream Message) returns (stream Message);
+  rpc RetrieveSigningKey (stream Message) returns (stream Message);
   rpc RetrieveStorageKey (stream Message) returns (stream Message);
 }
 

@@ -17,7 +17,7 @@ mod retrieve_audit_events;
 use crate::{client::Password, LockKeeperClient, LockKeeperClientError};
 use lock_keeper::{
     config::client::Config,
-    crypto::{KeyId, Secret},
+    crypto::{Export, KeyId, Secret},
     types::{
         audit_event::{AuditEvent, AuditEventOptions, EventType},
         database::user::AccountName,
@@ -34,6 +34,7 @@ use tracing::error;
 pub enum RetrieveResult {
     None,
     ArbitraryKey(LocalStorage),
+    SigningKey(Export),
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -132,6 +133,33 @@ impl LockKeeperClient {
         match secret {
             RetrieveResult::None => Err(LockKeeperClientError::ExportFailed),
             RetrieveResult::ArbitraryKey(local_storage) => Ok(local_storage.secret.into()),
+            RetrieveResult::SigningKey(_) => Err(LockKeeperClientError::InvalidKeyRetrieved),
+        }
+    }
+
+    /// Export signing key pair material from the key servers.
+    ///
+    /// Output: If successful, returns the requested key material in byte form.
+    pub async fn export_signing_key(
+        &self,
+        key_id: &KeyId,
+    ) -> Result<Export, LockKeeperClientError> {
+        // Create channel: this will internally be a `retrieve` channel
+        let mut client_channel = Self::create_channel(
+            &mut self.tonic_client(),
+            ClientAction::ExportSigningKey,
+            self.account_name(),
+        )
+        .await?;
+        // Get local-only secret
+        let secret = self
+            .handle_retrieve_signing_key(&mut client_channel, key_id, RetrieveContext::LocalOnly)
+            .await?;
+        // Return secret as bytes
+        match secret {
+            RetrieveResult::None => Err(LockKeeperClientError::ExportFailed),
+            RetrieveResult::ArbitraryKey(_) => Err(LockKeeperClientError::InvalidKeyRetrieved),
+            RetrieveResult::SigningKey(signing_key) => Ok(signing_key),
         }
     }
 
@@ -217,6 +245,22 @@ impl LockKeeperClient {
         )
         .await?;
         self.handle_retrieve_audit_events(&mut client_channel, event_type, options)
+            .await
+    }
+
+    /// Retrieve a signing key pair from the key server by [`KeyId`]
+    pub async fn retrieve_signing_key(
+        &self,
+        key_id: &KeyId,
+        context: RetrieveContext,
+    ) -> Result<RetrieveResult, LockKeeperClientError> {
+        let mut client_channel = Self::create_channel(
+            &mut self.tonic_client(),
+            ClientAction::RetrieveSigningKey,
+            self.account_name(),
+        )
+        .await?;
+        self.handle_retrieve_signing_key(&mut client_channel, key_id, context)
             .await
     }
 }

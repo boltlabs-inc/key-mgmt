@@ -36,6 +36,14 @@ impl From<SigningKeyPair> for PlaceholderEncryptedSigningKeyPair {
     }
 }
 
+impl From<PlaceholderEncryptedSigningKeyPair> for SigningKeyPair {
+    fn from(key_pair: PlaceholderEncryptedSigningKeyPair) -> Self {
+        Self {
+            context: key_pair.context,
+        }
+    }
+}
+
 #[allow(unused)]
 impl SigningKeyPair {
     /// Create a new `SigningKeyPair` with the given associated data.
@@ -177,6 +185,34 @@ impl Import {
 
         // TODO #235: use the actual key material in the key pair.
         Ok(SigningKeyPair { context })
+    }
+}
+
+/// Raw material for an exported signing key.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Export {
+    pub key_material: Vec<u8>,
+}
+
+impl From<SigningKeyPair> for Export {
+    fn from(key_pair: SigningKeyPair) -> Self {
+        Self {
+            key_material: key_pair.into(),
+        }
+    }
+}
+
+impl Export {
+    // TODO #235: Once the signing key pair has a way to hold key material,
+    // copy the key material and associated data from `Export` directly to the
+    // corresponding fields in the `SigningKeyPair`. Do not put the key material
+    // into the associated data field -- they have very different security
+    // properties!
+    pub fn into_signing_key(self) -> Result<SigningKeyPair, LockKeeperError> {
+        let associated_data = self.key_material.try_into()?;
+        Ok(SigningKeyPair {
+            context: associated_data,
+        })
     }
 }
 

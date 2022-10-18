@@ -187,12 +187,14 @@ impl LockKeeperClient {
             ClientAction::Authenticate => client.authenticate(stream).await,
             ClientAction::CreateStorageKey => client.create_storage_key(stream).await,
             ClientAction::Export => client.retrieve(stream).await,
+            ClientAction::ExportSigningKey => client.retrieve_signing_key(stream).await,
             ClientAction::Generate => client.generate(stream).await,
             ClientAction::ImportSigningKey => client.import_signing_key(stream).await,
             ClientAction::Register => client.register(stream).await,
             ClientAction::RemoteGenerate => client.remote_generate(stream).await,
             ClientAction::Retrieve => client.retrieve(stream).await,
             ClientAction::RetrieveAuditEvents => client.retrieve_audit_events(stream).await,
+            ClientAction::RetrieveSigningKey => client.retrieve_signing_key(stream).await,
             ClientAction::RetrieveStorageKey => client.retrieve_storage_key(stream).await,
         }?
         .into_inner();
