@@ -69,6 +69,8 @@ async fn start_service(
     let listener = TcpListener::bind(SocketAddr::new(addr, port)).await?;
     let tls_acceptor = TlsAcceptor::from(Arc::new(tls));
 
+    tracing::info!("Listening on {}:{}", addr, port);
+
     // Spawn a task to accept connections
     let _ = tokio::spawn(async move {
         loop {
