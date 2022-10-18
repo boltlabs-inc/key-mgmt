@@ -46,26 +46,44 @@ Once the required dependencies are installed, build the project as follows:
 cargo build --all-features --all-targets
 ```
 
-## Running local tests
+## Running unit and doc tests
 
 We follow test-driven development practices and the test suite should be a close mapping to the functionality we currently implement at any given stage of development.
 
 
-To run the doctests locally:
-
+To run unit tests:
 ```bash
-cargo test --all-features --doc --verbose
+cargo test --all-features
 ```
 
-To run all unit and integration tests:
+To run the doctests:
 
-1. Start the server running in the background. This will compile the project from scratch the first time you run it so it will take a while. It should be faster for future runs.
+```bash
+cargo test --all-features --doc
+```
+
+## Integration tests
+
+Integration tests are separated into two categories, end-to-end tests and general integration tests. Both categories require the key server to be running.
+
+Start the server running in the background. This will compile the project from scratch the first time you run it so it will take a while. It should be faster for future runs.
 ```bash
 cargo make start
 ```
-2. Once the server has started, run the tests.
+
+To run the end-to-end tests:
 ```bash
 cargo make e2e
+```
+
+To run the integration tests:
+```bash
+cargo make integration
+```
+
+To run all tests including unit tests with a single command:
+```bash
+cargo make all-tests
 ```
 
 The server will be running in the background so you can continue to run integration tests without starting the server again. To stop the server, run:
@@ -78,7 +96,7 @@ If you want to watch server output in real-time, you can run the server in the f
 cargo make start-server
 ```
 
-Running the test binary directly offer some extra command line options.
+Running the test binary directly offers some extra command line options.
 
 To only run tests whose name contains certain words, use the `--filter` option
 ```bash

@@ -42,5 +42,8 @@ jobs:
       - name: Start Server
         run: cargo make start-server-detached
           
-      - name: Run Tests
+      - name: Run end-to-end tests
         run: cargo make e2e
+
+      - name: Run integration tests
+        run: cargo make integration

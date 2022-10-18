@@ -53,11 +53,23 @@ dependencies = ["certs"]
 # Servers running in Docker satisfy this requirement.
 [tasks.e2e]
 command = "cargo"
-args = ["run", "--bin", "lock-keeper-tests", "./dev/local/Client.toml"]
+args = ["run", "--bin", "lock-keeper-tests", "--", "--test-type", "e2e"]
+
+# Run integration tests against a server that can be accessed via localhost.
+# Servers running in Docker satisfy this requirement.
+[tasks.integration]
+command = "cargo"
+args = ["run", "--bin", "lock-keeper-tests", "--", "--test-type", "integration"]
+
+# Run all tests that require a server to be running in Docker.
+[tasks.all-tests]
+command = "cargo"
+args = ["run", "--bin", "lock-keeper-tests", "--", "--test-type", "all"]
+dependencies = ["ci-tests"]
 
 # -- CI Tasks --
 [tasks.ci]
-dependencies = ["ci-format", "ci-clippy", "ci-build", "ci-tests", "ci-doc-tests", "ci-docs", "ci-database-tests"]
+dependencies = ["ci-format", "ci-clippy", "ci-build", "ci-tests", "ci-doc-tests", "ci-docs"]
 
 [tasks.ci-format]
 toolchain = "nightly"
@@ -84,11 +96,6 @@ args = ["test", "--all-features", "--doc", "--workspace"]
 env = { "RUSTDOCFLAGS" = "-Dwarnings" }
 command = "cargo"
 args = ["doc", "--all-features", "--no-deps", "--workspace"]
-
-# TODO: Remove with #268
-[tasks.ci-database-tests]
-command = "cargo"
-args = ["test", "--all-features", "--lib", "--bins", "--workspace", "--", "--ignored"]
 
 # -- Utility Tasks --
 

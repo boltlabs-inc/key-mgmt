@@ -1,3 +1,5 @@
+//! Test config types
+
 use lock_keeper::config::client;
 
 use crate::Cli;

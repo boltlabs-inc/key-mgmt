@@ -1,12 +1,12 @@
 pub mod config;
+pub mod database;
 pub mod end_to_end;
+pub mod utils;
 
 use clap::Parser;
 use config::Config;
 use lock_keeper_client::LockKeeperClient;
-use std::{path::PathBuf, time::Duration};
-
-use end_to_end::end_to_end_tests;
+use std::{path::PathBuf, str::FromStr, time::Duration};
 
 const NUM_RETRIES: u32 = 10;
 const RETRY_DELAY: Duration = Duration::from_secs(10);
@@ -17,14 +17,49 @@ pub struct Cli {
     pub client_config: PathBuf,
     #[clap(long = "filter")]
     pub filters: Option<Vec<String>>,
+    #[clap(long, default_value = "all")]
+    pub test_type: TestType,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TestType {
+    All,
+    E2E,
+    Integration,
+}
+
+impl FromStr for TestType {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "all" => Ok(TestType::All),
+            "e2e" => Ok(TestType::E2E),
+            "integration" => Ok(TestType::Integration),
+            _ => anyhow::bail!("Invalid test type: {}", s),
+        }
+    }
 }
 
 #[tokio::main]
 pub async fn main() {
     let cli = Cli::parse();
+    let test_type = cli.test_type;
     let config = Config::try_from(cli).unwrap();
     wait_for_server(&config).await;
-    end_to_end_tests(&config).await;
+
+    match test_type {
+        TestType::All => {
+            database::run_tests().await.unwrap();
+            end_to_end::run_tests(&config).await;
+        }
+        TestType::E2E => {
+            end_to_end::run_tests(&config).await;
+        }
+        TestType::Integration => {
+            database::run_tests().await.unwrap();
+        }
+    }
 }
 
 async fn wait_for_server(config: &Config) {
