@@ -36,6 +36,21 @@
 <span id="36">36</span>
 <span id="37">37</span>
 <span id="38">38</span>
+<span id="39">39</span>
+<span id="40">40</span>
+<span id="41">41</span>
+<span id="42">42</span>
+<span id="43">43</span>
+<span id="44">44</span>
+<span id="45">45</span>
+<span id="46">46</span>
+<span id="47">47</span>
+<span id="48">48</span>
+<span id="49">49</span>
+<span id="50">50</span>
+<span id="51">51</span>
+<span id="52">52</span>
+<span id="53">53</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">serde</span>::{<span class="ident">Deserialize</span>, <span class="ident">Serialize</span>};
 
 <span class="doccomment">/// Options for the asset owner&#39;s intended use of a secret</span>
@@ -59,20 +74,35 @@
         <span class="kw">pub</span> <span class="ident">context</span>: <span class="ident">RetrieveContext</span>,
     }
 
-    <span class="macro">impl_message_conversion!</span>(<span class="ident">Request</span>);
+    <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Deserialize</span>, <span class="ident">Serialize</span>)]</span>
+    <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">RequestSigningKey</span> {
+        <span class="kw">pub</span> <span class="ident">user_id</span>: <span class="ident">UserId</span>,
+        <span class="kw">pub</span> <span class="ident">key_id</span>: <span class="ident">KeyId</span>,
+        <span class="kw">pub</span> <span class="ident">context</span>: <span class="ident">RetrieveContext</span>,
+    }
+
+    <span class="macro">impl_message_conversion!</span>(<span class="ident">Request</span>, <span class="ident">RequestSigningKey</span>);
 }
 
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">server</span> {
-    <span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">impl_message_conversion</span>, <span class="ident">types::database::secrets::StoredEncryptedSecret</span>};
+    <span class="kw">use</span> <span class="kw">crate</span>::{
+        <span class="ident">crypto::Export</span>, <span class="ident">impl_message_conversion</span>, <span class="ident">types::database::secrets::StoredEncryptedSecret</span>,
+    };
     <span class="kw">use</span> <span class="ident">serde</span>::{<span class="ident">Deserialize</span>, <span class="ident">Serialize</span>};
 
     <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Deserialize</span>, <span class="ident">Serialize</span>)]</span>
-    <span class="doccomment">/// return new requested key and key ID</span>
+    <span class="doccomment">/// return requested key and key ID</span>
     <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Response</span> {
         <span class="kw">pub</span> <span class="ident">stored_secret</span>: <span class="ident">StoredEncryptedSecret</span>,
     }
 
-    <span class="macro">impl_message_conversion!</span>(<span class="ident">Response</span>);
+    <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Deserialize</span>, <span class="ident">Serialize</span>)]</span>
+    <span class="doccomment">/// return exported signing key material</span>
+    <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ResponseSigningKey</span> {
+        <span class="kw">pub</span> <span class="ident">exported_signing_key</span>: <span class="ident">Export</span>,
+    }
+
+    <span class="macro">impl_message_conversion!</span>(<span class="ident">Response</span>, <span class="ident">ResponseSigningKey</span>);
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="lock_keeper" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>

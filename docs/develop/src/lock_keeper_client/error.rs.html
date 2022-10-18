@@ -64,6 +64,8 @@
 <span id="64">64</span>
 <span id="65">65</span>
 <span id="66">66</span>
+<span id="67">67</span>
+<span id="68">68</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">lock_keeper::LockKeeperError</span>;
 <span class="kw">use</span> <span class="ident">thiserror::Error</span>;
 <span class="kw">use</span> <span class="ident">tonic</span>::{<span class="ident">Code</span>, <span class="ident">Status</span>};
@@ -85,6 +87,8 @@
     <span class="ident">InvalidAccount</span>,
     <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;Invalid login&quot;</span>)]</span>
     <span class="ident">InvalidLogin</span>,
+    <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;Invalid key retrieved&quot;</span>)]</span>
+    <span class="ident">InvalidKeyRetrieved</span>,
 
     <span class="comment">// Wrapped errors</span>
     <span class="attribute">#[<span class="ident">error</span>(<span class="ident">transparent</span>)]</span>

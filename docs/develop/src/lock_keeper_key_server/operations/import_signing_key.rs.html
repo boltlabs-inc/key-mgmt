@@ -87,7 +87,7 @@
         <span class="comment">// Check validity of ciphertext and store in DB</span>
         <span class="ident">context</span>
             .<span class="ident">db</span>
-            .<span class="ident">add_server_imported_signing_key</span>(<span class="kw-2">&amp;</span><span class="ident">request</span>.<span class="ident">user_id</span>, <span class="ident">signing_key</span>, <span class="ident">key_id</span>.<span class="ident">clone</span>())
+            .<span class="ident">add_remote_secret</span>(<span class="kw-2">&amp;</span><span class="ident">request</span>.<span class="ident">user_id</span>, <span class="ident">signing_key</span>, <span class="ident">key_id</span>.<span class="ident">clone</span>())
             .<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="comment">// Serialize KeyId and send to client</span>

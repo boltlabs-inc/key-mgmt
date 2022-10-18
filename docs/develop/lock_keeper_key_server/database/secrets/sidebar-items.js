@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":[["REMOTE_SECRETS",""]]};
+window.SIDEBAR_ITEMS = {};

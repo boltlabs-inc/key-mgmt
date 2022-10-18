@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["Request","pass user ID and key ID to server"]]};
+window.SIDEBAR_ITEMS = {"struct":[["Request","pass user ID and key ID to server"],["RequestSigningKey",""]]};

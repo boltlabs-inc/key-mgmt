@@ -220,6 +220,50 @@
 <span id="220">220</span>
 <span id="221">221</span>
 <span id="222">222</span>
+<span id="223">223</span>
+<span id="224">224</span>
+<span id="225">225</span>
+<span id="226">226</span>
+<span id="227">227</span>
+<span id="228">228</span>
+<span id="229">229</span>
+<span id="230">230</span>
+<span id="231">231</span>
+<span id="232">232</span>
+<span id="233">233</span>
+<span id="234">234</span>
+<span id="235">235</span>
+<span id="236">236</span>
+<span id="237">237</span>
+<span id="238">238</span>
+<span id="239">239</span>
+<span id="240">240</span>
+<span id="241">241</span>
+<span id="242">242</span>
+<span id="243">243</span>
+<span id="244">244</span>
+<span id="245">245</span>
+<span id="246">246</span>
+<span id="247">247</span>
+<span id="248">248</span>
+<span id="249">249</span>
+<span id="250">250</span>
+<span id="251">251</span>
+<span id="252">252</span>
+<span id="253">253</span>
+<span id="254">254</span>
+<span id="255">255</span>
+<span id="256">256</span>
+<span id="257">257</span>
+<span id="258">258</span>
+<span id="259">259</span>
+<span id="260">260</span>
+<span id="261">261</span>
+<span id="262">262</span>
+<span id="263">263</span>
+<span id="264">264</span>
+<span id="265">265</span>
+<span id="266">266</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Full implementation of the public API for the Lock Keeper client library.</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! This API is designed for use with a local client application - that is, an</span>
@@ -239,7 +283,7 @@
 <span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">client::Password</span>, <span class="ident">LockKeeperClient</span>, <span class="ident">LockKeeperClientError</span>};
 <span class="kw">use</span> <span class="ident">lock_keeper</span>::{
     <span class="ident">config::client::Config</span>,
-    <span class="ident">crypto</span>::{<span class="ident">KeyId</span>, <span class="ident">Secret</span>},
+    <span class="ident">crypto</span>::{<span class="ident">Export</span>, <span class="ident">KeyId</span>, <span class="ident">Secret</span>},
     <span class="ident">types</span>::{
         <span class="ident">audit_event</span>::{<span class="ident">AuditEvent</span>, <span class="ident">AuditEventOptions</span>, <span class="ident">EventType</span>},
         <span class="ident">database::user::AccountName</span>,
@@ -256,6 +300,7 @@
 <span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">RetrieveResult</span> {
     <span class="prelude-val">None</span>,
     <span class="ident">ArbitraryKey</span>(<span class="ident">LocalStorage</span>),
+    <span class="ident">SigningKey</span>(<span class="ident">Export</span>),
 }
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Deserialize</span>, <span class="ident">Serialize</span>)]</span>
@@ -354,6 +399,33 @@
         <span class="kw">match</span> <span class="ident">secret</span> {
             <span class="ident">RetrieveResult::None</span> =&gt; <span class="prelude-val">Err</span>(<span class="ident">LockKeeperClientError::ExportFailed</span>),
             <span class="ident">RetrieveResult::ArbitraryKey</span>(<span class="ident">local_storage</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="ident">local_storage</span>.<span class="ident">secret</span>.<span class="ident">into</span>()),
+            <span class="ident">RetrieveResult::SigningKey</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">Err</span>(<span class="ident">LockKeeperClientError::InvalidKeyRetrieved</span>),
+        }
+    }
+
+    <span class="doccomment">/// Export signing key pair material from the key servers.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// Output: If successful, returns the requested key material in byte form.</span>
+    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">export_signing_key</span>(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        <span class="ident">key_id</span>: <span class="kw-2">&amp;</span><span class="ident">KeyId</span>,
+    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Export</span>, <span class="ident">LockKeeperClientError</span><span class="op">&gt;</span> {
+        <span class="comment">// Create channel: this will internally be a `retrieve` channel</span>
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">client_channel</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::create_channel</span>(
+            <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">tonic_client</span>(),
+            <span class="ident">ClientAction::ExportSigningKey</span>,
+            <span class="self">self</span>.<span class="ident">account_name</span>(),
+        )
+        .<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="comment">// Get local-only secret</span>
+        <span class="kw">let</span> <span class="ident">secret</span> <span class="op">=</span> <span class="self">self</span>
+            .<span class="ident">handle_retrieve_signing_key</span>(<span class="kw-2">&amp;mut</span> <span class="ident">client_channel</span>, <span class="ident">key_id</span>, <span class="ident">RetrieveContext::LocalOnly</span>)
+            .<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="comment">// Return secret as bytes</span>
+        <span class="kw">match</span> <span class="ident">secret</span> {
+            <span class="ident">RetrieveResult::None</span> =&gt; <span class="prelude-val">Err</span>(<span class="ident">LockKeeperClientError::ExportFailed</span>),
+            <span class="ident">RetrieveResult::ArbitraryKey</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">Err</span>(<span class="ident">LockKeeperClientError::InvalidKeyRetrieved</span>),
+            <span class="ident">RetrieveResult::SigningKey</span>(<span class="ident">signing_key</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="ident">signing_key</span>),
         }
     }
 
@@ -439,6 +511,22 @@
         )
         .<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="self">self</span>.<span class="ident">handle_retrieve_audit_events</span>(<span class="kw-2">&amp;mut</span> <span class="ident">client_channel</span>, <span class="ident">event_type</span>, <span class="ident">options</span>)
+            .<span class="kw">await</span>
+    }
+
+    <span class="doccomment">/// Retrieve a signing key pair from the key server by [`KeyId`]</span>
+    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">retrieve_signing_key</span>(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        <span class="ident">key_id</span>: <span class="kw-2">&amp;</span><span class="ident">KeyId</span>,
+        <span class="ident">context</span>: <span class="ident">RetrieveContext</span>,
+    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">RetrieveResult</span>, <span class="ident">LockKeeperClientError</span><span class="op">&gt;</span> {
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">client_channel</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::create_channel</span>(
+            <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">tonic_client</span>(),
+            <span class="ident">ClientAction::RetrieveSigningKey</span>,
+            <span class="self">self</span>.<span class="ident">account_name</span>(),
+        )
+        .<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="self">self</span>.<span class="ident">handle_retrieve_signing_key</span>(<span class="kw-2">&amp;mut</span> <span class="ident">client_channel</span>, <span class="ident">key_id</span>, <span class="ident">context</span>)
             .<span class="kw">await</span>
     }
 }
