@@ -3,13 +3,9 @@
 use std::str::FromStr;
 
 use colored::Colorize;
-use generic_array::{typenum::U64, GenericArray};
-use lock_keeper::{
-    crypto::OpaqueExportKey,
-    types::database::user::{AccountName, User, UserId},
-};
+use lock_keeper::types::database::user::{AccountName, User, UserId};
 use lock_keeper_key_server::LockKeeperServerError;
-use rand::{rngs::StdRng, Rng, SeedableRng};
+use rand::{rngs::StdRng, SeedableRng};
 
 use crate::{
     database::USERS_TABLE,
@@ -168,7 +164,6 @@ async fn user_is_deleted(db: TestDatabase) -> anyhow::Result<()> {
 
 /// Test that `set_storage_key` works correctly
 async fn storage_key_is_set(db: TestDatabase) -> anyhow::Result<()> {
-    let mut rng = StdRng::from_entropy();
     let (user_id, account_name) = db.create_test_user().await?;
 
     // Ensure that the user was created an no storage key is set
@@ -176,11 +171,7 @@ async fn storage_key_is_set(db: TestDatabase) -> anyhow::Result<()> {
     assert!(user.storage_key.is_none());
 
     // Create a storage key
-    let export_key = create_test_export_key(&mut rng);
-    let storage_key = export_key
-        .clone()
-        .create_and_encrypt_storage_key(&mut rng, &user_id)
-        .unwrap();
+    let (storage_key, _) = db.create_test_storage_key(&user_id)?;
 
     // Set storage key and check that it is correct in the database
     db.set_storage_key(&user_id, storage_key.clone()).await?;
@@ -189,17 +180,4 @@ async fn storage_key_is_set(db: TestDatabase) -> anyhow::Result<()> {
     assert_eq!(user.storage_key, Some(storage_key.clone()));
 
     Ok(())
-}
-
-// Create an export key for testing using random bytes
-fn create_test_export_key(rng: &mut StdRng) -> OpaqueExportKey {
-    let mut key = [0_u8; 64];
-    rng.try_fill(&mut key)
-        .expect("Failed to generate random key");
-
-    // We can't create an export key directly from bytes so we convert it to a
-    // GenericArray first.
-    let key: GenericArray<u8, U64> = key.into();
-
-    key.into()
 }
