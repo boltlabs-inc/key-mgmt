@@ -16,7 +16,7 @@ use uuid::Uuid;
 use super::secrets::StoredSecrets;
 
 /// Unique ID for a user.
-#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
 pub struct UserId(String);
 
 impl UserId {

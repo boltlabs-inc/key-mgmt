@@ -1,3 +1,4 @@
+use crate::server::session_key_cache::SessionKeyCacheError;
 use thiserror::Error;
 use tonic::Status;
 
@@ -5,6 +6,9 @@ use tonic::Status;
 pub enum LockKeeperServerError {
     #[error("Could not get service.")]
     MissingService,
+
+    #[error("Error in session keys cache.")]
+    SessionKeyCache(#[from] SessionKeyCacheError),
 
     // Infrastructure errors
     #[error("Invalid OPAQUE directory")]
@@ -55,7 +59,12 @@ impl From<opaque_ke::errors::ProtocolError> for LockKeeperServerError {
 
 impl From<LockKeeperServerError> for Status {
     fn from(error: LockKeeperServerError) -> Status {
+        use crate::server::session_key_cache::SessionKeyCacheError::*;
+
         match error {
+            LockKeeperServerError::SessionKeyCache(ExpiredSessionKey) => {
+                Status::unauthenticated("Session key expired")
+            }
             // Errors that are safe to return to the client
             LockKeeperServerError::AccountAlreadyRegistered
             | LockKeeperServerError::InvalidAccount
@@ -71,6 +80,7 @@ impl From<LockKeeperServerError> for Status {
 
             // Errors that the client should not see
             LockKeeperServerError::MissingService
+            | LockKeeperServerError::SessionKeyCache(_)
             | LockKeeperServerError::Hyper(_)
             | LockKeeperServerError::Io(_)
             | LockKeeperServerError::InvalidOpaqueDirectory
