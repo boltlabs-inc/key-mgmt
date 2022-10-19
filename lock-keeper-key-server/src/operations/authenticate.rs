@@ -6,6 +6,7 @@ use crate::{
 use async_trait::async_trait;
 use lock_keeper::{
     config::opaque::OpaqueCipherSuite,
+    crypto::OpaqueSessionKey,
     infrastructure::channel::ServerChannel,
     types::{
         database::user::UserId,
@@ -29,12 +30,12 @@ impl Operation for Authenticate {
         channel: &mut ServerChannel,
         context: &mut Context,
     ) -> Result<(), LockKeeperServerError> {
-        let AuthenticateStartResult {
-            login_start_result,
-            user_id,
-        } = authenticate_start(channel, context).await?;
-        authenticate_finish(channel, login_start_result).await?;
-        send_user_id(channel, user_id).await?;
+        let result = authenticate_start(channel, context).await?;
+        let session_key = authenticate_finish(channel, result.login_start_result).await?;
+        let mut session_key_cache = context.session_key_cache.lock().await;
+        session_key_cache.insert(result.user_id.clone(), session_key);
+
+        send_user_id(channel, result.user_id).await?;
 
         Ok(())
     }
@@ -91,18 +92,18 @@ async fn authenticate_start(
 async fn authenticate_finish(
     channel: &mut ServerChannel,
     start_result: ServerLoginStartResult<OpaqueCipherSuite>,
-) -> Result<(), LockKeeperServerError> {
+) -> Result<OpaqueSessionKey, LockKeeperServerError> {
     // Receive finish message from client
     let finish_message: client::AuthenticateFinish = channel.receive().await?;
 
-    let _ = start_result
+    let server_login_finish_result = start_result
         .state
         .finish(finish_message.credential_finalization)?;
     let reply = server::AuthenticateFinish { success: true };
 
     // Send response to client
     channel.send(reply).await?;
-    Ok(())
+    Ok(server_login_finish_result.session_key.into())
 }
 
 /// Returns the server-side start message along with a login result that will be

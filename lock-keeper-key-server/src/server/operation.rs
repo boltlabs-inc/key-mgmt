@@ -30,11 +30,13 @@ pub(crate) trait Operation: Sized + Send + 'static {
         request: Request<Streaming<Message>>,
     ) -> Result<Response<MessageStream>, Status> {
         tracing::info!("Handling action: {}", context.action);
+
         let (mut channel, rx) = ServerChannel::create(request.into_inner());
         let mut context = context;
 
         let _ = tokio::spawn(async move {
             audit_event(&mut channel, &context, EventStatus::Started).await;
+
             let result = self.operation(&mut channel, &mut context).await;
             if let Err(e) = result {
                 handle_error(&mut channel, e).await;

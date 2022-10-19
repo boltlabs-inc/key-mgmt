@@ -1,6 +1,7 @@
 pub(crate) mod opaque_storage;
 mod operation;
 mod service;
+pub(crate) mod session_key_cache;
 
 pub(crate) use operation::Operation;
 pub use service::start_lock_keeper_server;
@@ -16,11 +17,13 @@ use lock_keeper::{
     types::{database::user::AccountName, operations::ClientAction, Message, MessageStream},
 };
 
+use crate::server::session_key_cache::SessionKeyCache;
 use rand::{rngs::StdRng, SeedableRng};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tonic::{Request, Response, Status};
 
+///
 #[allow(unused)]
 #[derive(Debug)]
 pub struct LockKeeperKeyServer {
@@ -28,6 +31,7 @@ pub struct LockKeeperKeyServer {
     db: Arc<Database>,
     service: Arc<Service>,
     rng: Arc<Mutex<StdRng>>,
+    session_key_cache: Arc<Mutex<SessionKeyCache>>,
 }
 
 impl LockKeeperKeyServer {
@@ -43,10 +47,11 @@ impl LockKeeperKeyServer {
             db: Arc::new(db),
             service,
             rng: Arc::new(Mutex::new(rng)),
+            session_key_cache: Arc::new(Mutex::new(SessionKeyCache::default())),
         })
     }
 
-    pub fn context(
+    pub(crate) fn context(
         &self,
         request: &Request<tonic::Streaming<Message>>,
     ) -> Result<Context, LockKeeperServerError> {
@@ -75,6 +80,7 @@ impl LockKeeperKeyServer {
             account_name,
             action,
             key_id: None,
+            session_key_cache: self.session_key_cache.clone(),
         })
     }
 
@@ -95,13 +101,15 @@ impl LockKeeperKeyServer {
 }
 
 #[derive(Debug)]
-pub struct Context {
+pub(crate) struct Context {
     pub db: Arc<Database>,
     pub service: Arc<Service>,
     pub rng: Arc<Mutex<StdRng>>,
     pub account_name: AccountName,
     pub action: ClientAction,
     pub key_id: Option<KeyId>,
+    /// Our user session keys are held in this cache after authentication.
+    pub session_key_cache: Arc<Mutex<SessionKeyCache>>,
 }
 
 #[tonic::async_trait]
