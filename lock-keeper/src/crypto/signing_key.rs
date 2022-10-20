@@ -37,7 +37,8 @@ pub struct SigningPublicKey(VerifyingKey);
 /// Temporary type to represent a remotely generated encrypted
 /// [`SigningKeyPair`].
 ///
-/// This should only be "decrypted" by the server.
+/// This can only be "decrypted" by the server.
+/// TODO #307: Replace this placeholder with actual encryption.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct PlaceholderEncryptedSigningKeyPair {
     signing_key: Vec<u8>,
