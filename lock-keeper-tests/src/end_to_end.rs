@@ -1,5 +1,9 @@
 //! End-to-end testing framework and test definitions
 
+pub mod operations;
+pub mod test_cases;
+
+use anyhow::anyhow;
 use colored::Colorize;
 use lock_keeper::{
     config::client,
@@ -7,21 +11,17 @@ use lock_keeper::{
     types::{
         audit_event::{AuditEventOptions, EventStatus, EventType},
         database::user::AccountName,
-        operations::{retrieve::RetrieveContext, ClientAction},
     },
 };
-use lock_keeper_client::{
-    api::{LocalStorage, RetrieveResult},
-    client::Password,
-    LockKeeperClient, LockKeeperClientError,
-};
-use rand::{rngs::StdRng, Rng, SeedableRng};
+use lock_keeper_client::{client::Password, LockKeeperClient, LockKeeperClientError};
+use rand::{rngs::StdRng, SeedableRng};
 use serde::Serialize;
 use serde_json::Value;
 use std::{collections::HashMap, str::FromStr};
-use thiserror::Error;
 
 use crate::{config::Config, utils::tagged};
+
+use self::operations::Operation;
 
 const USER: &str = "user";
 const PASSWORD: &str = "password";
@@ -30,18 +30,19 @@ const KEY_MATERIAL: &str = "generated_key";
 
 pub async fn run_tests(config: &Config) {
     // Run every test, printing out details if it fails
-    let tests = tests().await;
+    let tests = test_cases::tests(config).await;
     println!("Executing {} tests", tests.len());
     let mut results = Vec::new();
 
-    for mut test in tests {
-        println!("\n\ntest {} ... ", test.name);
-        if !config.filters.matches(&test.name) {
+    for test in tests {
+        let name = test.name.clone();
+        println!("\n\ntest {} ... ", name);
+        if !config.filters.matches(&name) {
             println!("{}", "skipped".bright_blue());
             continue;
         }
 
-        let result = test.execute(&config.client_config).await;
+        let result = test.execute().await;
         if let Err(error) = &result {
             println!("{}: {:?}", "failed with error".red(), error)
         } else {
@@ -49,7 +50,7 @@ pub async fn run_tests(config: &Config) {
         }
 
         results.push(TestResult {
-            name: test.name,
+            name,
             error: result.err().map(|e| e.to_string()),
         });
     }
@@ -70,339 +71,22 @@ pub async fn run_tests(config: &Config) {
     }
 }
 
-/// Get a list of tests to execute.
-/// Assumption: none of these will cause a fatal error to the long-running
-/// processes (server).
-async fn tests() -> Vec<Test> {
-    use Operation::*;
-
-    vec![
-        Test::new(
-            "Register the same user twice user",
-            vec![
-                (
-                    Register,
-                    Outcome {
-                        expected_error: None,
-                    },
-                ),
-                (
-                    Register,
-                    Outcome {
-                        expected_error: Some(LockKeeperClientError::AccountAlreadyRegistered),
-                    },
-                ),
-            ],
-        ),
-        Test::new(
-            "Register and open multiple sessions as a client to the server",
-            vec![
-                (
-                    Register,
-                    Outcome {
-                        expected_error: None,
-                    },
-                ),
-                (
-                    Authenticate(None),
-                    Outcome {
-                        expected_error: None,
-                    },
-                ),
-                (
-                    Authenticate(None),
-                    Outcome {
-                        expected_error: None,
-                    },
-                ),
-            ],
-        ),
-        Test::new(
-            "Register and authenticate with wrong password fails as a client to the server",
-            vec![
-                (
-                    Register,
-                    Outcome {
-                        expected_error: None,
-                    },
-                ),
-                (
-                    Authenticate(Some(Password::from_str("wrongPassword").unwrap())),
-                    Outcome {
-                        expected_error: Some(LockKeeperClientError::InvalidLogin),
-                    },
-                ),
-            ],
-        ),
-        Test::new(
-            "Authenticate with unregistered user fails",
-            vec![(
-                Authenticate(None),
-                Outcome {
-                    expected_error: Some(LockKeeperClientError::InvalidAccount),
-                },
-            )],
-        ),
-        Test::new(
-            "Generate a secret",
-            vec![
-                (
-                    Register,
-                    Outcome {
-                        expected_error: None,
-                    },
-                ),
-                (
-                    Generate,
-                    Outcome {
-                        expected_error: None,
-                    },
-                ),
-            ],
-        ),
-        Test::new(
-            "Retrieve a secret",
-            vec![
-                (
-                    Register,
-                    Outcome {
-                        expected_error: None,
-                    },
-                ),
-                (
-                    Generate,
-                    Outcome {
-                        expected_error: None,
-                    },
-                ),
-                (
-                    Retrieve,
-                    Outcome {
-                        expected_error: None,
-                    },
-                ),
-            ],
-        ),
-        Test::new(
-            "Retrieving a non-existent secret fails",
-            vec![
-                (
-                    Register,
-                    Outcome {
-                        expected_error: None,
-                    },
-                ),
-                (
-                    SetFakeKeyId,
-                    Outcome {
-                        expected_error: None,
-                    },
-                ),
-                (
-                    Retrieve,
-                    Outcome {
-                        expected_error: Some(LockKeeperClientError::InvalidAccount),
-                    },
-                ),
-            ],
-        ),
-        Test::new(
-            "Export a secret",
-            vec![
-                (
-                    Register,
-                    Outcome {
-                        expected_error: None,
-                    },
-                ),
-                (
-                    Generate,
-                    Outcome {
-                        expected_error: None,
-                    },
-                ),
-                (
-                    Export,
-                    Outcome {
-                        expected_error: None,
-                    },
-                ),
-            ],
-        ),
-        Test::new(
-            "Exporting a non-existent secret fails",
-            vec![
-                (
-                    Register,
-                    Outcome {
-                        expected_error: None,
-                    },
-                ),
-                (
-                    SetFakeKeyId,
-                    Outcome {
-                        expected_error: None,
-                    },
-                ),
-                (
-                    Export,
-                    Outcome {
-                        expected_error: Some(LockKeeperClientError::InvalidAccount),
-                    },
-                ),
-            ],
-        ),
-        Test::new(
-            "Remote generate a secret",
-            vec![
-                (
-                    Register,
-                    Outcome {
-                        expected_error: None,
-                    },
-                ),
-                (
-                    RemoteGenerate,
-                    Outcome {
-                        expected_error: None,
-                    },
-                ),
-            ],
-        ),
-        Test::new(
-            "Import a signing key",
-            vec![
-                (
-                    Register,
-                    Outcome {
-                        expected_error: None,
-                    },
-                ),
-                (
-                    ImportSigningKey,
-                    Outcome {
-                        expected_error: None,
-                    },
-                ),
-            ],
-        ),
-        Test::new(
-            "Export a signing key",
-            vec![
-                (
-                    Register,
-                    Outcome {
-                        expected_error: None,
-                    },
-                ),
-                (
-                    ImportSigningKey,
-                    Outcome {
-                        expected_error: None,
-                    },
-                ),
-                (
-                    ExportSigningKey,
-                    Outcome {
-                        expected_error: None,
-                    },
-                ),
-            ],
-        ),
-        Test::new(
-            "Exporting a secret using 'export_signing_key' fails",
-            vec![
-                (
-                    Register,
-                    Outcome {
-                        expected_error: None,
-                    },
-                ),
-                (
-                    Generate,
-                    Outcome {
-                        expected_error: None,
-                    },
-                ),
-                (
-                    ExportSigningKey,
-                    Outcome {
-                        expected_error: Some(LockKeeperClientError::InvalidAccount),
-                    },
-                ),
-            ],
-        ),
-        Test::new(
-            "Exporting a non-existent signing key fails",
-            vec![
-                (
-                    Register,
-                    Outcome {
-                        expected_error: None,
-                    },
-                ),
-                (
-                    SetFakeKeyId,
-                    Outcome {
-                        expected_error: None,
-                    },
-                ),
-                (
-                    ExportSigningKey,
-                    Outcome {
-                        expected_error: Some(LockKeeperClientError::InvalidAccount),
-                    },
-                ),
-            ],
-        ),
-    ]
-}
-
 #[derive(Debug)]
-struct TestState {
-    pub state: HashMap<String, Value>,
-}
-
-impl TestState {
-    pub fn new() -> Self {
-        Self {
-            state: HashMap::new(),
-        }
-    }
-
-    pub fn get(&self, key: &str) -> Result<&Value, anyhow::Error> {
-        let val = self
-            .state
-            .get(key)
-            .ok_or_else(|| TestError::TestStateError("Unable to get state".to_string()))?;
-        Ok(val)
-    }
-
-    pub fn set<T, V>(&mut self, key: T, value: V) -> Result<(), anyhow::Error>
-    where
-        T: Into<String>,
-        V: Serialize,
-    {
-        let value_json = serde_json::to_value(value)?;
-        let prev_state = self.state.insert(key.into(), value_json);
-        if prev_state.is_some() {
-            return Err(TestError::TestStateError("State was overwritten".to_string()).into());
-        }
-        Ok(())
-    }
-}
-
-#[derive(Debug)]
-struct Test {
+pub struct Test {
     pub name: String,
     pub account_name: AccountName,
     pub password: Password,
     pub operations: Vec<(Operation, Outcome)>,
     pub state: TestState,
+    pub config: client::Config,
 }
 
 impl Test {
-    fn new(name: impl Into<String>, operations: Vec<(Operation, Outcome)>) -> Self {
+    fn new(
+        name: impl Into<String>,
+        operations: Vec<(Operation, Outcome)>,
+        config: client::Config,
+    ) -> Self {
         let account_name = AccountName::from_str(&tagged(USER)).unwrap();
         let password = Password::from_str(&tagged(PASSWORD)).unwrap();
 
@@ -412,215 +96,68 @@ impl Test {
             password,
             operations,
             state: TestState::new(),
+            config,
         }
     }
 
-    async fn execute(&mut self, config: &client::Config) -> Result<(), anyhow::Error> {
+    async fn execute(mut self) -> Result<(), anyhow::Error> {
         use Operation::*;
 
-        for (op, expected_outcome) in &self.operations {
+        // We need a mutable reference to `self` in the upcoming loop but we also need
+        // to loop over these operations. We'll remove them from the vec
+        // entirely to avoid borrow checker errors.
+        let operations = std::mem::take(&mut self.operations);
+
+        for (op, expected_outcome) in operations {
             let outcome: Result<(), anyhow::Error> = match op {
                 SetFakeKeyId => {
                     // Authenticate
                     let lock_keeper_client = LockKeeperClient::authenticated_client(
                         &self.account_name,
                         &self.password,
-                        config,
+                        &self.config,
                     )
                     .await?;
                     // Create fake KeyId and set to GENERATED_ID
                     let mut rng = StdRng::from_entropy();
                     let key_id = KeyId::generate(&mut rng, lock_keeper_client.user_id())?;
                     self.state.set(KEY_ID, key_id)?;
-                    Ok(())
-                }
-                Register => LockKeeperClient::register(&self.account_name, &self.password, config)
-                    .await
-                    .map_err(|e| e.into()),
-                Authenticate(pwd) => {
-                    let password = match pwd {
-                        Some(pwd) => pwd,
-                        None => &self.password,
-                    };
-                    LockKeeperClient::authenticated_client(&self.account_name, password, config)
-                        .await
-                        .map(|_| ())
-                        .map_err(|e| e.into())
-                }
-                Export => {
-                    // Authenticate
-                    let lock_keeper_client = LockKeeperClient::authenticated_client(
-                        &self.account_name,
-                        &self.password,
-                        config,
-                    )
-                    .await?;
-
-                    // Get KeyId from state and run export
-                    let key_id_json = self.state.get(KEY_ID)?;
-                    let key_id: KeyId = serde_json::from_value(key_id_json.clone())?;
-                    match lock_keeper_client.export_key(&key_id).await {
-                        Ok(res) => {
-                            // Compare generated key and exported key material
-                            let original_local_storage_json = self.state.get(KEY_MATERIAL)?.clone();
-                            let original_local_storage_bytes: Vec<u8> =
-                                serde_json::from_value::<LocalStorage>(
-                                    original_local_storage_json.clone(),
-                                )?
-                                .secret
-                                .into();
-                            let res_json = serde_json::to_value(res.clone())?;
-                            if original_local_storage_bytes != res {
-                                Err(TestError::InvalidValueRetrieved(
-                                    original_local_storage_json,
-                                    res_json,
-                                )
-                                .into())
-                            } else {
-                                Ok(())
-                            }
-                        }
-                        Err(e) => Err(anyhow::Error::from(e)),
-                    }
-                }
-                ExportSigningKey => {
-                    // Authenticate
-                    let lock_keeper_client = LockKeeperClient::authenticated_client(
-                        &self.account_name,
-                        &self.password,
-                        config,
-                    )
-                    .await?;
-
-                    // Get KeyId from state and run export
-                    let key_id_json = self.state.get(KEY_ID)?;
-                    let key_id: KeyId = serde_json::from_value(key_id_json.clone())?;
-                    lock_keeper_client
-                        .export_signing_key(&key_id)
-                        .await
-                        .map(|_| ())
-                        .map_err(|e| e.into())
-                }
-                Generate => {
-                    // Authenticate and run generate
-                    let lock_keeper_client = LockKeeperClient::authenticated_client(
-                        &self.account_name,
-                        &self.password,
-                        config,
-                    )
-                    .await?;
-                    let (key_id, local_storage) = lock_keeper_client.generate_and_store().await?;
-                    // Store generated key ID and local storage object to state
-                    self.state.set(KEY_ID, key_id)?;
-                    self.state.set(KEY_MATERIAL, local_storage)
-                }
-                ImportSigningKey => {
-                    // Authenticate and run generate
-                    let lock_keeper_client = LockKeeperClient::authenticated_client(
-                        &self.account_name,
-                        &self.password,
-                        config,
-                    )
-                    .await?;
-                    let random_bytes = rand::thread_rng().gen::<[u8; 32]>().to_vec();
-                    let key_id = lock_keeper_client.import_signing_key(random_bytes).await?;
-                    // Store generated key ID to state
-                    self.state.set(KEY_ID, key_id)
-                }
-                Retrieve => {
-                    // Authenticate
-                    let lock_keeper_client = LockKeeperClient::authenticated_client(
-                        &self.account_name,
-                        &self.password,
-                        config,
-                    )
-                    .await?;
-                    // Get KeyId from state and run retrieve
-                    let key_id_json = self.state.get(KEY_ID)?;
-                    let key_id: KeyId = serde_json::from_value(key_id_json.clone())?;
-
-                    // Ensure result matches what was stored in generate
-                    match lock_keeper_client
-                        .retrieve(&key_id, RetrieveContext::LocalOnly)
-                        .await
-                    {
-                        Ok(res) => {
-                            let original_local_storage_json = self.state.get(KEY_MATERIAL)?.clone();
-                            match res {
-                                RetrieveResult::None => Err(TestError::InvalidValueRetrieved(
-                                    original_local_storage_json,
-                                    Value::Null,
-                                )
-                                .into()),
-                                RetrieveResult::ArbitraryKey(local_storage) => {
-                                    let new_local_storage_json =
-                                        serde_json::to_value(local_storage)?;
-                                    if original_local_storage_json != new_local_storage_json {
-                                        Err(TestError::InvalidValueRetrieved(
-                                            original_local_storage_json,
-                                            new_local_storage_json,
-                                        )
-                                        .into())
-                                    } else {
-                                        Ok(())
-                                    }
-                                }
-                                RetrieveResult::SigningKey(signing_key) => {
-                                    let new_local_storage_json = serde_json::to_value(signing_key)?;
-                                    Err(TestError::InvalidValueRetrieved(
-                                        original_local_storage_json,
-                                        new_local_storage_json,
-                                    )
-                                    .into())
-                                }
-                            }
-                        }
-                        Err(e) => Err(anyhow::Error::from(e)),
-                    }
-                }
-                RemoteGenerate => {
-                    // Authenticate and run remote generate
-                    let lock_keeper_client = LockKeeperClient::authenticated_client(
-                        &self.account_name,
-                        &self.password,
-                        config,
-                    )
-                    .await?;
-                    let key_id = lock_keeper_client.remote_generate().await?;
-                    // Store generated key ID
-                    self.state.set(KEY_ID, key_id)?;
 
                     Ok(())
                 }
+                Register => self.register().await,
+                Authenticate(ref pwd) => self.authenticate(pwd).await,
+                Export => self.export().await,
+                ExportSigningKey => self.export_signing_key().await,
+                Generate => self.generate().await,
+                ImportSigningKey => self.import_signing_key().await,
+                Retrieve => self.retrieve().await,
+                RemoteGenerate => self.remote_generate().await,
             };
 
             // Check whether the process errors matched the expectation.
             match outcome {
                 Ok(_) => match &expected_outcome.expected_error {
-                    Some(expected) => {
-                        Err(TestError::UnexpectedSuccess(expected.to_string()).into())
+                    Some(_) => {
+                        anyhow::bail!("Unexpected success")
                     }
                     None => {
-                        self.check_audit_events(config, EventStatus::Successful, op)
+                        self.check_audit_events(&self.config, EventStatus::Successful, &op)
                             .await
                     }
                 }?,
                 Err(e) => {
-                    self.check_audit_events(config, EventStatus::Failed, op)
+                    self.check_audit_events(&self.config, EventStatus::Failed, &op)
                         .await?;
                     match &expected_outcome.expected_error {
                         Some(expected) => {
                             let expected_string = expected.to_string();
                             let error_string = e.to_string();
                             if expected_string != error_string {
-                                return Err(TestError::IncorrectError(
-                                    expected_string,
-                                    error_string,
-                                )
-                                .into());
+                                anyhow::bail!("Incorrect error. expected {expected_string}; got {error_string}")
                             }
                         }
-                        None => return Err(TestError::UnexpectedError.into()),
+                        None => anyhow::bail!("Unexpected error"),
                     }
                 }
             }
@@ -656,98 +193,61 @@ impl Test {
             .len()
             .checked_sub(4)
             .map(|i| &audit_event_log[i])
-            .ok_or_else(|| {
-                TestError::InvalidAuditEventLog(
-                    "No last element found in audit event log".to_string(),
-                )
-            })?;
+            .ok_or_else(|| anyhow!("No last element found in audit event log".to_string(),))?;
         // Check that expected status and action match
         let actual_status = fourth_last.status();
         let actual_action = fourth_last.action();
         if expected_status != actual_status {
-            Err(TestError::InvalidAuditEventLog("Incorrect status".to_string()).into())
+            Err(anyhow!("Incorrect audit event status"))
         } else if expected_action != actual_action {
-            Err(TestError::InvalidAuditEventLog("Incorrect action".to_string()).into())
+            Err(anyhow!("Incorrect audit event action"))
         } else {
             Ok(())
         }
     }
 }
 
-#[derive(Debug, Error)]
-enum TestError {
-    #[error(
-        "An error was expected but none was returned:
-    expected: {0:?}"
-    )]
-    UnexpectedSuccess(String),
-    #[error("An error was returned when none was expected")]
-    UnexpectedError,
-    #[error("Incorrect error. Expected: {}. Got: {}.", .0, .1)]
-    IncorrectError(String, String),
-
-    #[error("An error occurred while working with test state: {0:?}")]
-    TestStateError(String),
-    #[error("An error occurred while reading the audit log: {0:?}")]
-    InvalidAuditEventLog(String),
-    #[error(
-        "The wrong value was retrieved from the key server:
-    expected: {0:?}
-    actual: {1:?}"
-    )]
-    InvalidValueRetrieved(Value, Value),
+#[derive(Debug, Default)]
+pub struct TestState {
+    pub state: HashMap<String, Value>,
 }
 
-/// Set of operations that can be executed by the test harness
-#[allow(unused)]
-#[derive(Debug)]
-enum Operation {
-    Authenticate(Option<Password>),
-    Export,
-    ExportSigningKey,
-    Generate,
-    ImportSigningKey,
-    Register,
-    RemoteGenerate,
-    Retrieve,
-    SetFakeKeyId,
-}
-
-impl Operation {
-    fn to_final_client_action(&self, status: &EventStatus) -> Option<ClientAction> {
-        match self {
-            Self::Authenticate(_) => {
-                if status == &EventStatus::Failed {
-                    None
-                } else {
-                    Some(ClientAction::Authenticate)
-                }
-            }
-            Self::Export => Some(ClientAction::Export),
-            Self::ExportSigningKey => Some(ClientAction::ExportSigningKey),
-            Self::Generate => Some(ClientAction::Generate),
-            Self::ImportSigningKey => Some(ClientAction::ImportSigningKey),
-            Self::Register => {
-                if status == &EventStatus::Successful {
-                    Some(ClientAction::CreateStorageKey)
-                } else {
-                    Some(ClientAction::Register)
-                }
-            }
-            Self::RemoteGenerate => Some(ClientAction::RemoteGenerate),
-            Self::Retrieve => Some(ClientAction::Retrieve),
-            Self::SetFakeKeyId => None,
+impl TestState {
+    pub fn new() -> Self {
+        Self {
+            state: HashMap::new(),
         }
+    }
+
+    pub fn get(&self, key: &str) -> Result<&Value, anyhow::Error> {
+        let val = self
+            .state
+            .get(key)
+            .ok_or_else(|| anyhow!("Unable to get test state"))?;
+        Ok(val)
+    }
+
+    pub fn set<T, V>(&mut self, key: T, value: V) -> Result<(), anyhow::Error>
+    where
+        T: Into<String>,
+        V: Serialize,
+    {
+        let value_json = serde_json::to_value(value)?;
+        let prev_state = self.state.insert(key.into(), value_json);
+        if prev_state.is_some() {
+            anyhow::bail!("Test state was overwritten");
+        }
+        Ok(())
     }
 }
 
 #[derive(Debug)]
-struct Outcome {
+pub struct Outcome {
     expected_error: Option<LockKeeperClientError>,
 }
 
 #[derive(Debug)]
-struct TestResult {
+pub struct TestResult {
     pub name: String,
     pub error: Option<String>,
 }
