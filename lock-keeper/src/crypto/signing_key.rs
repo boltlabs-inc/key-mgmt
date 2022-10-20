@@ -1,7 +1,8 @@
 use crate::{types::database::user::UserId, LockKeeperError};
-use k256::{
-    ecdsa::{self, SigningKey, VerifyingKey},
-    schnorr::signature::{Signer, Verifier},
+use k256::ecdsa::{
+    self,
+    signature::{Signer, Verifier},
+    SigningKey, VerifyingKey,
 };
 use rand::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
@@ -12,7 +13,10 @@ use super::{generic::AssociatedData, CryptoError, Encrypted, KeyId, StorageKey};
 /// Things that can be signed must implement the `Signable` trait.
 pub trait Signable: AsRef<[u8]> {}
 
-impl<T> Signable for T where T: AsRef<[u8]> {}
+/// Right now, we don't have any meaningful signable types, but we implement it
+/// for `Vec<u8>` to enable testing.
+#[cfg(test)]
+impl Signable for Vec<u8> {}
 
 /// An ECDSA signing key pair, including a public component for verifying
 /// signatures, a private component for creating them, and context about the key
@@ -182,11 +186,17 @@ pub struct Import {
     pub key_material: Vec<u8>,
 }
 
-impl From<&[u8]> for Import {
-    fn from(bytes: &[u8]) -> Self {
-        Self {
+impl TryFrom<&[u8]> for Import {
+    type Error = LockKeeperError;
+    fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
+        // Check if these bytes are correctly formatted to make a signing key,
+        // but don't actually use the key.
+        let _signing_key =
+            SigningKey::from_bytes(bytes).map_err(|_| CryptoError::ConversionError)?;
+
+        Ok(Self {
             key_material: bytes.into(),
-        }
+        })
     }
 }
 
@@ -401,19 +411,24 @@ mod test {
     #[test]
     fn import_conversion_works() -> Result<(), LockKeeperError> {
         let mut rng = rand::thread_rng();
-        let context = AssociatedData::new().with_str("a key for trying import");
+        let user_id = UserId::new(&mut rng)?;
+        let key_id = KeyId::generate(&mut rng, &user_id)?;
+
+        let context = AssociatedData::new()
+            .with_bytes(user_id.clone())
+            .with_bytes(key_id.clone())
+            .with_str("imported key");
+
         let key = SigningKeyPair::generate(&mut rng, &context);
 
         let raw_bytes = key.signing_key.to_bytes();
-        let import: Import = raw_bytes.as_slice().into();
+        let import: Import = raw_bytes.as_slice().try_into()?;
 
-        let user_id = UserId::new(&mut rng)?;
-        let key_id = KeyId::generate(&mut rng, &user_id)?;
         let output_key: SigningKeyPair = import.into_signing_key(&user_id, &key_id)?;
 
-        // Make sure the key material matches. The associated data doesn't have to match
-        // because it's manually incorrect in the original key.
-        assert_eq!(key.signing_key, output_key.signing_key);
+        // Make sure the output key matches.
+        // Note that `context` above is the expected AD for an imported key.
+        assert_eq!(key, output_key);
         Ok(())
     }
 
@@ -464,7 +479,7 @@ mod test {
     }
 
     #[test]
-    fn signing_requires_correct_message() {
+    fn verifying_requires_correct_message() {
         let mut rng = rand::thread_rng();
 
         let signing_key = SigningKeyPair::generate(&mut rng, &AssociatedData::new());
@@ -478,7 +493,7 @@ mod test {
     }
 
     #[test]
-    fn signing_requires_correct_public_key() {
+    fn verifying_requires_correct_public_key() {
         let mut rng = rand::thread_rng();
 
         let signing_key = SigningKeyPair::generate(&mut rng, &AssociatedData::new());
@@ -530,7 +545,7 @@ mod test {
         let key_id = KeyId::generate(&mut rng, &user_id)?;
 
         let key_material: [u8; 32] = rng.gen();
-        let import: Import = key_material.as_ref().into();
+        let import: Import = key_material.as_ref().try_into()?;
 
         // With normal arguments, it just works
         let key_pair = import.into_signing_key(&user_id, &key_id)?;
@@ -542,13 +557,13 @@ mod test {
 
         // Key material must be the right size
         let not_enough_key_material: [u8; 12] = rng.gen();
-        let short_import: Import = not_enough_key_material.as_ref().into();
-        assert!(short_import.into_signing_key(&user_id, &key_id).is_err());
+        let short_import: Result<Import, _> = not_enough_key_material.as_ref().try_into();
+        assert!(short_import.is_err());
 
         let too_much_key_material: Vec<u8> =
             std::iter::repeat_with(|| rng.gen()).take(64).collect();
-        let long_import: Import = too_much_key_material.as_slice().into();
-        assert!(long_import.into_signing_key(&user_id, &key_id).is_err());
+        let long_import: Result<Import, _> = too_much_key_material.as_slice().try_into();
+        assert!(long_import.is_err());
 
         Ok(())
     }
@@ -583,7 +598,7 @@ mod test {
     }
 
     #[test]
-    fn imported_keys_are_labelled() -> Result<(), LockKeeperError> {
+    fn keys_are_labelled_with_origin() -> Result<(), LockKeeperError> {
         let mut rng = rand::thread_rng();
         let storage_key = StorageKey::generate(&mut rng);
 
@@ -598,15 +613,17 @@ mod test {
             container_ad.windows(subset.len()).any(|c| c == subset)
         };
 
-        // Create and encrypt a key pair -- not imported.
+        // Create and encrypt a key pair - client side
         let (secret, _) =
             SigningKeyPair::create_and_encrypt(&mut rng, &storage_key, &user_id, &key_id)?;
         assert!(!contains_str(secret.clone(), "imported"));
+        assert!(!contains_str(secret.clone(), "server-generated"));
         assert!(contains_str(secret, "client-generated"));
 
         // Remote generate a key pair -- not imported.
         let secret = SigningKeyPair::remote_generate(&mut rng, &user_id, &key_id);
         assert!(!contains_str(secret.clone(), "imported"));
+        assert!(!contains_str(secret.clone(), "client-generated"));
         assert!(contains_str(secret, "server-generated"));
 
         // Use the local-import creation function
@@ -618,11 +635,15 @@ mod test {
             &user_id,
             &key_id,
         )?;
+        assert!(!contains_str(imported_secret.clone(), "client-generated"));
+        assert!(!contains_str(imported_secret.clone(), "server-generated"));
         assert!(contains_str(imported_secret, "imported"));
 
         // Use the remote-import creation function
-        let import: Import = key_material.as_slice().into();
+        let import: Import = key_material.as_slice().try_into()?;
         let key_pair = import.into_signing_key(&user_id, &key_id)?;
+        assert!(!contains_str(key_pair.clone(), "client-generated"));
+        assert!(!contains_str(key_pair.clone(), "server-generated"));
         assert!(contains_str(key_pair, "imported"));
 
         Ok(())

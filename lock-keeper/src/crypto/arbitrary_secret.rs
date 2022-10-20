@@ -173,7 +173,7 @@ mod test {
     }
 
     #[test]
-    fn imported_keys_are_labelled() -> Result<(), LockKeeperError> {
+    fn keys_are_labelled_with_origin() -> Result<(), LockKeeperError> {
         let mut rng = rand::thread_rng();
         let storage_key = StorageKey::generate(&mut rng);
 
@@ -202,6 +202,7 @@ mod test {
             &user_id,
             &key_id,
         )?;
+        assert!(!contains_str(imported_secret.clone(), "client-generated"));
         assert!(contains_str(imported_secret, "imported"));
 
         Ok(())
