@@ -51,10 +51,22 @@ impl Test {
         // Get KeyId from state and run export
         let key_id_json = self.state.get(KEY_ID)?;
         let key_id: KeyId = serde_json::from_value(key_id_json.clone())?;
-        lock_keeper_client
-            .export_signing_key(&key_id)
-            .await
-            .map(|_| ())
-            .map_err(|e| e.into())
+        match lock_keeper_client.export_signing_key(&key_id).await {
+            Ok(res) => {
+                // Compare generated key and exported key material
+                let original_bytes_json = self.state.get(KEY_MATERIAL)?.clone();
+                let original_bytes: Vec<u8> = serde_json::from_value(original_bytes_json)?;
+                if original_bytes != res.key_material {
+                    anyhow::bail!(
+                        "expected: {:?}; got: {:?}",
+                        original_bytes,
+                        res.key_material
+                    );
+                } else {
+                    Ok(())
+                }
+            }
+            Err(e) => Err(anyhow::Error::from(e)),
+        }
     }
 }

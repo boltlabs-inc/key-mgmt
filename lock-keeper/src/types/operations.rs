@@ -3,7 +3,7 @@
 pub mod authenticate;
 pub mod create_storage_key;
 pub mod generate;
-pub mod import_signing_key;
+pub mod import;
 pub mod register;
 pub mod remote_generate;
 pub mod retrieve;
