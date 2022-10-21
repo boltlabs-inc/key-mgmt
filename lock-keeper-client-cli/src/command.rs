@@ -2,7 +2,7 @@
 
 use std::str::FromStr;
 
-use lock_keeper::types::operations::retrieve::RetrieveContext;
+use lock_keeper::{crypto::SignableBytes, types::operations::retrieve::RetrieveContext};
 use lock_keeper_client::LockKeeperClient;
 
 use crate::{
@@ -13,6 +13,7 @@ use crate::{
 const REGISTER_FORMAT: &str = "register [account_name] [password]";
 const AUTHENTICATE_FORMAT: &str = "authenticate [account_name] [password]";
 const RETRIEVE_FORMAT: &str = "retrieve [key_name]";
+const REMOTE_SIGN_FORMAT: &str = "remote-sign [key_name] [string_to_sign]";
 const PRINT_FORMAT: &str = "print [key_name]";
 
 /// Fully parsed command that's ready for processing.
@@ -34,6 +35,10 @@ pub enum Command {
     },
     RemoteGenerate {
         name: Option<String>,
+    },
+    RemoteSign {
+        name: String,
+        data: String,
     },
     Print {
         name: String,
@@ -165,7 +170,7 @@ impl Command {
                 .await?;
 
                 // If successful, proceed to generate a secret with the established session
-                let key_id = lock_keeper_client.remote_generate().await?;
+                let generate_result = lock_keeper_client.remote_generate().await?;
 
                 // Store Key Id
                 match name {
@@ -173,17 +178,47 @@ impl Command {
                         state.storage.store_named(
                             credentials.account_name.clone(),
                             &name,
-                            key_id,
+                            generate_result.key_id,
                         )?;
                         println!("Stored: {name}");
                     }
                     None => {
                         let name = state
                             .storage
-                            .store(credentials.account_name.clone(), key_id)?;
+                            .store(credentials.account_name.clone(), generate_result.key_id)?;
                         println!("Stored: {name}");
                     }
                 }
+            }
+            Command::RemoteSign { name, data } => {
+                let credentials = state
+                    .credentials
+                    .as_ref()
+                    .ok_or_else(|| anyhow::anyhow!("Not authenticated"))?;
+
+                // Get key_id from storage
+                let entry = state
+                    .storage
+                    .get(credentials.account_name.clone(), &name)?
+                    .ok_or_else(|| anyhow::anyhow!("No key found with name {name}"))?;
+
+                // Authenticate user to the key server
+                let lock_keeper_client = LockKeeperClient::authenticated_client(
+                    &credentials.account_name,
+                    &credentials.password,
+                    &state.config,
+                )
+                .await?;
+
+                let bytes = SignableBytes(data.into_bytes());
+
+                // If successful, proceed to generate a secret with the established session
+                let signature = lock_keeper_client
+                    .remote_sign_bytes(entry.key_id.clone(), bytes)
+                    .await?;
+                let sig_hex = hex::encode(signature.as_ref());
+
+                println!("Signature: {sig_hex}");
             }
             Command::Print { name } => {
                 let credentials = state
@@ -274,6 +309,18 @@ impl FromStr for Command {
                     let name = split.next().map(ToString::to_string);
 
                     Ok(Self::RemoteGenerate { name })
+                }
+                "remote-sign" | "rsig" | "rs" => {
+                    let name = split
+                        .next()
+                        .ok_or_else(|| anyhow::anyhow!("Expected: {REMOTE_SIGN_FORMAT}"))?
+                        .to_string();
+                    let data = split
+                        .next()
+                        .ok_or_else(|| anyhow::anyhow!("Expected: {REMOTE_SIGN_FORMAT}"))?
+                        .to_string();
+
+                    Ok(Self::RemoteSign { name, data })
                 }
                 "print" | "p" => {
                     let name = split

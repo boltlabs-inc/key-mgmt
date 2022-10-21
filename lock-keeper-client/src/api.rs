@@ -11,13 +11,14 @@ mod generate;
 mod import;
 mod register;
 mod remote_generate;
+mod remote_sign_bytes;
 mod retrieve;
 mod retrieve_audit_events;
 
 use crate::{client::Password, LockKeeperClient, LockKeeperClientError};
 use lock_keeper::{
     config::client::Config,
-    crypto::{Export, KeyId, Secret},
+    crypto::{Export, KeyId, Secret, Signable, Signature},
     types::{
         audit_event::{AuditEvent, AuditEventOptions, EventType},
         database::user::AccountName,
@@ -27,6 +28,8 @@ use lock_keeper::{
 use rand::{rngs::StdRng, SeedableRng};
 use serde::{Deserialize, Serialize};
 use tracing::error;
+
+use self::remote_generate::RemoteGenerateResult;
 
 /// Wrapper for secrets prepared for local storage
 #[derive(Debug, Deserialize, Serialize)]
@@ -193,7 +196,7 @@ impl LockKeeperClient {
     }
 
     /// Request that the server generate a new signing key
-    pub async fn remote_generate(&self) -> Result<KeyId, LockKeeperClientError> {
+    pub async fn remote_generate(&self) -> Result<RemoteGenerateResult, LockKeeperClientError> {
         let mut client_channel = Self::create_channel(
             &mut self.tonic_client(),
             ClientAction::RemoteGenerate,
@@ -201,6 +204,24 @@ impl LockKeeperClient {
         )
         .await?;
         self.handle_remote_generate(&mut client_channel).await
+    }
+
+    /// Sign an arbitrary blob of bytes with a remotely generated
+    /// [`SigningKeyPair`][lock_keeper::crypto::SigningKeyPair] and return the
+    /// resulting [`Signature`].
+    pub async fn remote_sign_bytes(
+        &self,
+        key_id: KeyId,
+        bytes: impl Signable,
+    ) -> Result<Signature, LockKeeperClientError> {
+        let mut client_channel = Self::create_channel(
+            &mut self.tonic_client(),
+            ClientAction::RemoteSignBytes,
+            self.account_name(),
+        )
+        .await?;
+        self.handle_remote_sign_bytes(&mut client_channel, key_id, bytes)
+            .await
     }
 
     /// Retrieve the log of audit events from the key server for the

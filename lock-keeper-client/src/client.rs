@@ -192,6 +192,7 @@ impl LockKeeperClient {
             ClientAction::ImportSigningKey => client.import_signing_key(stream).await,
             ClientAction::Register => client.register(stream).await,
             ClientAction::RemoteGenerate => client.remote_generate(stream).await,
+            ClientAction::RemoteSignBytes => client.remote_sign_bytes(stream).await,
             ClientAction::Retrieve => client.retrieve(stream).await,
             ClientAction::RetrieveAuditEvents => client.retrieve_audit_events(stream).await,
             ClientAction::RetrieveSigningKey => client.retrieve_signing_key(stream).await,

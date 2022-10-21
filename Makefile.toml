@@ -69,7 +69,7 @@ dependencies = ["ci-tests"]
 
 # -- CI Tasks --
 [tasks.ci]
-dependencies = ["ci-format", "ci-clippy", "ci-build", "ci-tests", "ci-doc-tests", "ci-docs"]
+dependencies = ["ci-format", "ci-clippy", "ci-build", "ci-test", "ci-doc-test", "ci-docs"]
 
 [tasks.ci-format]
 toolchain = "nightly"
@@ -84,11 +84,11 @@ args = ["clippy", "--all-features", "--all-targets", "--workspace", "--", "-Dwar
 command = "cargo"
 args = ["build", "--all-features", "--all-targets", "--workspace"]
 
-[tasks.ci-tests]
+[tasks.ci-test]
 command = "cargo"
 args = ["test", "--all-features", "--lib", "--bins", "--workspace"]
 
-[tasks.ci-doc-tests]
+[tasks.ci-doc-test]
 command = "cargo"
 args = ["test", "--all-features", "--doc", "--workspace"]
 

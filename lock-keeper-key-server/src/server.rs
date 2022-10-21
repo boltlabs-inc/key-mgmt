@@ -114,12 +114,13 @@ pub(crate) struct Context {
 
 #[tonic::async_trait]
 impl LockKeeperRpc for LockKeeperKeyServer {
-    type RegisterStream = MessageStream;
     type AuthenticateStream = MessageStream;
     type CreateStorageKeyStream = MessageStream;
     type GenerateStream = MessageStream;
     type ImportSigningKeyStream = MessageStream;
+    type RegisterStream = MessageStream;
     type RemoteGenerateStream = MessageStream;
+    type RemoteSignBytesStream = MessageStream;
     type RetrieveStream = MessageStream;
     type RetrieveAuditEventsStream = MessageStream;
     type RetrieveSigningKeyStream = MessageStream;
@@ -185,6 +186,16 @@ impl LockKeeperRpc for LockKeeperKeyServer {
     ) -> Result<Response<Self::RemoteGenerateStream>, Status> {
         let context = self.context(&request)?;
         Ok(operations::RemoteGenerate
+            .handle_request(context, request)
+            .await?)
+    }
+
+    async fn remote_sign_bytes(
+        &self,
+        request: Request<tonic::Streaming<Message>>,
+    ) -> Result<Response<Self::RemoteSignBytesStream>, Status> {
+        let context = self.context(&request)?;
+        Ok(operations::RemoteSignBytes
             .handle_request(context, request)
             .await?)
     }

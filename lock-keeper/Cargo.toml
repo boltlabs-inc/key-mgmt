@@ -35,7 +35,7 @@ tracing.workspace = true
 # Other dependencies
 chacha20poly1305 = "0.10"
 hkdf = "0.12"
-k256 = { version = "0.11", features = ["ecdsa"] }
+k256 = { version = "0.11", features = ["ecdsa", "pem", "serde"] }
 sha3 = "0.10"
 uuid = "1.1.2"
 

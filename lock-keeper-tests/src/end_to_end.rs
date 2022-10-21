@@ -27,6 +27,7 @@ const USER: &str = "user";
 const PASSWORD: &str = "password";
 const KEY_ID: &str = "generated_key_id";
 const KEY_MATERIAL: &str = "generated_key";
+const REMOTE_GENERATED_PUBLIC_KEY: &str = "remote_generated_public_key";
 
 pub async fn run_tests(config: &Config) {
     // Run every test, printing out details if it fails
@@ -133,6 +134,7 @@ impl Test {
                 ImportSigningKey => self.import_signing_key().await,
                 Retrieve => self.retrieve().await,
                 RemoteGenerate => self.remote_generate().await,
+                RemoteSignBytes => self.remote_sign().await,
             };
 
             // Check whether the process errors matched the expectation.
@@ -197,13 +199,33 @@ impl Test {
         // Check that expected status and action match
         let actual_status = fourth_last.status();
         let actual_action = fourth_last.action();
-        if expected_status != actual_status {
-            Err(anyhow!("Incorrect audit event status"))
+        let result = if expected_status != actual_status {
+            Err(anyhow!("Incorrect audit event status. expected: {expected_status:?}, got: {actual_status:?}"))
         } else if expected_action != actual_action {
-            Err(anyhow!("Incorrect audit event action"))
+            Err(anyhow!("Incorrect audit event action. expected: {expected_action:?}, got: {actual_action:?}"))
         } else {
             Ok(())
+        };
+
+        // Print full audit log on failure
+        // TODO #317: Remove when issue is resolved
+        if let Err(e) = result {
+            let lock_keeper_client = LockKeeperClient::authenticated_client(
+                &self.account_name,
+                &self.password,
+                &self.config,
+            )
+            .await?;
+
+            let audit_event_log = lock_keeper_client
+                .retrieve_audit_event_log(EventType::All, AuditEventOptions::default())
+                .await?;
+
+            dbg!(audit_event_log);
+            anyhow::bail!(e);
         }
+
+        Ok(())
     }
 }
 
@@ -225,6 +247,16 @@ impl TestState {
             .get(key)
             .ok_or_else(|| anyhow!("Unable to get test state"))?;
         Ok(val)
+    }
+
+    /// Get value from state and attempt to deserialize as `T`.
+    pub fn get_as<T>(&self, key: &str) -> Result<T, anyhow::Error>
+    where
+        T: serde::de::DeserializeOwned,
+    {
+        let json = self.get(key)?.clone();
+        let result = serde_json::from_value(json)?;
+        Ok(result)
     }
 
     pub fn set<T, V>(&mut self, key: T, value: V) -> Result<(), anyhow::Error>

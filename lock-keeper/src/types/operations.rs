@@ -6,6 +6,7 @@ pub mod generate;
 pub mod import;
 pub mod register;
 pub mod remote_generate;
+pub mod remote_sign_bytes;
 pub mod retrieve;
 pub mod retrieve_audit_events;
 pub mod retrieve_storage_key;
@@ -26,6 +27,7 @@ pub enum ClientAction {
     ImportSigningKey,
     Register,
     RemoteGenerate,
+    RemoteSignBytes,
     Retrieve,
     RetrieveAuditEvents,
     RetrieveSigningKey,
