@@ -73,7 +73,7 @@
             .<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="comment">// Convert from signing key to Export, serialize and send</span>
-        <span class="kw">let</span> <span class="ident">signing_key_pair</span>: <span class="ident">SigningKeyPair</span> <span class="op">=</span> <span class="ident">stored_secret</span>.<span class="ident">signing_key</span>.<span class="ident">into</span>();
+        <span class="kw">let</span> <span class="ident">signing_key_pair</span>: <span class="ident">SigningKeyPair</span> <span class="op">=</span> <span class="ident">stored_secret</span>.<span class="ident">signing_key</span>.<span class="ident">try_into</span>()<span class="question-mark">?</span>;
         <span class="kw">let</span> <span class="ident">exported_signing_key</span> <span class="op">=</span> <span class="ident">Export::from</span>(<span class="ident">signing_key_pair</span>);
         <span class="kw">let</span> <span class="ident">reply</span> <span class="op">=</span> <span class="ident">server::ResponseSigningKey</span> {
             <span class="ident">exported_signing_key</span>,

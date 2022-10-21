@@ -475,6 +475,8 @@
 <span id="475">475</span>
 <span id="476">476</span>
 <span id="477">477</span>
+<span id="478">478</span>
+<span id="479">479</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Application-specific cryptographic types and operations.</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! Defines and implements keys and secret types, and the appropriate</span>
@@ -499,7 +501,9 @@
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">arbitrary_secret::Secret</span>;
 <span class="kw">use</span> <span class="ident">generic</span>::{<span class="ident">AssociatedData</span>, <span class="ident">EncryptionKey</span>};
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">generic</span>::{<span class="ident">CryptoError</span>, <span class="ident">Encrypted</span>};
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">signing_key</span>::{<span class="ident">Export</span>, <span class="ident">Import</span>, <span class="ident">PlaceholderEncryptedSigningKeyPair</span>, <span class="ident">SigningKeyPair</span>};
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">signing_key</span>::{
+    <span class="ident">Export</span>, <span class="ident">Import</span>, <span class="ident">PlaceholderEncryptedSigningKeyPair</span>, <span class="ident">Signature</span>, <span class="ident">SigningKeyPair</span>,
+};
 
 <span class="doccomment">/// A session key is produced as shared output for client and server from</span>
 <span class="doccomment">/// OPAQUE.</span>
