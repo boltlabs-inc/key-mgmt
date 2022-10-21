@@ -1,16 +1,19 @@
 //! Database integration tests
 
 pub mod audit_event;
+pub mod secret;
 pub mod user;
 
+use generic_array::{typenum::U64, GenericArray};
 use std::{ops::Deref, str::FromStr};
 
 use lock_keeper::{
     config::server::DatabaseSpec,
+    crypto::{Encrypted, OpaqueExportKey, StorageKey},
     types::database::user::{AccountName, UserId},
 };
 use lock_keeper_key_server::database::Database;
-use rand::{rngs::StdRng, SeedableRng};
+use rand::{rngs::StdRng, Rng, SeedableRng};
 
 use crate::utils::{server_registration, tagged};
 
@@ -21,10 +24,12 @@ pub async fn run_tests() -> anyhow::Result<()> {
 
     let audit_event_results = audit_event::run_tests().await?;
     let user_results = user::run_tests().await?;
+    let secret_results = secret::run_tests().await?;
 
     // Report results after all tests finish so results show up together
     audit_event_results.report("audit event tests");
     user_results.report("user tests");
+    secret_results.report("secret tests");
 
     println!();
 
@@ -85,6 +90,34 @@ impl TestDatabase {
     pub async fn drop(self) -> anyhow::Result<()> {
         self.mongo.drop(None).await?;
         Ok(())
+    }
+
+    /// Create an export key for testing using random bytes.
+    fn create_test_export_key(rng: &mut StdRng) -> anyhow::Result<OpaqueExportKey> {
+        let mut key = [0_u8; 64];
+        rng.try_fill(&mut key)?;
+
+        // We can't create an export key directly from bytes so we convert it to a
+        // GenericArray first.
+        let key: GenericArray<u8, U64> = key.into();
+
+        Ok(key.into())
+    }
+
+    /// Create a storage key for a test user.
+    pub fn create_test_storage_key(
+        &self,
+        user_id: &UserId,
+    ) -> anyhow::Result<(Encrypted<StorageKey>, OpaqueExportKey)> {
+        let mut rng = StdRng::from_entropy();
+
+        // Create a storage key
+        let export_key = Self::create_test_export_key(&mut rng)?;
+        let storage_key = export_key
+            .clone()
+            .create_and_encrypt_storage_key(&mut rng, user_id)?;
+
+        Ok((storage_key, export_key))
     }
 
     /// Creates a test user with a randomized name and returns the id and

@@ -10,7 +10,7 @@ use opaque_ke::{
 use rand::{distributions::Alphanumeric, Rng};
 
 /// Add random text to the end of a string
-/// # Exmaple
+/// # Example
 /// ```
 /// let user = tagged("user");
 /// println!("{user}");
