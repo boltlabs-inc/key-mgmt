@@ -7,7 +7,7 @@ use async_trait::async_trait;
 use lock_keeper::{
     crypto::KeyId,
     infrastructure::channel::ServerChannel,
-    types::operations::import_signing_key::{client, server},
+    types::operations::import::{client, server},
 };
 
 #[derive(Debug)]

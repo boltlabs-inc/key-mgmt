@@ -2,7 +2,7 @@ use crate::{LockKeeperClient, LockKeeperClientError};
 use lock_keeper::{
     crypto::{Import, KeyId},
     infrastructure::channel::ClientChannel,
-    types::operations::import_signing_key::{client, server},
+    types::operations::import::{client, server},
 };
 
 impl LockKeeperClient {

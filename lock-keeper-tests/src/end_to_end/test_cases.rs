@@ -201,7 +201,7 @@ pub async fn tests(config: &Config) -> Vec<Test> {
             config.client_config.clone(),
         ),
         Test::new(
-            "Remote generate a secret",
+            "Remote generate a signing key",
             vec![
                 (
                     Register,
@@ -237,7 +237,7 @@ pub async fn tests(config: &Config) -> Vec<Test> {
             config.client_config.clone(),
         ),
         Test::new(
-            "Export a signing key",
+            "Export an imported signing key",
             vec![
                 (
                     Register,

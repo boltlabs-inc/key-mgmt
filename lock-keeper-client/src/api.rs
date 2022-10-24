@@ -8,7 +8,7 @@
 mod authenticate;
 mod create_storage_key;
 mod generate;
-mod import_signing_key;
+mod import;
 mod register;
 mod remote_generate;
 mod retrieve;
