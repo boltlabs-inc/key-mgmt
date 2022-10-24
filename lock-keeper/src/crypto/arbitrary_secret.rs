@@ -88,6 +88,20 @@ impl Secret {
         ))
     }
 
+    /// Generate a new secret. This is part of the remote-only secret generation
+    /// and storage and must be run by the server.
+    pub fn remote_generate(
+        rng: &mut (impl CryptoRng + RngCore),
+        user_id: UserId,
+        key_id: KeyId,
+    ) -> Self {
+        let context = AssociatedData::new()
+            .with_bytes(user_id)
+            .with_bytes(key_id)
+            .with_str("server-generated");
+        Secret(generic::Secret::generate(rng, 32, context))
+    }
+
     /// Retrieve the context for the secret.
     ///
     /// This is only used in testing right now, but it would be fine to make it
@@ -188,9 +202,10 @@ mod test {
             container_ad.windows(subset.len()).any(|c| c == subset)
         };
 
-        // Create and encrypt a secret -- not imported.
+        // Create and encrypt a secret -- client flow.
         let (secret, _) = Secret::create_and_encrypt(&mut rng, &storage_key, &user_id, &key_id)?;
         assert!(!contains_str(secret.clone(), "imported"));
+        assert!(!contains_str(secret.clone(), "server-generated"));
         assert!(contains_str(secret, "client-generated"));
 
         // Use the local-import creation function
@@ -203,7 +218,14 @@ mod test {
             &key_id,
         )?;
         assert!(!contains_str(imported_secret.clone(), "client-generated"));
+        assert!(!contains_str(imported_secret.clone(), "server-generated"));
         assert!(contains_str(imported_secret, "imported"));
+
+        // Create a secret -- server flow
+        let secret = Secret::remote_generate(&mut rng, user_id, key_id);
+        assert!(!contains_str(secret.clone(), "client-generated"));
+        assert!(!contains_str(secret.clone(), "imported"));
+        assert!(contains_str(secret, "server-generated"));
 
         Ok(())
     }
