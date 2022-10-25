@@ -8,9 +8,10 @@ use std::{
 };
 
 use anyhow::anyhow;
-use lock_keeper::crypto::{Export, KeyId};
-use lock_keeper_client::api::{LocalStorage, RetrieveResult};
+use lock_keeper::crypto::{KeyId, Secret};
+use lock_keeper_client::api::LocalStorage;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 /// Container for all locally stored key data.
 /// This type handles both in-memory storage and persistent storage on the disk.
@@ -194,33 +195,32 @@ impl UserStore {
     }
 }
 
+/// Type of key being stored in local storage.
+#[derive(Debug, Serialize, Deserialize)]
+pub enum DataType {
+    None,
+    ArbitraryKey(LocalStorage<Secret>),
+}
+
 /// Key data returned from a key server.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Entry {
     pub key_id: KeyId,
-    pub data: RetrieveResult,
+    pub data: DataType,
 }
 
 impl Display for Entry {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let key_id_hex = hex::encode(self.key_id.as_bytes());
+        let bytes = local_storage_bytes(&self.data).map_err(|e| {
+            // Avoid error inception
+            let _ = writeln!(f, "{e}");
+            std::fmt::Error
+        })?;
         let data_hex = match &self.data {
-            RetrieveResult::None => "None".to_string(),
-            RetrieveResult::ArbitraryKey(local_storage) => {
-                let bytes = local_storage_bytes(local_storage).map_err(|e| {
-                    // Avoid error inception
-                    let _ = writeln!(f, "{e}");
-                    std::fmt::Error
-                })?;
+            DataType::None => "None".to_string(),
+            DataType::ArbitraryKey(_) => {
                 format!("Arbitrary Key - {}", hex::encode(&bytes))
-            }
-            RetrieveResult::SigningKey(signing_key) => {
-                let bytes = signing_key_bytes(signing_key).map_err(|e| {
-                    // Avoid error inception
-                    let _ = writeln!(f, "{e}");
-                    std::fmt::Error
-                })?;
-                format!("Signing Key Pair - {}", hex::encode(&bytes))
             }
         };
 
@@ -230,41 +230,42 @@ impl Display for Entry {
     }
 }
 
-impl From<(KeyId, RetrieveResult)> for Entry {
-    fn from((key_id, data): (KeyId, RetrieveResult)) -> Self {
-        Self { key_id, data }
+impl From<(KeyId, LocalStorage<Secret>)> for Entry {
+    fn from((key_id, data): (KeyId, LocalStorage<Secret>)) -> Self {
+        Self {
+            key_id,
+            data: DataType::ArbitraryKey(data),
+        }
     }
 }
 
-impl From<(KeyId, LocalStorage)> for Entry {
-    fn from((key_id, local_storage): (KeyId, LocalStorage)) -> Self {
-        let data = RetrieveResult::ArbitraryKey(local_storage);
+impl From<(KeyId, Option<LocalStorage<Secret>>)> for Entry {
+    fn from((key_id, data): (KeyId, Option<LocalStorage<Secret>>)) -> Self {
+        let data = match data {
+            None => DataType::None,
+            Some(secret) => DataType::ArbitraryKey(secret),
+        };
         Self { key_id, data }
     }
 }
 
 impl From<KeyId> for Entry {
     fn from(key_id: KeyId) -> Self {
-        let data = RetrieveResult::None;
-        Self { key_id, data }
+        Self {
+            key_id,
+            data: DataType::None,
+        }
     }
 }
 
-fn local_storage_bytes(local_storage: &LocalStorage) -> anyhow::Result<Vec<u8>> {
-    let json = serde_json::to_value(local_storage)?;
+fn local_storage_bytes(data: &DataType) -> anyhow::Result<Vec<u8>> {
+    let json = match data {
+        DataType::None => Value::Null,
+        DataType::ArbitraryKey(local_storage) => serde_json::to_value(local_storage)?,
+    };
     let key = json
-        .pointer("/secret/material")
+        .pointer("/material/material")
         .ok_or_else(|| anyhow!("Error converting LocalStorage to bytes"))?
-        .clone();
-    let bytes: Vec<u8> = serde_json::from_value(key)?;
-    Ok(bytes)
-}
-
-fn signing_key_bytes(signing_key: &Export) -> anyhow::Result<Vec<u8>> {
-    let json = serde_json::to_value(signing_key)?;
-    let key = json
-        .pointer("/key_material")
-        .ok_or_else(|| anyhow!("Error converting SigningKey to bytes"))?
         .clone();
     let bytes: Vec<u8> = serde_json::from_value(key)?;
     Ok(bytes)

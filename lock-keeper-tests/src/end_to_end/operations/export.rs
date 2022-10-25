@@ -1,4 +1,4 @@
-use lock_keeper::crypto::KeyId;
+use lock_keeper::crypto::{KeyId, Secret};
 use lock_keeper_client::{api::LocalStorage, LockKeeperClient};
 
 use crate::end_to_end::{Test, KEY_ID, KEY_MATERIAL};
@@ -20,12 +20,11 @@ impl Test {
             Ok(res) => {
                 // Compare generated key and exported key material
                 let original_local_storage_json = self.state.get(KEY_MATERIAL)?.clone();
-                let original_local_storage_bytes: Vec<u8> =
-                    serde_json::from_value::<LocalStorage>(original_local_storage_json.clone())?
-                        .secret
-                        .into();
+                let original_local_storage: LocalStorage<Secret> =
+                    serde_json::from_value(original_local_storage_json.clone())?;
+                let original_secret_bytes: Vec<u8> = original_local_storage.material.into();
                 let res_json = serde_json::to_value(res.clone())?;
-                if original_local_storage_bytes != res {
+                if original_secret_bytes != res {
                     anyhow::bail!(
                         "expected: {}; got: {}",
                         original_local_storage_json,

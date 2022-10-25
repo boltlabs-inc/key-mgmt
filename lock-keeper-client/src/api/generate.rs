@@ -13,7 +13,7 @@ impl LockKeeperClient {
     pub(crate) async fn handle_generate(
         &self,
         channel: &mut ClientChannel,
-    ) -> Result<(KeyId, LocalStorage), LockKeeperClientError> {
+    ) -> Result<(KeyId, LocalStorage<Secret>), LockKeeperClientError> {
         // Retrieve the storage key
         let storage_key = self.retrieve_storage_key().await?;
 
@@ -51,7 +51,7 @@ async fn generate_and_store(
     storage_key: StorageKey,
     rng: &mut StdRng,
     key_id: &KeyId,
-) -> Result<LocalStorage, LockKeeperClientError> {
+) -> Result<LocalStorage<Secret>, LockKeeperClientError> {
     // Generate and encrypt secret
     let (secret, encrypted) = Secret::create_and_encrypt(rng, &storage_key, user_id, key_id)?;
     // Serialize and send ciphertext
@@ -67,7 +67,7 @@ async fn generate_and_store(
     // Await Ok from server
     let result: server::Store = channel.receive().await?;
     if result.success {
-        Ok(LocalStorage { secret })
+        Ok(LocalStorage { material: secret })
     } else {
         Err(LockKeeperClientError::ServerReturnedFailure)
     }
