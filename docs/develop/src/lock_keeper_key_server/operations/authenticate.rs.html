@@ -115,6 +115,7 @@
 <span id="115">115</span>
 <span id="116">116</span>
 <span id="117">117</span>
+<span id="118">118</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">crate</span>::{
     <span class="ident">error::LockKeeperServerError</span>,
     <span class="ident">server</span>::{<span class="ident">opaque_storage::create_or_retrieve_server_key_opaque</span>, <span class="ident">Context</span>, <span class="ident">Operation</span>},
@@ -123,6 +124,7 @@
 <span class="kw">use</span> <span class="ident">async_trait::async_trait</span>;
 <span class="kw">use</span> <span class="ident">lock_keeper</span>::{
     <span class="ident">config::opaque::OpaqueCipherSuite</span>,
+    <span class="ident">crypto::OpaqueSessionKey</span>,
     <span class="ident">infrastructure::channel::ServerChannel</span>,
     <span class="ident">types</span>::{
         <span class="ident">database::user::UserId</span>,
@@ -146,12 +148,12 @@
         <span class="ident">channel</span>: <span class="kw-2">&amp;mut</span> <span class="ident">ServerChannel</span>,
         <span class="ident">context</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span>,
     ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">LockKeeperServerError</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">AuthenticateStartResult</span> {
-            <span class="ident">login_start_result</span>,
-            <span class="ident">user_id</span>,
-        } <span class="op">=</span> <span class="ident">authenticate_start</span>(<span class="ident">channel</span>, <span class="ident">context</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="ident">authenticate_finish</span>(<span class="ident">channel</span>, <span class="ident">login_start_result</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="ident">send_user_id</span>(<span class="ident">channel</span>, <span class="ident">user_id</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> <span class="ident">authenticate_start</span>(<span class="ident">channel</span>, <span class="ident">context</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let</span> <span class="ident">session_key</span> <span class="op">=</span> <span class="ident">authenticate_finish</span>(<span class="ident">channel</span>, <span class="ident">result</span>.<span class="ident">login_start_result</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">session_key_cache</span> <span class="op">=</span> <span class="ident">context</span>.<span class="ident">session_key_cache</span>.<span class="ident">lock</span>().<span class="kw">await</span>;
+        <span class="ident">session_key_cache</span>.<span class="ident">insert</span>(<span class="ident">result</span>.<span class="ident">user_id</span>.<span class="ident">clone</span>(), <span class="ident">session_key</span>);
+
+        <span class="ident">send_user_id</span>(<span class="ident">channel</span>, <span class="ident">result</span>.<span class="ident">user_id</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(())
     }
@@ -208,18 +210,18 @@
 <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">authenticate_finish</span>(
     <span class="ident">channel</span>: <span class="kw-2">&amp;mut</span> <span class="ident">ServerChannel</span>,
     <span class="ident">start_result</span>: <span class="ident">ServerLoginStartResult</span><span class="op">&lt;</span><span class="ident">OpaqueCipherSuite</span><span class="op">&gt;</span>,
-) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">LockKeeperServerError</span><span class="op">&gt;</span> {
+) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">OpaqueSessionKey</span>, <span class="ident">LockKeeperServerError</span><span class="op">&gt;</span> {
     <span class="comment">// Receive finish message from client</span>
     <span class="kw">let</span> <span class="ident">finish_message</span>: <span class="ident">client::AuthenticateFinish</span> <span class="op">=</span> <span class="ident">channel</span>.<span class="ident">receive</span>().<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="ident">start_result</span>
+    <span class="kw">let</span> <span class="ident">server_login_finish_result</span> <span class="op">=</span> <span class="ident">start_result</span>
         .<span class="ident">state</span>
         .<span class="ident">finish</span>(<span class="ident">finish_message</span>.<span class="ident">credential_finalization</span>)<span class="question-mark">?</span>;
     <span class="kw">let</span> <span class="ident">reply</span> <span class="op">=</span> <span class="ident">server::AuthenticateFinish</span> { <span class="ident">success</span>: <span class="bool-val">true</span> };
 
     <span class="comment">// Send response to client</span>
     <span class="ident">channel</span>.<span class="ident">send</span>(<span class="ident">reply</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="prelude-val">Ok</span>(())
+    <span class="prelude-val">Ok</span>(<span class="ident">server_login_finish_result</span>.<span class="ident">session_key</span>.<span class="ident">into</span>())
 }
 
 <span class="doccomment">/// Returns the server-side start message along with a login result that will be</span>

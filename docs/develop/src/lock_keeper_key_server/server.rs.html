@@ -221,9 +221,18 @@
 <span id="221">221</span>
 <span id="222">222</span>
 <span id="223">223</span>
+<span id="224">224</span>
+<span id="225">225</span>
+<span id="226">226</span>
+<span id="227">227</span>
+<span id="228">228</span>
+<span id="229">229</span>
+<span id="230">230</span>
+<span id="231">231</span>
 </pre><pre class="rust"><code><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod</span> <span class="ident">opaque_storage</span>;
 <span class="kw">mod</span> <span class="ident">operation</span>;
 <span class="kw">mod</span> <span class="ident">service</span>;
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod</span> <span class="ident">session_key_cache</span>;
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use</span> <span class="ident">operation::Operation</span>;
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">service::start_lock_keeper_server</span>;
@@ -239,11 +248,13 @@
     <span class="ident">types</span>::{<span class="ident">database::user::AccountName</span>, <span class="ident">operations::ClientAction</span>, <span class="ident">Message</span>, <span class="ident">MessageStream</span>},
 };
 
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::server::session_key_cache::SessionKeyCache</span>;
 <span class="kw">use</span> <span class="ident">rand</span>::{<span class="ident">rngs::StdRng</span>, <span class="ident">SeedableRng</span>};
 <span class="kw">use</span> <span class="ident">std::sync::Arc</span>;
 <span class="kw">use</span> <span class="ident">tokio::sync::Mutex</span>;
 <span class="kw">use</span> <span class="ident">tonic</span>::{<span class="ident">Request</span>, <span class="ident">Response</span>, <span class="ident">Status</span>};
 
+<span class="doccomment">///</span>
 <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">unused</span>)]</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">LockKeeperKeyServer</span> {
@@ -251,6 +262,7 @@
     <span class="ident">db</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">Database</span><span class="op">&gt;</span>,
     <span class="ident">service</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">Service</span><span class="op">&gt;</span>,
     <span class="ident">rng</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">Mutex</span><span class="op">&lt;</span><span class="ident">StdRng</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+    <span class="ident">session_key_cache</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">Mutex</span><span class="op">&lt;</span><span class="ident">SessionKeyCache</span><span class="op">&gt;</span><span class="op">&gt;</span>,
 }
 
 <span class="kw">impl</span> <span class="ident">LockKeeperKeyServer</span> {
@@ -266,10 +278,11 @@
             <span class="ident">db</span>: <span class="ident">Arc::new</span>(<span class="ident">db</span>),
             <span class="ident">service</span>,
             <span class="ident">rng</span>: <span class="ident">Arc::new</span>(<span class="ident">Mutex::new</span>(<span class="ident">rng</span>)),
+            <span class="ident">session_key_cache</span>: <span class="ident">Arc::new</span>(<span class="ident">Mutex::new</span>(<span class="ident">SessionKeyCache::default</span>())),
         })
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">context</span>(
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">context</span>(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         <span class="ident">request</span>: <span class="kw-2">&amp;</span><span class="ident">Request</span><span class="op">&lt;</span><span class="ident">tonic::Streaming</span><span class="op">&lt;</span><span class="ident">Message</span><span class="op">&gt;</span><span class="op">&gt;</span>,
     ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Context</span>, <span class="ident">LockKeeperServerError</span><span class="op">&gt;</span> {
@@ -298,6 +311,7 @@
             <span class="ident">account_name</span>,
             <span class="ident">action</span>,
             <span class="ident">key_id</span>: <span class="prelude-val">None</span>,
+            <span class="ident">session_key_cache</span>: <span class="self">self</span>.<span class="ident">session_key_cache</span>.<span class="ident">clone</span>(),
         })
     }
 
@@ -318,13 +332,15 @@
 }
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Context</span> {
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct</span> <span class="ident">Context</span> {
     <span class="kw">pub</span> <span class="ident">db</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">Database</span><span class="op">&gt;</span>,
     <span class="kw">pub</span> <span class="ident">service</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">Service</span><span class="op">&gt;</span>,
     <span class="kw">pub</span> <span class="ident">rng</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">Mutex</span><span class="op">&lt;</span><span class="ident">StdRng</span><span class="op">&gt;</span><span class="op">&gt;</span>,
     <span class="kw">pub</span> <span class="ident">account_name</span>: <span class="ident">AccountName</span>,
     <span class="kw">pub</span> <span class="ident">action</span>: <span class="ident">ClientAction</span>,
     <span class="kw">pub</span> <span class="ident">key_id</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">KeyId</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// Our user session keys are held in this cache after authentication.</span>
+    <span class="kw">pub</span> <span class="ident">session_key_cache</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">Mutex</span><span class="op">&lt;</span><span class="ident">SessionKeyCache</span><span class="op">&gt;</span><span class="op">&gt;</span>,
 }
 
 <span class="attribute">#[<span class="ident">tonic::async_trait</span>]</span>
