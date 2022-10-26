@@ -7,20 +7,23 @@ pub mod user;
 use generic_array::{typenum::U64, GenericArray};
 use std::{ops::Deref, str::FromStr};
 
-use crate::{error::Result, utils::report_test_results, Config};
+use crate::{
+    error::Result,
+    utils::{report_test_results, TestResult},
+    Config,
+};
 use lock_keeper::{
-    config::server::DatabaseSpec,
     crypto::{Encrypted, OpaqueExportKey, StorageKey},
     types::database::user::{AccountName, UserId},
 };
-use lock_keeper_key_server::database::Database;
+use lock_keeper_key_server::{config::DatabaseSpec, database::Database};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
 use crate::utils::{server_registration, tagged};
 
 pub const USERS_TABLE: &str = "users";
 
-pub async fn run_tests(config: &Config) -> Result<()> {
+pub async fn run_tests(config: &Config) -> Result<Vec<TestResult>> {
     println!("Running database tests");
 
     let audit_event_results = audit_event::run_tests(config.clone()).await?;
@@ -37,7 +40,13 @@ pub async fn run_tests(config: &Config) -> Result<()> {
 
     println!();
 
-    Ok(())
+    let results = audit_event_results
+        .into_iter()
+        .chain(user_results)
+        .chain(secret_results)
+        .collect();
+
+    Ok(results)
 }
 
 #[derive(Clone, Debug)]

@@ -6,6 +6,12 @@ pub type Result<T> = std::result::Result<T, LockKeeperTestError>;
 pub enum LockKeeperTestError {
     #[error("Invalid test type: {0}")]
     InvalidTestType(String),
+    #[error("Failed to contact key server after maximum number of retries.")]
+    WaitForServerTimedOut,
+
+    // Wrapped Errors
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
     #[error("LockKeeperError: {0:?}")]
     LockKeeper(#[from] lock_keeper::LockKeeperError),
     #[error("LockKeeperClientError: {0:?}")]

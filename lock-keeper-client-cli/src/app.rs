@@ -1,6 +1,6 @@
 use anyhow::anyhow;
+use lock_keeper_client::Config;
 
-use lock_keeper::config::client::Config;
 use std::{
     io::{self, Write},
     path::PathBuf,

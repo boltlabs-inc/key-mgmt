@@ -1,6 +1,6 @@
 use crate::{
     error::LockKeeperServerError,
-    server::{opaque_storage::create_or_retrieve_server_key_opaque, Context, Operation},
+    server::{Context, Operation},
 };
 
 use async_trait::async_trait;
@@ -50,11 +50,6 @@ async fn authenticate_start(
     // Receive start message from client
     let start_message: client::AuthenticateStart = channel.receive().await?;
 
-    let server_setup = {
-        let mut local_rng = context.rng.lock().await;
-        create_or_retrieve_server_key_opaque(&mut local_rng, &context.service)?
-    };
-
     // Check that user with corresponding UserId exists and get their
     // server_registration
     let (server_registration, user_id) =
@@ -68,7 +63,7 @@ async fn authenticate_start(
 
         ServerLogin::start(
             &mut *local_rng,
-            &server_setup,
+            &context.config.opaque_server_setup,
             Some(server_registration),
             start_message.credential_request,
             start_message.account_name.as_bytes(),

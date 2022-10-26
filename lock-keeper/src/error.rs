@@ -28,22 +28,14 @@ pub enum LockKeeperError {
     // Wrapped errors
     #[error(transparent)]
     Io(#[from] std::io::Error),
-    #[error(transparent)]
-    InvalidUri(#[from] http::uri::InvalidUri),
     #[error("OPAQUE protocol error: {}", .0)]
     OpaqueProtocol(opaque_ke::errors::ProtocolError),
-    #[error(transparent)]
-    Rustls(#[from] rustls::Error),
     #[error(transparent)]
     SerdeJson(#[from] serde_json::Error),
     #[error("tokio Sender error: {}", .0)]
     TokioSender(String),
     #[error(transparent)]
-    Toml(#[from] toml::de::Error),
-    #[error(transparent)]
     TonicStatus(#[from] tonic::Status),
-    #[error(transparent)]
-    WebPki(#[from] tokio_rustls::webpki::Error),
 }
 
 impl From<opaque_ke::errors::ProtocolError> for LockKeeperError {
@@ -69,14 +61,10 @@ impl From<LockKeeperError> for Status {
             | LockKeeperError::Crypto(_)
             | LockKeeperError::Io(_)
             | LockKeeperError::InvalidPrivateKey
-            | LockKeeperError::InvalidUri(_)
             | LockKeeperError::OpaqueProtocol(_)
-            | LockKeeperError::Rustls(_)
             | LockKeeperError::SerdeJson(_)
             | LockKeeperError::TokioSender(_)
-            | LockKeeperError::Toml(_)
-            | LockKeeperError::TonicStatus(_)
-            | LockKeeperError::WebPki(_) => Status::internal("Internal server error"),
+            | LockKeeperError::TonicStatus(_) => Status::internal("Internal server error"),
         }
     }
 }

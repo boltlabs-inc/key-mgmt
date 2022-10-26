@@ -1,18 +1,17 @@
 use colored::Colorize;
-use lock_keeper::{
-    config::client::Config,
-    types::{audit_event::EventStatus, database::user::AccountName, operations::ClientAction},
+use lock_keeper::types::{
+    audit_event::EventStatus, database::user::AccountName, operations::ClientAction,
 };
-use lock_keeper_client::{client::Password, LockKeeperClientError};
+use lock_keeper_client::{client::Password, Config, LockKeeperClientError};
 use std::str::FromStr;
 
 use crate::{
-    end_to_end::{
+    error::Result,
+    run_parallel,
+    test_suites::end_to_end::{
         operations::{authenticate, check_audit_events, compare_errors},
         test_cases::{init_test_state, TestState},
     },
-    error::Result,
-    run_parallel,
     utils::{tagged, TestResult},
     Config as TestConfig,
 };

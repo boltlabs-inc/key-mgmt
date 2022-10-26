@@ -1,4 +1,4 @@
-FROM rust:1.64
+FROM rust:1.65
 
 RUN apt-get update && apt-get install -y protobuf-compiler && rm -rf /var/lib/apt/lists/*
 WORKDIR /usr/src/lock-keeper-key-server

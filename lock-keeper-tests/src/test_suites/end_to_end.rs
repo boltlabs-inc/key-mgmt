@@ -1,13 +1,17 @@
-//! End-to-end testing framework and test definitions
+//! End-to-end tests
 
 pub mod operations;
 pub mod test_cases;
-use crate::{config::Config, error::Result, utils::report_test_results};
+use crate::{
+    config::Config,
+    error::Result,
+    utils::{report_test_results, TestResult},
+};
 use test_cases::{
     authenticate, export, generate, import, register, remote_generate, remote_sign, retrieve,
 };
 
-pub async fn run_tests(config: &Config) -> Result<()> {
+pub async fn run_tests(config: &Config) -> Result<Vec<TestResult>> {
     println!("Running end-to-end tests");
 
     let register_results = register::run_tests(config.clone()).await?;
@@ -40,5 +44,16 @@ pub async fn run_tests(config: &Config) -> Result<()> {
 
     println!();
 
-    Ok(())
+    let results = register_results
+        .into_iter()
+        .chain(authenticate_results)
+        .chain(generate_results)
+        .chain(retrieve_results)
+        .chain(export_results)
+        .chain(import_results)
+        .chain(remote_generate_results)
+        .chain(remote_sign_results)
+        .collect();
+
+    Ok(results)
 }

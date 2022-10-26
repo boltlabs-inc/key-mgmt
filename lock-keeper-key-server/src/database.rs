@@ -3,9 +3,8 @@
 //! This database will hold information on users and the secret material
 //! they have stored in the key server.
 
-use crate::constants;
+use crate::{config::DatabaseSpec, constants};
 use lock_keeper::{
-    config::server::DatabaseSpec,
     constants::{ACCOUNT_NAME, USER_ID},
     types::database::user::User,
 };

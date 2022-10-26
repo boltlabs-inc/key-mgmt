@@ -1,20 +1,17 @@
 use colored::Colorize;
-use lock_keeper::{
-    config::client::Config,
-    types::{audit_event::EventStatus, operations::ClientAction},
-};
-use lock_keeper_client::LockKeeperClientError;
+use lock_keeper::types::{audit_event::EventStatus, operations::ClientAction};
+use lock_keeper_client::{Config, LockKeeperClientError};
 
 use crate::{
-    end_to_end::{
+    error::Result,
+    run_parallel,
+    test_suites::end_to_end::{
         operations::{
             check_audit_events, compare_errors, export, export_signing_key, generate,
             generate_fake_key_id, import_signing_key,
         },
         test_cases::init_test_state,
     },
-    error::Result,
-    run_parallel,
     utils::TestResult,
     Config as TestConfig,
 };

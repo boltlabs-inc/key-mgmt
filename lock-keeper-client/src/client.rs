@@ -1,12 +1,11 @@
 //! Client object to interact with the key server.
 
-use crate::LockKeeperClientError;
+use crate::{config::Config, LockKeeperClientError};
 use http::uri::Scheme;
 use http_body::combinators::UnsyncBoxBody;
 use hyper::client::HttpConnector;
 use hyper_rustls::HttpsConnector;
 use lock_keeper::{
-    config::client::Config,
     constants::METADATA,
     crypto::{OpaqueExportKey, OpaqueSessionKey, StorageKey},
     infrastructure::channel::ClientChannel,
@@ -107,22 +106,18 @@ impl LockKeeperClient {
     pub(crate) async fn connect(
         config: &Config,
     ) -> Result<LockKeeperRpcClient<LockKeeperRpcClientInner>, LockKeeperClientError> {
-        let address = config.server_location()?;
-
-        if address.scheme() != Some(&Scheme::HTTPS) {
+        if config.server_uri.scheme() != Some(&Scheme::HTTPS) {
             return Err(LockKeeperClientError::HttpNotAllowed);
         }
 
-        let tls_config = config.tls_config()?;
-
         let connector = hyper_rustls::HttpsConnectorBuilder::new()
-            .with_tls_config(tls_config)
+            .with_tls_config(config.tls_config.clone())
             .https_only()
             .enable_http2()
             .build();
 
         let client = hyper::Client::builder().build(connector);
-        let rpc_client = LockKeeperRpcClient::with_origin(client, address);
+        let rpc_client = LockKeeperRpcClient::with_origin(client, config.server_uri.clone());
 
         Ok(rpc_client)
     }

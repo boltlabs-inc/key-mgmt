@@ -7,6 +7,10 @@ default_to_workspace = false
 [tasks.start]
 alias = "start-server-detached"
 
+# Shorthand task to start both servers in the background.
+[tasks.start-all]
+alias = "start-server-detached-all"
+
 # Shorthand task to stop a server running in the background.
 [tasks.stop]
 alias = "stop-server"
@@ -22,13 +26,41 @@ dependencies = ["teardown", "start"]
 # Start a key server and monitor its output.
 [tasks.start-server]
 command = "docker"
-args = ["compose", "up", "--build", "mongodb", "key_server"]
+args = ["compose", "up", "--build", "mongodb", "key_server", "--attach", "key_server"]
+dependencies = ["certs"]
+
+# Start a key server with mutual auth enabled and monitor its output.
+[tasks.start-server-mutual-auth]
+command = "docker"
+args = ["compose", "up", "--build", "mongodb", "key_server_mutual_auth", "--attach", "key_server_mutual_auth"]
+dependencies = ["certs"]
+
+# Starts two key servers, one with mutual auth and one without
+[tasks.start-server-all]
+command = "docker"
+args = ["compose", "up",
+        "--build", "mongodb", "key_server", "key_server_mutual_auth",
+        "--attach", "key_server", 
+        "--attach", "key_server_mutual_auth"
+]
 dependencies = ["certs"]
 
 # Start a key server in the background.
 [tasks.start-server-detached]
 command = "docker"
 args = ["compose", "up", "--build", "mongodb", "key_server", "--detach", "--wait"]
+dependencies = ["certs"]
+
+# Start a key server with mutual auth enabled in the background.
+[tasks.start-server-detached-mutual-auth]
+command = "docker"
+args = ["compose", "up", "--build", "mongodb", "key_server_mutual_auth", "--detach", "--wait"]
+dependencies = ["certs"]
+
+# Starts two key servers in the background, one with mutual auth and one without
+[tasks.start-server-detached-all]
+command = "docker"
+args = ["compose", "up", "--build", "mongodb", "key_server", "key_server_mutual_auth", "--detach", "--wait"]
 dependencies = ["certs"]
 
 # Stop a key server running in the background.
@@ -44,7 +76,7 @@ args = ["compose", "down", "--rmi", "local", "--volumes", "--remove-orphans"]
 # Start a server running on your local machine without Docker.
 [tasks.start-server-local]
 command = "cargo"
-args = ["run", "--bin", "key-server-cli", "./dev/local/Server.toml"]
+args = ["run", "--bin", "key-server-cli", "./dev/server/config/Local.toml"]
 dependencies = ["certs"]
 
 # -- Testing Tasks --
@@ -61,6 +93,16 @@ args = ["run", "--bin", "lock-keeper-tests", "--", "--test-type", "e2e"]
 command = "cargo"
 args = ["run", "--bin", "lock-keeper-tests", "--", "--test-type", "integration"]
 
+# Run TLS mutual auth tests
+[tasks.test-mutual-auth]
+command = "cargo"
+args = ["run", "--bin", "lock-keeper-tests", "--", "--test-type", "mutual-auth"]
+
+# Run TLS mutual auth tests
+[tasks.test-config-files]
+command = "cargo"
+args = ["run", "--bin", "lock-keeper-tests", "--", "--test-type", "config-files"]
+
 # Run all tests that require a server to be running in Docker.
 [tasks.all-tests]
 command = "cargo"
@@ -68,6 +110,7 @@ args = ["run", "--bin", "lock-keeper-tests", "--", "--test-type", "all"]
 dependencies = ["ci-test"]
 
 # -- CI Tasks --
+
 [tasks.ci]
 dependencies = ["ci-format", "ci-clippy", "ci-build", "ci-test", "ci-doc-test", "ci-docs"]
 
@@ -99,16 +142,26 @@ args = ["doc", "--all-features", "--no-deps", "--workspace"]
 
 # -- Utility Tasks --
 
+# -- Aliases --
+[tasks.fmt]
+toolchain = "nightly"
+command = "cargo"
+args = ["fmt", "--all"]
+
+[tasks.format]
+alias = "fmt"
+
+[tasks.clippy]
+alias = "ci-clippy"
+
+[tasks.test]
+alias = "ci-test"
+
 # Run the interactive client.
 [tasks.cli]
 command = "cargo"
 args = ["run", "--bin", "lock-keeper-client-cli"]
 
-# Generate certificates in the dev directory at the root of this repo.
+# Generate certificates in the dev/certs/gen directory
 [tasks.certs]
-command = "cargo"
-args = ["make", "generate-certificates", "./dev"]
-
-# Generate certificates in the directory specified by the first command line argument.
-[tasks.generate-certificates]
-script = { file = "dev/generate-certificates" }
+script = { file = "dev/test-pki/generate-test-pki.sh" }

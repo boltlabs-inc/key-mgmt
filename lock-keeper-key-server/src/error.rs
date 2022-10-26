@@ -6,6 +6,8 @@ use tonic::Status;
 pub enum LockKeeperServerError {
     #[error("Could not get service.")]
     MissingService,
+    #[error("Private key was not provided.")]
+    PrivateKeyMissing,
 
     #[error("Error in session keys cache.")]
     SessionKeyCache(#[from] SessionKeyCacheError),
@@ -44,11 +46,17 @@ pub enum LockKeeperServerError {
     #[error("OPAQUE protocol error: {}", .0)]
     OpaqueProtocol(opaque_ke::errors::ProtocolError),
     #[error(transparent)]
+    Rustls(#[from] rustls::Error),
+    #[error(transparent)]
     StrumParseError(#[from] strum::ParseError),
+    #[error(transparent)]
+    Toml(#[from] toml::de::Error),
     #[error(transparent)]
     TonicStatus(#[from] tonic::Status),
     #[error(transparent)]
     TonicTransport(#[from] tonic::transport::Error),
+    #[error(transparent)]
+    WebPki(#[from] tokio_rustls::webpki::Error),
 }
 
 impl From<opaque_ke::errors::ProtocolError> for LockKeeperServerError {
@@ -87,9 +95,13 @@ impl From<LockKeeperServerError> for Status {
             | LockKeeperServerError::Bson(_)
             | LockKeeperServerError::Bincode(_)
             | LockKeeperServerError::OpaqueProtocol(_)
+            | LockKeeperServerError::PrivateKeyMissing
             | LockKeeperServerError::EnvVar(_)
+            | LockKeeperServerError::Rustls(_)
             | LockKeeperServerError::StrumParseError(_)
-            | LockKeeperServerError::MongoDb(_) => Status::internal("Internal server error"),
+            | LockKeeperServerError::Toml(_)
+            | LockKeeperServerError::MongoDb(_)
+            | LockKeeperServerError::WebPki(_) => Status::internal("Internal server error"),
         }
     }
 }

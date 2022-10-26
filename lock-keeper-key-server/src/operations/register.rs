@@ -1,6 +1,6 @@
 use crate::{
     error::LockKeeperServerError,
-    server::{opaque_storage::create_or_retrieve_server_key_opaque, Context, Operation},
+    server::{Context, Operation},
 };
 use std::ops::DerefMut;
 
@@ -39,13 +39,6 @@ async fn register_start(
     // Receive start message from client
     let start_message: client::RegisterStart = channel.receive().await?;
 
-    // Get server key for OPAQUE
-    let server_setup = {
-        let mut rng = context.rng.lock().await;
-
-        create_or_retrieve_server_key_opaque(&mut rng, &context.service)?
-    };
-
     // Abort registration if UserId already exists
     let user = context.db.find_user(&start_message.account_name).await?;
 
@@ -54,7 +47,7 @@ async fn register_start(
     } else {
         // Registration can continue if user ID doesn't exist yet
         let server_registration_start_result = ServerRegistration::<OpaqueCipherSuite>::start(
-            &server_setup,
+            &context.config.opaque_server_setup,
             start_message.registration_request,
             start_message.account_name.as_bytes(),
         )?;

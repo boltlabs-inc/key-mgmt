@@ -6,10 +6,9 @@ pub(crate) mod session_key_cache;
 pub(crate) use operation::Operation;
 pub use service::start_lock_keeper_server;
 
-use crate::{database::Database, error::LockKeeperServerError, operations};
+use crate::{config::Config, database::Database, error::LockKeeperServerError, operations};
 
 use lock_keeper::{
-    config::server::{Config, Service},
     constants::METADATA,
     crypto::KeyId,
     rpc::{lock_keeper_rpc_server::LockKeeperRpc, HealthCheck},
@@ -23,29 +22,21 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use tonic::{Request, Response, Status};
 
-///
-#[allow(unused)]
 #[derive(Debug)]
 pub struct LockKeeperKeyServer {
-    config: Config,
+    config: Arc<Config>,
     db: Arc<Database>,
-    service: Arc<Service>,
     rng: Arc<Mutex<StdRng>>,
     session_key_cache: Arc<Mutex<SessionKeyCache>>,
 }
 
 impl LockKeeperKeyServer {
-    pub fn new(
-        db: Database,
-        config: Config,
-        service: Arc<Service>,
-    ) -> Result<Self, LockKeeperServerError> {
+    pub fn new(db: Database, config: Config) -> Result<Self, LockKeeperServerError> {
         let rng = StdRng::from_entropy();
 
         Ok(Self {
-            config,
+            config: Arc::new(config),
             db: Arc::new(db),
-            service,
             rng: Arc::new(Mutex::new(rng)),
             session_key_cache: Arc::new(Mutex::new(SessionKeyCache::default())),
         })
@@ -59,8 +50,8 @@ impl LockKeeperKeyServer {
         let metadata = Self::parse_metadata(request)?;
 
         Ok(Context {
+            config: self.config.clone(),
             db: self.db.clone(),
-            service: self.service.clone(),
             rng: self.rng.clone(),
             metadata,
             key_id: None,
@@ -81,10 +72,9 @@ impl LockKeeperKeyServer {
     }
 }
 
-#[derive(Debug)]
 pub(crate) struct Context {
     pub db: Arc<Database>,
-    pub service: Arc<Service>,
+    pub config: Arc<Config>,
     pub rng: Arc<Mutex<StdRng>>,
     pub metadata: RequestMetadata,
     pub key_id: Option<KeyId>,

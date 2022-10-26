@@ -1,6 +1,6 @@
-use crate::{end_to_end::operations::register, utils::tagged};
-use lock_keeper::{config::client::Config, types::database::user::AccountName};
-use lock_keeper_client::{client::Password, LockKeeperClientError};
+use crate::{test_suites::end_to_end::operations::register, utils::tagged};
+use lock_keeper::types::database::user::AccountName;
+use lock_keeper_client::{client::Password, Config, LockKeeperClientError};
 use std::str::FromStr;
 
 pub mod authenticate;
