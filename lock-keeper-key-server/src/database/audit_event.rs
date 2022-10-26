@@ -3,7 +3,10 @@
 //! Functions in this module are used to perform CRUD operations
 //! on the [`AuditEvent`] model in the MongoDB database.
 
-use crate::{constants, LockKeeperServerError};
+use crate::{
+    constants::{AUDIT_EVENTS, MAX_AUDIT_ENTRIES},
+    LockKeeperServerError,
+};
 use futures::TryStreamExt;
 use lock_keeper::{
     crypto::KeyId,
@@ -13,7 +16,10 @@ use lock_keeper::{
         operations::ClientAction,
     },
 };
-use mongodb::bson::{doc, Document};
+use mongodb::{
+    bson::{doc, Document},
+    options::FindOptions,
+};
 
 use super::Database;
 
@@ -31,7 +37,7 @@ impl Database {
         action: &ClientAction,
         status: EventStatus,
     ) -> Result<(), LockKeeperServerError> {
-        let collection = self.inner.collection::<AuditEvent>(constants::AUDIT_EVENTS);
+        let collection = self.inner.collection::<AuditEvent>(AUDIT_EVENTS);
         let new_event = AuditEvent::new(actor.clone(), secret_id.clone(), *action, status);
         let _ = collection.insert_one(new_event, None).await?;
         Ok(())
@@ -48,8 +54,9 @@ impl Database {
         let actions = event_type.into_client_actions();
         let mut query = doc! { ACTOR: account_name.to_string(), ACTION: {"$in": mongodb::bson::to_bson(&actions)?} };
         query = construct_query_with_options(options, query)?;
-        let collection = self.inner.collection::<AuditEvent>(constants::AUDIT_EVENTS);
-        let events = collection.find(query, None).await?;
+        let collection = self.inner.collection::<AuditEvent>(AUDIT_EVENTS);
+        let find_options = FindOptions::builder().limit(MAX_AUDIT_ENTRIES).build();
+        let events = collection.find(query, Some(find_options)).await?;
         let events_vec: Vec<AuditEvent> = events.try_collect().await?;
         Ok(events_vec)
     }
