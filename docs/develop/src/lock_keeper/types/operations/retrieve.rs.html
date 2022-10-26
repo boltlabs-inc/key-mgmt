@@ -51,6 +51,7 @@
 <span id="51">51</span>
 <span id="52">52</span>
 <span id="53">53</span>
+<span id="54">54</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">serde</span>::{<span class="ident">Deserialize</span>, <span class="ident">Serialize</span>};
 
 <span class="doccomment">/// Options for the asset owner&#39;s intended use of a secret</span>
@@ -86,7 +87,8 @@
 
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">server</span> {
     <span class="kw">use</span> <span class="kw">crate</span>::{
-        <span class="ident">crypto::Export</span>, <span class="ident">impl_message_conversion</span>, <span class="ident">types::database::secrets::StoredEncryptedSecret</span>,
+        <span class="ident">impl_message_conversion</span>,
+        <span class="ident">types::database::secrets</span>::{<span class="ident">StoredEncryptedSecret</span>, <span class="ident">StoredSigningKeyPair</span>},
     };
     <span class="kw">use</span> <span class="ident">serde</span>::{<span class="ident">Deserialize</span>, <span class="ident">Serialize</span>};
 
@@ -99,7 +101,7 @@
     <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Deserialize</span>, <span class="ident">Serialize</span>)]</span>
     <span class="doccomment">/// return exported signing key material</span>
     <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ResponseSigningKey</span> {
-        <span class="kw">pub</span> <span class="ident">exported_signing_key</span>: <span class="ident">Export</span>,
+        <span class="kw">pub</span> <span class="ident">stored_signing_key</span>: <span class="ident">StoredSigningKeyPair</span>,
     }
 
     <span class="macro">impl_message_conversion!</span>(<span class="ident">Response</span>, <span class="ident">ResponseSigningKey</span>);

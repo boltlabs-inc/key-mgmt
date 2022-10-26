@@ -43,16 +43,8 @@
 <span id="43">43</span>
 <span id="44">44</span>
 <span id="45">45</span>
-<span id="46">46</span>
-<span id="47">47</span>
-<span id="48">48</span>
-<span id="49">49</span>
-<span id="50">50</span>
-<span id="51">51</span>
-<span id="52">52</span>
-<span id="53">53</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">lock_keeper</span>::{<span class="ident">crypto::KeyId</span>, <span class="ident">types::operations::retrieve::RetrieveContext</span>};
-<span class="kw">use</span> <span class="ident">lock_keeper_client</span>::{<span class="ident">api::RetrieveResult</span>, <span class="ident">LockKeeperClient</span>};
+<span class="kw">use</span> <span class="ident">lock_keeper_client::LockKeeperClient</span>;
 
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::end_to_end</span>::{<span class="ident">Test</span>, <span class="ident">KEY_ID</span>, <span class="ident">KEY_MATERIAL</span>};
 
@@ -77,24 +69,16 @@
             <span class="prelude-val">Ok</span>(<span class="ident">res</span>) =&gt; {
                 <span class="kw">let</span> <span class="ident">original_local_storage_json</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">get</span>(<span class="ident">KEY_MATERIAL</span>)<span class="question-mark">?</span>.<span class="ident">clone</span>();
                 <span class="kw">match</span> <span class="ident">res</span> {
-                    <span class="ident">RetrieveResult::None</span> =&gt; <span class="macro">anyhow::bail!</span>(<span class="string">&quot;No key with key_id {:?}&quot;</span>, <span class="ident">key_id</span>),
-                    <span class="ident">RetrieveResult::ArbitraryKey</span>(<span class="ident">local_storage</span>) =&gt; {
+                    <span class="prelude-val">None</span> =&gt; <span class="macro">anyhow::bail!</span>(<span class="string">&quot;No key with key_id {:?}&quot;</span>, <span class="ident">key_id</span>),
+                    <span class="prelude-val">Some</span>(<span class="ident">local_storage</span>) =&gt; {
                         <span class="kw">let</span> <span class="ident">new_local_storage_json</span> <span class="op">=</span> <span class="ident">serde_json::to_value</span>(<span class="ident">local_storage</span>)<span class="question-mark">?</span>;
                         <span class="kw">if</span> <span class="ident">original_local_storage_json</span> <span class="op">!</span><span class="op">=</span> <span class="ident">new_local_storage_json</span> {
                             <span class="macro">anyhow::bail!</span>(
-                                <span class="string">&quot;expected: {}; got: {}&quot;</span>,
+                                <span class="string">&quot;Wrong key\nexpected: {};\n got: {}&quot;</span>,
                                 <span class="ident">original_local_storage_json</span>,
                                 <span class="ident">new_local_storage_json</span>
                             );
                         }
-                    }
-                    <span class="ident">RetrieveResult::SigningKey</span>(<span class="ident">signing_key</span>) =&gt; {
-                        <span class="kw">let</span> <span class="ident">new_local_storage_json</span> <span class="op">=</span> <span class="ident">serde_json::to_value</span>(<span class="ident">signing_key</span>)<span class="question-mark">?</span>;
-                        <span class="macro">anyhow::bail!</span>(
-                            <span class="string">&quot;expected: {}; got: {}&quot;</span>,
-                            <span class="ident">original_local_storage_json</span>,
-                            <span class="ident">new_local_storage_json</span>
-                        );
                     }
                 }
             }

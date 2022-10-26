@@ -269,6 +269,7 @@
 <span id="269">269</span>
 <span id="270">270</span>
 <span id="271">271</span>
+<span id="272">272</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Local storage types for in-memory and on-disk storage of key information.</span>
 
 <span class="kw">use</span> <span class="ident">std</span>::{
@@ -279,9 +280,10 @@
 };
 
 <span class="kw">use</span> <span class="ident">anyhow::anyhow</span>;
-<span class="kw">use</span> <span class="ident">lock_keeper::crypto</span>::{<span class="ident">Export</span>, <span class="ident">KeyId</span>};
-<span class="kw">use</span> <span class="ident">lock_keeper_client::api</span>::{<span class="ident">LocalStorage</span>, <span class="ident">RetrieveResult</span>};
+<span class="kw">use</span> <span class="ident">lock_keeper::crypto</span>::{<span class="ident">KeyId</span>, <span class="ident">Secret</span>};
+<span class="kw">use</span> <span class="ident">lock_keeper_client::api::LocalStorage</span>;
 <span class="kw">use</span> <span class="ident">serde</span>::{<span class="ident">Deserialize</span>, <span class="ident">Serialize</span>};
+<span class="kw">use</span> <span class="ident">serde_json::Value</span>;
 
 <span class="doccomment">/// Container for all locally stored key data.</span>
 <span class="doccomment">/// This type handles both in-memory storage and persistent storage on the disk.</span>
@@ -465,33 +467,32 @@
     }
 }
 
+<span class="doccomment">/// Type of key being stored in local storage.</span>
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Serialize</span>, <span class="ident">Deserialize</span>)]</span>
+<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">DataType</span> {
+    <span class="prelude-val">None</span>,
+    <span class="ident">ArbitraryKey</span>(<span class="ident">LocalStorage</span><span class="op">&lt;</span><span class="ident">Secret</span><span class="op">&gt;</span>),
+}
+
 <span class="doccomment">/// Key data returned from a key server.</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Serialize</span>, <span class="ident">Deserialize</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Entry</span> {
     <span class="kw">pub</span> <span class="ident">key_id</span>: <span class="ident">KeyId</span>,
-    <span class="kw">pub</span> <span class="ident">data</span>: <span class="ident">RetrieveResult</span>,
+    <span class="kw">pub</span> <span class="ident">data</span>: <span class="ident">DataType</span>,
 }
 
 <span class="kw">impl</span> <span class="ident">Display</span> <span class="kw">for</span> <span class="ident">Entry</span> {
     <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">std::fmt::Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">std::fmt::Result</span> {
         <span class="kw">let</span> <span class="ident">key_id_hex</span> <span class="op">=</span> <span class="ident">hex::encode</span>(<span class="self">self</span>.<span class="ident">key_id</span>.<span class="ident">as_bytes</span>());
+        <span class="kw">let</span> <span class="ident">bytes</span> <span class="op">=</span> <span class="ident">local_storage_bytes</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">data</span>).<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> {
+            <span class="comment">// Avoid error inception</span>
+            <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="macro">writeln!</span>(<span class="ident">f</span>, <span class="string">&quot;{e}&quot;</span>);
+            <span class="ident">std::fmt::Error</span>
+        })<span class="question-mark">?</span>;
         <span class="kw">let</span> <span class="ident">data_hex</span> <span class="op">=</span> <span class="kw">match</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">data</span> {
-            <span class="ident">RetrieveResult::None</span> =&gt; <span class="string">&quot;None&quot;</span>.<span class="ident">to_string</span>(),
-            <span class="ident">RetrieveResult::ArbitraryKey</span>(<span class="ident">local_storage</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">bytes</span> <span class="op">=</span> <span class="ident">local_storage_bytes</span>(<span class="ident">local_storage</span>).<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> {
-                    <span class="comment">// Avoid error inception</span>
-                    <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="macro">writeln!</span>(<span class="ident">f</span>, <span class="string">&quot;{e}&quot;</span>);
-                    <span class="ident">std::fmt::Error</span>
-                })<span class="question-mark">?</span>;
+            <span class="ident">DataType::None</span> =&gt; <span class="string">&quot;None&quot;</span>.<span class="ident">to_string</span>(),
+            <span class="ident">DataType::ArbitraryKey</span>(<span class="kw">_</span>) =&gt; {
                 <span class="macro">format!</span>(<span class="string">&quot;Arbitrary Key - {}&quot;</span>, <span class="ident">hex::encode</span>(<span class="kw-2">&amp;</span><span class="ident">bytes</span>))
-            }
-            <span class="ident">RetrieveResult::SigningKey</span>(<span class="ident">signing_key</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">bytes</span> <span class="op">=</span> <span class="ident">signing_key_bytes</span>(<span class="ident">signing_key</span>).<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> {
-                    <span class="comment">// Avoid error inception</span>
-                    <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="macro">writeln!</span>(<span class="ident">f</span>, <span class="string">&quot;{e}&quot;</span>);
-                    <span class="ident">std::fmt::Error</span>
-                })<span class="question-mark">?</span>;
-                <span class="macro">format!</span>(<span class="string">&quot;Signing Key Pair - {}&quot;</span>, <span class="ident">hex::encode</span>(<span class="kw-2">&amp;</span><span class="ident">bytes</span>))
             }
         };
 
@@ -501,41 +502,42 @@
     }
 }
 
-<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span>(<span class="ident">KeyId</span>, <span class="ident">RetrieveResult</span>)<span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Entry</span> {
-    <span class="kw">fn</span> <span class="ident">from</span>((<span class="ident">key_id</span>, <span class="ident">data</span>): (<span class="ident">KeyId</span>, <span class="ident">RetrieveResult</span>)) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> { <span class="ident">key_id</span>, <span class="ident">data</span> }
+<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span>(<span class="ident">KeyId</span>, <span class="ident">LocalStorage</span><span class="op">&lt;</span><span class="ident">Secret</span><span class="op">&gt;</span>)<span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Entry</span> {
+    <span class="kw">fn</span> <span class="ident">from</span>((<span class="ident">key_id</span>, <span class="ident">data</span>): (<span class="ident">KeyId</span>, <span class="ident">LocalStorage</span><span class="op">&lt;</span><span class="ident">Secret</span><span class="op">&gt;</span>)) -&gt; <span class="self">Self</span> {
+        <span class="self">Self</span> {
+            <span class="ident">key_id</span>,
+            <span class="ident">data</span>: <span class="ident">DataType::ArbitraryKey</span>(<span class="ident">data</span>),
+        }
     }
 }
 
-<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span>(<span class="ident">KeyId</span>, <span class="ident">LocalStorage</span>)<span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Entry</span> {
-    <span class="kw">fn</span> <span class="ident">from</span>((<span class="ident">key_id</span>, <span class="ident">local_storage</span>): (<span class="ident">KeyId</span>, <span class="ident">LocalStorage</span>)) -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="ident">data</span> <span class="op">=</span> <span class="ident">RetrieveResult::ArbitraryKey</span>(<span class="ident">local_storage</span>);
+<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span>(<span class="ident">KeyId</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">LocalStorage</span><span class="op">&lt;</span><span class="ident">Secret</span><span class="op">&gt;</span><span class="op">&gt;</span>)<span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Entry</span> {
+    <span class="kw">fn</span> <span class="ident">from</span>((<span class="ident">key_id</span>, <span class="ident">data</span>): (<span class="ident">KeyId</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">LocalStorage</span><span class="op">&lt;</span><span class="ident">Secret</span><span class="op">&gt;</span><span class="op">&gt;</span>)) -&gt; <span class="self">Self</span> {
+        <span class="kw">let</span> <span class="ident">data</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">data</span> {
+            <span class="prelude-val">None</span> =&gt; <span class="ident">DataType::None</span>,
+            <span class="prelude-val">Some</span>(<span class="ident">secret</span>) =&gt; <span class="ident">DataType::ArbitraryKey</span>(<span class="ident">secret</span>),
+        };
         <span class="self">Self</span> { <span class="ident">key_id</span>, <span class="ident">data</span> }
     }
 }
 
 <span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">KeyId</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Entry</span> {
     <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">key_id</span>: <span class="ident">KeyId</span>) -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="ident">data</span> <span class="op">=</span> <span class="ident">RetrieveResult::None</span>;
-        <span class="self">Self</span> { <span class="ident">key_id</span>, <span class="ident">data</span> }
+        <span class="self">Self</span> {
+            <span class="ident">key_id</span>,
+            <span class="ident">data</span>: <span class="ident">DataType::None</span>,
+        }
     }
 }
 
-<span class="kw">fn</span> <span class="ident">local_storage_bytes</span>(<span class="ident">local_storage</span>: <span class="kw-2">&amp;</span><span class="ident">LocalStorage</span>) -&gt; <span class="ident">anyhow::Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">json</span> <span class="op">=</span> <span class="ident">serde_json::to_value</span>(<span class="ident">local_storage</span>)<span class="question-mark">?</span>;
+<span class="kw">fn</span> <span class="ident">local_storage_bytes</span>(<span class="ident">data</span>: <span class="kw-2">&amp;</span><span class="ident">DataType</span>) -&gt; <span class="ident">anyhow::Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+    <span class="kw">let</span> <span class="ident">json</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">data</span> {
+        <span class="ident">DataType::None</span> =&gt; <span class="ident">Value::Null</span>,
+        <span class="ident">DataType::ArbitraryKey</span>(<span class="ident">local_storage</span>) =&gt; <span class="ident">serde_json::to_value</span>(<span class="ident">local_storage</span>)<span class="question-mark">?</span>,
+    };
     <span class="kw">let</span> <span class="ident">key</span> <span class="op">=</span> <span class="ident">json</span>
-        .<span class="ident">pointer</span>(<span class="string">&quot;/secret/material&quot;</span>)
+        .<span class="ident">pointer</span>(<span class="string">&quot;/material/material&quot;</span>)
         .<span class="ident">ok_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">anyhow!</span>(<span class="string">&quot;Error converting LocalStorage to bytes&quot;</span>))<span class="question-mark">?</span>
-        .<span class="ident">clone</span>();
-    <span class="kw">let</span> <span class="ident">bytes</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">serde_json::from_value</span>(<span class="ident">key</span>)<span class="question-mark">?</span>;
-    <span class="prelude-val">Ok</span>(<span class="ident">bytes</span>)
-}
-
-<span class="kw">fn</span> <span class="ident">signing_key_bytes</span>(<span class="ident">signing_key</span>: <span class="kw-2">&amp;</span><span class="ident">Export</span>) -&gt; <span class="ident">anyhow::Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">json</span> <span class="op">=</span> <span class="ident">serde_json::to_value</span>(<span class="ident">signing_key</span>)<span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="ident">key</span> <span class="op">=</span> <span class="ident">json</span>
-        .<span class="ident">pointer</span>(<span class="string">&quot;/key_material&quot;</span>)
-        .<span class="ident">ok_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">anyhow!</span>(<span class="string">&quot;Error converting SigningKey to bytes&quot;</span>))<span class="question-mark">?</span>
         .<span class="ident">clone</span>();
     <span class="kw">let</span> <span class="ident">bytes</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">serde_json::from_value</span>(<span class="ident">key</span>)<span class="question-mark">?</span>;
     <span class="prelude-val">Ok</span>(<span class="ident">bytes</span>)
