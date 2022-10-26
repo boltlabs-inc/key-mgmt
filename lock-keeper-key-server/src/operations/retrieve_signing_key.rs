@@ -5,7 +5,6 @@ use crate::{
 
 use async_trait::async_trait;
 use lock_keeper::{
-    crypto::{Export, SigningKeyPair},
     infrastructure::channel::ServerChannel,
     types::operations::retrieve::{client, server},
 };
@@ -25,17 +24,13 @@ impl Operation for RetrieveSigningKey {
         context.key_id = Some(request.key_id.clone());
 
         // Find secret based on key_id
-        let stored_secret = context
+        let stored_signing_key = context
             .db
             .get_user_signing_key(&request.user_id, &request.key_id)
             .await?;
 
-        // Convert from signing key to Export, serialize and send
-        let signing_key_pair: SigningKeyPair = stored_secret.signing_key.try_into()?;
-        let exported_signing_key = Export::from(signing_key_pair);
-        let reply = server::ResponseSigningKey {
-            exported_signing_key,
-        };
+        // Send StoredSigningKeyPair back
+        let reply = server::ResponseSigningKey { stored_signing_key };
         channel.send(reply).await?;
         Ok(())
     }

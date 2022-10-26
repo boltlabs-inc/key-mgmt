@@ -1,5 +1,5 @@
 use lock_keeper::{crypto::KeyId, types::operations::retrieve::RetrieveContext};
-use lock_keeper_client::{api::RetrieveResult, LockKeeperClient};
+use lock_keeper_client::LockKeeperClient;
 
 use crate::end_to_end::{Test, KEY_ID, KEY_MATERIAL};
 
@@ -24,24 +24,16 @@ impl Test {
             Ok(res) => {
                 let original_local_storage_json = self.state.get(KEY_MATERIAL)?.clone();
                 match res {
-                    RetrieveResult::None => anyhow::bail!("No key with key_id {:?}", key_id),
-                    RetrieveResult::ArbitraryKey(local_storage) => {
+                    None => anyhow::bail!("No key with key_id {:?}", key_id),
+                    Some(local_storage) => {
                         let new_local_storage_json = serde_json::to_value(local_storage)?;
                         if original_local_storage_json != new_local_storage_json {
                             anyhow::bail!(
-                                "expected: {}; got: {}",
+                                "Wrong key\nexpected: {};\n got: {}",
                                 original_local_storage_json,
                                 new_local_storage_json
                             );
                         }
-                    }
-                    RetrieveResult::SigningKey(signing_key) => {
-                        let new_local_storage_json = serde_json::to_value(signing_key)?;
-                        anyhow::bail!(
-                            "expected: {}; got: {}",
-                            original_local_storage_json,
-                            new_local_storage_json
-                        );
                     }
                 }
             }

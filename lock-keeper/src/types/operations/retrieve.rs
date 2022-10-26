@@ -33,7 +33,8 @@ pub mod client {
 
 pub mod server {
     use crate::{
-        crypto::Export, impl_message_conversion, types::database::secrets::StoredEncryptedSecret,
+        impl_message_conversion,
+        types::database::secrets::{StoredEncryptedSecret, StoredSigningKeyPair},
     };
     use serde::{Deserialize, Serialize};
 
@@ -46,7 +47,7 @@ pub mod server {
     #[derive(Debug, Deserialize, Serialize)]
     /// return exported signing key material
     pub struct ResponseSigningKey {
-        pub exported_signing_key: Export,
+        pub stored_signing_key: StoredSigningKeyPair,
     }
 
     impl_message_conversion!(Response, ResponseSigningKey);

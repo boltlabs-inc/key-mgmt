@@ -28,18 +28,10 @@ use rand::{rngs::StdRng, SeedableRng};
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
-/// Ways of returning a key from the retrieval process based on usage
-/// [`RetrieveContext`]
+/// Wrapper for secrets prepared for local storage
 #[derive(Debug, Deserialize, Serialize)]
-pub enum RetrieveResult {
-    None,
-    ArbitraryKey(LocalStorage),
-    SigningKey(Export),
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct LocalStorage {
-    pub secret: Secret,
+pub struct LocalStorage<T> {
+    pub material: T,
 }
 
 impl LockKeeperClient {
@@ -126,15 +118,11 @@ impl LockKeeperClient {
         )
         .await?;
         // Get local-only secret
-        let secret = self
+        let local_storage = self
             .handle_retrieve(&mut client_channel, key_id, RetrieveContext::LocalOnly)
-            .await?;
-        // Return secret as bytes
-        match secret {
-            RetrieveResult::None => Err(LockKeeperClientError::ExportFailed),
-            RetrieveResult::ArbitraryKey(local_storage) => Ok(local_storage.secret.into()),
-            RetrieveResult::SigningKey(_) => Err(LockKeeperClientError::InvalidKeyRetrieved),
-        }
+            .await?
+            .ok_or(LockKeeperClientError::ExportFailed)?;
+        Ok(local_storage.material.into())
     }
 
     /// Export signing key pair material from the key servers.
@@ -152,19 +140,18 @@ impl LockKeeperClient {
         )
         .await?;
         // Get local-only secret
-        let secret = self
+        let local_storage = self
             .handle_retrieve_signing_key(&mut client_channel, key_id, RetrieveContext::LocalOnly)
-            .await?;
-        // Return secret as bytes
-        match secret {
-            RetrieveResult::None => Err(LockKeeperClientError::ExportFailed),
-            RetrieveResult::ArbitraryKey(_) => Err(LockKeeperClientError::InvalidKeyRetrieved),
-            RetrieveResult::SigningKey(signing_key) => Ok(signing_key),
-        }
+            .await?
+            .ok_or(LockKeeperClientError::ExportFailed)?;
+        let exported_signing_key = Export::from(local_storage.material);
+        Ok(exported_signing_key)
     }
 
     /// Generate and store an arbitrary secret at the key server
-    pub async fn generate_and_store(&self) -> Result<(KeyId, LocalStorage), LockKeeperClientError> {
+    pub async fn generate_and_store(
+        &self,
+    ) -> Result<(KeyId, LocalStorage<Secret>), LockKeeperClientError> {
         let mut client_channel = Self::create_channel(
             &mut self.tonic_client(),
             ClientAction::Generate,
@@ -194,7 +181,7 @@ impl LockKeeperClient {
         &self,
         key_id: &KeyId,
         context: RetrieveContext,
-    ) -> Result<RetrieveResult, LockKeeperClientError> {
+    ) -> Result<Option<LocalStorage<Secret>>, LockKeeperClientError> {
         let mut client_channel = Self::create_channel(
             &mut self.tonic_client(),
             ClientAction::Retrieve,
@@ -245,22 +232,6 @@ impl LockKeeperClient {
         )
         .await?;
         self.handle_retrieve_audit_events(&mut client_channel, event_type, options)
-            .await
-    }
-
-    /// Retrieve a signing key pair from the key server by [`KeyId`]
-    pub async fn retrieve_signing_key(
-        &self,
-        key_id: &KeyId,
-        context: RetrieveContext,
-    ) -> Result<RetrieveResult, LockKeeperClientError> {
-        let mut client_channel = Self::create_channel(
-            &mut self.tonic_client(),
-            ClientAction::RetrieveSigningKey,
-            self.account_name(),
-        )
-        .await?;
-        self.handle_retrieve_signing_key(&mut client_channel, key_id, context)
             .await
     }
 }
