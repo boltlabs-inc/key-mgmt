@@ -315,6 +315,12 @@ command: retrieve [key_name]
 aliases: ret, r
 description: Retrieve a previously generated key from the key server and update local storage.
 
+command: remote-generate [key_name (optional)]
+aliases: rgen, rg
+description: Generate a new key remotely. This key will be generated entirely in the server.
+             If you provide a name, the key can be referenced by that name. 
+             If you don't provide a name, the key can be referenced by the number printed to the screen after generation.
+
 command: print [key_name]
 aliases: p
 description: Prints all stored information about the given key.
@@ -322,6 +328,9 @@ description: Prints all stored information about the given key.
 command: list
 aliases: ls
 description: Prints stored information about every key associated with the current account.
+
+command: logout
+description: Log out of currently authenticated account.
 
 command: help
 aliases: h
