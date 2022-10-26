@@ -100,9 +100,9 @@ args = ["doc", "--all-features", "--no-deps", "--workspace"]
 # -- Utility Tasks --
 
 # Run the interactive client.
-[tasks.lkic]
+[tasks.cli]
 command = "cargo"
-args = ["run", "--bin", "lkic"]
+args = ["run", "--bin", "lock-keeper-client-cli"]
 
 # Generate certificates in the dev directory at the root of this repo.
 [tasks.certs]

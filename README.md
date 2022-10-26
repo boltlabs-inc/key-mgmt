@@ -119,17 +119,17 @@ cargo make e2e
 
 ## Running the interactive client
 
-Lock Keeper comes with an interactive client called `lkic` that can be used to interact with a key server for basic testing and troubleshooting.
-See the `lkic` crate for more information.
+Lock Keeper comes with an interactive client CLI that can be used to interact with a key server for basic testing and troubleshooting.
+See the `lock-keeper-client-cli` crate for more information.
 
 First start the key server:
 ```bash
 cargo make start
 ```
 
-Then run `lkic`:
+Then run the client CLI:
 ```bash
-cargo make lkic
+cargo make cli
 ```
 
 ## Troubleshooting

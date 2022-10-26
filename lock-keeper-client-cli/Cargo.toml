@@ -1,5 +1,5 @@
 [package]
-name = "lkic"
+name = "lock-keeper-client-cli"
 version.workspace = true
 edition = "2021"
 
