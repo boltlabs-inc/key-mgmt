@@ -1,19 +1,19 @@
 # Lock Keeper Interactive Client
 
-The Lock Keeper Interactive Client (`lkic`) is a basic implementation of the Lock Keeper client that allows for quick testing and troubleshooting.
+The Lock Keeper Client CLI is a basic implementation of the Lock Keeper client that allows for quick testing and troubleshooting.
 It provides an interactive terminal with commands for each of the API functions exposed by the `lock_keeper_client::LockKeeperClient` type.
 Key information is associated with simple names so that it can be easily referenced in the future.
 
 ## Usage
 
-Start the server with `cargo make start`, then run the client with `cargo make lkic`.
+Start the server with `cargo make start`, then run the client with `cargo make cli`.
 
 Note that this tool is built using the current code from the `lock-keeper-client` crate. This makes it useful for testing changes to the client
 but it also means that it will break alongside the client crate.
 
 
 ## Commands
-To see this list in the application, type `help` in the `lkic` prompt.
+To see this list in the application, type `help` in the CLI's prompt.
 
 ```
 Enter a command at the prompt. The prompt will display `|` if you are logged out and `>` if you are logged in.
