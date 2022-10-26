@@ -331,6 +331,15 @@
 <span id="331">331</span>
 <span id="332">332</span>
 <span id="333">333</span>
+<span id="334">334</span>
+<span id="335">335</span>
+<span id="336">336</span>
+<span id="337">337</span>
+<span id="338">338</span>
+<span id="339">339</span>
+<span id="340">340</span>
+<span id="341">341</span>
+<span id="342">342</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Types for parsing and handling commands received as user input.</span>
 
 <span class="kw">use</span> <span class="ident">std::str::FromStr</span>;
@@ -648,6 +657,12 @@ command: retrieve [key_name]
 aliases: ret, r
 description: Retrieve a previously generated key from the key server and update local storage.
 
+command: remote-generate [key_name (optional)]
+aliases: rgen, rg
+description: Generate a new key remotely. This key will be generated entirely in the server.
+             If you provide a name, the key can be referenced by that name. 
+             If you don&#39;t provide a name, the key can be referenced by the number printed to the screen after generation.
+
 command: print [key_name]
 aliases: p
 description: Prints all stored information about the given key.
@@ -655,6 +670,9 @@ description: Prints all stored information about the given key.
 command: list
 aliases: ls
 description: Prints stored information about every key associated with the current account.
+
+command: logout
+description: Log out of currently authenticated account.
 
 command: help
 aliases: h
