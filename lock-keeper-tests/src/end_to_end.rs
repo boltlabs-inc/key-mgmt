@@ -138,8 +138,9 @@ impl Test {
             // Check whether the process errors matched the expectation.
             match outcome {
                 Ok(_) => match &expected_outcome.expected_error {
-                    Some(_) => {
-                        anyhow::bail!("Unexpected success")
+                    Some(err) => {
+                        let err = err.to_string();
+                        anyhow::bail!("Unexpected success, expected: {err}")
                     }
                     None => {
                         self.check_audit_events(&self.config, EventStatus::Successful, &op)
@@ -147,18 +148,18 @@ impl Test {
                     }
                 }?,
                 Err(e) => {
-                    self.check_audit_events(&self.config, EventStatus::Failed, &op)
-                        .await?;
+                    let error_string = e.to_string();
                     match &expected_outcome.expected_error {
                         Some(expected) => {
                             let expected_string = expected.to_string();
-                            let error_string = e.to_string();
                             if expected_string != error_string {
                                 anyhow::bail!("Incorrect error. expected {expected_string}; got {error_string}")
                             }
                         }
-                        None => anyhow::bail!("Unexpected error"),
+                        None => anyhow::bail!("Unexpected error {error_string}"),
                     }
+                    self.check_audit_events(&self.config, EventStatus::Failed, &op)
+                        .await?;
                 }
             }
         }

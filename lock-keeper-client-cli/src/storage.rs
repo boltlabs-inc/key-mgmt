@@ -212,14 +212,14 @@ pub struct Entry {
 impl Display for Entry {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let key_id_hex = hex::encode(self.key_id.as_bytes());
-        let bytes = local_storage_bytes(&self.data).map_err(|e| {
-            // Avoid error inception
-            let _ = writeln!(f, "{e}");
-            std::fmt::Error
-        })?;
         let data_hex = match &self.data {
             DataType::None => "None".to_string(),
             DataType::ArbitraryKey(_) => {
+                let bytes = local_storage_bytes(&self.data).map_err(|e| {
+                    // Avoid error inception
+                    let _ = writeln!(f, "{e}");
+                    std::fmt::Error
+                })?;
                 format!("Arbitrary Key - {}", hex::encode(&bytes))
             }
         };
