@@ -969,6 +969,79 @@
 <span id="969">969</span>
 <span id="970">970</span>
 <span id="971">971</span>
+<span id="972">972</span>
+<span id="973">973</span>
+<span id="974">974</span>
+<span id="975">975</span>
+<span id="976">976</span>
+<span id="977">977</span>
+<span id="978">978</span>
+<span id="979">979</span>
+<span id="980">980</span>
+<span id="981">981</span>
+<span id="982">982</span>
+<span id="983">983</span>
+<span id="984">984</span>
+<span id="985">985</span>
+<span id="986">986</span>
+<span id="987">987</span>
+<span id="988">988</span>
+<span id="989">989</span>
+<span id="990">990</span>
+<span id="991">991</span>
+<span id="992">992</span>
+<span id="993">993</span>
+<span id="994">994</span>
+<span id="995">995</span>
+<span id="996">996</span>
+<span id="997">997</span>
+<span id="998">998</span>
+<span id="999">999</span>
+<span id="1000">1000</span>
+<span id="1001">1001</span>
+<span id="1002">1002</span>
+<span id="1003">1003</span>
+<span id="1004">1004</span>
+<span id="1005">1005</span>
+<span id="1006">1006</span>
+<span id="1007">1007</span>
+<span id="1008">1008</span>
+<span id="1009">1009</span>
+<span id="1010">1010</span>
+<span id="1011">1011</span>
+<span id="1012">1012</span>
+<span id="1013">1013</span>
+<span id="1014">1014</span>
+<span id="1015">1015</span>
+<span id="1016">1016</span>
+<span id="1017">1017</span>
+<span id="1018">1018</span>
+<span id="1019">1019</span>
+<span id="1020">1020</span>
+<span id="1021">1021</span>
+<span id="1022">1022</span>
+<span id="1023">1023</span>
+<span id="1024">1024</span>
+<span id="1025">1025</span>
+<span id="1026">1026</span>
+<span id="1027">1027</span>
+<span id="1028">1028</span>
+<span id="1029">1029</span>
+<span id="1030">1030</span>
+<span id="1031">1031</span>
+<span id="1032">1032</span>
+<span id="1033">1033</span>
+<span id="1034">1034</span>
+<span id="1035">1035</span>
+<span id="1036">1036</span>
+<span id="1037">1037</span>
+<span id="1038">1038</span>
+<span id="1039">1039</span>
+<span id="1040">1040</span>
+<span id="1041">1041</span>
+<span id="1042">1042</span>
+<span id="1043">1043</span>
+<span id="1044">1044</span>
 </pre><pre class="rust"><code><span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">::prost::Message</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Message</span> {
     <span class="attribute">#[<span class="ident">prost</span>(<span class="ident">bytes</span><span class="op">=</span><span class="string">&quot;vec&quot;</span>, <span class="ident">tag</span><span class="op">=</span><span class="string">&quot;1&quot;</span>)]</span>
@@ -1048,47 +1121,6 @@
             <span class="self">self</span>.<span class="ident">inner</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">accept_compressed</span>(<span class="ident">encoding</span>);
             <span class="self">self</span>
         }
-        <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">health</span>(
-            <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-            <span class="ident">request</span>: <span class="kw">impl</span> <span class="ident">tonic::IntoRequest</span><span class="op">&lt;</span><span class="ident"><span class="kw">super</span>::HealthCheck</span><span class="op">&gt;</span>,
-        ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">tonic::Response</span><span class="op">&lt;</span><span class="ident"><span class="kw">super</span>::HealthCheck</span><span class="op">&gt;</span>, <span class="ident">tonic::Status</span><span class="op">&gt;</span> {
-            <span class="self">self</span>.<span class="ident">inner</span>
-                .<span class="ident">ready</span>()
-                .<span class="kw">await</span>
-                .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> {
-                    <span class="ident">tonic::Status::new</span>(
-                        <span class="ident">tonic::Code::Unknown</span>,
-                        <span class="macro">format!</span>(<span class="string">&quot;Service was not ready: {}&quot;</span>, <span class="ident">e</span>.<span class="ident">into</span>()),
-                    )
-                })<span class="question-mark">?</span>;
-            <span class="kw">let</span> <span class="ident">codec</span> <span class="op">=</span> <span class="ident">tonic::codec::ProstCodec::default</span>();
-            <span class="kw">let</span> <span class="ident">path</span> <span class="op">=</span> <span class="ident">http::uri::PathAndQuery::from_static</span>(
-                <span class="string">&quot;/lock_keeper_rpc.LockKeeperRpc/Health&quot;</span>,
-            );
-            <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">unary</span>(<span class="ident">request</span>.<span class="ident">into_request</span>(), <span class="ident">path</span>, <span class="ident">codec</span>).<span class="kw">await</span>
-        }
-        <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">register</span>(
-            <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-            <span class="ident">request</span>: <span class="kw">impl</span> <span class="ident">tonic::IntoStreamingRequest</span><span class="op">&lt;</span><span class="ident">Message</span> <span class="op">=</span> <span class="ident"><span class="kw">super</span>::Message</span><span class="op">&gt;</span>,
-        ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>
-            <span class="ident">tonic::Response</span><span class="op">&lt;</span><span class="ident">tonic::codec::Streaming</span><span class="op">&lt;</span><span class="ident"><span class="kw">super</span>::Message</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-            <span class="ident">tonic::Status</span>,
-        <span class="op">&gt;</span> {
-            <span class="self">self</span>.<span class="ident">inner</span>
-                .<span class="ident">ready</span>()
-                .<span class="kw">await</span>
-                .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> {
-                    <span class="ident">tonic::Status::new</span>(
-                        <span class="ident">tonic::Code::Unknown</span>,
-                        <span class="macro">format!</span>(<span class="string">&quot;Service was not ready: {}&quot;</span>, <span class="ident">e</span>.<span class="ident">into</span>()),
-                    )
-                })<span class="question-mark">?</span>;
-            <span class="kw">let</span> <span class="ident">codec</span> <span class="op">=</span> <span class="ident">tonic::codec::ProstCodec::default</span>();
-            <span class="kw">let</span> <span class="ident">path</span> <span class="op">=</span> <span class="ident">http::uri::PathAndQuery::from_static</span>(
-                <span class="string">&quot;/lock_keeper_rpc.LockKeeperRpc/Register&quot;</span>,
-            );
-            <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">streaming</span>(<span class="ident">request</span>.<span class="ident">into_streaming_request</span>(), <span class="ident">path</span>, <span class="ident">codec</span>).<span class="kw">await</span>
-        }
         <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">authenticate</span>(
             <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
             <span class="ident">request</span>: <span class="kw">impl</span> <span class="ident">tonic::IntoStreamingRequest</span><span class="op">&lt;</span><span class="ident">Message</span> <span class="op">=</span> <span class="ident"><span class="kw">super</span>::Message</span><span class="op">&gt;</span>,
@@ -1155,6 +1187,69 @@
             );
             <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">streaming</span>(<span class="ident">request</span>.<span class="ident">into_streaming_request</span>(), <span class="ident">path</span>, <span class="ident">codec</span>).<span class="kw">await</span>
         }
+        <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">health</span>(
+            <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
+            <span class="ident">request</span>: <span class="kw">impl</span> <span class="ident">tonic::IntoRequest</span><span class="op">&lt;</span><span class="ident"><span class="kw">super</span>::HealthCheck</span><span class="op">&gt;</span>,
+        ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">tonic::Response</span><span class="op">&lt;</span><span class="ident"><span class="kw">super</span>::HealthCheck</span><span class="op">&gt;</span>, <span class="ident">tonic::Status</span><span class="op">&gt;</span> {
+            <span class="self">self</span>.<span class="ident">inner</span>
+                .<span class="ident">ready</span>()
+                .<span class="kw">await</span>
+                .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> {
+                    <span class="ident">tonic::Status::new</span>(
+                        <span class="ident">tonic::Code::Unknown</span>,
+                        <span class="macro">format!</span>(<span class="string">&quot;Service was not ready: {}&quot;</span>, <span class="ident">e</span>.<span class="ident">into</span>()),
+                    )
+                })<span class="question-mark">?</span>;
+            <span class="kw">let</span> <span class="ident">codec</span> <span class="op">=</span> <span class="ident">tonic::codec::ProstCodec::default</span>();
+            <span class="kw">let</span> <span class="ident">path</span> <span class="op">=</span> <span class="ident">http::uri::PathAndQuery::from_static</span>(
+                <span class="string">&quot;/lock_keeper_rpc.LockKeeperRpc/Health&quot;</span>,
+            );
+            <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">unary</span>(<span class="ident">request</span>.<span class="ident">into_request</span>(), <span class="ident">path</span>, <span class="ident">codec</span>).<span class="kw">await</span>
+        }
+        <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">import_signing_key</span>(
+            <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
+            <span class="ident">request</span>: <span class="kw">impl</span> <span class="ident">tonic::IntoStreamingRequest</span><span class="op">&lt;</span><span class="ident">Message</span> <span class="op">=</span> <span class="ident"><span class="kw">super</span>::Message</span><span class="op">&gt;</span>,
+        ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>
+            <span class="ident">tonic::Response</span><span class="op">&lt;</span><span class="ident">tonic::codec::Streaming</span><span class="op">&lt;</span><span class="ident"><span class="kw">super</span>::Message</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+            <span class="ident">tonic::Status</span>,
+        <span class="op">&gt;</span> {
+            <span class="self">self</span>.<span class="ident">inner</span>
+                .<span class="ident">ready</span>()
+                .<span class="kw">await</span>
+                .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> {
+                    <span class="ident">tonic::Status::new</span>(
+                        <span class="ident">tonic::Code::Unknown</span>,
+                        <span class="macro">format!</span>(<span class="string">&quot;Service was not ready: {}&quot;</span>, <span class="ident">e</span>.<span class="ident">into</span>()),
+                    )
+                })<span class="question-mark">?</span>;
+            <span class="kw">let</span> <span class="ident">codec</span> <span class="op">=</span> <span class="ident">tonic::codec::ProstCodec::default</span>();
+            <span class="kw">let</span> <span class="ident">path</span> <span class="op">=</span> <span class="ident">http::uri::PathAndQuery::from_static</span>(
+                <span class="string">&quot;/lock_keeper_rpc.LockKeeperRpc/ImportSigningKey&quot;</span>,
+            );
+            <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">streaming</span>(<span class="ident">request</span>.<span class="ident">into_streaming_request</span>(), <span class="ident">path</span>, <span class="ident">codec</span>).<span class="kw">await</span>
+        }
+        <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">register</span>(
+            <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
+            <span class="ident">request</span>: <span class="kw">impl</span> <span class="ident">tonic::IntoStreamingRequest</span><span class="op">&lt;</span><span class="ident">Message</span> <span class="op">=</span> <span class="ident"><span class="kw">super</span>::Message</span><span class="op">&gt;</span>,
+        ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>
+            <span class="ident">tonic::Response</span><span class="op">&lt;</span><span class="ident">tonic::codec::Streaming</span><span class="op">&lt;</span><span class="ident"><span class="kw">super</span>::Message</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+            <span class="ident">tonic::Status</span>,
+        <span class="op">&gt;</span> {
+            <span class="self">self</span>.<span class="ident">inner</span>
+                .<span class="ident">ready</span>()
+                .<span class="kw">await</span>
+                .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> {
+                    <span class="ident">tonic::Status::new</span>(
+                        <span class="ident">tonic::Code::Unknown</span>,
+                        <span class="macro">format!</span>(<span class="string">&quot;Service was not ready: {}&quot;</span>, <span class="ident">e</span>.<span class="ident">into</span>()),
+                    )
+                })<span class="question-mark">?</span>;
+            <span class="kw">let</span> <span class="ident">codec</span> <span class="op">=</span> <span class="ident">tonic::codec::ProstCodec::default</span>();
+            <span class="kw">let</span> <span class="ident">path</span> <span class="op">=</span> <span class="ident">http::uri::PathAndQuery::from_static</span>(
+                <span class="string">&quot;/lock_keeper_rpc.LockKeeperRpc/Register&quot;</span>,
+            );
+            <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">streaming</span>(<span class="ident">request</span>.<span class="ident">into_streaming_request</span>(), <span class="ident">path</span>, <span class="ident">codec</span>).<span class="kw">await</span>
+        }
         <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">remote_generate</span>(
             <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
             <span class="ident">request</span>: <span class="kw">impl</span> <span class="ident">tonic::IntoStreamingRequest</span><span class="op">&lt;</span><span class="ident">Message</span> <span class="op">=</span> <span class="ident"><span class="kw">super</span>::Message</span><span class="op">&gt;</span>,
@@ -1177,7 +1272,7 @@
             );
             <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">streaming</span>(<span class="ident">request</span>.<span class="ident">into_streaming_request</span>(), <span class="ident">path</span>, <span class="ident">codec</span>).<span class="kw">await</span>
         }
-        <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">import_signing_key</span>(
+        <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">remote_sign_bytes</span>(
             <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
             <span class="ident">request</span>: <span class="kw">impl</span> <span class="ident">tonic::IntoStreamingRequest</span><span class="op">&lt;</span><span class="ident">Message</span> <span class="op">=</span> <span class="ident"><span class="kw">super</span>::Message</span><span class="op">&gt;</span>,
         ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>
@@ -1195,7 +1290,7 @@
                 })<span class="question-mark">?</span>;
             <span class="kw">let</span> <span class="ident">codec</span> <span class="op">=</span> <span class="ident">tonic::codec::ProstCodec::default</span>();
             <span class="kw">let</span> <span class="ident">path</span> <span class="op">=</span> <span class="ident">http::uri::PathAndQuery::from_static</span>(
-                <span class="string">&quot;/lock_keeper_rpc.LockKeeperRpc/ImportSigningKey&quot;</span>,
+                <span class="string">&quot;/lock_keeper_rpc.LockKeeperRpc/RemoteSignBytes&quot;</span>,
             );
             <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">streaming</span>(<span class="ident">request</span>.<span class="ident">into_streaming_request</span>(), <span class="ident">path</span>, <span class="ident">codec</span>).<span class="kw">await</span>
         }
@@ -1296,20 +1391,6 @@
     <span class="doccomment">///Generated trait containing gRPC methods that should be implemented for use with LockKeeperRpcServer.</span>
     <span class="attribute">#[<span class="ident">async_trait</span>]</span>
     <span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">LockKeeperRpc</span>: <span class="ident">Send</span> <span class="op">+</span> <span class="ident">Sync</span> <span class="op">+</span> <span class="lifetime">&#39;static</span> {
-        <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">health</span>(
-            <span class="kw-2">&amp;</span><span class="self">self</span>,
-            <span class="ident">request</span>: <span class="ident">tonic::Request</span><span class="op">&lt;</span><span class="ident"><span class="kw">super</span>::HealthCheck</span><span class="op">&gt;</span>,
-        ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">tonic::Response</span><span class="op">&lt;</span><span class="ident"><span class="kw">super</span>::HealthCheck</span><span class="op">&gt;</span>, <span class="ident">tonic::Status</span><span class="op">&gt;</span>;
-        <span class="doccomment">///Server streaming response type for the Register method.</span>
-        <span class="kw">type</span> <span class="ident">RegisterStream</span>: <span class="ident">futures_core::Stream</span><span class="op">&lt;</span>
-                <span class="ident">Item</span> <span class="op">=</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident"><span class="kw">super</span>::Message</span>, <span class="ident">tonic::Status</span><span class="op">&gt;</span>,
-            <span class="op">&gt;</span>
-            <span class="op">+</span> <span class="ident">Send</span>
-            <span class="op">+</span> <span class="lifetime">&#39;static</span>;
-        <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">register</span>(
-            <span class="kw-2">&amp;</span><span class="self">self</span>,
-            <span class="ident">request</span>: <span class="ident">tonic::Request</span><span class="op">&lt;</span><span class="ident">tonic::Streaming</span><span class="op">&lt;</span><span class="ident"><span class="kw">super</span>::Message</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-        ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">tonic::Response</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::RegisterStream</span><span class="op">&gt;</span>, <span class="ident">tonic::Status</span><span class="op">&gt;</span>;
         <span class="doccomment">///Server streaming response type for the Authenticate method.</span>
         <span class="kw">type</span> <span class="ident">AuthenticateStream</span>: <span class="ident">futures_core::Stream</span><span class="op">&lt;</span>
                 <span class="ident">Item</span> <span class="op">=</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident"><span class="kw">super</span>::Message</span>, <span class="ident">tonic::Status</span><span class="op">&gt;</span>,
@@ -1340,16 +1421,10 @@
             <span class="kw-2">&amp;</span><span class="self">self</span>,
             <span class="ident">request</span>: <span class="ident">tonic::Request</span><span class="op">&lt;</span><span class="ident">tonic::Streaming</span><span class="op">&lt;</span><span class="ident"><span class="kw">super</span>::Message</span><span class="op">&gt;</span><span class="op">&gt;</span>,
         ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">tonic::Response</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::GenerateStream</span><span class="op">&gt;</span>, <span class="ident">tonic::Status</span><span class="op">&gt;</span>;
-        <span class="doccomment">///Server streaming response type for the RemoteGenerate method.</span>
-        <span class="kw">type</span> <span class="ident">RemoteGenerateStream</span>: <span class="ident">futures_core::Stream</span><span class="op">&lt;</span>
-                <span class="ident">Item</span> <span class="op">=</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident"><span class="kw">super</span>::Message</span>, <span class="ident">tonic::Status</span><span class="op">&gt;</span>,
-            <span class="op">&gt;</span>
-            <span class="op">+</span> <span class="ident">Send</span>
-            <span class="op">+</span> <span class="lifetime">&#39;static</span>;
-        <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">remote_generate</span>(
+        <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">health</span>(
             <span class="kw-2">&amp;</span><span class="self">self</span>,
-            <span class="ident">request</span>: <span class="ident">tonic::Request</span><span class="op">&lt;</span><span class="ident">tonic::Streaming</span><span class="op">&lt;</span><span class="ident"><span class="kw">super</span>::Message</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-        ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">tonic::Response</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::RemoteGenerateStream</span><span class="op">&gt;</span>, <span class="ident">tonic::Status</span><span class="op">&gt;</span>;
+            <span class="ident">request</span>: <span class="ident">tonic::Request</span><span class="op">&lt;</span><span class="ident"><span class="kw">super</span>::HealthCheck</span><span class="op">&gt;</span>,
+        ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">tonic::Response</span><span class="op">&lt;</span><span class="ident"><span class="kw">super</span>::HealthCheck</span><span class="op">&gt;</span>, <span class="ident">tonic::Status</span><span class="op">&gt;</span>;
         <span class="doccomment">///Server streaming response type for the ImportSigningKey method.</span>
         <span class="kw">type</span> <span class="ident">ImportSigningKeyStream</span>: <span class="ident">futures_core::Stream</span><span class="op">&lt;</span>
                 <span class="ident">Item</span> <span class="op">=</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident"><span class="kw">super</span>::Message</span>, <span class="ident">tonic::Status</span><span class="op">&gt;</span>,
@@ -1360,6 +1435,36 @@
             <span class="kw-2">&amp;</span><span class="self">self</span>,
             <span class="ident">request</span>: <span class="ident">tonic::Request</span><span class="op">&lt;</span><span class="ident">tonic::Streaming</span><span class="op">&lt;</span><span class="ident"><span class="kw">super</span>::Message</span><span class="op">&gt;</span><span class="op">&gt;</span>,
         ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">tonic::Response</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::ImportSigningKeyStream</span><span class="op">&gt;</span>, <span class="ident">tonic::Status</span><span class="op">&gt;</span>;
+        <span class="doccomment">///Server streaming response type for the Register method.</span>
+        <span class="kw">type</span> <span class="ident">RegisterStream</span>: <span class="ident">futures_core::Stream</span><span class="op">&lt;</span>
+                <span class="ident">Item</span> <span class="op">=</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident"><span class="kw">super</span>::Message</span>, <span class="ident">tonic::Status</span><span class="op">&gt;</span>,
+            <span class="op">&gt;</span>
+            <span class="op">+</span> <span class="ident">Send</span>
+            <span class="op">+</span> <span class="lifetime">&#39;static</span>;
+        <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">register</span>(
+            <span class="kw-2">&amp;</span><span class="self">self</span>,
+            <span class="ident">request</span>: <span class="ident">tonic::Request</span><span class="op">&lt;</span><span class="ident">tonic::Streaming</span><span class="op">&lt;</span><span class="ident"><span class="kw">super</span>::Message</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+        ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">tonic::Response</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::RegisterStream</span><span class="op">&gt;</span>, <span class="ident">tonic::Status</span><span class="op">&gt;</span>;
+        <span class="doccomment">///Server streaming response type for the RemoteGenerate method.</span>
+        <span class="kw">type</span> <span class="ident">RemoteGenerateStream</span>: <span class="ident">futures_core::Stream</span><span class="op">&lt;</span>
+                <span class="ident">Item</span> <span class="op">=</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident"><span class="kw">super</span>::Message</span>, <span class="ident">tonic::Status</span><span class="op">&gt;</span>,
+            <span class="op">&gt;</span>
+            <span class="op">+</span> <span class="ident">Send</span>
+            <span class="op">+</span> <span class="lifetime">&#39;static</span>;
+        <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">remote_generate</span>(
+            <span class="kw-2">&amp;</span><span class="self">self</span>,
+            <span class="ident">request</span>: <span class="ident">tonic::Request</span><span class="op">&lt;</span><span class="ident">tonic::Streaming</span><span class="op">&lt;</span><span class="ident"><span class="kw">super</span>::Message</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+        ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">tonic::Response</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::RemoteGenerateStream</span><span class="op">&gt;</span>, <span class="ident">tonic::Status</span><span class="op">&gt;</span>;
+        <span class="doccomment">///Server streaming response type for the RemoteSignBytes method.</span>
+        <span class="kw">type</span> <span class="ident">RemoteSignBytesStream</span>: <span class="ident">futures_core::Stream</span><span class="op">&lt;</span>
+                <span class="ident">Item</span> <span class="op">=</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident"><span class="kw">super</span>::Message</span>, <span class="ident">tonic::Status</span><span class="op">&gt;</span>,
+            <span class="op">&gt;</span>
+            <span class="op">+</span> <span class="ident">Send</span>
+            <span class="op">+</span> <span class="lifetime">&#39;static</span>;
+        <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">remote_sign_bytes</span>(
+            <span class="kw-2">&amp;</span><span class="self">self</span>,
+            <span class="ident">request</span>: <span class="ident">tonic::Request</span><span class="op">&lt;</span><span class="ident">tonic::Streaming</span><span class="op">&lt;</span><span class="ident"><span class="kw">super</span>::Message</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+        ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">tonic::Response</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::RemoteSignBytesStream</span><span class="op">&gt;</span>, <span class="ident">tonic::Status</span><span class="op">&gt;</span>;
         <span class="doccomment">///Server streaming response type for the Retrieve method.</span>
         <span class="kw">type</span> <span class="ident">RetrieveStream</span>: <span class="ident">futures_core::Stream</span><span class="op">&lt;</span>
                 <span class="ident">Item</span> <span class="op">=</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident"><span class="kw">super</span>::Message</span>, <span class="ident">tonic::Status</span><span class="op">&gt;</span>,
@@ -1460,82 +1565,6 @@
         <span class="kw">fn</span> <span class="ident">call</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">req</span>: <span class="ident">http::Request</span><span class="op">&lt;</span><span class="ident">B</span><span class="op">&gt;</span>) -&gt; <span class="ident"><span class="self">Self</span>::Future</span> {
             <span class="kw">let</span> <span class="ident">inner</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">clone</span>();
             <span class="kw">match</span> <span class="ident">req</span>.<span class="ident">uri</span>().<span class="ident">path</span>() {
-                <span class="string">&quot;/lock_keeper_rpc.LockKeeperRpc/Health&quot;</span> =&gt; {
-                    <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">non_camel_case_types</span>)]</span>
-                    <span class="kw">struct</span> <span class="ident">HealthSvc</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">LockKeeperRpc</span><span class="op">&gt;</span>(<span class="kw">pub</span> <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>);
-                    <span class="kw">impl</span><span class="op">&lt;</span>
-                        <span class="ident">T</span>: <span class="ident">LockKeeperRpc</span>,
-                    <span class="op">&gt;</span> <span class="ident">tonic::server::UnaryService</span><span class="op">&lt;</span><span class="ident"><span class="kw">super</span>::HealthCheck</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">HealthSvc</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-                        <span class="kw">type</span> <span class="ident">Response</span> <span class="op">=</span> <span class="ident"><span class="kw">super</span>::HealthCheck</span>;
-                        <span class="kw">type</span> <span class="ident">Future</span> <span class="op">=</span> <span class="ident">BoxFuture</span><span class="op">&lt;</span>
-                            <span class="ident">tonic::Response</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::Response</span><span class="op">&gt;</span>,
-                            <span class="ident">tonic::Status</span>,
-                        <span class="op">&gt;</span>;
-                        <span class="kw">fn</span> <span class="ident">call</span>(
-                            <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-                            <span class="ident">request</span>: <span class="ident">tonic::Request</span><span class="op">&lt;</span><span class="ident"><span class="kw">super</span>::HealthCheck</span><span class="op">&gt;</span>,
-                        ) -&gt; <span class="ident"><span class="self">Self</span>::Future</span> {
-                            <span class="kw">let</span> <span class="ident">inner</span> <span class="op">=</span> <span class="self">self</span>.<span class="number">0</span>.<span class="ident">clone</span>();
-                            <span class="kw">let</span> <span class="ident">fut</span> <span class="op">=</span> <span class="kw">async</span> <span class="kw">move</span> { (<span class="kw-2">*</span><span class="ident">inner</span>).<span class="ident">health</span>(<span class="ident">request</span>).<span class="kw">await</span> };
-                            <span class="ident">Box::pin</span>(<span class="ident">fut</span>)
-                        }
-                    }
-                    <span class="kw">let</span> <span class="ident">accept_compression_encodings</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">accept_compression_encodings</span>;
-                    <span class="kw">let</span> <span class="ident">send_compression_encodings</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">send_compression_encodings</span>;
-                    <span class="kw">let</span> <span class="ident">inner</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">clone</span>();
-                    <span class="kw">let</span> <span class="ident">fut</span> <span class="op">=</span> <span class="kw">async</span> <span class="kw">move</span> {
-                        <span class="kw">let</span> <span class="ident">inner</span> <span class="op">=</span> <span class="ident">inner</span>.<span class="number">0</span>;
-                        <span class="kw">let</span> <span class="ident">method</span> <span class="op">=</span> <span class="ident">HealthSvc</span>(<span class="ident">inner</span>);
-                        <span class="kw">let</span> <span class="ident">codec</span> <span class="op">=</span> <span class="ident">tonic::codec::ProstCodec::default</span>();
-                        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">grpc</span> <span class="op">=</span> <span class="ident">tonic::server::Grpc::new</span>(<span class="ident">codec</span>)
-                            .<span class="ident">apply_compression_config</span>(
-                                <span class="ident">accept_compression_encodings</span>,
-                                <span class="ident">send_compression_encodings</span>,
-                            );
-                        <span class="kw">let</span> <span class="ident">res</span> <span class="op">=</span> <span class="ident">grpc</span>.<span class="ident">unary</span>(<span class="ident">method</span>, <span class="ident">req</span>).<span class="kw">await</span>;
-                        <span class="prelude-val">Ok</span>(<span class="ident">res</span>)
-                    };
-                    <span class="ident">Box::pin</span>(<span class="ident">fut</span>)
-                }
-                <span class="string">&quot;/lock_keeper_rpc.LockKeeperRpc/Register&quot;</span> =&gt; {
-                    <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">non_camel_case_types</span>)]</span>
-                    <span class="kw">struct</span> <span class="ident">RegisterSvc</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">LockKeeperRpc</span><span class="op">&gt;</span>(<span class="kw">pub</span> <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>);
-                    <span class="kw">impl</span><span class="op">&lt;</span>
-                        <span class="ident">T</span>: <span class="ident">LockKeeperRpc</span>,
-                    <span class="op">&gt;</span> <span class="ident">tonic::server::StreamingService</span><span class="op">&lt;</span><span class="ident"><span class="kw">super</span>::Message</span><span class="op">&gt;</span>
-                    <span class="kw">for</span> <span class="ident">RegisterSvc</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-                        <span class="kw">type</span> <span class="ident">Response</span> <span class="op">=</span> <span class="ident"><span class="kw">super</span>::Message</span>;
-                        <span class="kw">type</span> <span class="ident">ResponseStream</span> <span class="op">=</span> <span class="ident">T::RegisterStream</span>;
-                        <span class="kw">type</span> <span class="ident">Future</span> <span class="op">=</span> <span class="ident">BoxFuture</span><span class="op">&lt;</span>
-                            <span class="ident">tonic::Response</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::ResponseStream</span><span class="op">&gt;</span>,
-                            <span class="ident">tonic::Status</span>,
-                        <span class="op">&gt;</span>;
-                        <span class="kw">fn</span> <span class="ident">call</span>(
-                            <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-                            <span class="ident">request</span>: <span class="ident">tonic::Request</span><span class="op">&lt;</span><span class="ident">tonic::Streaming</span><span class="op">&lt;</span><span class="ident"><span class="kw">super</span>::Message</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-                        ) -&gt; <span class="ident"><span class="self">Self</span>::Future</span> {
-                            <span class="kw">let</span> <span class="ident">inner</span> <span class="op">=</span> <span class="self">self</span>.<span class="number">0</span>.<span class="ident">clone</span>();
-                            <span class="kw">let</span> <span class="ident">fut</span> <span class="op">=</span> <span class="kw">async</span> <span class="kw">move</span> { (<span class="kw-2">*</span><span class="ident">inner</span>).<span class="ident">register</span>(<span class="ident">request</span>).<span class="kw">await</span> };
-                            <span class="ident">Box::pin</span>(<span class="ident">fut</span>)
-                        }
-                    }
-                    <span class="kw">let</span> <span class="ident">accept_compression_encodings</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">accept_compression_encodings</span>;
-                    <span class="kw">let</span> <span class="ident">send_compression_encodings</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">send_compression_encodings</span>;
-                    <span class="kw">let</span> <span class="ident">inner</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">clone</span>();
-                    <span class="kw">let</span> <span class="ident">fut</span> <span class="op">=</span> <span class="kw">async</span> <span class="kw">move</span> {
-                        <span class="kw">let</span> <span class="ident">inner</span> <span class="op">=</span> <span class="ident">inner</span>.<span class="number">0</span>;
-                        <span class="kw">let</span> <span class="ident">method</span> <span class="op">=</span> <span class="ident">RegisterSvc</span>(<span class="ident">inner</span>);
-                        <span class="kw">let</span> <span class="ident">codec</span> <span class="op">=</span> <span class="ident">tonic::codec::ProstCodec::default</span>();
-                        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">grpc</span> <span class="op">=</span> <span class="ident">tonic::server::Grpc::new</span>(<span class="ident">codec</span>)
-                            .<span class="ident">apply_compression_config</span>(
-                                <span class="ident">accept_compression_encodings</span>,
-                                <span class="ident">send_compression_encodings</span>,
-                            );
-                        <span class="kw">let</span> <span class="ident">res</span> <span class="op">=</span> <span class="ident">grpc</span>.<span class="ident">streaming</span>(<span class="ident">method</span>, <span class="ident">req</span>).<span class="kw">await</span>;
-                        <span class="prelude-val">Ok</span>(<span class="ident">res</span>)
-                    };
-                    <span class="ident">Box::pin</span>(<span class="ident">fut</span>)
-                }
                 <span class="string">&quot;/lock_keeper_rpc.LockKeeperRpc/Authenticate&quot;</span> =&gt; {
                     <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">non_camel_case_types</span>)]</span>
                     <span class="kw">struct</span> <span class="ident">AuthenticateSvc</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">LockKeeperRpc</span><span class="op">&gt;</span>(<span class="kw">pub</span> <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>);
@@ -1657,6 +1686,123 @@
                     };
                     <span class="ident">Box::pin</span>(<span class="ident">fut</span>)
                 }
+                <span class="string">&quot;/lock_keeper_rpc.LockKeeperRpc/Health&quot;</span> =&gt; {
+                    <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">non_camel_case_types</span>)]</span>
+                    <span class="kw">struct</span> <span class="ident">HealthSvc</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">LockKeeperRpc</span><span class="op">&gt;</span>(<span class="kw">pub</span> <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>);
+                    <span class="kw">impl</span><span class="op">&lt;</span>
+                        <span class="ident">T</span>: <span class="ident">LockKeeperRpc</span>,
+                    <span class="op">&gt;</span> <span class="ident">tonic::server::UnaryService</span><span class="op">&lt;</span><span class="ident"><span class="kw">super</span>::HealthCheck</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">HealthSvc</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
+                        <span class="kw">type</span> <span class="ident">Response</span> <span class="op">=</span> <span class="ident"><span class="kw">super</span>::HealthCheck</span>;
+                        <span class="kw">type</span> <span class="ident">Future</span> <span class="op">=</span> <span class="ident">BoxFuture</span><span class="op">&lt;</span>
+                            <span class="ident">tonic::Response</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::Response</span><span class="op">&gt;</span>,
+                            <span class="ident">tonic::Status</span>,
+                        <span class="op">&gt;</span>;
+                        <span class="kw">fn</span> <span class="ident">call</span>(
+                            <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
+                            <span class="ident">request</span>: <span class="ident">tonic::Request</span><span class="op">&lt;</span><span class="ident"><span class="kw">super</span>::HealthCheck</span><span class="op">&gt;</span>,
+                        ) -&gt; <span class="ident"><span class="self">Self</span>::Future</span> {
+                            <span class="kw">let</span> <span class="ident">inner</span> <span class="op">=</span> <span class="self">self</span>.<span class="number">0</span>.<span class="ident">clone</span>();
+                            <span class="kw">let</span> <span class="ident">fut</span> <span class="op">=</span> <span class="kw">async</span> <span class="kw">move</span> { (<span class="kw-2">*</span><span class="ident">inner</span>).<span class="ident">health</span>(<span class="ident">request</span>).<span class="kw">await</span> };
+                            <span class="ident">Box::pin</span>(<span class="ident">fut</span>)
+                        }
+                    }
+                    <span class="kw">let</span> <span class="ident">accept_compression_encodings</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">accept_compression_encodings</span>;
+                    <span class="kw">let</span> <span class="ident">send_compression_encodings</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">send_compression_encodings</span>;
+                    <span class="kw">let</span> <span class="ident">inner</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">clone</span>();
+                    <span class="kw">let</span> <span class="ident">fut</span> <span class="op">=</span> <span class="kw">async</span> <span class="kw">move</span> {
+                        <span class="kw">let</span> <span class="ident">inner</span> <span class="op">=</span> <span class="ident">inner</span>.<span class="number">0</span>;
+                        <span class="kw">let</span> <span class="ident">method</span> <span class="op">=</span> <span class="ident">HealthSvc</span>(<span class="ident">inner</span>);
+                        <span class="kw">let</span> <span class="ident">codec</span> <span class="op">=</span> <span class="ident">tonic::codec::ProstCodec::default</span>();
+                        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">grpc</span> <span class="op">=</span> <span class="ident">tonic::server::Grpc::new</span>(<span class="ident">codec</span>)
+                            .<span class="ident">apply_compression_config</span>(
+                                <span class="ident">accept_compression_encodings</span>,
+                                <span class="ident">send_compression_encodings</span>,
+                            );
+                        <span class="kw">let</span> <span class="ident">res</span> <span class="op">=</span> <span class="ident">grpc</span>.<span class="ident">unary</span>(<span class="ident">method</span>, <span class="ident">req</span>).<span class="kw">await</span>;
+                        <span class="prelude-val">Ok</span>(<span class="ident">res</span>)
+                    };
+                    <span class="ident">Box::pin</span>(<span class="ident">fut</span>)
+                }
+                <span class="string">&quot;/lock_keeper_rpc.LockKeeperRpc/ImportSigningKey&quot;</span> =&gt; {
+                    <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">non_camel_case_types</span>)]</span>
+                    <span class="kw">struct</span> <span class="ident">ImportSigningKeySvc</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">LockKeeperRpc</span><span class="op">&gt;</span>(<span class="kw">pub</span> <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>);
+                    <span class="kw">impl</span><span class="op">&lt;</span>
+                        <span class="ident">T</span>: <span class="ident">LockKeeperRpc</span>,
+                    <span class="op">&gt;</span> <span class="ident">tonic::server::StreamingService</span><span class="op">&lt;</span><span class="ident"><span class="kw">super</span>::Message</span><span class="op">&gt;</span>
+                    <span class="kw">for</span> <span class="ident">ImportSigningKeySvc</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
+                        <span class="kw">type</span> <span class="ident">Response</span> <span class="op">=</span> <span class="ident"><span class="kw">super</span>::Message</span>;
+                        <span class="kw">type</span> <span class="ident">ResponseStream</span> <span class="op">=</span> <span class="ident">T::ImportSigningKeyStream</span>;
+                        <span class="kw">type</span> <span class="ident">Future</span> <span class="op">=</span> <span class="ident">BoxFuture</span><span class="op">&lt;</span>
+                            <span class="ident">tonic::Response</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::ResponseStream</span><span class="op">&gt;</span>,
+                            <span class="ident">tonic::Status</span>,
+                        <span class="op">&gt;</span>;
+                        <span class="kw">fn</span> <span class="ident">call</span>(
+                            <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
+                            <span class="ident">request</span>: <span class="ident">tonic::Request</span><span class="op">&lt;</span><span class="ident">tonic::Streaming</span><span class="op">&lt;</span><span class="ident"><span class="kw">super</span>::Message</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+                        ) -&gt; <span class="ident"><span class="self">Self</span>::Future</span> {
+                            <span class="kw">let</span> <span class="ident">inner</span> <span class="op">=</span> <span class="self">self</span>.<span class="number">0</span>.<span class="ident">clone</span>();
+                            <span class="kw">let</span> <span class="ident">fut</span> <span class="op">=</span> <span class="kw">async</span> <span class="kw">move</span> {
+                                (<span class="kw-2">*</span><span class="ident">inner</span>).<span class="ident">import_signing_key</span>(<span class="ident">request</span>).<span class="kw">await</span>
+                            };
+                            <span class="ident">Box::pin</span>(<span class="ident">fut</span>)
+                        }
+                    }
+                    <span class="kw">let</span> <span class="ident">accept_compression_encodings</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">accept_compression_encodings</span>;
+                    <span class="kw">let</span> <span class="ident">send_compression_encodings</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">send_compression_encodings</span>;
+                    <span class="kw">let</span> <span class="ident">inner</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">clone</span>();
+                    <span class="kw">let</span> <span class="ident">fut</span> <span class="op">=</span> <span class="kw">async</span> <span class="kw">move</span> {
+                        <span class="kw">let</span> <span class="ident">inner</span> <span class="op">=</span> <span class="ident">inner</span>.<span class="number">0</span>;
+                        <span class="kw">let</span> <span class="ident">method</span> <span class="op">=</span> <span class="ident">ImportSigningKeySvc</span>(<span class="ident">inner</span>);
+                        <span class="kw">let</span> <span class="ident">codec</span> <span class="op">=</span> <span class="ident">tonic::codec::ProstCodec::default</span>();
+                        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">grpc</span> <span class="op">=</span> <span class="ident">tonic::server::Grpc::new</span>(<span class="ident">codec</span>)
+                            .<span class="ident">apply_compression_config</span>(
+                                <span class="ident">accept_compression_encodings</span>,
+                                <span class="ident">send_compression_encodings</span>,
+                            );
+                        <span class="kw">let</span> <span class="ident">res</span> <span class="op">=</span> <span class="ident">grpc</span>.<span class="ident">streaming</span>(<span class="ident">method</span>, <span class="ident">req</span>).<span class="kw">await</span>;
+                        <span class="prelude-val">Ok</span>(<span class="ident">res</span>)
+                    };
+                    <span class="ident">Box::pin</span>(<span class="ident">fut</span>)
+                }
+                <span class="string">&quot;/lock_keeper_rpc.LockKeeperRpc/Register&quot;</span> =&gt; {
+                    <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">non_camel_case_types</span>)]</span>
+                    <span class="kw">struct</span> <span class="ident">RegisterSvc</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">LockKeeperRpc</span><span class="op">&gt;</span>(<span class="kw">pub</span> <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>);
+                    <span class="kw">impl</span><span class="op">&lt;</span>
+                        <span class="ident">T</span>: <span class="ident">LockKeeperRpc</span>,
+                    <span class="op">&gt;</span> <span class="ident">tonic::server::StreamingService</span><span class="op">&lt;</span><span class="ident"><span class="kw">super</span>::Message</span><span class="op">&gt;</span>
+                    <span class="kw">for</span> <span class="ident">RegisterSvc</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
+                        <span class="kw">type</span> <span class="ident">Response</span> <span class="op">=</span> <span class="ident"><span class="kw">super</span>::Message</span>;
+                        <span class="kw">type</span> <span class="ident">ResponseStream</span> <span class="op">=</span> <span class="ident">T::RegisterStream</span>;
+                        <span class="kw">type</span> <span class="ident">Future</span> <span class="op">=</span> <span class="ident">BoxFuture</span><span class="op">&lt;</span>
+                            <span class="ident">tonic::Response</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::ResponseStream</span><span class="op">&gt;</span>,
+                            <span class="ident">tonic::Status</span>,
+                        <span class="op">&gt;</span>;
+                        <span class="kw">fn</span> <span class="ident">call</span>(
+                            <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
+                            <span class="ident">request</span>: <span class="ident">tonic::Request</span><span class="op">&lt;</span><span class="ident">tonic::Streaming</span><span class="op">&lt;</span><span class="ident"><span class="kw">super</span>::Message</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+                        ) -&gt; <span class="ident"><span class="self">Self</span>::Future</span> {
+                            <span class="kw">let</span> <span class="ident">inner</span> <span class="op">=</span> <span class="self">self</span>.<span class="number">0</span>.<span class="ident">clone</span>();
+                            <span class="kw">let</span> <span class="ident">fut</span> <span class="op">=</span> <span class="kw">async</span> <span class="kw">move</span> { (<span class="kw-2">*</span><span class="ident">inner</span>).<span class="ident">register</span>(<span class="ident">request</span>).<span class="kw">await</span> };
+                            <span class="ident">Box::pin</span>(<span class="ident">fut</span>)
+                        }
+                    }
+                    <span class="kw">let</span> <span class="ident">accept_compression_encodings</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">accept_compression_encodings</span>;
+                    <span class="kw">let</span> <span class="ident">send_compression_encodings</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">send_compression_encodings</span>;
+                    <span class="kw">let</span> <span class="ident">inner</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">clone</span>();
+                    <span class="kw">let</span> <span class="ident">fut</span> <span class="op">=</span> <span class="kw">async</span> <span class="kw">move</span> {
+                        <span class="kw">let</span> <span class="ident">inner</span> <span class="op">=</span> <span class="ident">inner</span>.<span class="number">0</span>;
+                        <span class="kw">let</span> <span class="ident">method</span> <span class="op">=</span> <span class="ident">RegisterSvc</span>(<span class="ident">inner</span>);
+                        <span class="kw">let</span> <span class="ident">codec</span> <span class="op">=</span> <span class="ident">tonic::codec::ProstCodec::default</span>();
+                        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">grpc</span> <span class="op">=</span> <span class="ident">tonic::server::Grpc::new</span>(<span class="ident">codec</span>)
+                            .<span class="ident">apply_compression_config</span>(
+                                <span class="ident">accept_compression_encodings</span>,
+                                <span class="ident">send_compression_encodings</span>,
+                            );
+                        <span class="kw">let</span> <span class="ident">res</span> <span class="op">=</span> <span class="ident">grpc</span>.<span class="ident">streaming</span>(<span class="ident">method</span>, <span class="ident">req</span>).<span class="kw">await</span>;
+                        <span class="prelude-val">Ok</span>(<span class="ident">res</span>)
+                    };
+                    <span class="ident">Box::pin</span>(<span class="ident">fut</span>)
+                }
                 <span class="string">&quot;/lock_keeper_rpc.LockKeeperRpc/RemoteGenerate&quot;</span> =&gt; {
                     <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">non_camel_case_types</span>)]</span>
                     <span class="kw">struct</span> <span class="ident">RemoteGenerateSvc</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">LockKeeperRpc</span><span class="op">&gt;</span>(<span class="kw">pub</span> <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>);
@@ -1698,15 +1844,15 @@
                     };
                     <span class="ident">Box::pin</span>(<span class="ident">fut</span>)
                 }
-                <span class="string">&quot;/lock_keeper_rpc.LockKeeperRpc/ImportSigningKey&quot;</span> =&gt; {
+                <span class="string">&quot;/lock_keeper_rpc.LockKeeperRpc/RemoteSignBytes&quot;</span> =&gt; {
                     <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">non_camel_case_types</span>)]</span>
-                    <span class="kw">struct</span> <span class="ident">ImportSigningKeySvc</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">LockKeeperRpc</span><span class="op">&gt;</span>(<span class="kw">pub</span> <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>);
+                    <span class="kw">struct</span> <span class="ident">RemoteSignBytesSvc</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">LockKeeperRpc</span><span class="op">&gt;</span>(<span class="kw">pub</span> <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>);
                     <span class="kw">impl</span><span class="op">&lt;</span>
                         <span class="ident">T</span>: <span class="ident">LockKeeperRpc</span>,
                     <span class="op">&gt;</span> <span class="ident">tonic::server::StreamingService</span><span class="op">&lt;</span><span class="ident"><span class="kw">super</span>::Message</span><span class="op">&gt;</span>
-                    <span class="kw">for</span> <span class="ident">ImportSigningKeySvc</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
+                    <span class="kw">for</span> <span class="ident">RemoteSignBytesSvc</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
                         <span class="kw">type</span> <span class="ident">Response</span> <span class="op">=</span> <span class="ident"><span class="kw">super</span>::Message</span>;
-                        <span class="kw">type</span> <span class="ident">ResponseStream</span> <span class="op">=</span> <span class="ident">T::ImportSigningKeyStream</span>;
+                        <span class="kw">type</span> <span class="ident">ResponseStream</span> <span class="op">=</span> <span class="ident">T::RemoteSignBytesStream</span>;
                         <span class="kw">type</span> <span class="ident">Future</span> <span class="op">=</span> <span class="ident">BoxFuture</span><span class="op">&lt;</span>
                             <span class="ident">tonic::Response</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::ResponseStream</span><span class="op">&gt;</span>,
                             <span class="ident">tonic::Status</span>,
@@ -1717,7 +1863,7 @@
                         ) -&gt; <span class="ident"><span class="self">Self</span>::Future</span> {
                             <span class="kw">let</span> <span class="ident">inner</span> <span class="op">=</span> <span class="self">self</span>.<span class="number">0</span>.<span class="ident">clone</span>();
                             <span class="kw">let</span> <span class="ident">fut</span> <span class="op">=</span> <span class="kw">async</span> <span class="kw">move</span> {
-                                (<span class="kw-2">*</span><span class="ident">inner</span>).<span class="ident">import_signing_key</span>(<span class="ident">request</span>).<span class="kw">await</span>
+                                (<span class="kw-2">*</span><span class="ident">inner</span>).<span class="ident">remote_sign_bytes</span>(<span class="ident">request</span>).<span class="kw">await</span>
                             };
                             <span class="ident">Box::pin</span>(<span class="ident">fut</span>)
                         }
@@ -1727,7 +1873,7 @@
                     <span class="kw">let</span> <span class="ident">inner</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">clone</span>();
                     <span class="kw">let</span> <span class="ident">fut</span> <span class="op">=</span> <span class="kw">async</span> <span class="kw">move</span> {
                         <span class="kw">let</span> <span class="ident">inner</span> <span class="op">=</span> <span class="ident">inner</span>.<span class="number">0</span>;
-                        <span class="kw">let</span> <span class="ident">method</span> <span class="op">=</span> <span class="ident">ImportSigningKeySvc</span>(<span class="ident">inner</span>);
+                        <span class="kw">let</span> <span class="ident">method</span> <span class="op">=</span> <span class="ident">RemoteSignBytesSvc</span>(<span class="ident">inner</span>);
                         <span class="kw">let</span> <span class="ident">codec</span> <span class="op">=</span> <span class="ident">tonic::codec::ProstCodec::default</span>();
                         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">grpc</span> <span class="op">=</span> <span class="ident">tonic::server::Grpc::new</span>(<span class="ident">codec</span>)
                             .<span class="ident">apply_compression_config</span>(

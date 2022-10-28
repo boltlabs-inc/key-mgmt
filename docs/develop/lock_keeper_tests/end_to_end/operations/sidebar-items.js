@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":[["Operation","Set of operations that can be executed by the test harness"]],"mod":[["authenticate",""],["export",""],["generate",""],["import",""],["register",""],["remote_generate",""],["retrieve",""]]};
+window.SIDEBAR_ITEMS = {"enum":[["Operation","Set of operations that can be executed by the test harness"]],"mod":[["authenticate",""],["export",""],["generate",""],["import",""],["register",""],["remote_generate",""],["remote_sign",""],["retrieve",""]]};

@@ -237,6 +237,7 @@
 <span id="237">237</span>
 <span id="238">238</span>
 <span id="239">239</span>
+<span id="240">240</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Client object to interact with the key server.</span>
 
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::LockKeeperClientError</span>;
@@ -431,6 +432,7 @@
             <span class="ident">ClientAction::ImportSigningKey</span> =&gt; <span class="ident">client</span>.<span class="ident">import_signing_key</span>(<span class="ident">stream</span>).<span class="kw">await</span>,
             <span class="ident">ClientAction::Register</span> =&gt; <span class="ident">client</span>.<span class="ident">register</span>(<span class="ident">stream</span>).<span class="kw">await</span>,
             <span class="ident">ClientAction::RemoteGenerate</span> =&gt; <span class="ident">client</span>.<span class="ident">remote_generate</span>(<span class="ident">stream</span>).<span class="kw">await</span>,
+            <span class="ident">ClientAction::RemoteSignBytes</span> =&gt; <span class="ident">client</span>.<span class="ident">remote_sign_bytes</span>(<span class="ident">stream</span>).<span class="kw">await</span>,
             <span class="ident">ClientAction::Retrieve</span> =&gt; <span class="ident">client</span>.<span class="ident">retrieve</span>(<span class="ident">stream</span>).<span class="kw">await</span>,
             <span class="ident">ClientAction::RetrieveAuditEvents</span> =&gt; <span class="ident">client</span>.<span class="ident">retrieve_audit_events</span>(<span class="ident">stream</span>).<span class="kw">await</span>,
             <span class="ident">ClientAction::RetrieveSigningKey</span> =&gt; <span class="ident">client</span>.<span class="ident">retrieve_signing_key</span>(<span class="ident">stream</span>).<span class="kw">await</span>,

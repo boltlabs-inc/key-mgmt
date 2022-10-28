@@ -21,6 +21,10 @@
 <span id="21">21</span>
 <span id="22">22</span>
 <span id="23">23</span>
+<span id="24">24</span>
+<span id="25">25</span>
+<span id="26">26</span>
+<span id="27">27</span>
 </pre><pre class="rust"><code><span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">client</span> {
     <span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">impl_message_conversion</span>, <span class="ident">types::database::user::UserId</span>};
     <span class="kw">use</span> <span class="ident">serde</span>::{<span class="ident">Deserialize</span>, <span class="ident">Serialize</span>};
@@ -34,12 +38,16 @@
 }
 
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">server</span> {
-    <span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">crypto::KeyId</span>, <span class="ident">impl_message_conversion</span>};
+    <span class="kw">use</span> <span class="kw">crate</span>::{
+        <span class="ident">crypto</span>::{<span class="ident">KeyId</span>, <span class="ident">SigningPublicKey</span>},
+        <span class="ident">impl_message_conversion</span>,
+    };
     <span class="kw">use</span> <span class="ident">serde</span>::{<span class="ident">Deserialize</span>, <span class="ident">Serialize</span>};
 
     <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Deserialize</span>, <span class="ident">Serialize</span>)]</span>
     <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ReturnKeyId</span> {
         <span class="kw">pub</span> <span class="ident">key_id</span>: <span class="ident">KeyId</span>,
+        <span class="kw">pub</span> <span class="ident">public_key</span>: <span class="ident">SigningPublicKey</span>,
     }
 
     <span class="macro">impl_message_conversion!</span>(<span class="ident">ReturnKeyId</span>);

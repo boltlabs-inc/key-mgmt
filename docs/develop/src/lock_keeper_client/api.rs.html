@@ -235,6 +235,27 @@
 <span id="235">235</span>
 <span id="236">236</span>
 <span id="237">237</span>
+<span id="238">238</span>
+<span id="239">239</span>
+<span id="240">240</span>
+<span id="241">241</span>
+<span id="242">242</span>
+<span id="243">243</span>
+<span id="244">244</span>
+<span id="245">245</span>
+<span id="246">246</span>
+<span id="247">247</span>
+<span id="248">248</span>
+<span id="249">249</span>
+<span id="250">250</span>
+<span id="251">251</span>
+<span id="252">252</span>
+<span id="253">253</span>
+<span id="254">254</span>
+<span id="255">255</span>
+<span id="256">256</span>
+<span id="257">257</span>
+<span id="258">258</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Full implementation of the public API for the Lock Keeper client library.</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! This API is designed for use with a local client application - that is, an</span>
@@ -248,13 +269,14 @@
 <span class="kw">mod</span> <span class="ident">import</span>;
 <span class="kw">mod</span> <span class="ident">register</span>;
 <span class="kw">mod</span> <span class="ident">remote_generate</span>;
+<span class="kw">mod</span> <span class="ident">remote_sign_bytes</span>;
 <span class="kw">mod</span> <span class="ident">retrieve</span>;
 <span class="kw">mod</span> <span class="ident">retrieve_audit_events</span>;
 
 <span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">client::Password</span>, <span class="ident">LockKeeperClient</span>, <span class="ident">LockKeeperClientError</span>};
 <span class="kw">use</span> <span class="ident">lock_keeper</span>::{
     <span class="ident">config::client::Config</span>,
-    <span class="ident">crypto</span>::{<span class="ident">Export</span>, <span class="ident">KeyId</span>, <span class="ident">Secret</span>},
+    <span class="ident">crypto</span>::{<span class="ident">Export</span>, <span class="ident">KeyId</span>, <span class="ident">Secret</span>, <span class="ident">Signable</span>, <span class="ident">Signature</span>},
     <span class="ident">types</span>::{
         <span class="ident">audit_event</span>::{<span class="ident">AuditEvent</span>, <span class="ident">AuditEventOptions</span>, <span class="ident">EventType</span>},
         <span class="ident">database::user::AccountName</span>,
@@ -264,6 +286,8 @@
 <span class="kw">use</span> <span class="ident">rand</span>::{<span class="ident">rngs::StdRng</span>, <span class="ident">SeedableRng</span>};
 <span class="kw">use</span> <span class="ident">serde</span>::{<span class="ident">Deserialize</span>, <span class="ident">Serialize</span>};
 <span class="kw">use</span> <span class="ident">tracing::error</span>;
+
+<span class="kw">use</span> <span class="ident"><span class="self">self</span>::remote_generate::RemoteGenerateResult</span>;
 
 <span class="doccomment">/// Wrapper for secrets prepared for local storage</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Deserialize</span>, <span class="ident">Serialize</span>)]</span>
@@ -430,7 +454,7 @@
     }
 
     <span class="doccomment">/// Request that the server generate a new signing key</span>
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">remote_generate</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">KeyId</span>, <span class="ident">LockKeeperClientError</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">remote_generate</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">RemoteGenerateResult</span>, <span class="ident">LockKeeperClientError</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">client_channel</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::create_channel</span>(
             <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">tonic_client</span>(),
             <span class="ident">ClientAction::RemoteGenerate</span>,
@@ -438,6 +462,24 @@
         )
         .<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="self">self</span>.<span class="ident">handle_remote_generate</span>(<span class="kw-2">&amp;mut</span> <span class="ident">client_channel</span>).<span class="kw">await</span>
+    }
+
+    <span class="doccomment">/// Sign an arbitrary blob of bytes with a remotely generated</span>
+    <span class="doccomment">/// [`SigningKeyPair`][lock_keeper::crypto::SigningKeyPair] and return the</span>
+    <span class="doccomment">/// resulting [`Signature`].</span>
+    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">remote_sign_bytes</span>(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        <span class="ident">key_id</span>: <span class="ident">KeyId</span>,
+        <span class="ident">bytes</span>: <span class="kw">impl</span> <span class="ident">Signable</span>,
+    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Signature</span>, <span class="ident">LockKeeperClientError</span><span class="op">&gt;</span> {
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">client_channel</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::create_channel</span>(
+            <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">tonic_client</span>(),
+            <span class="ident">ClientAction::RemoteSignBytes</span>,
+            <span class="self">self</span>.<span class="ident">account_name</span>(),
+        )
+        .<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="self">self</span>.<span class="ident">handle_remote_sign_bytes</span>(<span class="kw-2">&amp;mut</span> <span class="ident">client_channel</span>, <span class="ident">key_id</span>, <span class="ident">bytes</span>)
+            .<span class="kw">await</span>
     }
 
     <span class="doccomment">/// Retrieve the log of audit events from the key server for the</span>

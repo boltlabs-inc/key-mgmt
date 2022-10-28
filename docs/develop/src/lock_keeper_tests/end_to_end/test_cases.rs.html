@@ -310,6 +310,30 @@
 <span id="310">310</span>
 <span id="311">311</span>
 <span id="312">312</span>
+<span id="313">313</span>
+<span id="314">314</span>
+<span id="315">315</span>
+<span id="316">316</span>
+<span id="317">317</span>
+<span id="318">318</span>
+<span id="319">319</span>
+<span id="320">320</span>
+<span id="321">321</span>
+<span id="322">322</span>
+<span id="323">323</span>
+<span id="324">324</span>
+<span id="325">325</span>
+<span id="326">326</span>
+<span id="327">327</span>
+<span id="328">328</span>
+<span id="329">329</span>
+<span id="330">330</span>
+<span id="331">331</span>
+<span id="332">332</span>
+<span id="333">333</span>
+<span id="334">334</span>
+<span id="335">335</span>
+<span id="336">336</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::str::FromStr</span>;
 
 <span class="kw">use</span> <span class="ident">lock_keeper_client</span>::{<span class="ident">client::Password</span>, <span class="ident">LockKeeperClientError</span>};
@@ -615,6 +639,30 @@
                     <span class="ident">ExportSigningKey</span>,
                     <span class="ident">Outcome</span> {
                         <span class="ident">expected_error</span>: <span class="prelude-val">Some</span>(<span class="ident">LockKeeperClientError::InvalidAccount</span>),
+                    },
+                ),
+            ],
+            <span class="ident">config</span>.<span class="ident">client_config</span>.<span class="ident">clone</span>(),
+        ),
+        <span class="ident">Test::new</span>(
+            <span class="string">&quot;Sign data with a remotely generated key&quot;</span>,
+            <span class="macro">vec!</span>[
+                (
+                    <span class="ident">Register</span>,
+                    <span class="ident">Outcome</span> {
+                        <span class="ident">expected_error</span>: <span class="prelude-val">None</span>,
+                    },
+                ),
+                (
+                    <span class="ident">RemoteGenerate</span>,
+                    <span class="ident">Outcome</span> {
+                        <span class="ident">expected_error</span>: <span class="prelude-val">None</span>,
+                    },
+                ),
+                (
+                    <span class="ident">RemoteSignBytes</span>,
+                    <span class="ident">Outcome</span> {
+                        <span class="ident">expected_error</span>: <span class="prelude-val">None</span>,
                     },
                 ),
             ],

@@ -18,9 +18,12 @@
 <span id="18">18</span>
 <span id="19">19</span>
 <span id="20">20</span>
+<span id="21">21</span>
+<span id="22">22</span>
+<span id="23">23</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">lock_keeper_client::LockKeeperClient</span>;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::end_to_end</span>::{<span class="ident">Test</span>, <span class="ident">KEY_ID</span>};
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::end_to_end</span>::{<span class="ident">Test</span>, <span class="ident">KEY_ID</span>, <span class="ident">REMOTE_GENERATED_PUBLIC_KEY</span>};
 
 <span class="kw">impl</span> <span class="ident">Test</span> {
     <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">remote_generate</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="ident">anyhow::Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
@@ -31,9 +34,12 @@
             <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">config</span>,
         )
         .<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="kw">let</span> <span class="ident">key_id</span> <span class="op">=</span> <span class="ident">lock_keeper_client</span>.<span class="ident">remote_generate</span>().<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let</span> <span class="ident">key_info</span> <span class="op">=</span> <span class="ident">lock_keeper_client</span>.<span class="ident">remote_generate</span>().<span class="kw">await</span><span class="question-mark">?</span>;
+
         <span class="comment">// Store generated key ID</span>
-        <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">set</span>(<span class="ident">KEY_ID</span>, <span class="ident">key_id</span>)<span class="question-mark">?</span>;
+        <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">set</span>(<span class="ident">KEY_ID</span>, <span class="ident">key_info</span>.<span class="ident">key_id</span>)<span class="question-mark">?</span>;
+        <span class="self">self</span>.<span class="ident">state</span>
+            .<span class="ident">set</span>(<span class="ident">REMOTE_GENERATED_PUBLIC_KEY</span>, <span class="ident">key_info</span>.<span class="ident">public_key</span>)<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(())
     }

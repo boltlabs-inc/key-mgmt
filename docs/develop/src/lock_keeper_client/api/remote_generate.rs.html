@@ -21,18 +21,29 @@
 <span id="21">21</span>
 <span id="22">22</span>
 <span id="23">23</span>
+<span id="24">24</span>
+<span id="25">25</span>
+<span id="26">26</span>
+<span id="27">27</span>
+<span id="28">28</span>
+<span id="29">29</span>
+<span id="30">30</span>
+<span id="31">31</span>
+<span id="32">32</span>
+<span id="33">33</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">LockKeeperClient</span>, <span class="ident">LockKeeperClientError</span>};
 <span class="kw">use</span> <span class="ident">lock_keeper</span>::{
-    <span class="ident">crypto::KeyId</span>,
+    <span class="ident">crypto</span>::{<span class="ident">KeyId</span>, <span class="ident">SigningPublicKey</span>},
     <span class="ident">infrastructure::channel::ClientChannel</span>,
     <span class="ident">types::operations::remote_generate</span>::{<span class="ident">client</span>, <span class="ident">server</span>},
 };
+<span class="kw">use</span> <span class="ident">serde</span>::{<span class="ident">Deserialize</span>, <span class="ident">Serialize</span>};
 
 <span class="kw">impl</span> <span class="ident">LockKeeperClient</span> {
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">handle_remote_generate</span>(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         <span class="ident">channel</span>: <span class="kw-2">&amp;mut</span> <span class="ident">ClientChannel</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">KeyId</span>, <span class="ident">LockKeeperClientError</span><span class="op">&gt;</span> {
+    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">RemoteGenerateResult</span>, <span class="ident">LockKeeperClientError</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="ident">request</span> <span class="op">=</span> <span class="ident">client::RequestRemoteGenerate</span> {
             <span class="ident">user_id</span>: <span class="self">self</span>.<span class="ident">user_id</span>().<span class="ident">clone</span>(),
         };
@@ -41,8 +52,17 @@
 
         <span class="kw">let</span> <span class="ident">response</span>: <span class="ident">server::ReturnKeyId</span> <span class="op">=</span> <span class="ident">channel</span>.<span class="ident">receive</span>().<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="prelude-val">Ok</span>(<span class="ident">response</span>.<span class="ident">key_id</span>)
+        <span class="prelude-val">Ok</span>(<span class="ident">RemoteGenerateResult</span> {
+            <span class="ident">key_id</span>: <span class="ident">response</span>.<span class="ident">key_id</span>,
+            <span class="ident">public_key</span>: <span class="ident">response</span>.<span class="ident">public_key</span>,
+        })
     }
+}
+
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Serialize</span>, <span class="ident">Deserialize</span>)]</span>
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">RemoteGenerateResult</span> {
+    <span class="kw">pub</span> <span class="ident">key_id</span>: <span class="ident">KeyId</span>,
+    <span class="kw">pub</span> <span class="ident">public_key</span>: <span class="ident">SigningPublicKey</span>,
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="lock_keeper_client" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
