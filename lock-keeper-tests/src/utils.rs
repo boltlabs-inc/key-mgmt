@@ -9,6 +9,8 @@ use opaque_ke::{
 };
 use rand::{distributions::Alphanumeric, Rng};
 
+pub const RNG_SEED: &[u8; 32] = b"we love deterministic testing!!!";
+
 /// Add random text to the end of a string
 /// # Example
 /// ```
@@ -51,6 +53,11 @@ pub fn server_registration() -> ServerRegistration<OpaqueCipherSuite> {
         )
         .unwrap();
     ServerRegistration::<OpaqueCipherSuite>::finish(client_reg_finish_result.message)
+}
+
+/// Generate a sequence of random bytes with the given length.
+pub fn random_bytes(mut rng: impl Rng, len: usize) -> Vec<u8> {
+    std::iter::repeat_with(|| rng.gen()).take(len).collect()
 }
 
 /// Pass a list of async test functions with parameters included.

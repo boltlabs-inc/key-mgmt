@@ -11,12 +11,16 @@ pub mod client {
 }
 
 pub mod server {
-    use crate::{crypto::KeyId, impl_message_conversion};
+    use crate::{
+        crypto::{KeyId, SigningPublicKey},
+        impl_message_conversion,
+    };
     use serde::{Deserialize, Serialize};
 
     #[derive(Debug, Deserialize, Serialize)]
     pub struct ReturnKeyId {
         pub key_id: KeyId,
+        pub public_key: SigningPublicKey,
     }
 
     impl_message_conversion!(ReturnKeyId);

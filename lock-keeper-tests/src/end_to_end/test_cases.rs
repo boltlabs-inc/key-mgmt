@@ -308,5 +308,29 @@ pub async fn tests(config: &Config) -> Vec<Test> {
             ],
             config.client_config.clone(),
         ),
+        Test::new(
+            "Sign data with a remotely generated key",
+            vec![
+                (
+                    Register,
+                    Outcome {
+                        expected_error: None,
+                    },
+                ),
+                (
+                    RemoteGenerate,
+                    Outcome {
+                        expected_error: None,
+                    },
+                ),
+                (
+                    RemoteSignBytes,
+                    Outcome {
+                        expected_error: None,
+                    },
+                ),
+            ],
+            config.client_config.clone(),
+        ),
     ]
 }

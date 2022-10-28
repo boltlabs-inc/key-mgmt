@@ -31,13 +31,15 @@ impl Operation for RemoteGenerate {
             (key_id, key_pair)
         };
 
+        let public_key = key_pair.public_key();
+
         // Store key in database
         context
             .db
             .add_remote_secret(&request.user_id, key_pair, key_id.clone())
             .await?;
 
-        let response = server::ReturnKeyId { key_id };
+        let response = server::ReturnKeyId { key_id, public_key };
 
         channel.send(response).await?;
 

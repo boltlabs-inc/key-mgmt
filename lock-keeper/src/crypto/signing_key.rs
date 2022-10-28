@@ -6,17 +6,57 @@ use k256::ecdsa::{
 };
 use rand::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
-use std::marker::PhantomData;
 
 use super::{generic::AssociatedData, CryptoError, Encrypted, KeyId, StorageKey};
 
-/// Things that can be signed must implement the `Signable` trait.
-pub trait Signable: AsRef<[u8]> {}
+/// Provides the methods necessary to sign and verify a piece of data with a
+/// [`SigningKeyPair`]. This trait should be explicitly implemented on types
+/// that are intended to be signed.
+///
+/// It requires `AsRef<[u8]>` so that we can accept `impl Signable` in the
+/// public client API but send `SignableBytes` over the network. This
+/// requirement may be removed in the future.
+pub trait Signable: AsRef<[u8]> {
+    fn sign(&self, signing_key: &SigningKeyPair) -> Signature;
+    fn verify(
+        &self,
+        public_key: &SigningPublicKey,
+        signature: &Signature,
+    ) -> Result<(), LockKeeperError>;
+}
 
-/// Right now, we don't have any meaningful signable types, but we implement it
-/// for `Vec<u8>` to enable testing.
-#[cfg(test)]
-impl Signable for Vec<u8> {}
+/// Wrapper used to declare arbitrary bytes as [`Signable`].
+///
+/// [`SignableBytes`] is used to send bytes across the network in a format that
+/// is easy to work with during serialization and deserialization.
+///
+/// NOTE: This type is only meant to be used in message types and should not be
+/// exposed by the client API.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct SignableBytes(pub Vec<u8>);
+
+impl AsRef<[u8]> for SignableBytes {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
+
+impl Signable for SignableBytes {
+    fn sign(&self, signing_key_pair: &SigningKeyPair) -> Signature {
+        Signature(signing_key_pair.signing_key.sign(&self.0))
+    }
+
+    fn verify(
+        &self,
+        public_key: &SigningPublicKey,
+        signature: &Signature,
+    ) -> Result<(), LockKeeperError> {
+        Ok(public_key
+            .0
+            .verify(&self.0, &signature.0)
+            .map_err(|_| CryptoError::VerificationFailed)?)
+    }
+}
 
 /// An ECDSA signing key pair, including a public component for verifying
 /// signatures, a private component for creating them, and context about the key
@@ -31,7 +71,7 @@ pub struct SigningKeyPair {
 
 /// The public component of an ECDSA signing key, and context about the key.
 #[allow(unused)]
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SigningPublicKey(VerifyingKey);
 
 /// Temporary type to represent a remotely generated encrypted
@@ -39,7 +79,7 @@ pub struct SigningPublicKey(VerifyingKey);
 ///
 /// This can only be "decrypted" by the server.
 /// TODO #307: Replace this placeholder with actual encryption.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct PlaceholderEncryptedSigningKeyPair {
     signing_key: Vec<u8>,
     context: AssociatedData,
@@ -80,10 +120,7 @@ impl SigningKeyPair {
     }
 
     /// Retrieve the public portion of the key.
-    ///
-    /// This method could be made public if necessary.
-    #[cfg(test)]
-    fn public_key(&self) -> SigningPublicKey {
+    pub fn public_key(&self) -> SigningPublicKey {
         SigningPublicKey(self.signing_key.verifying_key())
     }
 
@@ -91,14 +128,6 @@ impl SigningKeyPair {
     #[cfg(test)]
     fn context(&self) -> &AssociatedData {
         &self.context
-    }
-
-    /// Compute an ECDSA signature on the given message.
-    pub fn sign<T: Signable>(&self, message: &T) -> Signature<T> {
-        Signature {
-            signature: self.signing_key.sign(message.as_ref()),
-            original_type: PhantomData,
-        }
     }
 
     /// Create a new `SigningKeyPair`. This must be run by the server.
@@ -317,25 +346,13 @@ impl TryFrom<Vec<u8>> for SigningKeyPair {
     }
 }
 
-/// A signature on an object of type `T`, encrypted under the ECDSA signature
-/// scheme.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Signature<T> {
-    signature: ecdsa::Signature,
-    original_type: PhantomData<T>,
-}
+/// A signature on an object encrypted under the ECDSA signature scheme.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Signature(ecdsa::Signature);
 
-impl<T> Signature<T> {
-    /// Verify that the signature is over the given message under the
-    /// `SigningPublicKey`.
-    pub fn verify(&self, public_key: &SigningPublicKey, message: &T) -> Result<(), LockKeeperError>
-    where
-        T: Signable,
-    {
-        Ok(public_key
-            .0
-            .verify(message.as_ref(), &self.signature)
-            .map_err(|_| CryptoError::VerificationFailed)?)
+impl AsRef<[u8]> for Signature {
+    fn as_ref(&self) -> &[u8] {
+        self.0.as_ref()
     }
 }
 
@@ -357,7 +374,6 @@ impl Encrypted<SigningKeyPair> {
 mod test {
     use super::*;
     use rand::Rng;
-    use std::marker::PhantomData;
 
     use crate::{
         crypto::{generic::AssociatedData, CryptoError, KeyId, SigningKeyPair, StorageKey},
@@ -475,8 +491,8 @@ mod test {
         assert!((0..1000)
             .into_iter()
             .map(|len| -> Vec<u8> { std::iter::repeat_with(|| rng.gen()).take(len).collect() })
-            .map(|msg| (signing_key.sign(&msg), msg))
-            .all(|(sig, msg)| sig.verify(&public_key, &msg).is_ok()));
+            .map(|msg| (msg.sign(&signing_key), msg))
+            .all(|(sig, msg)| msg.verify(&public_key, &sig).is_ok()));
     }
 
     #[test]
@@ -486,11 +502,11 @@ mod test {
         let signing_key = SigningKeyPair::generate(&mut rng, &AssociatedData::new());
         let public_key = signing_key.public_key();
         let message = b"signatures won't verify with a bad message".to_vec();
-        let sig = signing_key.sign(&message);
+        let sig = message.sign(&signing_key);
 
         let bad_msg = b"this is obviously not the same message".to_vec();
-        assert!(sig.verify(&public_key, &bad_msg).is_err());
-        assert!(sig.verify(&public_key, &message).is_ok());
+        assert!(bad_msg.verify(&public_key, &sig).is_err());
+        assert!(message.verify(&public_key, &sig).is_ok());
     }
 
     #[test]
@@ -499,11 +515,11 @@ mod test {
 
         let signing_key = SigningKeyPair::generate(&mut rng, &AssociatedData::new());
         let message = b"signatures won't verify with a bad public key".to_vec();
-        let sig = signing_key.sign(&message);
+        let sig = message.sign(&signing_key);
 
         let bad_key = SigningKeyPair::generate(&mut rng, &AssociatedData::new()).public_key();
-        assert!(sig.verify(&bad_key, &message).is_err());
-        assert!(sig.verify(&signing_key.public_key(), &message).is_ok());
+        assert!(message.verify(&bad_key, &sig).is_err());
+        assert!(message.verify(&signing_key.public_key(), &sig).is_ok());
     }
 
     #[test]
@@ -512,8 +528,8 @@ mod test {
 
         let signing_key = SigningKeyPair::generate(&mut rng, &AssociatedData::new());
         let message = b"the signature on this message will get tweaked".to_vec();
-        let sig = signing_key.sign(&message);
-        let sig_bytes = sig.signature.as_bytes();
+        let sig = message.sign(&signing_key);
+        let sig_bytes = sig.0.as_bytes();
 
         // try flipping some of the bits
         for i in 0..sig_bytes.len() {
@@ -525,17 +541,14 @@ mod test {
                 Ok(sig) => sig,
                 Err(_) => continue,
             };
-            let tweaked_sig = Signature {
-                signature,
-                original_type: PhantomData,
-            };
+            let tweaked_sig = Signature(signature);
 
             // ...or the signature won't verify.
-            assert!(tweaked_sig
-                .verify(&signing_key.public_key(), &message)
+            assert!(message
+                .verify(&signing_key.public_key(), &tweaked_sig)
                 .is_err());
         }
-        assert!(sig.verify(&signing_key.public_key(), &message).is_ok());
+        assert!(message.verify(&signing_key.public_key(), &sig).is_ok());
     }
 
     #[test]
@@ -648,5 +661,36 @@ mod test {
         assert!(contains_str(key_pair, "imported"));
 
         Ok(())
+    }
+
+    impl Signable for Vec<u8> {
+        fn sign(&self, signing_key: &SigningKeyPair) -> Signature {
+            (&self).sign(signing_key)
+        }
+
+        fn verify(
+            &self,
+            public_key: &SigningPublicKey,
+            signature: &Signature,
+        ) -> Result<(), LockKeeperError> {
+            (&self).verify(public_key, signature)
+        }
+    }
+
+    impl Signable for &Vec<u8> {
+        fn sign(&self, signing_key: &SigningKeyPair) -> Signature {
+            Signature(signing_key.signing_key.sign(self))
+        }
+
+        fn verify(
+            &self,
+            public_key: &SigningPublicKey,
+            signature: &Signature,
+        ) -> Result<(), LockKeeperError> {
+            Ok(public_key
+                .0
+                .verify(self, &signature.0)
+                .map_err(|_| CryptoError::VerificationFailed)?)
+        }
     }
 }

@@ -7,6 +7,7 @@ pub mod generate;
 pub mod import;
 pub mod register;
 pub mod remote_generate;
+pub mod remote_sign;
 pub mod retrieve;
 
 /// Set of operations that can be executed by the test harness
@@ -20,6 +21,7 @@ pub enum Operation {
     ImportSigningKey,
     Register,
     RemoteGenerate,
+    RemoteSignBytes,
     Retrieve,
     SetFakeKeyId,
 }
@@ -46,6 +48,7 @@ impl Operation {
                 }
             }
             Self::RemoteGenerate => Some(ClientAction::RemoteGenerate),
+            Self::RemoteSignBytes => Some(ClientAction::RemoteSignBytes),
             Self::Retrieve => Some(ClientAction::Retrieve),
             Self::SetFakeKeyId => None,
         }
