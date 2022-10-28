@@ -38,6 +38,7 @@ hkdf = "0.12"
 k256 = { version = "0.11", features = ["ecdsa", "pem", "serde"] }
 sha3 = "0.10"
 uuid = "1.1.2"
+hex = "0.4"
 
 [build-dependencies]
 tonic-build = "0.8.0"

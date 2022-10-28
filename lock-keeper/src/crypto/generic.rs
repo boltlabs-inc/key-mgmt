@@ -272,6 +272,14 @@ impl Secret {
     pub(super) fn context(&self) -> &AssociatedData {
         &self.context
     }
+
+    /// Retrieve key material.
+    ///
+    /// Return a reference to the underlying bytes of the secret. This should
+    /// only be used to print the secret.
+    pub(super) fn get_material(&self) -> &[u8] {
+        &self.material
+    }
 }
 
 impl From<Secret> for Vec<u8> {
