@@ -109,8 +109,9 @@ impl LockKeeperClient {
         }
     }
 
-    /// Export key material from the key servers.
+    /// Export an arbitrary key from the key servers.
     ///
+    /// Calling this function on a signing key will generate an error.
     /// Output: If successful, returns the requested key material in byte form.
     pub async fn export_key(&self, key_id: &KeyId) -> Result<Vec<u8>, LockKeeperClientError> {
         // Create channel: this will internally be a `retrieve` channel
@@ -130,6 +131,7 @@ impl LockKeeperClient {
 
     /// Export signing key pair material from the key servers.
     ///
+    /// Calling this function on an arbitrary key will generated an error.
     /// Output: If successful, returns the requested key material in byte form.
     pub async fn export_signing_key(
         &self,
@@ -151,7 +153,8 @@ impl LockKeeperClient {
         Ok(exported_signing_key)
     }
 
-    /// Generate and store an arbitrary secret at the key server
+    /// Generate an arbitrary secret client-side, store this secret in the key
+    /// server.
     pub async fn generate_and_store(
         &self,
     ) -> Result<(KeyId, LocalStorage<Secret>), LockKeeperClientError> {
@@ -180,6 +183,8 @@ impl LockKeeperClient {
     }
 
     /// Retrieve an arbitrary secret from the key server by [`KeyId`]
+    ///
+    /// This operation will fail if it is called on a signing key.
     pub async fn retrieve(
         &self,
         key_id: &KeyId,
@@ -195,7 +200,7 @@ impl LockKeeperClient {
             .await
     }
 
-    /// Request that the server generate a new signing key
+    /// Request that the server generate a new signing key.
     pub async fn remote_generate(&self) -> Result<RemoteGenerateResult, LockKeeperClientError> {
         let mut client_channel = Self::create_channel(
             &mut self.tonic_client(),
