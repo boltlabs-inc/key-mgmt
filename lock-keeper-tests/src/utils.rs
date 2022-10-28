@@ -2,7 +2,9 @@
 
 use std::sync::{Arc, Mutex};
 
+use crate::Config;
 use colored::Colorize;
+use futures::Future;
 use lock_keeper::config::opaque::OpaqueCipherSuite;
 use opaque_ke::{
     ClientRegistration, ClientRegistrationFinishParameters, ServerRegistration, ServerSetup,
@@ -69,20 +71,21 @@ pub fn random_bytes(mut rng: impl Rng, len: usize) -> Vec<u8> {
 /// ```
 #[macro_export]
 macro_rules! run_parallel {
-    ($($task:expr),+,) => {
-        run_parallel!($($task),+)
+    ($config:expr, $($task:expr),+,) => {
+        run_parallel!($config, $($task),+)
     };
-    ($($task:expr),+) => {
+    ($config:expr, $($task:expr),+) => {
         // Stick this in a scope so it can return a result
         {
             use std::sync::{Arc, Mutex};
-            use $crate::utils::TestResult::{self, *};
+            use $crate::utils::TestResult;
 
-            let result = Arc::new(Mutex::new(Passed));
-            tokio::try_join!($($crate::utils::run_test_case(stringify!($task), tokio::spawn($task), result.clone())),+)?;
+            let results = Arc::new(Mutex::new(Vec::new()));
+            tokio::try_join!($($crate::utils::run_test_case($config, stringify!($task), $task, results.clone())),+)?;
 
-            let result = result.lock().unwrap().clone();
-            Ok::<TestResult, anyhow::Error>(result)
+            let results = results.lock().unwrap().clone();
+
+            Ok::<Vec<TestResult>, anyhow::Error>(results)
         }
     };
 }
@@ -90,9 +93,10 @@ macro_rules! run_parallel {
 /// Runs a test case and manually handles any panics triggered by `assert`
 /// macros.
 pub async fn run_test_case(
+    config: Config,
     name: &str,
-    handle: tokio::task::JoinHandle<anyhow::Result<()>>,
-    result: Arc<Mutex<TestResult>>,
+    task: impl Future<Output = anyhow::Result<()>> + Send + 'static,
+    results: Arc<Mutex<Vec<TestResult>>>,
 ) -> anyhow::Result<()> {
     use futures::FutureExt;
     use TestResult::*;
@@ -107,6 +111,16 @@ pub async fn run_test_case(
         .expect("Function has at least one character");
     test_result.push_str(&format!("\n{name}:\n"));
 
+    if !config.filters.matches(name) {
+        let mut results = results.lock().unwrap();
+        results.push(Skipped);
+        test_result.push_str(&format!("{}", "skipped\n".bright_blue()));
+        println!("{test_result}");
+        return Ok(());
+    }
+
+    let handle = tokio::spawn(task);
+
     // Store normal panic hook so we can set it back later
     let panic_hook = std::panic::take_hook();
 
@@ -118,6 +132,10 @@ pub async fn run_test_case(
     // Catch any panic and print test result
     match handle.catch_unwind().await {
         Ok(Ok(_)) => {
+            {
+                let mut results = results.lock().unwrap();
+                results.push(Passed);
+            }
             test_result.push_str(&format!("{}", "ok\n".green()));
         }
         Ok(Err(err)) => {
@@ -125,8 +143,8 @@ pub async fn run_test_case(
             match err.try_into_panic() {
                 Ok(panic) => {
                     {
-                        let mut result = result.lock().unwrap();
-                        *result = Failed;
+                        let mut results = results.lock().unwrap();
+                        results.push(Failed);
                     }
                     test_result.push_str(&format!("{}", "Test panicked\n".red()));
 
@@ -145,8 +163,8 @@ pub async fn run_test_case(
         }
         Err(err) => {
             {
-                let mut result = result.lock().unwrap();
-                *result = Failed;
+                let mut results = results.lock().unwrap();
+                results.push(Failed);
             }
             test_result.push_str(&format!("failed: {:?}\n", err));
         }
@@ -160,18 +178,34 @@ pub async fn run_test_case(
     Ok(())
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TestResult {
     Passed,
     Failed,
+    Skipped,
 }
 
-impl TestResult {
-    pub fn report(&self, test_name: impl AsRef<str>) {
-        let test_name = test_name.as_ref();
-        match self {
-            TestResult::Passed => println!("{test_name} {}", "PASSED".green()),
-            TestResult::Failed => println!("{test_name} {}", "FAILED".red()),
-        }
+pub fn report_test_results(results: &[TestResult]) -> String {
+    use TestResult::*;
+
+    let any_failed = results.iter().any(|r| *r == Failed);
+    if any_failed {
+        return format!("{}", "FAILED".red());
+    }
+
+    let num_results = results.len();
+    let num_skipped = results.iter().filter(|r| **r == Skipped).count();
+
+    if num_skipped == num_results {
+        format!("{}", "SKIPPED".bright_blue())
+    } else if num_skipped > 0 {
+        format!(
+            "{} ({} {})",
+            "PASSED".green(),
+            num_skipped,
+            "SKIPPED".bright_blue()
+        )
+    } else {
+        format!("{}", "PASSED".green())
     }
 }

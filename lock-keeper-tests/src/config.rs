@@ -4,7 +4,7 @@ use lock_keeper::config::client;
 
 use crate::Cli;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Config {
     pub client_config: client::Config,
     pub filters: TestFilters,
@@ -22,7 +22,7 @@ impl TryFrom<Cli> for Config {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct TestFilters {
     filters: Vec<String>,
 }

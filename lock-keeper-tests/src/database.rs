@@ -7,6 +7,7 @@ pub mod user;
 use generic_array::{typenum::U64, GenericArray};
 use std::{ops::Deref, str::FromStr};
 
+use crate::{utils::report_test_results, Config};
 use lock_keeper::{
     config::server::DatabaseSpec,
     crypto::{Encrypted, OpaqueExportKey, StorageKey},
@@ -19,17 +20,20 @@ use crate::utils::{server_registration, tagged};
 
 pub const USERS_TABLE: &str = "users";
 
-pub async fn run_tests() -> anyhow::Result<()> {
+pub async fn run_tests(config: &Config) -> anyhow::Result<()> {
     println!("Running database tests");
 
-    let audit_event_results = audit_event::run_tests().await?;
-    let user_results = user::run_tests().await?;
-    let secret_results = secret::run_tests().await?;
+    let audit_event_results = audit_event::run_tests(config.clone()).await?;
+    let user_results = user::run_tests(config.clone()).await?;
+    let secret_results = secret::run_tests(config.clone()).await?;
 
     // Report results after all tests finish so results show up together
-    audit_event_results.report("audit event tests");
-    user_results.report("user tests");
-    secret_results.report("secret tests");
+    println!(
+        "audit event tests: {}",
+        report_test_results(&audit_event_results)
+    );
+    println!("user tests: {}", report_test_results(&user_results));
+    println!("secret tests: {}", report_test_results(&secret_results));
 
     println!();
 

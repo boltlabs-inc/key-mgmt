@@ -18,15 +18,16 @@ use rand::{
 };
 use strum::IntoEnumIterator;
 
-use crate::{run_parallel, utils::TestResult};
+use crate::{run_parallel, utils::TestResult, Config};
 
 use super::TestDatabase;
 
-pub async fn run_tests() -> anyhow::Result<TestResult> {
+pub async fn run_tests(config: Config) -> anyhow::Result<Vec<TestResult>> {
     println!("{}", "Running audit event tests".cyan());
 
     let db = TestDatabase::new("audit_event_tests").await?;
     let result = run_parallel!(
+        config.clone(),
         event_type_filter_works(db.clone()),
         key_id_filter_works(db.clone()),
         after_date_filter_works(db.clone()),

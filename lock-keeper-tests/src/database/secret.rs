@@ -8,15 +8,16 @@ use lock_keeper::{
 use lock_keeper_key_server::database::Database;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
-use crate::{run_parallel, utils::TestResult};
+use crate::{run_parallel, utils::TestResult, Config};
 
 use super::TestDatabase;
 
-pub async fn run_tests() -> anyhow::Result<TestResult> {
+pub async fn run_tests(config: Config) -> anyhow::Result<Vec<TestResult>> {
     println!("{}", "Running secret tests".cyan());
 
     let db = TestDatabase::new("secret_tests").await?;
     let result = run_parallel!(
+        config.clone(),
         user_is_serializable_after_adding_secrets(db.clone()),
         cannot_get_another_users_secrets(db.clone()),
     )?;

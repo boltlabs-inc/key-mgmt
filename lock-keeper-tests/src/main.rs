@@ -50,14 +50,14 @@ pub async fn main() {
 
     match test_type {
         TestType::All => {
-            database::run_tests().await.unwrap();
-            end_to_end::run_tests(&config).await;
+            database::run_tests(&config).await.unwrap();
+            end_to_end::run_tests(&config).await.unwrap();
         }
         TestType::E2E => {
-            end_to_end::run_tests(&config).await;
+            end_to_end::run_tests(&config).await.unwrap();
         }
         TestType::Integration => {
-            database::run_tests().await.unwrap();
+            database::run_tests(&config).await.unwrap();
         }
     }
 }

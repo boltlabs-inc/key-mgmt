@@ -29,7 +29,7 @@ use rand::{rngs::StdRng, SeedableRng};
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
-use self::remote_generate::RemoteGenerateResult;
+pub use self::remote_generate::RemoteGenerateResult;
 
 /// Wrapper for secrets prepared for local storage
 #[derive(Debug, Deserialize, Serialize)]
