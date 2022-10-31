@@ -8,10 +8,9 @@ use std::{
 };
 
 use anyhow::anyhow;
-use lock_keeper::crypto::{KeyId, Secret};
+use lock_keeper::crypto::{Export, KeyId, Secret};
 use lock_keeper_client::api::LocalStorage;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 
 /// Container for all locally stored key data.
 /// This type handles both in-memory storage and persistent storage on the disk.
@@ -200,6 +199,20 @@ impl UserStore {
 pub enum DataType {
     None,
     ArbitraryKey(LocalStorage<Secret>),
+    Export(Export),
+}
+
+impl DataType {
+    /// Return a string representing the type of data this instance is holding.
+    fn type_as_string(&self) -> String {
+        let t = match self {
+            DataType::None => "None",
+            DataType::ArbitraryKey(_) => "ArbitraryKey",
+            DataType::Export(_) => "Export",
+        };
+
+        String::from(t)
+    }
 }
 
 /// Key data returned from a key server.
@@ -209,64 +222,48 @@ pub struct Entry {
     pub data: DataType,
 }
 
+impl Entry {
+    pub fn new(key_id: KeyId, data: DataType) -> Self {
+        Self { key_id, data }
+    }
+}
+
 impl Display for Entry {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let key_id_hex = hex::encode(self.key_id.as_bytes());
-        let bytes = local_storage_bytes(&self.data).map_err(|e| {
-            // Avoid error inception
-            let _ = writeln!(f, "{e}");
-            std::fmt::Error
-        })?;
-        let data_hex = match &self.data {
-            DataType::None => "None".to_string(),
-            DataType::ArbitraryKey(_) => {
-                format!("Arbitrary Key - {}", hex::encode(&bytes))
-            }
-        };
 
-        writeln!(f, "key_id: {}", key_id_hex)?;
-        writeln!(f, "data: {}", data_hex)?;
+        writeln!(f, "Key_id: {}", key_id_hex)?;
+        writeln!(f, "Key Type: {}", self.data.type_as_string())?;
+
+        match &self.data {
+            DataType::None => writeln!(f, "Key Data: None")?,
+            DataType::ArbitraryKey(local_secret) => {
+                writeln!(f, "Key Data: {}", local_secret.material)?
+            }
+            DataType::Export(export) => {
+                writeln!(f, "Export Data: {}", hex::encode(&export.key_material))?
+            }
+        }
+
         Ok(())
     }
 }
 
 impl From<(KeyId, LocalStorage<Secret>)> for Entry {
     fn from((key_id, data): (KeyId, LocalStorage<Secret>)) -> Self {
-        Self {
-            key_id,
-            data: DataType::ArbitraryKey(data),
-        }
+        Entry::new(key_id, DataType::ArbitraryKey(data))
     }
 }
 
 impl From<(KeyId, Option<LocalStorage<Secret>>)> for Entry {
     fn from((key_id, data): (KeyId, Option<LocalStorage<Secret>>)) -> Self {
-        let data = match data {
-            None => DataType::None,
-            Some(secret) => DataType::ArbitraryKey(secret),
-        };
-        Self { key_id, data }
+        let data = data.map_or(DataType::None, DataType::ArbitraryKey);
+        Entry::new(key_id, data)
     }
 }
 
 impl From<KeyId> for Entry {
     fn from(key_id: KeyId) -> Self {
-        Self {
-            key_id,
-            data: DataType::None,
-        }
+        Entry::new(key_id, DataType::None)
     }
-}
-
-fn local_storage_bytes(data: &DataType) -> anyhow::Result<Vec<u8>> {
-    let json = match data {
-        DataType::None => Value::Null,
-        DataType::ArbitraryKey(local_storage) => serde_json::to_value(local_storage)?,
-    };
-    let key = json
-        .pointer("/material/material")
-        .ok_or_else(|| anyhow!("Error converting LocalStorage to bytes"))?
-        .clone();
-    let bytes: Vec<u8> = serde_json::from_value(key)?;
-    Ok(bytes)
 }

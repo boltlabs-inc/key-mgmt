@@ -17,6 +17,7 @@ tokio.workspace = true
 tracing.workspace = true
 tracing-futures.workspace = true
 tracing-subscriber.workspace = true
+rand.workspace = true
 
 # Other dependencies
 anyhow = "1"

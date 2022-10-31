@@ -1,7 +1,10 @@
 use crate::{types::database::user::UserId, LockKeeperError};
 use rand::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
-use std::convert::TryFrom;
+use std::{
+    convert::TryFrom,
+    fmt::{Display, Formatter},
+};
 
 use crate::crypto::{
     generic::{self, AssociatedData, CryptoError},
@@ -24,6 +27,14 @@ impl TryFrom<Vec<u8>> for Secret {
     type Error = CryptoError;
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
         Ok(Secret(value.try_into()?))
+    }
+}
+
+/// Allow secret to be displayed for demo purposes. Note we do not expose the
+/// internal type representation of the secret.
+impl Display for Secret {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", hex::encode(self.0.get_material()))
     }
 }
 
