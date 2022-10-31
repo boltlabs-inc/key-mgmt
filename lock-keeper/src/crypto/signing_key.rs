@@ -210,6 +210,31 @@ impl SigningKeyPair {
     }
 }
 
+impl Encrypted<SigningKeyPair> {
+    /// Decrypt a signing key. This should be run as part of the subprotocol to
+    /// retrieve an encrypted signing key from the server.
+    ///
+    /// This must be run by the client.
+    pub fn decrypt_signing_key(
+        self,
+        storage_key: StorageKey,
+        user_id: UserId,
+        key_id: KeyId,
+    ) -> Result<SigningKeyPair, LockKeeperError> {
+        let identifying_context = AssociatedData::new().with_bytes(user_id).with_bytes(key_id);
+
+        let import_context = identifying_context.clone().with_str("imported key");
+        let client_context = identifying_context.with_str("client-generated");
+
+        // Keys encrypted under a storage key are either client-generated or imported.
+        if self.associated_data == import_context || self.associated_data == client_context {
+            Ok(self.decrypt(&storage_key.0)?)
+        } else {
+            Err(CryptoError::DecryptionFailed.into())
+        }
+    }
+}
+
 /// Raw material for an imported signing key.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Import {
@@ -356,20 +381,6 @@ impl AsRef<[u8]> for Signature {
     }
 }
 
-impl Encrypted<SigningKeyPair> {
-    /// Decrypt a signing key. This should be run as part of the subprotocol to
-    /// retrieve an encrypted signing key from the server.
-    ///
-    /// This must be run by the client.
-    pub fn decrypt_secret(
-        self,
-        storage_key: StorageKey,
-    ) -> Result<SigningKeyPair, LockKeeperError> {
-        let decrypted = self.decrypt(&storage_key.0)?;
-        Ok(decrypted)
-    }
-}
-
 #[cfg(test)]
 mod test {
     use super::*;
@@ -411,6 +422,119 @@ mod test {
             assert_eq!(key, output_key);
         }
         Ok(())
+    }
+
+    /// Checks some should-fail permutations of context for client-generated and
+    /// imported keys (encrypted under a storage key).
+    fn check_context(
+        mut encrypted_key: Encrypted<SigningKeyPair>,
+        expected_extra_context: &'static str,
+        user_id: UserId,
+        key_id: KeyId,
+        storage_key: StorageKey,
+    ) -> Result<(), LockKeeperError> {
+        let mut rng = rand::thread_rng();
+
+        // Normal decryption works
+        assert!(encrypted_key
+            .clone()
+            .decrypt_signing_key(storage_key.clone(), user_id.clone(), key_id.clone())
+            .is_ok());
+
+        // User id must be correct
+        let bad_user_id = UserId::new(&mut rng)?;
+        let bad_user_context = AssociatedData::new()
+            .with_bytes(bad_user_id)
+            .with_bytes(key_id.clone())
+            .with_str(expected_extra_context);
+        encrypted_key.associated_data = bad_user_context;
+        assert!(encrypted_key
+            .clone()
+            .decrypt_signing_key(storage_key.clone(), user_id.clone(), key_id.clone())
+            .is_err());
+
+        // Key id must be correct
+        let bad_key_id = KeyId::generate(&mut rng, &user_id)?;
+        let bad_key_context = AssociatedData::new()
+            .with_bytes(user_id.clone())
+            .with_bytes(bad_key_id)
+            .with_str(expected_extra_context);
+        encrypted_key.associated_data = bad_key_context;
+        assert!(encrypted_key
+            .clone()
+            .decrypt_signing_key(storage_key.clone(), user_id.clone(), key_id.clone())
+            .is_err());
+
+        // Extra context must be correct
+        let bad_extra_context = AssociatedData::new()
+            .with_bytes(user_id.clone())
+            .with_bytes(key_id.clone())
+            .with_str("server-generated");
+        encrypted_key.associated_data = bad_extra_context;
+        assert!(encrypted_key
+            .clone()
+            .decrypt_signing_key(storage_key.clone(), user_id.clone(), key_id.clone())
+            .is_err());
+
+        // random extra context doesn't work
+        let random_context = AssociatedData::new()
+            .with_bytes(user_id.clone())
+            .with_bytes(key_id.clone())
+            .with_str(expected_extra_context)
+            .with_str("here is some interesting context that will fail to decrypt our key!");
+        encrypted_key.associated_data = random_context;
+        assert!(encrypted_key
+            .decrypt_signing_key(storage_key, user_id, key_id)
+            .is_err());
+
+        Ok(())
+    }
+
+    #[test]
+    fn client_generated_signing_key_decryption_fails_with_bad_associated_data(
+    ) -> Result<(), LockKeeperError> {
+        let mut rng = rand::thread_rng();
+        let storage_key = StorageKey::generate(&mut rng);
+
+        let user_id = UserId::new(&mut rng)?;
+        let key_id = KeyId::generate(&mut rng, &user_id)?;
+
+        let (_, encrypted_client_key) =
+            SigningKeyPair::create_and_encrypt(&mut rng, &storage_key, &user_id, &key_id)?;
+
+        check_context(
+            encrypted_client_key,
+            "client-generated",
+            user_id,
+            key_id,
+            storage_key,
+        )
+    }
+
+    #[test]
+    fn imported_signing_key_decryption_fails_with_bad_associated_data(
+    ) -> Result<(), LockKeeperError> {
+        let mut rng = rand::thread_rng();
+        let storage_key = StorageKey::generate(&mut rng);
+
+        let user_id = UserId::new(&mut rng)?;
+        let key_id = KeyId::generate(&mut rng, &user_id)?;
+
+        let key_material = SigningKey::random(rng.clone()).to_bytes().to_vec();
+        let (_, encrypted_import_key) = SigningKeyPair::import_and_encrypt(
+            &key_material,
+            &mut rng,
+            &storage_key,
+            &user_id,
+            &key_id,
+        )?;
+        check_context(
+            encrypted_import_key,
+            "imported key",
+            user_id,
+            key_id,
+            storage_key,
+        )
     }
 
     #[test]
@@ -474,7 +598,8 @@ mod test {
             SigningKeyPair::create_and_encrypt(&mut rng, &storage_key, &user_id, &key_id)?;
 
         // Decrypt the secret
-        let decrypted_signing_key = encrypted_signing_key.decrypt_secret(storage_key)?;
+        let decrypted_signing_key =
+            encrypted_signing_key.decrypt_signing_key(storage_key, user_id, key_id)?;
         assert_eq!(decrypted_signing_key, signing_key);
 
         Ok(())
@@ -600,7 +725,7 @@ mod test {
         )?;
 
         // Make sure encrypted key matches output key
-        let decrypted_key = encrypted_key.decrypt_secret(storage_key)?;
+        let decrypted_key = encrypted_key.decrypt_signing_key(storage_key, user_id, key_id)?;
         assert_eq!(key, decrypted_key);
 
         // Make sure key matches input key material (e.g. the secret material
