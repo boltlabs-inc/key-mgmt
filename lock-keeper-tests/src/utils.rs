@@ -131,12 +131,26 @@ pub async fn run_test_case(
 
     // Catch any panic and print test result
     match handle.catch_unwind().await {
-        Ok(Ok(_)) => {
-            {
-                let mut results = results.lock().unwrap();
-                results.push(Passed);
+        // task returned at all
+        Ok(Ok(res)) => {
+            match res {
+                // task returned and it was Ok
+                Ok(_) => {
+                    {
+                        let mut results = results.lock().unwrap();
+                        results.push(Passed);
+                    }
+                    test_result.push_str(&format!("{}", "ok\n".green()));
+                }
+                // task returned but it was Err
+                Err(e) => {
+                    {
+                        let mut results = results.lock().unwrap();
+                        results.push(Failed);
+                    }
+                    test_result.push_str(&format!("{}: {}\n", "failed".red(), e));
+                }
             }
-            test_result.push_str(&format!("{}", "ok\n".green()));
         }
         Ok(Err(err)) => {
             // Get panic message from error

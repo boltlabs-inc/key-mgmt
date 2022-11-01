@@ -5,19 +5,19 @@ pub(crate) mod session_key_cache;
 
 pub(crate) use operation::Operation;
 pub use service::start_lock_keeper_server;
-use std::str::FromStr;
 
 use crate::{database::Database, error::LockKeeperServerError, operations};
 
 use lock_keeper::{
     config::server::{Config, Service},
-    constants::{ACCOUNT_NAME, ACTION},
+    constants::METADATA,
     crypto::KeyId,
     rpc::{lock_keeper_rpc_server::LockKeeperRpc, HealthCheck},
-    types::{database::user::AccountName, operations::ClientAction, Message, MessageStream},
+    types::{Message, MessageStream},
 };
 
 use crate::server::session_key_cache::SessionKeyCache;
+use lock_keeper::types::operations::RequestMetadata;
 use rand::{rngs::StdRng, SeedableRng};
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -55,48 +55,29 @@ impl LockKeeperKeyServer {
         &self,
         request: &Request<tonic::Streaming<Message>>,
     ) -> Result<Context, LockKeeperServerError> {
-        // Parse AccountName from metadata
-        let account_name_str = Self::str_from_metadata(
-            request,
-            ACCOUNT_NAME,
-            Status::unauthenticated("Account name not found"),
-            Status::unauthenticated("Invalid account name"),
-        )?;
-        let account_name = AccountName::from_str(account_name_str)?;
-
-        // Parse ClientAction from metadata
-        let action_str = Self::str_from_metadata(
-            request,
-            ACTION,
-            Status::invalid_argument("Client action not found"),
-            Status::invalid_argument("Invalid client action"),
-        )?;
-        let action = ClientAction::from_str(action_str)?;
+        // Parse RequestMetadata
+        let metadata = Self::parse_metadata(request)?;
 
         Ok(Context {
             db: self.db.clone(),
             service: self.service.clone(),
             rng: self.rng.clone(),
-            account_name,
-            action,
+            metadata,
             key_id: None,
             session_key_cache: self.session_key_cache.clone(),
         })
     }
 
-    fn str_from_metadata<'a>(
-        request: &'a Request<tonic::Streaming<Message>>,
-        key: &'a str,
-        option_err: Status,
-        str_err: Status,
-    ) -> Result<&'a str, Status> {
-        let val_str = request
+    fn parse_metadata(
+        request: &Request<tonic::Streaming<Message>>,
+    ) -> Result<RequestMetadata, Status> {
+        let val_bytes = request
             .metadata()
-            .get(key)
-            .ok_or(option_err)?
-            .to_str()
-            .map_err(|_| str_err)?;
-        Ok(val_str)
+            .get(METADATA)
+            .ok_or_else(|| Status::invalid_argument("No metadata found"))?
+            .as_bytes();
+        let metadata = RequestMetadata::from_slice(val_bytes)?;
+        Ok(metadata)
     }
 }
 
@@ -105,8 +86,7 @@ pub(crate) struct Context {
     pub db: Arc<Database>,
     pub service: Arc<Service>,
     pub rng: Arc<Mutex<StdRng>>,
-    pub account_name: AccountName,
-    pub action: ClientAction,
+    pub metadata: RequestMetadata,
     pub key_id: Option<KeyId>,
     /// Our user session keys are held in this cache after authentication.
     pub session_key_cache: Arc<Mutex<SessionKeyCache>>,
