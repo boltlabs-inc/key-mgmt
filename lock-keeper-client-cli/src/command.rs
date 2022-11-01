@@ -4,8 +4,11 @@ use rand::Rng;
 use std::str::FromStr;
 use tracing::info;
 
-use lock_keeper::{crypto::SignableBytes, types::operations::retrieve::RetrieveContext};
-use lock_keeper_client::LockKeeperClient;
+use lock_keeper::{
+    crypto::SignableBytes,
+    types::{database::user::AccountName, operations::retrieve::RetrieveContext},
+};
+use lock_keeper_client::{client::Password, LockKeeperClient};
 
 use crate::{
     state::{Credentials, State},
@@ -20,15 +23,15 @@ const PRINT_FORMAT: &str = "print [key_name]";
 const EXPORT_FORMAT: &str = "export [key_name]";
 
 /// Fully parsed command that's ready for processing.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug)]
 pub enum Command {
     Register {
-        account_name: String,
-        password: String,
+        account_name: AccountName,
+        password: Password,
     },
     Authenticate {
-        account_name: String,
-        password: String,
+        account_name: AccountName,
+        password: Password,
     },
     Generate {
         name: Option<String>,
@@ -67,9 +70,6 @@ impl Command {
                 account_name,
                 password,
             } => {
-                let account_name = account_name.parse()?;
-                let password = password.parse()?;
-
                 LockKeeperClient::register(&account_name, &password, &state.config).await?;
 
                 println!("Logged in to {account_name}");
@@ -82,9 +82,6 @@ impl Command {
                 account_name,
                 password,
             } => {
-                let account_name = account_name.parse()?;
-                let password = password.parse()?;
-
                 LockKeeperClient::authenticated_client(&account_name, &password, &state.config)
                     .await?;
 
@@ -95,10 +92,7 @@ impl Command {
                 })
             }
             Command::Generate { name } => {
-                let credentials = state
-                    .credentials
-                    .as_ref()
-                    .ok_or_else(|| anyhow::anyhow!("Not authenticated"))?;
+                let credentials = state.get_credentials()?;
 
                 // Authenticate user to the key server
                 let lock_keeper_client = LockKeeperClient::authenticated_client(
@@ -112,28 +106,11 @@ impl Command {
                 let generate_result = lock_keeper_client.generate_and_store().await?;
 
                 // Store Key
-                match name {
-                    Some(name) => {
-                        state.storage.store_named(
-                            credentials.account_name.clone(),
-                            &name,
-                            generate_result,
-                        )?;
-                        println!("Stored: {name}");
-                    }
-                    None => {
-                        let name = state
-                            .storage
-                            .store(credentials.account_name.clone(), generate_result)?;
-                        println!("Stored: {name}");
-                    }
-                }
+                let stored = state.store_entry(name, generate_result)?;
+                println!("Stored: {stored}");
             }
             Command::Retrieve { name } => {
-                let credentials = state
-                    .credentials
-                    .as_ref()
-                    .ok_or_else(|| anyhow::anyhow!("Not authenticated"))?;
+                let credentials = state.get_credentials()?;
 
                 // Authenticate user to the key server
                 let lock_keeper_client = LockKeeperClient::authenticated_client(
@@ -143,32 +120,22 @@ impl Command {
                 )
                 .await?;
 
-                // Get key_id from storage
-                let entry = state
-                    .storage
-                    .get(&credentials.account_name, &name)?
-                    .ok_or_else(|| anyhow::anyhow!("No key found with name {name}"))?;
-
+                let entry = state.get_key_id(&name)?;
+                // Retrieve results for specified key.
                 let retrieve_result = lock_keeper_client
                     .retrieve(&entry.key_id, RetrieveContext::LocalOnly)
                     .await?;
 
-                let retrieve_entry: Entry = (entry.key_id.clone(), retrieve_result).into();
                 println!("Retrieved: {name}");
-                println!("{retrieve_entry}");
+                println!("{retrieve_result:?}");
 
-                state.storage.store_named(
-                    credentials.account_name.clone(),
-                    &name,
-                    retrieve_entry,
-                )?;
-                println!("Updated: {name}");
+                let stored =
+                    state.store_entry(Some(name), (entry.key_id.clone(), retrieve_result))?;
+
+                println!("Updated: {stored}");
             }
             Command::RemoteGenerate { name } => {
-                let credentials = state
-                    .credentials
-                    .as_ref()
-                    .ok_or_else(|| anyhow::anyhow!("Not authenticated"))?;
+                let credentials = state.get_credentials()?;
 
                 // Authenticate user to the key server
                 let lock_keeper_client = LockKeeperClient::authenticated_client(
@@ -179,37 +146,15 @@ impl Command {
                 .await?;
 
                 // If successful, proceed to generate a secret with the established session
-                let generate_result = lock_keeper_client.remote_generate().await?;
+                let key_id = lock_keeper_client.remote_generate().await?.key_id;
 
                 // Store Key Id
-                match name {
-                    Some(name) => {
-                        state.storage.store_named(
-                            credentials.account_name.clone(),
-                            &name,
-                            generate_result.key_id,
-                        )?;
-                        println!("Stored: {name}");
-                    }
-                    None => {
-                        let name = state
-                            .storage
-                            .store(credentials.account_name.clone(), generate_result.key_id)?;
-                        println!("Stored: {name}");
-                    }
-                }
+                state.store_entry(name, key_id)?;
             }
             Command::RemoteSign { name, data } => {
-                let credentials = state
-                    .credentials
-                    .as_ref()
-                    .ok_or_else(|| anyhow::anyhow!("Not authenticated"))?;
-
+                let credentials = state.get_credentials()?;
                 // Get key_id from storage
-                let entry = state
-                    .storage
-                    .get(credentials.account_name.clone(), &name)?
-                    .ok_or_else(|| anyhow::anyhow!("No key found with name {name}"))?;
+                let entry = state.get_key_id(&name)?;
 
                 // Authenticate user to the key server
                 let lock_keeper_client = LockKeeperClient::authenticated_client(
@@ -225,17 +170,13 @@ impl Command {
                 let signature = lock_keeper_client
                     .remote_sign_bytes(entry.key_id.clone(), bytes)
                     .await?;
-                let sig_hex = hex::encode(signature.as_ref());
 
-                println!("Signature: {sig_hex}");
+                println!("Signature: {}", hex::encode(signature));
             }
             Command::Export { name } => {
                 info!("Exporting {}", name);
 
-                let credentials = state
-                    .credentials
-                    .as_ref()
-                    .ok_or_else(|| anyhow::anyhow!("Not authenticated"))?;
+                let credentials = state.get_credentials()?;
 
                 // Authenticate user to the key server.
                 let lock_keeper_client = LockKeeperClient::authenticated_client(
@@ -246,10 +187,7 @@ impl Command {
                 .await?;
 
                 // Get key_id from storage
-                let entry = state
-                    .storage
-                    .get(&credentials.account_name, &name)?
-                    .ok_or_else(|| anyhow::anyhow!("No key found with name {name}"))?;
+                let entry = state.get_key_id(&name)?;
 
                 let export = lock_keeper_client
                     .export_signing_key(&entry.key_id)
@@ -259,33 +197,23 @@ impl Command {
                 println!("Retrieved: {name}");
                 println!("{:?}", export);
 
-                state.storage.store_named(
-                    credentials.account_name.clone(),
-                    &name,
+                let stored = state.store_entry(
+                    Some(name),
                     Entry::new(entry.key_id.clone(), DataType::Export(export)),
                 )?;
-                println!("Updated Key: {name}");
+                println!("Updated Key: {stored}");
             }
             Command::Print { name } => {
-                let credentials = state
-                    .credentials
-                    .as_ref()
-                    .ok_or_else(|| anyhow::anyhow!("Not authenticated"))?;
+                let _credentials = state.get_credentials()?;
 
                 // Get key_id from storage
-                let entry = state
-                    .storage
-                    .get(&credentials.account_name, &name)?
-                    .ok_or_else(|| anyhow::anyhow!("No key found with name {name}"))?;
+                let entry = state.get_key_id(&name)?;
 
                 println!("name: {name}");
                 println!("{entry}");
             }
             Command::Import { name } => {
-                let credentials = state
-                    .credentials
-                    .as_ref()
-                    .ok_or_else(|| anyhow::anyhow!("Not authenticated"))?;
+                let credentials = state.get_credentials()?;
 
                 // Authenticate user to the key server
                 let lock_keeper_client = LockKeeperClient::authenticated_client(
@@ -301,29 +229,11 @@ impl Command {
                     .await
                     .map_err(|e| anyhow::anyhow!("Failed to import signing key. Error: {:?}", e))?;
 
-                match name {
-                    Some(name) => {
-                        state.storage.store_named(
-                            credentials.account_name.clone(),
-                            &name,
-                            key_id,
-                        )?;
-                        println!("Stored: {name}");
-                    }
-                    None => {
-                        let name = state
-                            .storage
-                            .store(credentials.account_name.clone(), key_id)?;
-                        println!("Stored: {name}");
-                    }
-                }
+                let stored = state.store_entry(name, key_id)?;
+                println!("Stored: {stored}");
             }
             Command::List => {
-                let credentials = state
-                    .credentials
-                    .as_ref()
-                    .ok_or_else(|| anyhow::anyhow!("Not authenticated"))?;
-
+                let credentials = state.get_credentials()?;
                 state.storage.list(&credentials.account_name)?;
             }
             Command::GetAuditEvents => {
@@ -352,11 +262,11 @@ impl FromStr for Command {
                     let account_name = split
                         .next()
                         .ok_or_else(|| anyhow::anyhow!("Expected: {REGISTER_FORMAT}"))?
-                        .to_string();
+                        .parse()?;
                     let password = split
                         .next()
                         .ok_or_else(|| anyhow::anyhow!("Expected: {REGISTER_FORMAT}"))?
-                        .to_string();
+                        .parse()?;
                     Self::Register {
                         account_name,
                         password,
@@ -366,11 +276,11 @@ impl FromStr for Command {
                     let account_name = split
                         .next()
                         .ok_or_else(|| anyhow::anyhow!("Expected: {AUTHENTICATE_FORMAT}"))?
-                        .to_string();
+                        .parse()?;
                     let password = split
                         .next()
                         .ok_or_else(|| anyhow::anyhow!("Expected: {AUTHENTICATE_FORMAT}"))?
-                        .to_string();
+                        .parse()?;
                     Self::Authenticate {
                         account_name,
                         password,
