@@ -7,7 +7,7 @@ use hyper::client::HttpConnector;
 use hyper_rustls::HttpsConnector;
 use lock_keeper::{
     config::client::Config,
-    constants::{ACCOUNT_NAME, ACTION},
+    constants::METADATA,
     crypto::{OpaqueExportKey, OpaqueSessionKey, StorageKey},
     infrastructure::channel::ClientChannel,
     rpc::lock_keeper_rpc_client::LockKeeperRpcClient,
@@ -15,7 +15,7 @@ use lock_keeper::{
         database::user::{AccountName, UserId},
         operations::{
             retrieve_storage_key::{client, server},
-            ClientAction,
+            ClientAction, RequestMetadata,
         },
     },
 };
@@ -134,9 +134,8 @@ impl LockKeeperClient {
         config: &Config,
     ) -> Result<Self, LockKeeperClientError> {
         let mut rng = StdRng::from_entropy();
-
-        let mut client_channel =
-            Self::create_channel(&mut client, ClientAction::Authenticate, account_name).await?;
+        let metadata = RequestMetadata::new(account_name, ClientAction::Authenticate, None);
+        let mut client_channel = Self::create_channel(&mut client, &metadata).await?;
         let result =
             Self::handle_authentication(client_channel, &mut rng, account_name, password).await;
         match result {
@@ -164,26 +163,28 @@ impl LockKeeperClient {
         }
     }
 
+    pub(crate) fn create_metadata(&self, action: ClientAction) -> RequestMetadata {
+        RequestMetadata::new(self.account_name(), action, Some(self.user_id()))
+    }
+
     /// Helper to create the appropriate [`ClientChannel`] to send to tonic
     /// handler functions based on the client's action.
     pub(crate) async fn create_channel(
         client: &mut LockKeeperRpcClient<LockKeeperRpcClientInner>,
-        action: ClientAction,
-        account_name: &AccountName,
+        metadata: &RequestMetadata,
     ) -> Result<ClientChannel, LockKeeperClientError> {
         // Create channel to send messages to server after connection is established via
         // RPC
         let (tx, rx) = mpsc::channel(2);
         let mut stream = Request::new(ReceiverStream::new(rx));
 
-        // Set AccountName and Action in metadata
-        let account_name_val = MetadataValue::try_from(account_name.to_string())?;
-        let action_val = MetadataValue::try_from(format!("{:?}", action))?;
-        let _ = stream.metadata_mut().insert(ACCOUNT_NAME, account_name_val);
-        let _ = stream.metadata_mut().insert(ACTION, action_val);
+        // Serialize metadata and set as tonic request metadata
+        let metadata_bytes = metadata.to_vec()?;
+        let metadata_val = MetadataValue::try_from(metadata_bytes)?;
+        let _ = stream.metadata_mut().insert(METADATA, metadata_val);
 
         // Server returns its own channel that is uses to send responses
-        let server_response = match action {
+        let server_response = match metadata.action() {
             ClientAction::Authenticate => client.authenticate(stream).await,
             ClientAction::CreateStorageKey => client.create_storage_key(stream).await,
             ClientAction::Export => client.retrieve(stream).await,
@@ -215,12 +216,8 @@ impl LockKeeperClient {
     /// to the user specified by `user_id`
     pub(crate) async fn retrieve_storage_key(&self) -> Result<StorageKey, LockKeeperClientError> {
         // Create channel to send messages to server
-        let mut channel = Self::create_channel(
-            &mut self.tonic_client(),
-            ClientAction::RetrieveStorageKey,
-            self.account_name(),
-        )
-        .await?;
+        let metadata = self.create_metadata(ClientAction::RetrieveStorageKey);
+        let mut channel = Self::create_channel(&mut self.tonic_client(), &metadata).await?;
 
         // Send UserId to server
         let request = client::Request {

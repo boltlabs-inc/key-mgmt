@@ -3,6 +3,8 @@ use std::collections::hash_map::Entry;
 
 use std::collections::HashMap;
 
+use crate::{server::Context, LockKeeperServerError};
+use lock_keeper::types::operations::ClientAction;
 use std::time::{Duration, Instant};
 use thiserror::Error;
 
@@ -71,6 +73,23 @@ impl SessionKeyCache {
                 Ok(key.clone())
             }
             Entry::Vacant(_) => Err(SessionKeyCacheError::MissingSessionKey),
+        }
+    }
+
+    pub fn check_key(&mut self, context: &Context) -> Result<(), LockKeeperServerError> {
+        let metadata = &context.metadata;
+        match metadata.action() {
+            // These actions are unauthenticated
+            ClientAction::Authenticate | ClientAction::Register => Ok(()),
+            // The rest of the actions must be authenticated
+            _ => {
+                let user_id = metadata
+                    .user_id()
+                    .as_ref()
+                    .ok_or(LockKeeperServerError::InvalidAccount)?;
+                let server_session_key = self.get_key(user_id.clone())?;
+                Ok(())
+            }
         }
     }
 }

@@ -23,7 +23,11 @@ impl Operation for RetrieveAuditEvents {
 
         let audit_events = context
             .db
-            .find_audit_events(&context.account_name, request.event_type, request.options)
+            .find_audit_events(
+                context.metadata.account_name(),
+                request.event_type,
+                request.options,
+            )
             .await?;
 
         let reply = server::Response {

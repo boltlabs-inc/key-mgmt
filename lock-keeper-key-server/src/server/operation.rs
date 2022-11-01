@@ -29,7 +29,11 @@ pub(crate) trait Operation: Sized + Send + 'static {
         context: Context,
         request: Request<Streaming<Message>>,
     ) -> Result<Response<MessageStream>, Status> {
-        tracing::info!("Handling action: {}", context.action);
+        {
+            let mut session_key_cache = context.session_key_cache.lock().await;
+            session_key_cache.check_key(&context)?;
+        }
+        tracing::info!("Handling action: {:?}", context.metadata.action());
 
         let (mut channel, rx) = ServerChannel::create(request.into_inner());
         let mut context = context;
@@ -64,9 +68,9 @@ async fn audit_event(channel: &mut ServerChannel, context: &Context, status: Eve
     let audit_event = context
         .db
         .create_audit_event(
-            &context.account_name,
+            context.metadata.account_name(),
             &context.key_id,
-            &context.action,
+            &context.metadata.action(),
             status,
         )
         .await;

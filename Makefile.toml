@@ -65,7 +65,7 @@ args = ["run", "--bin", "lock-keeper-tests", "--", "--test-type", "integration"]
 [tasks.all-tests]
 command = "cargo"
 args = ["run", "--bin", "lock-keeper-tests", "--", "--test-type", "all"]
-dependencies = ["ci-tests"]
+dependencies = ["ci-test"]
 
 # -- CI Tasks --
 [tasks.ci]
