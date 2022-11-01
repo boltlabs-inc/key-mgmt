@@ -292,7 +292,7 @@
 <span class="kw">use</span> <span class="ident">serde</span>::{<span class="ident">Deserialize</span>, <span class="ident">Serialize</span>};
 <span class="kw">use</span> <span class="ident">tracing::error</span>;
 
-<span class="kw">use</span> <span class="ident"><span class="self">self</span>::remote_generate::RemoteGenerateResult</span>;
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="self">self</span>::remote_generate::RemoteGenerateResult</span>;
 
 <span class="doccomment">/// Wrapper for secrets prepared for local storage</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Deserialize</span>, <span class="ident">Serialize</span>)]</span>

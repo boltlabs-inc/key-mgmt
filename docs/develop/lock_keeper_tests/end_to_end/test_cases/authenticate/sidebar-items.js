@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":[["authenticate_before_register_fails",""],["cannot_authenticate_with_wrong_password",""],["multiple_sessions_from_same_client_allowed",""],["run_tests",""]]};

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":[["tests","Get a list of tests to execute. Assumption: none of these will cause a fatal error to the long-running processes (server)."]]};
+window.SIDEBAR_ITEMS = {"fn":[["init_test_state",""]],"mod":[["authenticate",""],["export",""],["generate",""],["import",""],["register",""],["remote_generate",""],["remote_sign",""],["retrieve",""]],"struct":[["TestState",""]]};

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":[["KEY_ID",""],["KEY_MATERIAL",""],["PASSWORD",""],["REMOTE_GENERATED_PUBLIC_KEY",""],["USER",""]],"fn":[["run_tests",""]],"mod":[["operations",""],["test_cases",""]],"struct":[["Outcome",""],["Test",""],["TestResult",""],["TestState",""]]};
+window.SIDEBAR_ITEMS = {"fn":[["run_tests",""]],"mod":[["operations",""],["test_cases",""]]};
