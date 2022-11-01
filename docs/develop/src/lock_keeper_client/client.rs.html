@@ -235,9 +235,6 @@
 <span id="235">235</span>
 <span id="236">236</span>
 <span id="237">237</span>
-<span id="238">238</span>
-<span id="239">239</span>
-<span id="240">240</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Client object to interact with the key server.</span>
 
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::LockKeeperClientError</span>;
@@ -247,7 +244,7 @@
 <span class="kw">use</span> <span class="ident">hyper_rustls::HttpsConnector</span>;
 <span class="kw">use</span> <span class="ident">lock_keeper</span>::{
     <span class="ident">config::client::Config</span>,
-    <span class="ident">constants</span>::{<span class="ident">ACCOUNT_NAME</span>, <span class="ident">ACTION</span>},
+    <span class="ident">constants::METADATA</span>,
     <span class="ident">crypto</span>::{<span class="ident">OpaqueExportKey</span>, <span class="ident">OpaqueSessionKey</span>, <span class="ident">StorageKey</span>},
     <span class="ident">infrastructure::channel::ClientChannel</span>,
     <span class="ident">rpc::lock_keeper_rpc_client::LockKeeperRpcClient</span>,
@@ -255,7 +252,7 @@
         <span class="ident">database::user</span>::{<span class="ident">AccountName</span>, <span class="ident">UserId</span>},
         <span class="ident">operations</span>::{
             <span class="ident">retrieve_storage_key</span>::{<span class="ident">client</span>, <span class="ident">server</span>},
-            <span class="ident">ClientAction</span>,
+            <span class="ident">ClientAction</span>, <span class="ident">RequestMetadata</span>,
         },
     },
 };
@@ -374,9 +371,8 @@
         <span class="ident">config</span>: <span class="kw-2">&amp;</span><span class="ident">Config</span>,
     ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">LockKeeperClientError</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rng</span> <span class="op">=</span> <span class="ident">StdRng::from_entropy</span>();
-
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">client_channel</span> <span class="op">=</span>
-            <span class="ident"><span class="self">Self</span>::create_channel</span>(<span class="kw-2">&amp;mut</span> <span class="ident">client</span>, <span class="ident">ClientAction::Authenticate</span>, <span class="ident">account_name</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let</span> <span class="ident">metadata</span> <span class="op">=</span> <span class="ident">RequestMetadata::new</span>(<span class="ident">account_name</span>, <span class="ident">ClientAction::Authenticate</span>, <span class="prelude-val">None</span>);
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">client_channel</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::create_channel</span>(<span class="kw-2">&amp;mut</span> <span class="ident">client</span>, <span class="kw-2">&amp;</span><span class="ident">metadata</span>).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span>
             <span class="ident"><span class="self">Self</span>::handle_authentication</span>(<span class="ident">client_channel</span>, <span class="kw-2">&amp;mut</span> <span class="ident">rng</span>, <span class="ident">account_name</span>, <span class="ident">password</span>).<span class="kw">await</span>;
         <span class="kw">match</span> <span class="ident">result</span> {
@@ -404,26 +400,28 @@
         }
     }
 
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">create_metadata</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">action</span>: <span class="ident">ClientAction</span>) -&gt; <span class="ident">RequestMetadata</span> {
+        <span class="ident">RequestMetadata::new</span>(<span class="self">self</span>.<span class="ident">account_name</span>(), <span class="ident">action</span>, <span class="prelude-val">Some</span>(<span class="self">self</span>.<span class="ident">user_id</span>()))
+    }
+
     <span class="doccomment">/// Helper to create the appropriate [`ClientChannel`] to send to tonic</span>
     <span class="doccomment">/// handler functions based on the client&#39;s action.</span>
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">create_channel</span>(
         <span class="ident">client</span>: <span class="kw-2">&amp;mut</span> <span class="ident">LockKeeperRpcClient</span><span class="op">&lt;</span><span class="ident">LockKeeperRpcClientInner</span><span class="op">&gt;</span>,
-        <span class="ident">action</span>: <span class="ident">ClientAction</span>,
-        <span class="ident">account_name</span>: <span class="kw-2">&amp;</span><span class="ident">AccountName</span>,
+        <span class="ident">metadata</span>: <span class="kw-2">&amp;</span><span class="ident">RequestMetadata</span>,
     ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">ClientChannel</span>, <span class="ident">LockKeeperClientError</span><span class="op">&gt;</span> {
         <span class="comment">// Create channel to send messages to server after connection is established via</span>
         <span class="comment">// RPC</span>
         <span class="kw">let</span> (<span class="ident">tx</span>, <span class="ident">rx</span>) <span class="op">=</span> <span class="ident">mpsc::channel</span>(<span class="number">2</span>);
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">stream</span> <span class="op">=</span> <span class="ident">Request::new</span>(<span class="ident">ReceiverStream::new</span>(<span class="ident">rx</span>));
 
-        <span class="comment">// Set AccountName and Action in metadata</span>
-        <span class="kw">let</span> <span class="ident">account_name_val</span> <span class="op">=</span> <span class="ident">MetadataValue::try_from</span>(<span class="ident">account_name</span>.<span class="ident">to_string</span>())<span class="question-mark">?</span>;
-        <span class="kw">let</span> <span class="ident">action_val</span> <span class="op">=</span> <span class="ident">MetadataValue::try_from</span>(<span class="macro">format!</span>(<span class="string">&quot;{:?}&quot;</span>, <span class="ident">action</span>))<span class="question-mark">?</span>;
-        <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="ident">stream</span>.<span class="ident">metadata_mut</span>().<span class="ident">insert</span>(<span class="ident">ACCOUNT_NAME</span>, <span class="ident">account_name_val</span>);
-        <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="ident">stream</span>.<span class="ident">metadata_mut</span>().<span class="ident">insert</span>(<span class="ident">ACTION</span>, <span class="ident">action_val</span>);
+        <span class="comment">// Serialize metadata and set as tonic request metadata</span>
+        <span class="kw">let</span> <span class="ident">metadata_bytes</span> <span class="op">=</span> <span class="ident">metadata</span>.<span class="ident">to_vec</span>()<span class="question-mark">?</span>;
+        <span class="kw">let</span> <span class="ident">metadata_val</span> <span class="op">=</span> <span class="ident">MetadataValue::try_from</span>(<span class="ident">metadata_bytes</span>)<span class="question-mark">?</span>;
+        <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="ident">stream</span>.<span class="ident">metadata_mut</span>().<span class="ident">insert</span>(<span class="ident">METADATA</span>, <span class="ident">metadata_val</span>);
 
         <span class="comment">// Server returns its own channel that is uses to send responses</span>
-        <span class="kw">let</span> <span class="ident">server_response</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">action</span> {
+        <span class="kw">let</span> <span class="ident">server_response</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">metadata</span>.<span class="ident">action</span>() {
             <span class="ident">ClientAction::Authenticate</span> =&gt; <span class="ident">client</span>.<span class="ident">authenticate</span>(<span class="ident">stream</span>).<span class="kw">await</span>,
             <span class="ident">ClientAction::CreateStorageKey</span> =&gt; <span class="ident">client</span>.<span class="ident">create_storage_key</span>(<span class="ident">stream</span>).<span class="kw">await</span>,
             <span class="ident">ClientAction::Export</span> =&gt; <span class="ident">client</span>.<span class="ident">retrieve</span>(<span class="ident">stream</span>).<span class="kw">await</span>,
@@ -455,12 +453,8 @@
     <span class="doccomment">/// to the user specified by `user_id`</span>
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">retrieve_storage_key</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">StorageKey</span>, <span class="ident">LockKeeperClientError</span><span class="op">&gt;</span> {
         <span class="comment">// Create channel to send messages to server</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">channel</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::create_channel</span>(
-            <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">tonic_client</span>(),
-            <span class="ident">ClientAction::RetrieveStorageKey</span>,
-            <span class="self">self</span>.<span class="ident">account_name</span>(),
-        )
-        .<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let</span> <span class="ident">metadata</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">create_metadata</span>(<span class="ident">ClientAction::RetrieveStorageKey</span>);
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">channel</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::create_channel</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">tonic_client</span>(), <span class="kw-2">&amp;</span><span class="ident">metadata</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="comment">// Send UserId to server</span>
         <span class="kw">let</span> <span class="ident">request</span> <span class="op">=</span> <span class="ident">client::Request</span> {

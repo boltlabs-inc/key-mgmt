@@ -209,6 +209,20 @@
 <span id="209">209</span>
 <span id="210">210</span>
 <span id="211">211</span>
+<span id="212">212</span>
+<span id="213">213</span>
+<span id="214">214</span>
+<span id="215">215</span>
+<span id="216">216</span>
+<span id="217">217</span>
+<span id="218">218</span>
+<span id="219">219</span>
+<span id="220">220</span>
+<span id="221">221</span>
+<span id="222">222</span>
+<span id="223">223</span>
+<span id="224">224</span>
+<span id="225">225</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Various testing utilities</span>
 
 <span class="kw">use</span> <span class="ident">std::sync</span>::{<span class="ident">Arc</span>, <span class="ident">Mutex</span>};
@@ -342,12 +356,26 @@
 
     <span class="comment">// Catch any panic and print test result</span>
     <span class="kw">match</span> <span class="ident">handle</span>.<span class="ident">catch_unwind</span>().<span class="kw">await</span> {
-        <span class="prelude-val">Ok</span>(<span class="prelude-val">Ok</span>(<span class="kw">_</span>)) =&gt; {
-            {
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">results</span> <span class="op">=</span> <span class="ident">results</span>.<span class="ident">lock</span>().<span class="ident">unwrap</span>();
-                <span class="ident">results</span>.<span class="ident">push</span>(<span class="ident">Passed</span>);
+        <span class="comment">// task returned at all</span>
+        <span class="prelude-val">Ok</span>(<span class="prelude-val">Ok</span>(<span class="ident">res</span>)) =&gt; {
+            <span class="kw">match</span> <span class="ident">res</span> {
+                <span class="comment">// task returned and it was Ok</span>
+                <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; {
+                    {
+                        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">results</span> <span class="op">=</span> <span class="ident">results</span>.<span class="ident">lock</span>().<span class="ident">unwrap</span>();
+                        <span class="ident">results</span>.<span class="ident">push</span>(<span class="ident">Passed</span>);
+                    }
+                    <span class="ident">test_result</span>.<span class="ident">push_str</span>(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, <span class="string">&quot;ok\n&quot;</span>.<span class="ident">green</span>()));
+                }
+                <span class="comment">// task returned but it was Err</span>
+                <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
+                    {
+                        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">results</span> <span class="op">=</span> <span class="ident">results</span>.<span class="ident">lock</span>().<span class="ident">unwrap</span>();
+                        <span class="ident">results</span>.<span class="ident">push</span>(<span class="ident">Failed</span>);
+                    }
+                    <span class="ident">test_result</span>.<span class="ident">push_str</span>(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}: {}\n&quot;</span>, <span class="string">&quot;failed&quot;</span>.<span class="ident">red</span>(), <span class="ident">e</span>));
+                }
             }
-            <span class="ident">test_result</span>.<span class="ident">push_str</span>(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, <span class="string">&quot;ok\n&quot;</span>.<span class="ident">green</span>()));
         }
         <span class="prelude-val">Ok</span>(<span class="prelude-val">Err</span>(<span class="ident">err</span>)) =&gt; {
             <span class="comment">// Get panic message from error</span>
