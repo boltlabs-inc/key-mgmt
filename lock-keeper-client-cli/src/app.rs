@@ -1,34 +1,41 @@
+use anyhow::anyhow;
+
+use lock_keeper::config::client::Config;
 use std::{
     io::{self, Write},
     path::PathBuf,
-    str::FromStr,
 };
+use tracing::info;
 
-use lock_keeper::config::client::Config;
-
-use crate::{command::Command, state::State};
+use crate::{
+    cli_command::{get_cmd_functions, CliCommand, DynCommand, GetCmdFunction},
+    state::State,
+};
 
 /// Runs the interactive client
 pub async fn run(config: Config, storage_path: PathBuf) -> anyhow::Result<()> {
     let mut state = State::new(config, storage_path)?;
+    println!("Type \"help\" to view list of commands.");
 
     loop {
-        let command = match input(&state) {
-            Ok(cmd) => cmd,
+        match parse_input(&state) {
+            Ok(command) => {
+                if let Err(e) = command.execute(&mut state).await {
+                    println!("Error: {e}");
+                }
+            }
             Err(e) => {
-                println!("{e}");
-                continue;
+                println!("Unable to parse command: {e}");
             }
         };
-        if let Err(e) = command.execute(&mut state).await {
-            println!("{e}");
-            continue;
-        }
     }
 }
 
-/// Prints the appropriate prompt and inputs the next command
-fn input(state: &State) -> anyhow::Result<Command> {
+/// Reads next command from standard input.
+///
+/// Returns a dynamic trait representing the parsed command or an error if no
+/// such command exist.
+fn parse_input(state: &State) -> anyhow::Result<Box<dyn CliCommand>> {
     if state.credentials.is_some() {
         print!("> ");
     } else {
@@ -40,7 +47,35 @@ fn input(state: &State) -> anyhow::Result<Command> {
     let mut input = String::new();
     io::stdin().read_line(&mut input)?;
 
-    let command = Command::from_str(&input)?;
+    let command = parse_cli_command(&input)?;
 
     Ok(command)
+}
+
+// Iterate through our registered commands and see if any of them can parse this
+// command.
+fn parse_cli_command(input: &str) -> Result<DynCommand, anyhow::Error> {
+    info!("Attempting to parse user input string: {}", input);
+
+    let parsers = get_cmd_functions::<Parse>();
+    for cmd_parse in parsers {
+        if let Ok(c) = cmd_parse(input) {
+            return Ok(c);
+        }
+    }
+
+    Err(anyhow!("No matching command."))
+}
+
+/// Helper type to implement [GetCmdFunction]. This returns the parsing
+/// function for all commands and allows the [parse_cli_command] to iterate
+/// through these functions.
+struct Parse;
+
+impl GetCmdFunction for Parse {
+    type FunctionSignature = fn(&str) -> Result<DynCommand, anyhow::Error>;
+
+    fn get_function<T: CliCommand + 'static>() -> Self::FunctionSignature {
+        |s| T::from_str(s).map(|c| c.to_dyn())
+    }
 }
