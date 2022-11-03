@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `lock-keeper-key-server/src/server.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>server.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../lock_keeper_key_server/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../lock_keeper_key_server/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../lock_keeper_key_server/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `lock-keeper-key-server/src/server.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>server.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../lock_keeper_key_server/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../lock_keeper_key_server/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../lock_keeper_key_server/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -220,227 +220,227 @@
 <span id="220">220</span>
 <span id="221">221</span>
 <span id="222">222</span>
-</pre><pre class="rust"><code><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod</span> <span class="ident">opaque_storage</span>;
-<span class="kw">mod</span> <span class="ident">operation</span>;
-<span class="kw">mod</span> <span class="ident">service</span>;
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod</span> <span class="ident">session_key_cache</span>;
+</pre><pre class="rust"><code><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>opaque_storage;
+<span class="kw">mod </span>operation;
+<span class="kw">mod </span>service;
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>session_key_cache;
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use</span> <span class="ident">operation::Operation</span>;
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">service::start_lock_keeper_server</span>;
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use </span>operation::Operation;
+<span class="kw">pub use </span>service::start_lock_keeper_server;
 
-<span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">database::Database</span>, <span class="ident">error::LockKeeperServerError</span>, <span class="ident">operations</span>};
+<span class="kw">use crate</span>::{database::Database, error::LockKeeperServerError, operations};
 
-<span class="kw">use</span> <span class="ident">lock_keeper</span>::{
-    <span class="ident">config::server</span>::{<span class="ident">Config</span>, <span class="ident">Service</span>},
-    <span class="ident">constants::METADATA</span>,
-    <span class="ident">crypto::KeyId</span>,
-    <span class="ident">rpc</span>::{<span class="ident">lock_keeper_rpc_server::LockKeeperRpc</span>, <span class="ident">HealthCheck</span>},
-    <span class="ident">types</span>::{<span class="ident">Message</span>, <span class="ident">MessageStream</span>},
+<span class="kw">use </span>lock_keeper::{
+    config::server::{Config, Service},
+    constants::METADATA,
+    crypto::KeyId,
+    rpc::{lock_keeper_rpc_server::LockKeeperRpc, HealthCheck},
+    types::{Message, MessageStream},
 };
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::server::session_key_cache::SessionKeyCache</span>;
-<span class="kw">use</span> <span class="ident">lock_keeper::types::operations::RequestMetadata</span>;
-<span class="kw">use</span> <span class="ident">rand</span>::{<span class="ident">rngs::StdRng</span>, <span class="ident">SeedableRng</span>};
-<span class="kw">use</span> <span class="ident">std::sync::Arc</span>;
-<span class="kw">use</span> <span class="ident">tokio::sync::Mutex</span>;
-<span class="kw">use</span> <span class="ident">tonic</span>::{<span class="ident">Request</span>, <span class="ident">Response</span>, <span class="ident">Status</span>};
+<span class="kw">use </span><span class="kw">crate</span>::server::session_key_cache::SessionKeyCache;
+<span class="kw">use </span>lock_keeper::types::operations::RequestMetadata;
+<span class="kw">use </span>rand::{rngs::StdRng, SeedableRng};
+<span class="kw">use </span>std::sync::Arc;
+<span class="kw">use </span>tokio::sync::Mutex;
+<span class="kw">use </span>tonic::{Request, Response, Status};
 
-<span class="doccomment">///</span>
-<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">unused</span>)]</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">LockKeeperKeyServer</span> {
-    <span class="ident">config</span>: <span class="ident">Config</span>,
-    <span class="ident">db</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">Database</span><span class="op">&gt;</span>,
-    <span class="ident">service</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">Service</span><span class="op">&gt;</span>,
-    <span class="ident">rng</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">Mutex</span><span class="op">&lt;</span><span class="ident">StdRng</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="ident">session_key_cache</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">Mutex</span><span class="op">&lt;</span><span class="ident">SessionKeyCache</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+<span class="doccomment">///
+</span><span class="attribute">#[allow(unused)]
+#[derive(Debug)]
+</span><span class="kw">pub struct </span>LockKeeperKeyServer {
+    config: Config,
+    db: Arc&lt;Database&gt;,
+    service: Arc&lt;Service&gt;,
+    rng: Arc&lt;Mutex&lt;StdRng&gt;&gt;,
+    session_key_cache: Arc&lt;Mutex&lt;SessionKeyCache&gt;&gt;,
 }
 
-<span class="kw">impl</span> <span class="ident">LockKeeperKeyServer</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(
-        <span class="ident">db</span>: <span class="ident">Database</span>,
-        <span class="ident">config</span>: <span class="ident">Config</span>,
-        <span class="ident">service</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">Service</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">LockKeeperServerError</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">rng</span> <span class="op">=</span> <span class="ident">StdRng::from_entropy</span>();
+<span class="kw">impl </span>LockKeeperKeyServer {
+    <span class="kw">pub fn </span>new(
+        db: Database,
+        config: Config,
+        service: Arc&lt;Service&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, LockKeeperServerError&gt; {
+        <span class="kw">let </span>rng = StdRng::from_entropy();
 
-        <span class="prelude-val">Ok</span>(<span class="self">Self</span> {
-            <span class="ident">config</span>,
-            <span class="ident">db</span>: <span class="ident">Arc::new</span>(<span class="ident">db</span>),
-            <span class="ident">service</span>,
-            <span class="ident">rng</span>: <span class="ident">Arc::new</span>(<span class="ident">Mutex::new</span>(<span class="ident">rng</span>)),
-            <span class="ident">session_key_cache</span>: <span class="ident">Arc::new</span>(<span class="ident">Mutex::new</span>(<span class="ident">SessionKeyCache::default</span>())),
+        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
+            config,
+            db: Arc::new(db),
+            service,
+            rng: Arc::new(Mutex::new(rng)),
+            session_key_cache: Arc::new(Mutex::new(SessionKeyCache::default())),
         })
     }
 
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">context</span>(
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>context(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">request</span>: <span class="kw-2">&amp;</span><span class="ident">Request</span><span class="op">&lt;</span><span class="ident">tonic::Streaming</span><span class="op">&lt;</span><span class="ident">Message</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Context</span>, <span class="ident">LockKeeperServerError</span><span class="op">&gt;</span> {
-        <span class="comment">// Parse RequestMetadata</span>
-        <span class="kw">let</span> <span class="ident">metadata</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::parse_metadata</span>(<span class="ident">request</span>)<span class="question-mark">?</span>;
+        request: <span class="kw-2">&amp;</span>Request&lt;tonic::Streaming&lt;Message&gt;&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Context, LockKeeperServerError&gt; {
+        <span class="comment">// Parse RequestMetadata
+        </span><span class="kw">let </span>metadata = <span class="self">Self</span>::parse_metadata(request)<span class="question-mark">?</span>;
 
-        <span class="prelude-val">Ok</span>(<span class="ident">Context</span> {
-            <span class="ident">db</span>: <span class="self">self</span>.<span class="ident">db</span>.<span class="ident">clone</span>(),
-            <span class="ident">service</span>: <span class="self">self</span>.<span class="ident">service</span>.<span class="ident">clone</span>(),
-            <span class="ident">rng</span>: <span class="self">self</span>.<span class="ident">rng</span>.<span class="ident">clone</span>(),
-            <span class="ident">metadata</span>,
-            <span class="ident">key_id</span>: <span class="prelude-val">None</span>,
-            <span class="ident">session_key_cache</span>: <span class="self">self</span>.<span class="ident">session_key_cache</span>.<span class="ident">clone</span>(),
+        <span class="prelude-val">Ok</span>(Context {
+            db: <span class="self">self</span>.db.clone(),
+            service: <span class="self">self</span>.service.clone(),
+            rng: <span class="self">self</span>.rng.clone(),
+            metadata,
+            key_id: <span class="prelude-val">None</span>,
+            session_key_cache: <span class="self">self</span>.session_key_cache.clone(),
         })
     }
 
-    <span class="kw">fn</span> <span class="ident">parse_metadata</span>(
-        <span class="ident">request</span>: <span class="kw-2">&amp;</span><span class="ident">Request</span><span class="op">&lt;</span><span class="ident">tonic::Streaming</span><span class="op">&lt;</span><span class="ident">Message</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">RequestMetadata</span>, <span class="ident">Status</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">val_bytes</span> <span class="op">=</span> <span class="ident">request</span>
-            .<span class="ident">metadata</span>()
-            .<span class="ident">get</span>(<span class="ident">METADATA</span>)
-            .<span class="ident">ok_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="ident">Status::invalid_argument</span>(<span class="string">&quot;No metadata found&quot;</span>))<span class="question-mark">?</span>
-            .<span class="ident">as_bytes</span>();
-        <span class="kw">let</span> <span class="ident">metadata</span> <span class="op">=</span> <span class="ident">RequestMetadata::from_slice</span>(<span class="ident">val_bytes</span>)<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(<span class="ident">metadata</span>)
+    <span class="kw">fn </span>parse_metadata(
+        request: <span class="kw-2">&amp;</span>Request&lt;tonic::Streaming&lt;Message&gt;&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;RequestMetadata, Status&gt; {
+        <span class="kw">let </span>val_bytes = request
+            .metadata()
+            .get(METADATA)
+            .ok_or_else(|| Status::invalid_argument(<span class="string">&quot;No metadata found&quot;</span>))<span class="question-mark">?
+            </span>.as_bytes();
+        <span class="kw">let </span>metadata = RequestMetadata::from_slice(val_bytes)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(metadata)
     }
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct</span> <span class="ident">Context</span> {
-    <span class="kw">pub</span> <span class="ident">db</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">Database</span><span class="op">&gt;</span>,
-    <span class="kw">pub</span> <span class="ident">service</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">Service</span><span class="op">&gt;</span>,
-    <span class="kw">pub</span> <span class="ident">rng</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">Mutex</span><span class="op">&lt;</span><span class="ident">StdRng</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="kw">pub</span> <span class="ident">metadata</span>: <span class="ident">RequestMetadata</span>,
-    <span class="kw">pub</span> <span class="ident">key_id</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">KeyId</span><span class="op">&gt;</span>,
-    <span class="doccomment">/// Our user session keys are held in this cache after authentication.</span>
-    <span class="kw">pub</span> <span class="ident">session_key_cache</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">Mutex</span><span class="op">&lt;</span><span class="ident">SessionKeyCache</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+<span class="attribute">#[derive(Debug)]
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>Context {
+    <span class="kw">pub </span>db: Arc&lt;Database&gt;,
+    <span class="kw">pub </span>service: Arc&lt;Service&gt;,
+    <span class="kw">pub </span>rng: Arc&lt;Mutex&lt;StdRng&gt;&gt;,
+    <span class="kw">pub </span>metadata: RequestMetadata,
+    <span class="kw">pub </span>key_id: <span class="prelude-ty">Option</span>&lt;KeyId&gt;,
+    <span class="doccomment">/// Our user session keys are held in this cache after authentication.
+    </span><span class="kw">pub </span>session_key_cache: Arc&lt;Mutex&lt;SessionKeyCache&gt;&gt;,
 }
 
-<span class="attribute">#[<span class="ident">tonic::async_trait</span>]</span>
-<span class="kw">impl</span> <span class="ident">LockKeeperRpc</span> <span class="kw">for</span> <span class="ident">LockKeeperKeyServer</span> {
-    <span class="kw">type</span> <span class="ident">AuthenticateStream</span> <span class="op">=</span> <span class="ident">MessageStream</span>;
-    <span class="kw">type</span> <span class="ident">CreateStorageKeyStream</span> <span class="op">=</span> <span class="ident">MessageStream</span>;
-    <span class="kw">type</span> <span class="ident">GenerateStream</span> <span class="op">=</span> <span class="ident">MessageStream</span>;
-    <span class="kw">type</span> <span class="ident">ImportSigningKeyStream</span> <span class="op">=</span> <span class="ident">MessageStream</span>;
-    <span class="kw">type</span> <span class="ident">RegisterStream</span> <span class="op">=</span> <span class="ident">MessageStream</span>;
-    <span class="kw">type</span> <span class="ident">RemoteGenerateStream</span> <span class="op">=</span> <span class="ident">MessageStream</span>;
-    <span class="kw">type</span> <span class="ident">RemoteSignBytesStream</span> <span class="op">=</span> <span class="ident">MessageStream</span>;
-    <span class="kw">type</span> <span class="ident">RetrieveStream</span> <span class="op">=</span> <span class="ident">MessageStream</span>;
-    <span class="kw">type</span> <span class="ident">RetrieveAuditEventsStream</span> <span class="op">=</span> <span class="ident">MessageStream</span>;
-    <span class="kw">type</span> <span class="ident">RetrieveSigningKeyStream</span> <span class="op">=</span> <span class="ident">MessageStream</span>;
-    <span class="kw">type</span> <span class="ident">RetrieveStorageKeyStream</span> <span class="op">=</span> <span class="ident">MessageStream</span>;
+<span class="attribute">#[tonic::async_trait]
+</span><span class="kw">impl </span>LockKeeperRpc <span class="kw">for </span>LockKeeperKeyServer {
+    <span class="kw">type </span>AuthenticateStream = MessageStream;
+    <span class="kw">type </span>CreateStorageKeyStream = MessageStream;
+    <span class="kw">type </span>GenerateStream = MessageStream;
+    <span class="kw">type </span>ImportSigningKeyStream = MessageStream;
+    <span class="kw">type </span>RegisterStream = MessageStream;
+    <span class="kw">type </span>RemoteGenerateStream = MessageStream;
+    <span class="kw">type </span>RemoteSignBytesStream = MessageStream;
+    <span class="kw">type </span>RetrieveStream = MessageStream;
+    <span class="kw">type </span>RetrieveAuditEventsStream = MessageStream;
+    <span class="kw">type </span>RetrieveSigningKeyStream = MessageStream;
+    <span class="kw">type </span>RetrieveStorageKeyStream = MessageStream;
 
-    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">health</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="kw">_</span>: <span class="ident">Request</span><span class="op">&lt;</span><span class="ident">HealthCheck</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Response</span><span class="op">&lt;</span><span class="ident">HealthCheck</span><span class="op">&gt;</span>, <span class="ident">Status</span><span class="op">&gt;</span> {
-        <span class="prelude-val">Ok</span>(<span class="ident">Response::new</span>(<span class="ident">HealthCheck</span> { <span class="ident">check</span>: <span class="bool-val">true</span> }))
+    <span class="kw">async fn </span>health(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="kw">_</span>: Request&lt;HealthCheck&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;HealthCheck&gt;, Status&gt; {
+        <span class="prelude-val">Ok</span>(Response::new(HealthCheck { check: <span class="bool-val">true </span>}))
     }
 
-    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">register</span>(
+    <span class="kw">async fn </span>register(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">request</span>: <span class="ident">Request</span><span class="op">&lt;</span><span class="ident">tonic::Streaming</span><span class="op">&lt;</span><span class="ident">Message</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Response</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::RegisterStream</span><span class="op">&gt;</span>, <span class="ident">Status</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">context</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">context</span>(<span class="kw-2">&amp;</span><span class="ident">request</span>)<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(<span class="ident">operations::Register</span>
-            .<span class="ident">handle_request</span>(<span class="ident">context</span>, <span class="ident">request</span>)
+        request: Request&lt;tonic::Streaming&lt;Message&gt;&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;<span class="self">Self</span>::RegisterStream&gt;, Status&gt; {
+        <span class="kw">let </span>context = <span class="self">self</span>.context(<span class="kw-2">&amp;</span>request)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(operations::Register
+            .handle_request(context, request)
             .<span class="kw">await</span><span class="question-mark">?</span>)
     }
 
-    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">authenticate</span>(
+    <span class="kw">async fn </span>authenticate(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">request</span>: <span class="ident">Request</span><span class="op">&lt;</span><span class="ident">tonic::Streaming</span><span class="op">&lt;</span><span class="ident">Message</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Response</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::AuthenticateStream</span><span class="op">&gt;</span>, <span class="ident">Status</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">context</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">context</span>(<span class="kw-2">&amp;</span><span class="ident">request</span>)<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(<span class="ident">operations::Authenticate</span>
-            .<span class="ident">handle_request</span>(<span class="ident">context</span>, <span class="ident">request</span>)
+        request: Request&lt;tonic::Streaming&lt;Message&gt;&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;<span class="self">Self</span>::AuthenticateStream&gt;, Status&gt; {
+        <span class="kw">let </span>context = <span class="self">self</span>.context(<span class="kw-2">&amp;</span>request)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(operations::Authenticate
+            .handle_request(context, request)
             .<span class="kw">await</span><span class="question-mark">?</span>)
     }
 
-    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">create_storage_key</span>(
+    <span class="kw">async fn </span>create_storage_key(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">request</span>: <span class="ident">Request</span><span class="op">&lt;</span><span class="ident">tonic::Streaming</span><span class="op">&lt;</span><span class="ident">Message</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Response</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::CreateStorageKeyStream</span><span class="op">&gt;</span>, <span class="ident">Status</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">context</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">context</span>(<span class="kw-2">&amp;</span><span class="ident">request</span>)<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(<span class="ident">operations::CreateStorageKey</span>
-            .<span class="ident">handle_request</span>(<span class="ident">context</span>, <span class="ident">request</span>)
+        request: Request&lt;tonic::Streaming&lt;Message&gt;&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;<span class="self">Self</span>::CreateStorageKeyStream&gt;, Status&gt; {
+        <span class="kw">let </span>context = <span class="self">self</span>.context(<span class="kw-2">&amp;</span>request)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(operations::CreateStorageKey
+            .handle_request(context, request)
             .<span class="kw">await</span><span class="question-mark">?</span>)
     }
 
-    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">generate</span>(
+    <span class="kw">async fn </span>generate(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">request</span>: <span class="ident">Request</span><span class="op">&lt;</span><span class="ident">tonic::Streaming</span><span class="op">&lt;</span><span class="ident">Message</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Response</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::GenerateStream</span><span class="op">&gt;</span>, <span class="ident">Status</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">context</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">context</span>(<span class="kw-2">&amp;</span><span class="ident">request</span>)<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(<span class="ident">operations::Generate</span>
-            .<span class="ident">handle_request</span>(<span class="ident">context</span>, <span class="ident">request</span>)
+        request: Request&lt;tonic::Streaming&lt;Message&gt;&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;<span class="self">Self</span>::GenerateStream&gt;, Status&gt; {
+        <span class="kw">let </span>context = <span class="self">self</span>.context(<span class="kw-2">&amp;</span>request)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(operations::Generate
+            .handle_request(context, request)
             .<span class="kw">await</span><span class="question-mark">?</span>)
     }
 
-    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">import_signing_key</span>(
+    <span class="kw">async fn </span>import_signing_key(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">request</span>: <span class="ident">Request</span><span class="op">&lt;</span><span class="ident">tonic::Streaming</span><span class="op">&lt;</span><span class="ident">Message</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Response</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::ImportSigningKeyStream</span><span class="op">&gt;</span>, <span class="ident">Status</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">context</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">context</span>(<span class="kw-2">&amp;</span><span class="ident">request</span>)<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(<span class="ident">operations::ImportSigningKey</span>
-            .<span class="ident">handle_request</span>(<span class="ident">context</span>, <span class="ident">request</span>)
+        request: Request&lt;tonic::Streaming&lt;Message&gt;&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;<span class="self">Self</span>::ImportSigningKeyStream&gt;, Status&gt; {
+        <span class="kw">let </span>context = <span class="self">self</span>.context(<span class="kw-2">&amp;</span>request)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(operations::ImportSigningKey
+            .handle_request(context, request)
             .<span class="kw">await</span><span class="question-mark">?</span>)
     }
 
-    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">remote_generate</span>(
+    <span class="kw">async fn </span>remote_generate(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">request</span>: <span class="ident">Request</span><span class="op">&lt;</span><span class="ident">tonic::Streaming</span><span class="op">&lt;</span><span class="ident">Message</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Response</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::RemoteGenerateStream</span><span class="op">&gt;</span>, <span class="ident">Status</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">context</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">context</span>(<span class="kw-2">&amp;</span><span class="ident">request</span>)<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(<span class="ident">operations::RemoteGenerate</span>
-            .<span class="ident">handle_request</span>(<span class="ident">context</span>, <span class="ident">request</span>)
+        request: Request&lt;tonic::Streaming&lt;Message&gt;&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;<span class="self">Self</span>::RemoteGenerateStream&gt;, Status&gt; {
+        <span class="kw">let </span>context = <span class="self">self</span>.context(<span class="kw-2">&amp;</span>request)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(operations::RemoteGenerate
+            .handle_request(context, request)
             .<span class="kw">await</span><span class="question-mark">?</span>)
     }
 
-    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">remote_sign_bytes</span>(
+    <span class="kw">async fn </span>remote_sign_bytes(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">request</span>: <span class="ident">Request</span><span class="op">&lt;</span><span class="ident">tonic::Streaming</span><span class="op">&lt;</span><span class="ident">Message</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Response</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::RemoteSignBytesStream</span><span class="op">&gt;</span>, <span class="ident">Status</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">context</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">context</span>(<span class="kw-2">&amp;</span><span class="ident">request</span>)<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(<span class="ident">operations::RemoteSignBytes</span>
-            .<span class="ident">handle_request</span>(<span class="ident">context</span>, <span class="ident">request</span>)
+        request: Request&lt;tonic::Streaming&lt;Message&gt;&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;<span class="self">Self</span>::RemoteSignBytesStream&gt;, Status&gt; {
+        <span class="kw">let </span>context = <span class="self">self</span>.context(<span class="kw-2">&amp;</span>request)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(operations::RemoteSignBytes
+            .handle_request(context, request)
             .<span class="kw">await</span><span class="question-mark">?</span>)
     }
 
-    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">retrieve</span>(
+    <span class="kw">async fn </span>retrieve(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">request</span>: <span class="ident">Request</span><span class="op">&lt;</span><span class="ident">tonic::Streaming</span><span class="op">&lt;</span><span class="ident">Message</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Response</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::RetrieveStream</span><span class="op">&gt;</span>, <span class="ident">Status</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">context</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">context</span>(<span class="kw-2">&amp;</span><span class="ident">request</span>)<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(<span class="ident">operations::Retrieve</span>
-            .<span class="ident">handle_request</span>(<span class="ident">context</span>, <span class="ident">request</span>)
+        request: Request&lt;tonic::Streaming&lt;Message&gt;&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;<span class="self">Self</span>::RetrieveStream&gt;, Status&gt; {
+        <span class="kw">let </span>context = <span class="self">self</span>.context(<span class="kw-2">&amp;</span>request)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(operations::Retrieve
+            .handle_request(context, request)
             .<span class="kw">await</span><span class="question-mark">?</span>)
     }
 
-    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">retrieve_audit_events</span>(
+    <span class="kw">async fn </span>retrieve_audit_events(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">request</span>: <span class="ident">Request</span><span class="op">&lt;</span><span class="ident">tonic::Streaming</span><span class="op">&lt;</span><span class="ident">Message</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Response</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::RetrieveAuditEventsStream</span><span class="op">&gt;</span>, <span class="ident">Status</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">context</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">context</span>(<span class="kw-2">&amp;</span><span class="ident">request</span>)<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(<span class="ident">operations::RetrieveAuditEvents</span>
-            .<span class="ident">handle_request</span>(<span class="ident">context</span>, <span class="ident">request</span>)
+        request: Request&lt;tonic::Streaming&lt;Message&gt;&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;<span class="self">Self</span>::RetrieveAuditEventsStream&gt;, Status&gt; {
+        <span class="kw">let </span>context = <span class="self">self</span>.context(<span class="kw-2">&amp;</span>request)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(operations::RetrieveAuditEvents
+            .handle_request(context, request)
             .<span class="kw">await</span><span class="question-mark">?</span>)
     }
 
-    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">retrieve_storage_key</span>(
+    <span class="kw">async fn </span>retrieve_storage_key(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">request</span>: <span class="ident">Request</span><span class="op">&lt;</span><span class="ident">tonic::Streaming</span><span class="op">&lt;</span><span class="ident">Message</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Response</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::RetrieveStorageKeyStream</span><span class="op">&gt;</span>, <span class="ident">Status</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">context</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">context</span>(<span class="kw-2">&amp;</span><span class="ident">request</span>)<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(<span class="ident">operations::RetrieveStorageKey</span>
-            .<span class="ident">handle_request</span>(<span class="ident">context</span>, <span class="ident">request</span>)
+        request: Request&lt;tonic::Streaming&lt;Message&gt;&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;<span class="self">Self</span>::RetrieveStorageKeyStream&gt;, Status&gt; {
+        <span class="kw">let </span>context = <span class="self">self</span>.context(<span class="kw-2">&amp;</span>request)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(operations::RetrieveStorageKey
+            .handle_request(context, request)
             .<span class="kw">await</span><span class="question-mark">?</span>)
     }
 
-    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">retrieve_signing_key</span>(
+    <span class="kw">async fn </span>retrieve_signing_key(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">request</span>: <span class="ident">Request</span><span class="op">&lt;</span><span class="ident">tonic::Streaming</span><span class="op">&lt;</span><span class="ident">Message</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Response</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::RetrieveSigningKeyStream</span><span class="op">&gt;</span>, <span class="ident">Status</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">context</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">context</span>(<span class="kw-2">&amp;</span><span class="ident">request</span>)<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(<span class="ident">operations::RetrieveSigningKey</span>
-            .<span class="ident">handle_request</span>(<span class="ident">context</span>, <span class="ident">request</span>)
+        request: Request&lt;tonic::Streaming&lt;Message&gt;&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;<span class="self">Self</span>::RetrieveSigningKeyStream&gt;, Status&gt; {
+        <span class="kw">let </span>context = <span class="self">self</span>.context(<span class="kw-2">&amp;</span>request)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(operations::RetrieveSigningKey
+            .handle_request(context, request)
             .<span class="kw">await</span><span class="question-mark">?</span>)
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="lock_keeper_key_server" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="lock_keeper_key_server" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

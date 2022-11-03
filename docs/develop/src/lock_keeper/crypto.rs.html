@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `lock-keeper/src/crypto.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>crypto.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../lock_keeper/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../lock_keeper/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../lock_keeper/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `lock-keeper/src/crypto.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>crypto.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../lock_keeper/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../lock_keeper/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../lock_keeper/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -478,485 +478,485 @@
 <span id="478">478</span>
 <span id="479">479</span>
 <span id="480">480</span>
-</pre><pre class="rust"><code><span class="doccomment">//! Application-specific cryptographic types and operations.</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! Defines and implements keys and secret types, and the appropriate</span>
-<span class="doccomment">//! transformations between them. Public functions here are mostly wrappers</span>
-<span class="doccomment">//! around multiple low-level cryptographic steps.</span>
+</pre><pre class="rust"><code><span class="doccomment">//! Application-specific cryptographic types and operations.
+//!
+//! Defines and implements keys and secret types, and the appropriate
+//! transformations between them. Public functions here are mostly wrappers
+//! around multiple low-level cryptographic steps.
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::LockKeeperError</span>;
-<span class="kw">use</span> <span class="ident">generic_array</span>::{<span class="ident">typenum::U64</span>, <span class="ident">GenericArray</span>};
-<span class="kw">use</span> <span class="ident">hkdf::Hkdf</span>;
-<span class="kw">use</span> <span class="ident">rand</span>::{<span class="ident">CryptoRng</span>, <span class="ident">Rng</span>, <span class="ident">RngCore</span>};
-<span class="kw">use</span> <span class="ident">serde</span>::{<span class="ident">Deserialize</span>, <span class="ident">Serialize</span>};
-<span class="kw">use</span> <span class="ident">sha3</span>::{<span class="ident">Digest</span>, <span class="ident">Sha3_256</span>};
-<span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">array::IntoIter</span>, <span class="ident">convert::TryFrom</span>};
-<span class="kw">use</span> <span class="ident">tracing::error</span>;
+</span><span class="kw">use </span><span class="kw">crate</span>::LockKeeperError;
+<span class="kw">use </span>generic_array::{typenum::U64, GenericArray};
+<span class="kw">use </span>hkdf::Hkdf;
+<span class="kw">use </span>rand::{CryptoRng, Rng, RngCore};
+<span class="kw">use </span>serde::{Deserialize, Serialize};
+<span class="kw">use </span>sha3::{Digest, Sha3_256};
+<span class="kw">use </span>std::{array::IntoIter, convert::TryFrom};
+<span class="kw">use </span>tracing::error;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::types::database::user::UserId</span>;
+<span class="kw">use </span><span class="kw">crate</span>::types::database::user::UserId;
 
-<span class="kw">mod</span> <span class="ident">arbitrary_secret</span>;
-<span class="kw">mod</span> <span class="ident">generic</span>;
-<span class="kw">mod</span> <span class="ident">signing_key</span>;
+<span class="kw">mod </span>arbitrary_secret;
+<span class="kw">mod </span>generic;
+<span class="kw">mod </span>signing_key;
 
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">arbitrary_secret::Secret</span>;
-<span class="kw">use</span> <span class="ident">generic</span>::{<span class="ident">AssociatedData</span>, <span class="ident">EncryptionKey</span>};
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">generic</span>::{<span class="ident">CryptoError</span>, <span class="ident">Encrypted</span>};
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">signing_key</span>::{
-    <span class="ident">Export</span>, <span class="ident">Import</span>, <span class="ident">PlaceholderEncryptedSigningKeyPair</span>, <span class="ident">Signable</span>, <span class="ident">SignableBytes</span>, <span class="ident">Signature</span>,
-    <span class="ident">SigningKeyPair</span>, <span class="ident">SigningPublicKey</span>,
+<span class="kw">pub use </span>arbitrary_secret::Secret;
+<span class="kw">use </span>generic::{AssociatedData, EncryptionKey};
+<span class="kw">pub use </span>generic::{CryptoError, Encrypted};
+<span class="kw">pub use </span>signing_key::{
+    Export, Import, PlaceholderEncryptedSigningKeyPair, Signable, SignableBytes, Signature,
+    SigningKeyPair, SigningPublicKey,
 };
 
-<span class="doccomment">/// A session key is produced as shared output for client and server from</span>
-<span class="doccomment">/// OPAQUE.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// This key should not be stored or saved beyond the lifetime of a single</span>
-<span class="doccomment">/// authentication session. It should not be passed out to the local calling</span>
-<span class="doccomment">/// application.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">OpaqueSessionKey</span>(<span class="ident">Box</span><span class="op">&lt;</span>[<span class="ident">u8</span>; <span class="number">64</span>]<span class="op">&gt;</span>);
+<span class="doccomment">/// A session key is produced as shared output for client and server from
+/// OPAQUE.
+///
+/// This key should not be stored or saved beyond the lifetime of a single
+/// authentication session. It should not be passed out to the local calling
+/// application.
+</span><span class="attribute">#[derive(Debug, Clone)]
+</span><span class="kw">pub struct </span>OpaqueSessionKey(Box&lt;[u8; <span class="number">64</span>]&gt;);
 
-<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">GenericArray</span><span class="op">&lt;</span><span class="ident">u8</span>, <span class="ident">U64</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">OpaqueSessionKey</span> {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">arr</span>: <span class="ident">GenericArray</span><span class="op">&lt;</span><span class="ident">u8</span>, <span class="ident">U64</span><span class="op">&gt;</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span>(<span class="ident">Box::new</span>(<span class="ident">arr</span>.<span class="ident">into</span>()))
+<span class="kw">impl </span>From&lt;GenericArray&lt;u8, U64&gt;&gt; <span class="kw">for </span>OpaqueSessionKey {
+    <span class="kw">fn </span>from(arr: GenericArray&lt;u8, U64&gt;) -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>(Box::new(arr.into()))
     }
 }
 
-<span class="doccomment">/// An export key is secure key material produced as client output from OPAQUE.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// This uses standardized naming, but is _not_ directly used as an encryption</span>
-<span class="doccomment">/// key in this system. Instead, the client uses it to derive a master key.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// This key should not be stored or saved beyond the lifetime of a single</span>
-<span class="doccomment">/// authentication session.</span>
-<span class="doccomment">/// It should never be sent to the server or passed out to the local calling</span>
-<span class="doccomment">/// application.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">OpaqueExportKey</span>(<span class="ident">Box</span><span class="op">&lt;</span>[<span class="ident">u8</span>; <span class="number">64</span>]<span class="op">&gt;</span>);
+<span class="doccomment">/// An export key is secure key material produced as client output from OPAQUE.
+///
+/// This uses standardized naming, but is _not_ directly used as an encryption
+/// key in this system. Instead, the client uses it to derive a master key.
+///
+/// This key should not be stored or saved beyond the lifetime of a single
+/// authentication session.
+/// It should never be sent to the server or passed out to the local calling
+/// application.
+</span><span class="attribute">#[derive(Debug, Clone, PartialEq, Eq)]
+</span><span class="kw">pub struct </span>OpaqueExportKey(Box&lt;[u8; <span class="number">64</span>]&gt;);
 
-<span class="kw">impl</span> <span class="ident">OpaqueExportKey</span> {
-    <span class="doccomment">/// Derive a uniformly distributed secret [`MasterKey`] using the export key</span>
-    <span class="doccomment">/// as input key material.</span>
-    <span class="kw">fn</span> <span class="ident">derive_master_key</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">MasterKey</span>, <span class="ident">CryptoError</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">context</span> <span class="op">=</span> <span class="ident">AssociatedData::new</span>().<span class="ident">with_str</span>(<span class="string">&quot;OPAQUE-derived Lock Keeper master key&quot;</span>);
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">master_key_material</span> <span class="op">=</span> [<span class="number">0u8</span>; <span class="number">32</span>];
+<span class="kw">impl </span>OpaqueExportKey {
+    <span class="doccomment">/// Derive a uniformly distributed secret [`MasterKey`] using the export key
+    /// as input key material.
+    </span><span class="kw">fn </span>derive_master_key(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;MasterKey, CryptoError&gt; {
+        <span class="kw">let </span>context = AssociatedData::new().with_str(<span class="string">&quot;OPAQUE-derived Lock Keeper master key&quot;</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>master_key_material = [<span class="number">0u8</span>; <span class="number">32</span>];
 
-        <span class="comment">// Derive `master_key_material` from HKDF with no salt, the</span>
-        <span class="comment">// `OpaqueExportKey` as input key material, and the associated data as</span>
-        <span class="comment">// extra info.</span>
-        <span class="ident">Hkdf</span>::<span class="op">&lt;</span><span class="ident">Sha3_256</span><span class="op">&gt;</span><span class="ident">::new</span>(<span class="prelude-val">None</span>, <span class="self">self</span>.<span class="number">0</span>.<span class="ident">as_ref</span>())
-            .<span class="ident">expand</span>((<span class="kw-2">&amp;</span><span class="ident">context</span>).<span class="ident">into</span>(), <span class="kw-2">&amp;mut</span> <span class="ident">master_key_material</span>)
-            <span class="comment">// This should never cause an error because we&#39;ve hardcoded the length of the master key</span>
-            <span class="comment">// material and the export key length to both be 32, and length mismatch is the only</span>
-            <span class="comment">// documented cause of an `expand` failure.</span>
-            .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> {
-                <span class="macro">error!</span>(<span class="string">&quot;HKDF failed unexpectedly. {:?}&quot;</span>, <span class="ident">e</span>);
-                <span class="ident">CryptoError::KeyDerivationFailed</span>(<span class="ident">e</span>)
+        <span class="comment">// Derive `master_key_material` from HKDF with no salt, the
+        // `OpaqueExportKey` as input key material, and the associated data as
+        // extra info.
+        </span>Hkdf::&lt;Sha3_256&gt;::new(<span class="prelude-val">None</span>, <span class="self">self</span>.<span class="number">0</span>.as_ref())
+            .expand((<span class="kw-2">&amp;</span>context).into(), <span class="kw-2">&amp;mut </span>master_key_material)
+            <span class="comment">// This should never cause an error because we&#39;ve hardcoded the length of the master key
+            // material and the export key length to both be 32, and length mismatch is the only
+            // documented cause of an `expand` failure.
+            </span>.map_err(|e| {
+                <span class="macro">error!</span>(<span class="string">&quot;HKDF failed unexpectedly. {:?}&quot;</span>, e);
+                CryptoError::KeyDerivationFailed(e)
             })<span class="question-mark">?</span>;
 
-        <span class="prelude-val">Ok</span>(<span class="ident">MasterKey</span>(<span class="ident">EncryptionKey::from_bytes</span>(
-            <span class="ident">master_key_material</span>,
-            <span class="ident">context</span>,
+        <span class="prelude-val">Ok</span>(MasterKey(EncryptionKey::from_bytes(
+            master_key_material,
+            context,
         )))
     }
 
-    <span class="doccomment">/// Create an encrypted storage key. This is part of the registration flow</span>
-    <span class="doccomment">/// and is executed during a registration session with the</span>
-    <span class="doccomment">/// server. This key should be sent to the server for storage.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This must be run by the client.</span>
-    <span class="doccomment">/// It takes the following steps:</span>
-    <span class="doccomment">/// 1. Derive a master key from the [`OpaqueExportKey`]</span>
-    <span class="doccomment">/// 2. Generate a new [`StorageKey`] to encrypt stored data with</span>
-    <span class="doccomment">/// 3. Encrypt the storage key under the master key, using an AEAD scheme</span>
-    <span class="doccomment">/// 4. Return the encrypted storage key</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">create_and_encrypt_storage_key</span>(
+    <span class="doccomment">/// Create an encrypted storage key. This is part of the registration flow
+    /// and is executed during a registration session with the
+    /// server. This key should be sent to the server for storage.
+    ///
+    /// This must be run by the client.
+    /// It takes the following steps:
+    /// 1. Derive a master key from the [`OpaqueExportKey`]
+    /// 2. Generate a new [`StorageKey`] to encrypt stored data with
+    /// 3. Encrypt the storage key under the master key, using an AEAD scheme
+    /// 4. Return the encrypted storage key
+    </span><span class="kw">pub fn </span>create_and_encrypt_storage_key(
         <span class="self">self</span>,
-        <span class="ident">rng</span>: <span class="kw-2">&amp;mut</span> (<span class="kw">impl</span> <span class="ident">CryptoRng</span> <span class="op">+</span> <span class="ident">RngCore</span>),
-        <span class="ident">user_id</span>: <span class="kw-2">&amp;</span><span class="ident">UserId</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Encrypted</span><span class="op">&lt;</span><span class="ident">StorageKey</span><span class="op">&gt;</span>, <span class="ident">LockKeeperError</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">master_key</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">derive_master_key</span>()<span class="question-mark">?</span>;
-        <span class="kw">let</span> <span class="ident">storage_key</span> <span class="op">=</span> <span class="ident">StorageKey::generate</span>(<span class="ident">rng</span>);
-        <span class="prelude-val">Ok</span>(<span class="ident">master_key</span>.<span class="ident">encrypt_storage_key</span>(<span class="ident">rng</span>, <span class="ident">storage_key</span>, <span class="ident">user_id</span>)<span class="question-mark">?</span>)
+        rng: <span class="kw-2">&amp;mut </span>(<span class="kw">impl </span>CryptoRng + RngCore),
+        user_id: <span class="kw-2">&amp;</span>UserId,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Encrypted&lt;StorageKey&gt;, LockKeeperError&gt; {
+        <span class="kw">let </span>master_key = <span class="self">self</span>.derive_master_key()<span class="question-mark">?</span>;
+        <span class="kw">let </span>storage_key = StorageKey::generate(rng);
+        <span class="prelude-val">Ok</span>(master_key.encrypt_storage_key(rng, storage_key, user_id)<span class="question-mark">?</span>)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">GenericArray</span><span class="op">&lt;</span><span class="ident">u8</span>, <span class="ident">U64</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">OpaqueExportKey</span> {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">arr</span>: <span class="ident">GenericArray</span><span class="op">&lt;</span><span class="ident">u8</span>, <span class="ident">U64</span><span class="op">&gt;</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span>(<span class="ident">Box::new</span>(<span class="ident">arr</span>.<span class="ident">into</span>()))
+<span class="kw">impl </span>From&lt;GenericArray&lt;u8, U64&gt;&gt; <span class="kw">for </span>OpaqueExportKey {
+    <span class="kw">fn </span>from(arr: GenericArray&lt;u8, U64&gt;) -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>(Box::new(arr.into()))
     }
 }
 
-<span class="doccomment">/// The master key is a default-length symmetric encryption key for an</span>
-<span class="doccomment">/// AEAD scheme.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// The master key is used by the client to securely encrypt their</span>
-<span class="doccomment">/// [`StorageKey`]. It should not be stored or saved beyond the lifetime of a</span>
-<span class="doccomment">/// single authentication session. It should never be sent to the server or</span>
-<span class="doccomment">/// passed out to the local calling application.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>)]</span>
-<span class="kw">struct</span> <span class="ident">MasterKey</span>(<span class="ident">EncryptionKey</span>);
+<span class="doccomment">/// The master key is a default-length symmetric encryption key for an
+/// AEAD scheme.
+///
+/// The master key is used by the client to securely encrypt their
+/// [`StorageKey`]. It should not be stored or saved beyond the lifetime of a
+/// single authentication session. It should never be sent to the server or
+/// passed out to the local calling application.
+</span><span class="attribute">#[derive(Debug, PartialEq, Eq)]
+</span><span class="kw">struct </span>MasterKey(EncryptionKey);
 
-<span class="kw">impl</span> <span class="ident">MasterKey</span> {
-    <span class="doccomment">/// Encrypt the given [`StorageKey`] under the [`MasterKey`] using an</span>
-    <span class="doccomment">/// AEAD scheme.</span>
-    <span class="kw">fn</span> <span class="ident">encrypt_storage_key</span>(
+<span class="kw">impl </span>MasterKey {
+    <span class="doccomment">/// Encrypt the given [`StorageKey`] under the [`MasterKey`] using an
+    /// AEAD scheme.
+    </span><span class="kw">fn </span>encrypt_storage_key(
         <span class="self">self</span>,
-        <span class="ident">rng</span>: <span class="kw-2">&amp;mut</span> (<span class="kw">impl</span> <span class="ident">CryptoRng</span> <span class="op">+</span> <span class="ident">RngCore</span>),
-        <span class="ident">storage_key</span>: <span class="ident">StorageKey</span>,
-        <span class="ident">user_id</span>: <span class="kw-2">&amp;</span><span class="ident">UserId</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Encrypted</span><span class="op">&lt;</span><span class="ident">StorageKey</span><span class="op">&gt;</span>, <span class="ident">CryptoError</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">associated_data</span> <span class="op">=</span> <span class="ident">AssociatedData::new</span>()
-            .<span class="ident">with_bytes</span>(<span class="ident">user_id</span>.<span class="ident">clone</span>())
-            .<span class="ident">with_str</span>(<span class="ident">StorageKey::domain_separator</span>());
+        rng: <span class="kw-2">&amp;mut </span>(<span class="kw">impl </span>CryptoRng + RngCore),
+        storage_key: StorageKey,
+        user_id: <span class="kw-2">&amp;</span>UserId,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Encrypted&lt;StorageKey&gt;, CryptoError&gt; {
+        <span class="kw">let </span>associated_data = AssociatedData::new()
+            .with_bytes(user_id.clone())
+            .with_str(StorageKey::domain_separator());
 
-        <span class="ident">Encrypted::encrypt</span>(<span class="ident">rng</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, <span class="ident">storage_key</span>, <span class="kw-2">&amp;</span><span class="ident">associated_data</span>)
+        Encrypted::encrypt(rng, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, storage_key, <span class="kw-2">&amp;</span>associated_data)
     }
 }
 
-<span class="doccomment">/// A storage key is a default-length symmetric encryption key for an</span>
-<span class="doccomment">/// AEAD scheme. The storage key is used to encrypt stored secrets and signing</span>
-<span class="doccomment">/// keys.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// It is generated by the client and should never be revealed to the server or</span>
-<span class="doccomment">/// the calling application.</span>
-<span class="doccomment">/// It should not be stored or saved beyond the lifetime of a single</span>
-<span class="doccomment">/// authentication session.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">StorageKey</span>(<span class="ident">EncryptionKey</span>);
+<span class="doccomment">/// A storage key is a default-length symmetric encryption key for an
+/// AEAD scheme. The storage key is used to encrypt stored secrets and signing
+/// keys.
+///
+/// It is generated by the client and should never be revealed to the server or
+/// the calling application.
+/// It should not be stored or saved beyond the lifetime of a single
+/// authentication session.
+</span><span class="attribute">#[derive(Debug, Clone, PartialEq, Eq)]
+</span><span class="kw">pub struct </span>StorageKey(EncryptionKey);
 
-<span class="kw">impl</span> <span class="ident">StorageKey</span> {
-    <span class="kw">fn</span> <span class="ident">domain_separator</span>() -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span> {
-        <span class="string">&quot;storage key&quot;</span>
-    }
+<span class="kw">impl </span>StorageKey {
+    <span class="kw">fn </span>domain_separator() -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str {
+        <span class="string">&quot;storage key&quot;
+    </span>}
 
-    <span class="doccomment">/// Generate a new 32-byte [`StorageKey`].</span>
-    <span class="kw">fn</span> <span class="ident">generate</span><span class="op">&lt;</span><span class="ident">Rng</span>: <span class="ident">CryptoRng</span> <span class="op">+</span> <span class="ident">RngCore</span><span class="op">&gt;</span>(<span class="ident">rng</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Rng</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span>(<span class="ident">EncryptionKey::new</span>(<span class="ident">rng</span>))
-    }
-}
-
-<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">StorageKey</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">key</span>: <span class="ident">StorageKey</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident">StorageKey::domain_separator</span>()
-            .<span class="ident">as_bytes</span>()
-            .<span class="ident">iter</span>()
-            .<span class="ident">copied</span>()
-            .<span class="ident">chain</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="ident">key</span>.<span class="number">0</span>.<span class="ident">into</span>())
-            .<span class="ident">collect</span>()
+    <span class="doccomment">/// Generate a new 32-byte [`StorageKey`].
+    </span><span class="kw">fn </span>generate&lt;Rng: CryptoRng + RngCore&gt;(rng: <span class="kw-2">&amp;mut </span>Rng) -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>(EncryptionKey::new(rng))
     }
 }
 
-<span class="kw">impl</span> <span class="ident">TryFrom</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">StorageKey</span> {
-    <span class="kw">type</span> <span class="ident">Error</span> <span class="op">=</span> <span class="ident">CryptoError</span>;
-    <span class="kw">fn</span> <span class="ident">try_from</span>(<span class="ident">bytes</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident"><span class="self">Self</span>::Error</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">expected_domain_sep</span> <span class="op">=</span> <span class="ident">StorageKey::domain_separator</span>().<span class="ident">as_bytes</span>();
-        <span class="kw">let</span> <span class="ident">domain_separator</span> <span class="op">=</span> <span class="ident">bytes</span>
-            .<span class="ident">get</span>(<span class="number">0</span>..<span class="ident">expected_domain_sep</span>.<span class="ident">len</span>())
-            .<span class="ident">ok_or</span>(<span class="ident">CryptoError::ConversionError</span>)<span class="question-mark">?</span>;
-        <span class="kw">if</span> <span class="ident">expected_domain_sep</span> <span class="op">!</span><span class="op">=</span> <span class="ident">domain_separator</span> {
-            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">CryptoError::ConversionError</span>);
+<span class="kw">impl </span>From&lt;StorageKey&gt; <span class="kw">for </span>Vec&lt;u8&gt; {
+    <span class="kw">fn </span>from(key: StorageKey) -&gt; <span class="self">Self </span>{
+        StorageKey::domain_separator()
+            .as_bytes()
+            .iter()
+            .copied()
+            .chain::&lt;Vec&lt;u8&gt;&gt;(key.<span class="number">0</span>.into())
+            .collect()
+    }
+}
+
+<span class="kw">impl </span>TryFrom&lt;Vec&lt;u8&gt;&gt; <span class="kw">for </span>StorageKey {
+    <span class="kw">type </span>Error = CryptoError;
+    <span class="kw">fn </span>try_from(bytes: Vec&lt;u8&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
+        <span class="kw">let </span>expected_domain_sep = StorageKey::domain_separator().as_bytes();
+        <span class="kw">let </span>domain_separator = bytes
+            .get(<span class="number">0</span>..expected_domain_sep.len())
+            .ok_or(CryptoError::ConversionError)<span class="question-mark">?</span>;
+        <span class="kw">if </span>expected_domain_sep != domain_separator {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(CryptoError::ConversionError);
         }
 
-        <span class="comment">// Take off the domain separator</span>
-        <span class="kw">let</span> <span class="ident">key_bytes</span> <span class="op">=</span> <span class="ident">bytes</span>
-            .<span class="ident">get</span>(<span class="ident">expected_domain_sep</span>.<span class="ident">len</span>()..)
-            .<span class="ident">ok_or</span>(<span class="ident">CryptoError::ConversionError</span>)<span class="question-mark">?</span>
-            .<span class="ident">to_vec</span>();
+        <span class="comment">// Take off the domain separator
+        </span><span class="kw">let </span>key_bytes = bytes
+            .get(expected_domain_sep.len()..)
+            .ok_or(CryptoError::ConversionError)<span class="question-mark">?
+            </span>.to_vec();
 
-        <span class="prelude-val">Ok</span>(<span class="self">Self</span>(<span class="ident">key_bytes</span>.<span class="ident">try_into</span>()<span class="question-mark">?</span>))
+        <span class="prelude-val">Ok</span>(<span class="self">Self</span>(key_bytes.try_into()<span class="question-mark">?</span>))
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Encrypted</span><span class="op">&lt;</span><span class="ident">StorageKey</span><span class="op">&gt;</span> {
-    <span class="doccomment">/// Decrypt a storage key. This should be run as part of the subprotocol to</span>
-    <span class="doccomment">/// retrieve a storage key from the server.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This must be run by the client. It takes the following steps:</span>
-    <span class="doccomment">/// 1. Derive a master key from the [`OpaqueExportKey`]</span>
-    <span class="doccomment">/// 2. Decrypt the encrypted storage key using the master key</span>
-    <span class="doccomment">/// 3. Return the decrypted [`StorageKey`]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">decrypt_storage_key</span>(
+<span class="kw">impl </span>Encrypted&lt;StorageKey&gt; {
+    <span class="doccomment">/// Decrypt a storage key. This should be run as part of the subprotocol to
+    /// retrieve a storage key from the server.
+    ///
+    /// This must be run by the client. It takes the following steps:
+    /// 1. Derive a master key from the [`OpaqueExportKey`]
+    /// 2. Decrypt the encrypted storage key using the master key
+    /// 3. Return the decrypted [`StorageKey`]
+    </span><span class="kw">pub fn </span>decrypt_storage_key(
         <span class="self">self</span>,
-        <span class="ident">export_key</span>: <span class="ident">OpaqueExportKey</span>,
-        <span class="ident">user_id</span>: <span class="kw-2">&amp;</span><span class="ident">UserId</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">StorageKey</span>, <span class="ident">LockKeeperError</span><span class="op">&gt;</span> {
-        <span class="comment">// Check that the associated data is correct.</span>
-        <span class="kw">let</span> <span class="ident">expected_aad</span> <span class="op">=</span> <span class="ident">AssociatedData::new</span>()
-            .<span class="ident">with_bytes</span>(<span class="ident">user_id</span>.<span class="ident">clone</span>())
-            .<span class="ident">with_str</span>(<span class="ident">StorageKey::domain_separator</span>());
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">associated_data</span> <span class="op">!</span><span class="op">=</span> <span class="ident">expected_aad</span> {
-            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">CryptoError::DecryptionFailed</span>.<span class="ident">into</span>());
+        export_key: OpaqueExportKey,
+        user_id: <span class="kw-2">&amp;</span>UserId,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;StorageKey, LockKeeperError&gt; {
+        <span class="comment">// Check that the associated data is correct.
+        </span><span class="kw">let </span>expected_aad = AssociatedData::new()
+            .with_bytes(user_id.clone())
+            .with_str(StorageKey::domain_separator());
+        <span class="kw">if </span><span class="self">self</span>.associated_data != expected_aad {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(CryptoError::DecryptionFailed.into());
         }
 
-        <span class="kw">let</span> <span class="ident">master_key</span> <span class="op">=</span> <span class="ident">export_key</span>.<span class="ident">derive_master_key</span>()<span class="question-mark">?</span>;
-        <span class="kw">let</span> <span class="ident">decrypted</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">decrypt</span>(<span class="kw-2">&amp;</span><span class="ident">master_key</span>.<span class="number">0</span>)<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(<span class="ident">decrypted</span>)
+        <span class="kw">let </span>master_key = export_key.derive_master_key()<span class="question-mark">?</span>;
+        <span class="kw">let </span>decrypted = <span class="self">self</span>.decrypt(<span class="kw-2">&amp;</span>master_key.<span class="number">0</span>)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(decrypted)
     }
 }
 
-<span class="doccomment">/// Universally unique identifier for a stored secret or signing key.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">Serialize</span>, <span class="ident">Deserialize</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">Hash</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">KeyId</span>(<span class="ident">Box</span><span class="op">&lt;</span>[<span class="ident">u8</span>; <span class="number">32</span>]<span class="op">&gt;</span>);
+<span class="doccomment">/// Universally unique identifier for a stored secret or signing key.
+</span><span class="attribute">#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+</span><span class="kw">pub struct </span>KeyId(Box&lt;[u8; <span class="number">32</span>]&gt;);
 
-<span class="kw">impl</span> <span class="ident">IntoIterator</span> <span class="kw">for</span> <span class="ident">KeyId</span> {
-    <span class="kw">type</span> <span class="ident">Item</span> <span class="op">=</span> <span class="ident">u8</span>;
-    <span class="kw">type</span> <span class="ident">IntoIter</span> <span class="op">=</span> <span class="ident">IntoIter</span><span class="op">&lt;</span><span class="ident">u8</span>, <span class="number">32</span><span class="op">&gt;</span>;
+<span class="kw">impl </span>IntoIterator <span class="kw">for </span>KeyId {
+    <span class="kw">type </span>Item = u8;
+    <span class="kw">type </span>IntoIter = IntoIter&lt;u8, <span class="number">32</span>&gt;;
 
-    <span class="kw">fn</span> <span class="ident">into_iter</span>(<span class="self">self</span>) -&gt; <span class="ident"><span class="self">Self</span>::IntoIter</span> {
-        <span class="self">self</span>.<span class="number">0</span>.<span class="ident">into_iter</span>()
+    <span class="kw">fn </span>into_iter(<span class="self">self</span>) -&gt; <span class="self">Self</span>::IntoIter {
+        <span class="self">self</span>.<span class="number">0</span>.into_iter()
     }
 }
 
-<span class="kw">impl</span> <span class="ident">KeyId</span> {
-    <span class="doccomment">/// Generate a new, random `KeyId` for the given [`UserId`].</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This is called by the key server.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">generate</span>(
-        <span class="ident">rng</span>: <span class="kw-2">&amp;mut</span> (<span class="kw">impl</span> <span class="ident">CryptoRng</span> <span class="op">+</span> <span class="ident">RngCore</span>),
-        <span class="ident">user_id</span>: <span class="kw-2">&amp;</span><span class="ident">UserId</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">LockKeeperError</span><span class="op">&gt;</span> {
-        <span class="kw">const</span> <span class="ident">RANDOM_LEN</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="number">32</span>;
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">randomness</span> <span class="op">=</span> [<span class="number">0</span>; <span class="ident">RANDOM_LEN</span>];
-        <span class="ident">rng</span>.<span class="ident">try_fill</span>(<span class="kw-2">&amp;mut</span> <span class="ident">randomness</span>)
-            .<span class="ident">map_err</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="ident">CryptoError::RandomNumberGeneratorFailed</span>)<span class="question-mark">?</span>;
-        <span class="kw">let</span> <span class="ident">domain_separator</span> <span class="op">=</span> <span class="string">b&quot;Lock Keeper key ID&quot;</span>;
+<span class="kw">impl </span>KeyId {
+    <span class="doccomment">/// Generate a new, random `KeyId` for the given [`UserId`].
+    ///
+    /// This is called by the key server.
+    </span><span class="kw">pub fn </span>generate(
+        rng: <span class="kw-2">&amp;mut </span>(<span class="kw">impl </span>CryptoRng + RngCore),
+        user_id: <span class="kw-2">&amp;</span>UserId,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, LockKeeperError&gt; {
+        <span class="kw">const </span>RANDOM_LEN: usize = <span class="number">32</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>randomness = [<span class="number">0</span>; RANDOM_LEN];
+        rng.try_fill(<span class="kw-2">&amp;mut </span>randomness)
+            .map_err(|<span class="kw">_</span>| CryptoError::RandomNumberGeneratorFailed)<span class="question-mark">?</span>;
+        <span class="kw">let </span>domain_separator = <span class="string">b&quot;Lock Keeper key ID&quot;</span>;
 
-        <span class="kw">let</span> <span class="ident">hasher</span> <span class="op">=</span> <span class="ident">Sha3_256::new</span>();
-        <span class="kw">let</span> <span class="ident">bytes</span> <span class="op">=</span> <span class="ident">hasher</span>
-            .<span class="ident">chain_update</span>(<span class="ident">domain_separator</span>.<span class="ident">len</span>().<span class="ident">to_be_bytes</span>())
-            .<span class="ident">chain_update</span>(<span class="ident">domain_separator</span>)
-            .<span class="ident">chain_update</span>([<span class="ident">user_id</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">u8</span>])
-            .<span class="ident">chain_update</span>(<span class="ident">user_id</span>.<span class="ident">as_bytes</span>())
-            .<span class="ident">chain_update</span>([<span class="ident">RANDOM_LEN</span> <span class="kw">as</span> <span class="ident">u8</span>])
-            .<span class="ident">chain_update</span>(<span class="ident">randomness</span>)
-            .<span class="ident">finalize</span>();
+        <span class="kw">let </span>hasher = Sha3_256::new();
+        <span class="kw">let </span>bytes = hasher
+            .chain_update(domain_separator.len().to_be_bytes())
+            .chain_update(domain_separator)
+            .chain_update([user_id.len() <span class="kw">as </span>u8])
+            .chain_update(user_id.as_bytes())
+            .chain_update([RANDOM_LEN <span class="kw">as </span>u8])
+            .chain_update(randomness)
+            .finalize();
 
-        <span class="comment">// Truncate to 32 bytes, then convert into a 32-byte array.</span>
-        <span class="comment">// This should never produce a `ConversionError` because the lengths are</span>
-        <span class="comment">// hard-coded.</span>
-        <span class="prelude-val">Ok</span>(<span class="self">Self</span>(<span class="ident">Box::new</span>(
-            <span class="ident">bytes</span>
-                .<span class="ident">into_iter</span>()
-                .<span class="ident">take</span>(<span class="number">32</span>)
-                .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span><span class="op">&gt;</span>()
-                .<span class="ident">try_into</span>()
-                .<span class="ident">map_err</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="ident">CryptoError::ConversionError</span>)<span class="question-mark">?</span>,
+        <span class="comment">// Truncate to 32 bytes, then convert into a 32-byte array.
+        // This should never produce a `ConversionError` because the lengths are
+        // hard-coded.
+        </span><span class="prelude-val">Ok</span>(<span class="self">Self</span>(Box::new(
+            bytes
+                .into_iter()
+                .take(<span class="number">32</span>)
+                .collect::&lt;Vec&lt;u8&gt;&gt;()
+                .try_into()
+                .map_err(|<span class="kw">_</span>| CryptoError::ConversionError)<span class="question-mark">?</span>,
         )))
     }
 
-    <span class="comment">// Returns a slice of the contained bytes.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">as_bytes</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[<span class="ident">u8</span>] {
-        <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="self">self</span>.<span class="number">0</span>
-    }
+    <span class="comment">// Returns a slice of the contained bytes.
+    </span><span class="kw">pub fn </span>as_bytes(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[u8] {
+        <span class="kw-2">&amp;*</span><span class="self">self</span>.<span class="number">0
+    </span>}
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
-<span class="kw">mod</span> <span class="ident">test</span> {
-    <span class="kw">use</span> <span class="ident">std::collections::HashSet</span>;
+<span class="attribute">#[cfg(test)]
+</span><span class="kw">mod </span>test {
+    <span class="kw">use </span>std::collections::HashSet;
 
-    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::LockKeeperError</span>;
+    <span class="kw">use </span><span class="kw">crate</span>::LockKeeperError;
 
-    <span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
-    <span class="kw">use</span> <span class="ident">rand</span>::{<span class="ident">rngs::StdRng</span>, <span class="ident">Rng</span>, <span class="ident">SeedableRng</span>};
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
+    <span class="kw">use </span>rand::{rngs::StdRng, Rng, SeedableRng};
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">storage_key_to_vec_u8_conversion_works</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">CryptoError</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rng</span> <span class="op">=</span> <span class="ident">rand::thread_rng</span>();
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>storage_key_to_vec_u8_conversion_works() -&gt; <span class="prelude-ty">Result</span>&lt;(), CryptoError&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>rng = rand::thread_rng();
 
-        <span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span>..<span class="number">1000</span> {
-            <span class="kw">let</span> <span class="ident">storage_key</span> <span class="op">=</span> <span class="ident">StorageKey::generate</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>);
+        <span class="kw">for _ in </span><span class="number">0</span>..<span class="number">1000 </span>{
+            <span class="kw">let </span>storage_key = StorageKey::generate(<span class="kw-2">&amp;mut </span>rng);
 
-            <span class="kw">let</span> <span class="ident">vec</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">storage_key</span>.<span class="ident">clone</span>().<span class="ident">into</span>();
-            <span class="kw">let</span> <span class="ident">output_storage_key</span> <span class="op">=</span> <span class="ident">vec</span>.<span class="ident">try_into</span>()<span class="question-mark">?</span>;
+            <span class="kw">let </span>vec: Vec&lt;u8&gt; = storage_key.clone().into();
+            <span class="kw">let </span>output_storage_key = vec.try_into()<span class="question-mark">?</span>;
 
-            <span class="macro">assert_eq!</span>(<span class="ident">storage_key</span>, <span class="ident">output_storage_key</span>);
+            <span class="macro">assert_eq!</span>(storage_key, output_storage_key);
         }
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="comment">// In practice, an export key will be a pseudorandom output from OPAQUE.</span>
-    <span class="comment">// We&#39;ll use random bytes for the test key.</span>
-    <span class="kw">fn</span> <span class="ident">create_test_export_key</span>(<span class="ident">rng</span>: <span class="kw-2">&amp;mut</span> (<span class="kw">impl</span> <span class="ident">CryptoRng</span> <span class="op">+</span> <span class="ident">RngCore</span>)) -&gt; <span class="ident">OpaqueExportKey</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">key</span> <span class="op">=</span> [<span class="number">0_u8</span>; <span class="number">64</span>];
-        <span class="ident">rng</span>.<span class="ident">try_fill</span>(<span class="kw-2">&amp;mut</span> <span class="ident">key</span>)
-            .<span class="ident">expect</span>(<span class="string">&quot;Failed to generate random key&quot;</span>);
+    <span class="comment">// In practice, an export key will be a pseudorandom output from OPAQUE.
+    // We&#39;ll use random bytes for the test key.
+    </span><span class="kw">fn </span>create_test_export_key(rng: <span class="kw-2">&amp;mut </span>(<span class="kw">impl </span>CryptoRng + RngCore)) -&gt; OpaqueExportKey {
+        <span class="kw">let </span><span class="kw-2">mut </span>key = [<span class="number">0_u8</span>; <span class="number">64</span>];
+        rng.try_fill(<span class="kw-2">&amp;mut </span>key)
+            .expect(<span class="string">&quot;Failed to generate random key&quot;</span>);
 
-        <span class="ident">OpaqueExportKey</span>(<span class="ident">key</span>.<span class="ident">into</span>())
+        OpaqueExportKey(key.into())
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">derive_master_key_not_obviously_broken</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rng</span> <span class="op">=</span> <span class="ident">rand::thread_rng</span>();
-        <span class="kw">let</span> <span class="ident">export_key</span> <span class="op">=</span> <span class="ident">create_test_export_key</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>);
-        <span class="kw">let</span> <span class="ident">master_key</span> <span class="op">=</span> <span class="ident">export_key</span>.<span class="ident">derive_master_key</span>().<span class="ident">unwrap</span>();
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>derive_master_key_not_obviously_broken() {
+        <span class="kw">let </span><span class="kw-2">mut </span>rng = rand::thread_rng();
+        <span class="kw">let </span>export_key = create_test_export_key(<span class="kw-2">&amp;mut </span>rng);
+        <span class="kw">let </span>master_key = export_key.derive_master_key().unwrap();
 
-        <span class="comment">// Make sure the master key isn&#39;t all 0s.</span>
-        <span class="kw">let</span> <span class="ident">zero_key</span> <span class="op">=</span> <span class="ident">EncryptionKey::from_bytes</span>([<span class="number">0</span>; <span class="number">32</span>], <span class="ident">master_key</span>.<span class="number">0</span>.<span class="ident">context</span>().<span class="ident">clone</span>());
-        <span class="macro">assert_ne!</span>(<span class="ident">master_key</span>.<span class="number">0</span>, <span class="ident">zero_key</span>);
+        <span class="comment">// Make sure the master key isn&#39;t all 0s.
+        </span><span class="kw">let </span>zero_key = EncryptionKey::from_bytes([<span class="number">0</span>; <span class="number">32</span>], master_key.<span class="number">0</span>.context().clone());
+        <span class="macro">assert_ne!</span>(master_key.<span class="number">0</span>, zero_key);
 
-        <span class="comment">// Make sure that using different context doesn&#39;t give the same key.</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">bad_mk</span> <span class="op">=</span> [<span class="number">0</span>; <span class="number">32</span>];
-        <span class="kw">let</span> <span class="ident">bad_ad</span> <span class="op">=</span> <span class="ident">AssociatedData::new</span>().<span class="ident">with_str</span>(<span class="string">&quot;here is my testing context&quot;</span>);
-        <span class="ident">Hkdf</span>::<span class="op">&lt;</span><span class="ident">Sha3_256</span><span class="op">&gt;</span><span class="ident">::new</span>(<span class="prelude-val">None</span>, <span class="ident">export_key</span>.<span class="number">0</span>.<span class="ident">as_ref</span>())
-            .<span class="ident">expand</span>((<span class="kw-2">&amp;</span><span class="ident">bad_ad</span>).<span class="ident">into</span>(), <span class="kw-2">&amp;mut</span> <span class="ident">bad_mk</span>)
-            .<span class="ident">unwrap</span>();
-        <span class="kw">let</span> <span class="ident">wrong_context_key</span> <span class="op">=</span> <span class="ident">EncryptionKey::from_bytes</span>(<span class="ident">bad_mk</span>, <span class="ident">master_key</span>.<span class="number">0</span>.<span class="ident">context</span>().<span class="ident">clone</span>());
+        <span class="comment">// Make sure that using different context doesn&#39;t give the same key.
+        </span><span class="kw">let </span><span class="kw-2">mut </span>bad_mk = [<span class="number">0</span>; <span class="number">32</span>];
+        <span class="kw">let </span>bad_ad = AssociatedData::new().with_str(<span class="string">&quot;here is my testing context&quot;</span>);
+        Hkdf::&lt;Sha3_256&gt;::new(<span class="prelude-val">None</span>, export_key.<span class="number">0</span>.as_ref())
+            .expand((<span class="kw-2">&amp;</span>bad_ad).into(), <span class="kw-2">&amp;mut </span>bad_mk)
+            .unwrap();
+        <span class="kw">let </span>wrong_context_key = EncryptionKey::from_bytes(bad_mk, master_key.<span class="number">0</span>.context().clone());
 
-        <span class="macro">assert_ne!</span>(<span class="ident">master_key</span>.<span class="number">0</span>, <span class="ident">wrong_context_key</span>);
+        <span class="macro">assert_ne!</span>(master_key.<span class="number">0</span>, wrong_context_key);
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">master_key_depends_on_export_key</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rng</span> <span class="op">=</span> <span class="ident">rand::thread_rng</span>();
-        <span class="kw">let</span> <span class="ident">export1</span> <span class="op">=</span> <span class="ident">create_test_export_key</span>(<span class="kw-2">&amp;mut</span> (<span class="ident">rng</span>));
-        <span class="kw">let</span> <span class="ident">export2</span> <span class="op">=</span> <span class="ident">create_test_export_key</span>(<span class="kw-2">&amp;mut</span> (<span class="ident">rng</span>));
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>master_key_depends_on_export_key() {
+        <span class="kw">let </span><span class="kw-2">mut </span>rng = rand::thread_rng();
+        <span class="kw">let </span>export1 = create_test_export_key(<span class="kw-2">&amp;mut </span>(rng));
+        <span class="kw">let </span>export2 = create_test_export_key(<span class="kw-2">&amp;mut </span>(rng));
 
-        <span class="comment">// Different export keys...</span>
-        <span class="macro">assert_ne!</span>(<span class="ident">export1</span>, <span class="ident">export2</span>);
-        <span class="comment">// ...implies different master keys.</span>
-        <span class="macro">assert_ne!</span>(
-            <span class="ident">export1</span>.<span class="ident">derive_master_key</span>().<span class="ident">unwrap</span>(),
-            <span class="ident">export2</span>.<span class="ident">derive_master_key</span>().<span class="ident">unwrap</span>()
+        <span class="comment">// Different export keys...
+        </span><span class="macro">assert_ne!</span>(export1, export2);
+        <span class="comment">// ...implies different master keys.
+        </span><span class="macro">assert_ne!</span>(
+            export1.derive_master_key().unwrap(),
+            export2.derive_master_key().unwrap()
         );
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">storage_key_generation_produces_unique_storage_keys</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rng</span> <span class="op">=</span> <span class="ident">rand::thread_rng</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">uniq</span> <span class="op">=</span> <span class="ident">HashSet::new</span>();
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>storage_key_generation_produces_unique_storage_keys() {
+        <span class="kw">let </span><span class="kw-2">mut </span>rng = rand::thread_rng();
+        <span class="kw">let </span><span class="kw-2">mut </span>uniq = HashSet::new();
 
         <span class="macro">assert!</span>((<span class="number">0</span>..<span class="number">1000</span>)
-            .<span class="ident">map</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="ident">StorageKey::generate</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>))
-            .<span class="ident">all</span>(<span class="op">|</span><span class="ident">storage_key</span><span class="op">|</span> <span class="ident">uniq</span>.<span class="ident">insert</span>(<span class="ident">storage_key</span>.<span class="number">0</span>)));
+            .map(|<span class="kw">_</span>| StorageKey::generate(<span class="kw-2">&amp;mut </span>rng))
+            .all(|storage_key| uniq.insert(storage_key.<span class="number">0</span>)));
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">storage_keys_are_32_bytes</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rng</span> <span class="op">=</span> <span class="ident">rand::thread_rng</span>();
-        <span class="kw">let</span> <span class="ident">storage_key</span> <span class="op">=</span> <span class="ident">StorageKey::generate</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>);
-        <span class="macro">assert_eq!</span>(<span class="number">32</span>, <span class="ident">storage_key</span>.<span class="number">0</span>.<span class="ident">len</span>())
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>storage_keys_are_32_bytes() {
+        <span class="kw">let </span><span class="kw-2">mut </span>rng = rand::thread_rng();
+        <span class="kw">let </span>storage_key = StorageKey::generate(<span class="kw-2">&amp;mut </span>rng);
+        <span class="macro">assert_eq!</span>(<span class="number">32</span>, storage_key.<span class="number">0</span>.len())
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">key_id_generation_produces_unique_ids</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">CryptoError</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rng</span> <span class="op">=</span> <span class="ident">rand::thread_rng</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">uniq</span> <span class="op">=</span> <span class="ident">HashSet::new</span>();
-        <span class="kw">let</span> <span class="ident">user_id</span> <span class="op">=</span> <span class="ident">UserId::new</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>).<span class="ident">unwrap</span>();
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>key_id_generation_produces_unique_ids() -&gt; <span class="prelude-ty">Result</span>&lt;(), CryptoError&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>rng = rand::thread_rng();
+        <span class="kw">let </span><span class="kw-2">mut </span>uniq = HashSet::new();
+        <span class="kw">let </span>user_id = UserId::new(<span class="kw-2">&amp;mut </span>rng).unwrap();
 
-        <span class="comment">// Create 1000 key IDs; make sure they&#39;re unique</span>
-        <span class="comment">// by putting them into a set. Insert will return false if a key id</span>
-        <span class="comment">// already exists in the set.</span>
-        <span class="macro">assert!</span>((<span class="number">0</span>..<span class="number">1000</span>)
-            .<span class="ident">map</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="ident">KeyId::generate</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>, <span class="kw-2">&amp;</span><span class="ident">user_id</span>).<span class="ident">unwrap</span>())
-            .<span class="ident">all</span>(<span class="op">|</span><span class="ident">key_id</span><span class="op">|</span> <span class="ident">uniq</span>.<span class="ident">insert</span>(<span class="ident">key_id</span>)));
+        <span class="comment">// Create 1000 key IDs; make sure they&#39;re unique
+        // by putting them into a set. Insert will return false if a key id
+        // already exists in the set.
+        </span><span class="macro">assert!</span>((<span class="number">0</span>..<span class="number">1000</span>)
+            .map(|<span class="kw">_</span>| KeyId::generate(<span class="kw-2">&amp;mut </span>rng, <span class="kw-2">&amp;</span>user_id).unwrap())
+            .all(|key_id| uniq.insert(key_id)));
 
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">key_id_generation_incorporates_user_id</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rng</span> <span class="op">=</span> <span class="ident">rand::thread_rng</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">uniq</span> <span class="op">=</span> <span class="ident">HashSet::new</span>();
-        <span class="kw">let</span> <span class="ident">seed</span> <span class="op">=</span> <span class="string">b&quot;a terrible seed for testing keys&quot;</span>;
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>key_id_generation_incorporates_user_id() {
+        <span class="kw">let </span><span class="kw-2">mut </span>rng = rand::thread_rng();
+        <span class="kw">let </span><span class="kw-2">mut </span>uniq = HashSet::new();
+        <span class="kw">let </span>seed = <span class="string">b&quot;a terrible seed for testing keys&quot;</span>;
 
-        <span class="comment">// The bad RNG will produce the same randomness for every call to generate.</span>
-        <span class="comment">// But the key IDs are still unique!</span>
-        <span class="macro">assert!</span>((<span class="number">0</span>..<span class="number">1000</span>)
-            .<span class="ident">map</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> {
-                <span class="kw">let</span> <span class="ident">user_id</span> <span class="op">=</span> <span class="ident">UserId::new</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>).<span class="ident">unwrap</span>();
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">bad_rng</span> <span class="op">=</span> <span class="ident">StdRng::from_seed</span>(<span class="kw-2">*</span><span class="ident">seed</span>);
-                <span class="ident">KeyId::generate</span>(<span class="kw-2">&amp;mut</span> <span class="ident">bad_rng</span>, <span class="kw-2">&amp;</span><span class="ident">user_id</span>).<span class="ident">unwrap</span>()
+        <span class="comment">// The bad RNG will produce the same randomness for every call to generate.
+        // But the key IDs are still unique!
+        </span><span class="macro">assert!</span>((<span class="number">0</span>..<span class="number">1000</span>)
+            .map(|<span class="kw">_</span>| {
+                <span class="kw">let </span>user_id = UserId::new(<span class="kw-2">&amp;mut </span>rng).unwrap();
+                <span class="kw">let </span><span class="kw-2">mut </span>bad_rng = StdRng::from_seed(<span class="kw-2">*</span>seed);
+                KeyId::generate(<span class="kw-2">&amp;mut </span>bad_rng, <span class="kw-2">&amp;</span>user_id).unwrap()
             })
-            .<span class="ident">all</span>(<span class="op">|</span><span class="ident">key_id</span><span class="op">|</span> <span class="ident">uniq</span>.<span class="ident">insert</span>(<span class="ident">key_id</span>)))
+            .all(|key_id| uniq.insert(key_id)))
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">storage_key_encryption_works</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">LockKeeperError</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rng</span> <span class="op">=</span> <span class="ident">rand::thread_rng</span>();
-        <span class="kw">let</span> <span class="ident">export_key</span> <span class="op">=</span> <span class="ident">create_test_export_key</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>);
-        <span class="kw">let</span> <span class="ident">user_id</span> <span class="op">=</span> <span class="ident">UserId::new</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>)<span class="question-mark">?</span>;
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>storage_key_encryption_works() -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperError&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>rng = rand::thread_rng();
+        <span class="kw">let </span>export_key = create_test_export_key(<span class="kw-2">&amp;mut </span>rng);
+        <span class="kw">let </span>user_id = UserId::new(<span class="kw-2">&amp;mut </span>rng)<span class="question-mark">?</span>;
 
-        <span class="comment">// Set up matching RNGs to check behavior of the utility function.</span>
-        <span class="kw">let</span> <span class="ident">seed</span> <span class="op">=</span> <span class="string">b&quot;not-random seed for convenience!&quot;</span>;
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rng</span> <span class="op">=</span> <span class="ident">StdRng::from_seed</span>(<span class="kw-2">*</span><span class="ident">seed</span>);
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rng_copy</span> <span class="op">=</span> <span class="ident">StdRng::from_seed</span>(<span class="kw-2">*</span><span class="ident">seed</span>);
+        <span class="comment">// Set up matching RNGs to check behavior of the utility function.
+        </span><span class="kw">let </span>seed = <span class="string">b&quot;not-random seed for convenience!&quot;</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>rng = StdRng::from_seed(<span class="kw-2">*</span>seed);
+        <span class="kw">let </span><span class="kw-2">mut </span>rng_copy = StdRng::from_seed(<span class="kw-2">*</span>seed);
 
-        <span class="comment">// Encrypt the storage key</span>
-        <span class="kw">let</span> <span class="ident">master_key</span> <span class="op">=</span> <span class="ident">export_key</span>.<span class="ident">derive_master_key</span>()<span class="question-mark">?</span>;
-        <span class="kw">let</span> <span class="ident">storage_key</span> <span class="op">=</span> <span class="ident">StorageKey::generate</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>);
+        <span class="comment">// Encrypt the storage key
+        </span><span class="kw">let </span>master_key = export_key.derive_master_key()<span class="question-mark">?</span>;
+        <span class="kw">let </span>storage_key = StorageKey::generate(<span class="kw-2">&amp;mut </span>rng);
 
-        <span class="kw">let</span> <span class="ident">encrypted_key</span> <span class="op">=</span>
-            <span class="ident">master_key</span>.<span class="ident">encrypt_storage_key</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>, <span class="ident">storage_key</span>.<span class="ident">clone</span>(), <span class="kw-2">&amp;</span><span class="ident">user_id</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>encrypted_key =
+            master_key.encrypt_storage_key(<span class="kw-2">&amp;mut </span>rng, storage_key.clone(), <span class="kw-2">&amp;</span>user_id)<span class="question-mark">?</span>;
 
-        <span class="comment">// Make sure the utility function gives the same result when encrypting the</span>
-        <span class="comment">// storage key</span>
-        <span class="kw">let</span> <span class="ident">utility_encrypted_key</span> <span class="op">=</span> <span class="ident">export_key</span>
-            .<span class="ident">clone</span>()
-            .<span class="ident">create_and_encrypt_storage_key</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng_copy</span>, <span class="kw-2">&amp;</span><span class="ident">user_id</span>)<span class="question-mark">?</span>;
-        <span class="macro">assert_eq!</span>(<span class="ident">utility_encrypted_key</span>, <span class="ident">encrypted_key</span>);
+        <span class="comment">// Make sure the utility function gives the same result when encrypting the
+        // storage key
+        </span><span class="kw">let </span>utility_encrypted_key = export_key
+            .clone()
+            .create_and_encrypt_storage_key(<span class="kw-2">&amp;mut </span>rng_copy, <span class="kw-2">&amp;</span>user_id)<span class="question-mark">?</span>;
+        <span class="macro">assert_eq!</span>(utility_encrypted_key, encrypted_key);
 
-        <span class="comment">// Decrypt the storage key and check that it worked</span>
-        <span class="kw">let</span> <span class="ident">decrypted_key</span> <span class="op">=</span> <span class="ident">encrypted_key</span>.<span class="ident">decrypt_storage_key</span>(<span class="ident">export_key</span>, <span class="kw-2">&amp;</span><span class="ident">user_id</span>)<span class="question-mark">?</span>;
-        <span class="macro">assert_eq!</span>(<span class="ident">storage_key</span>, <span class="ident">decrypted_key</span>);
+        <span class="comment">// Decrypt the storage key and check that it worked
+        </span><span class="kw">let </span>decrypted_key = encrypted_key.decrypt_storage_key(export_key, <span class="kw-2">&amp;</span>user_id)<span class="question-mark">?</span>;
+        <span class="macro">assert_eq!</span>(storage_key, decrypted_key);
 
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">storage_key_retrieval_requires_correct_aad</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">LockKeeperError</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rng</span> <span class="op">=</span> <span class="ident">rand::thread_rng</span>();
-        <span class="kw">let</span> <span class="ident">export_key</span> <span class="op">=</span> <span class="ident">create_test_export_key</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>);
-        <span class="kw">let</span> <span class="ident">user_id</span> <span class="op">=</span> <span class="ident">UserId::new</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>)<span class="question-mark">?</span>;
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>storage_key_retrieval_requires_correct_aad() -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperError&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>rng = rand::thread_rng();
+        <span class="kw">let </span>export_key = create_test_export_key(<span class="kw-2">&amp;mut </span>rng);
+        <span class="kw">let </span>user_id = UserId::new(<span class="kw-2">&amp;mut </span>rng)<span class="question-mark">?</span>;
 
-        <span class="kw">let</span> <span class="ident">master_key</span> <span class="op">=</span> <span class="ident">export_key</span>.<span class="ident">derive_master_key</span>()<span class="question-mark">?</span>;
-        <span class="kw">let</span> <span class="ident">storage_key</span> <span class="op">=</span> <span class="ident">StorageKey::generate</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>);
+        <span class="kw">let </span>master_key = export_key.derive_master_key()<span class="question-mark">?</span>;
+        <span class="kw">let </span>storage_key = StorageKey::generate(<span class="kw-2">&amp;mut </span>rng);
 
-        <span class="kw">let</span> <span class="ident">bad_aad</span> <span class="op">=</span> <span class="ident">AssociatedData::new</span>()
-            .<span class="ident">with_bytes</span>(<span class="ident">user_id</span>.<span class="ident">clone</span>())
-            .<span class="ident">with_str</span>(<span class="ident">StorageKey::domain_separator</span>())
-            .<span class="ident">with_str</span>(<span class="string">&quot;some other content that makes this incorrect&quot;</span>);
+        <span class="kw">let </span>bad_aad = AssociatedData::new()
+            .with_bytes(user_id.clone())
+            .with_str(StorageKey::domain_separator())
+            .with_str(<span class="string">&quot;some other content that makes this incorrect&quot;</span>);
 
-        <span class="kw">let</span> <span class="ident">encrypted_storage_key</span> <span class="op">=</span>
-            <span class="ident">Encrypted::encrypt</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>, <span class="kw-2">&amp;</span><span class="ident">master_key</span>.<span class="number">0</span>, <span class="ident">storage_key</span>, <span class="kw-2">&amp;</span><span class="ident">bad_aad</span>)<span class="question-mark">?</span>;
-        <span class="macro">assert!</span>(<span class="ident">encrypted_storage_key</span>
-            .<span class="ident">decrypt_storage_key</span>(<span class="ident">export_key</span>, <span class="kw-2">&amp;</span><span class="ident">user_id</span>)
-            .<span class="ident">is_err</span>());
+        <span class="kw">let </span>encrypted_storage_key =
+            Encrypted::encrypt(<span class="kw-2">&amp;mut </span>rng, <span class="kw-2">&amp;</span>master_key.<span class="number">0</span>, storage_key, <span class="kw-2">&amp;</span>bad_aad)<span class="question-mark">?</span>;
+        <span class="macro">assert!</span>(encrypted_storage_key
+            .decrypt_storage_key(export_key, <span class="kw-2">&amp;</span>user_id)
+            .is_err());
 
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">storage_key_requires_correct_encrypted_blob</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">LockKeeperError</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rng</span> <span class="op">=</span> <span class="ident">rand::thread_rng</span>();
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>storage_key_requires_correct_encrypted_blob() -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperError&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>rng = rand::thread_rng();
 
-        <span class="comment">// Set up correct parameters to encrypt a storage key.</span>
-        <span class="kw">let</span> <span class="ident">user_id</span> <span class="op">=</span> <span class="ident">UserId::new</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>)<span class="question-mark">?</span>;
-        <span class="kw">let</span> <span class="ident">export_key</span> <span class="op">=</span> <span class="ident">create_test_export_key</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>);
-        <span class="kw">let</span> <span class="ident">aad</span> <span class="op">=</span> <span class="ident">AssociatedData::new</span>()
-            .<span class="ident">with_bytes</span>(<span class="ident">user_id</span>.<span class="ident">clone</span>())
-            .<span class="ident">with_str</span>(<span class="ident">StorageKey::domain_separator</span>());
+        <span class="comment">// Set up correct parameters to encrypt a storage key.
+        </span><span class="kw">let </span>user_id = UserId::new(<span class="kw-2">&amp;mut </span>rng)<span class="question-mark">?</span>;
+        <span class="kw">let </span>export_key = create_test_export_key(<span class="kw-2">&amp;mut </span>rng);
+        <span class="kw">let </span>aad = AssociatedData::new()
+            .with_bytes(user_id.clone())
+            .with_str(StorageKey::domain_separator());
 
-        <span class="comment">// Encrypt any old key (and make sure it&#39;s decryptable in general)</span>
-        <span class="kw">let</span> <span class="ident">fake_key</span> <span class="op">=</span> <span class="ident">EncryptionKey::new</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>);
-        <span class="kw">let</span> <span class="ident">encrypted_fake_key</span> <span class="op">=</span>
-            <span class="ident">Encrypted::encrypt</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>, <span class="kw-2">&amp;</span><span class="ident">export_key</span>.<span class="ident">derive_master_key</span>()<span class="question-mark">?</span>.<span class="number">0</span>, <span class="ident">fake_key</span>, <span class="kw-2">&amp;</span><span class="ident">aad</span>)<span class="question-mark">?</span>;
-        <span class="macro">assert!</span>(<span class="ident">encrypted_fake_key</span>
-            .<span class="ident">clone</span>()
-            .<span class="ident">decrypt</span>(<span class="kw-2">&amp;</span><span class="ident">export_key</span>.<span class="ident">derive_master_key</span>()<span class="question-mark">?</span>.<span class="number">0</span>)
-            .<span class="ident">is_ok</span>());
+        <span class="comment">// Encrypt any old key (and make sure it&#39;s decryptable in general)
+        </span><span class="kw">let </span>fake_key = EncryptionKey::new(<span class="kw-2">&amp;mut </span>rng);
+        <span class="kw">let </span>encrypted_fake_key =
+            Encrypted::encrypt(<span class="kw-2">&amp;mut </span>rng, <span class="kw-2">&amp;</span>export_key.derive_master_key()<span class="question-mark">?</span>.<span class="number">0</span>, fake_key, <span class="kw-2">&amp;</span>aad)<span class="question-mark">?</span>;
+        <span class="macro">assert!</span>(encrypted_fake_key
+            .clone()
+            .decrypt(<span class="kw-2">&amp;</span>export_key.derive_master_key()<span class="question-mark">?</span>.<span class="number">0</span>)
+            .is_ok());
 
-        <span class="comment">// Serialize the fake key, and pretend it&#39;s a storage key when you deserialize.</span>
-        <span class="kw">let</span> <span class="ident">fake_storage_key</span>: <span class="ident">Encrypted</span><span class="op">&lt;</span><span class="ident">StorageKey</span><span class="op">&gt;</span> <span class="op">=</span>
-            <span class="ident">serde_json::from_str</span>(<span class="kw-2">&amp;</span><span class="ident">serde_json::to_string</span>(<span class="kw-2">&amp;</span><span class="ident">encrypted_fake_key</span>).<span class="ident">unwrap</span>()).<span class="ident">unwrap</span>();
+        <span class="comment">// Serialize the fake key, and pretend it&#39;s a storage key when you deserialize.
+        </span><span class="kw">let </span>fake_storage_key: Encrypted&lt;StorageKey&gt; =
+            serde_json::from_str(<span class="kw-2">&amp;</span>serde_json::to_string(<span class="kw-2">&amp;</span>encrypted_fake_key).unwrap()).unwrap();
 
-        <span class="comment">// Decryption must fail.</span>
-        <span class="macro">assert!</span>(<span class="ident">fake_storage_key</span>
-            .<span class="ident">decrypt_storage_key</span>(<span class="ident">export_key</span>, <span class="kw-2">&amp;</span><span class="ident">user_id</span>)
-            .<span class="ident">is_err</span>());
+        <span class="comment">// Decryption must fail.
+        </span><span class="macro">assert!</span>(fake_storage_key
+            .decrypt_storage_key(export_key, <span class="kw-2">&amp;</span>user_id)
+            .is_err());
 
         <span class="prelude-val">Ok</span>(())
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="lock_keeper" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="lock_keeper" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

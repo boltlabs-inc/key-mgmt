@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `lock-keeper-client/src/api/authenticate.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>authenticate.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../lock_keeper_client/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../lock_keeper_client/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../lock_keeper_client/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `lock-keeper-client/src/api/authenticate.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>authenticate.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../lock_keeper_client/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../lock_keeper_client/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../lock_keeper_client/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -108,115 +108,115 @@
 <span id="108">108</span>
 <span id="109">109</span>
 <span id="110">110</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::client</span>::{<span class="ident">AuthenticateResult</span>, <span class="ident">LockKeeperClient</span>, <span class="ident">Password</span>};
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::client::{AuthenticateResult, LockKeeperClient, Password};
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::LockKeeperClientError</span>;
-<span class="kw">use</span> <span class="ident">lock_keeper</span>::{
-    <span class="ident">config::opaque::OpaqueCipherSuite</span>,
-    <span class="ident">crypto::OpaqueSessionKey</span>,
-    <span class="ident">infrastructure::channel::ClientChannel</span>,
-    <span class="ident">types</span>::{
-        <span class="ident">database::user</span>::{<span class="ident">AccountName</span>, <span class="ident">UserId</span>},
-        <span class="ident">operations::authenticate</span>::{<span class="ident">client</span>, <span class="ident">server</span>},
+<span class="kw">use </span><span class="kw">crate</span>::LockKeeperClientError;
+<span class="kw">use </span>lock_keeper::{
+    config::opaque::OpaqueCipherSuite,
+    crypto::OpaqueSessionKey,
+    infrastructure::channel::ClientChannel,
+    types::{
+        database::user::{AccountName, UserId},
+        operations::authenticate::{client, server},
     },
 };
-<span class="kw">use</span> <span class="ident">opaque_ke</span>::{
-    <span class="ident">ClientLogin</span>, <span class="ident">ClientLoginFinishParameters</span>, <span class="ident">ClientLoginFinishResult</span>, <span class="ident">ClientLoginStartResult</span>,
+<span class="kw">use </span>opaque_ke::{
+    ClientLogin, ClientLoginFinishParameters, ClientLoginFinishResult, ClientLoginStartResult,
 };
-<span class="kw">use</span> <span class="ident">rand</span>::{<span class="ident">CryptoRng</span>, <span class="ident">RngCore</span>};
+<span class="kw">use </span>rand::{CryptoRng, RngCore};
 
-<span class="kw">impl</span> <span class="ident">LockKeeperClient</span> {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">handle_authentication</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">CryptoRng</span> <span class="op">+</span> <span class="ident">RngCore</span><span class="op">&gt;</span>(
-        <span class="kw-2">mut</span> <span class="ident">channel</span>: <span class="ident">ClientChannel</span>,
-        <span class="ident">rng</span>: <span class="kw-2">&amp;mut</span> <span class="ident">T</span>,
-        <span class="ident">account_name</span>: <span class="kw-2">&amp;</span><span class="ident">AccountName</span>,
-        <span class="ident">password</span>: <span class="kw-2">&amp;</span><span class="ident">Password</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">AuthenticateResult</span>, <span class="ident">LockKeeperClientError</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">client_login_start_result</span> <span class="op">=</span>
-            <span class="ident">ClientLogin</span>::<span class="op">&lt;</span><span class="ident">OpaqueCipherSuite</span><span class="op">&gt;</span><span class="ident">::start</span>(<span class="ident">rng</span>, <span class="ident">password</span>.<span class="ident">as_bytes</span>())<span class="question-mark">?</span>;
+<span class="kw">impl </span>LockKeeperClient {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>handle_authentication&lt;T: CryptoRng + RngCore&gt;(
+        <span class="kw-2">mut </span>channel: ClientChannel,
+        rng: <span class="kw-2">&amp;mut </span>T,
+        account_name: <span class="kw-2">&amp;</span>AccountName,
+        password: <span class="kw-2">&amp;</span>Password,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;AuthenticateResult, LockKeeperClientError&gt; {
+        <span class="kw">let </span>client_login_start_result =
+            ClientLogin::&lt;OpaqueCipherSuite&gt;::start(rng, password.as_bytes())<span class="question-mark">?</span>;
 
-        <span class="comment">// Handle start step</span>
-        <span class="kw">let</span> <span class="ident">server_start_result</span> <span class="op">=</span>
-            <span class="ident">authenticate_start</span>(<span class="kw-2">&amp;mut</span> <span class="ident">channel</span>, <span class="kw-2">&amp;</span><span class="ident">client_login_start_result</span>, <span class="ident">account_name</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="comment">// Handle start step
+        </span><span class="kw">let </span>server_start_result =
+            authenticate_start(<span class="kw-2">&amp;mut </span>channel, <span class="kw-2">&amp;</span>client_login_start_result, account_name).<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="comment">// Handle finish step</span>
-        <span class="kw">let</span> <span class="ident">client_login_finish_result</span> <span class="op">=</span> <span class="ident">authenticate_finish</span>(
-            <span class="kw-2">&amp;mut</span> <span class="ident">channel</span>,
-            <span class="ident">account_name</span>,
-            <span class="ident">password</span>,
-            <span class="ident">client_login_start_result</span>,
-            <span class="ident">server_start_result</span>,
+        <span class="comment">// Handle finish step
+        </span><span class="kw">let </span>client_login_finish_result = authenticate_finish(
+            <span class="kw-2">&amp;mut </span>channel,
+            account_name,
+            password,
+            client_login_start_result,
+            server_start_result,
         )
         .<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="kw">let</span> <span class="ident">session_key</span> <span class="op">=</span> <span class="ident">client_login_finish_result</span>.<span class="ident">session_key</span>.<span class="ident">into</span>();
-        <span class="kw">let</span> <span class="ident">export_key</span> <span class="op">=</span> <span class="ident">client_login_finish_result</span>.<span class="ident">export_key</span>.<span class="ident">into</span>();
+        <span class="kw">let </span>session_key = client_login_finish_result.session_key.into();
+        <span class="kw">let </span>export_key = client_login_finish_result.export_key.into();
 
-        <span class="comment">// Get user id</span>
-        <span class="kw">let</span> <span class="ident">user_id</span> <span class="op">=</span> <span class="ident">retrieve_user_id</span>(<span class="kw-2">&amp;mut</span> <span class="ident">channel</span>, <span class="kw-2">&amp;</span><span class="ident">session_key</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="comment">// Get user id
+        </span><span class="kw">let </span>user_id = retrieve_user_id(<span class="kw-2">&amp;mut </span>channel, <span class="kw-2">&amp;</span>session_key).<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="prelude-val">Ok</span>(<span class="ident">AuthenticateResult</span> {
-            <span class="ident">session_key</span>,
-            <span class="ident">export_key</span>,
-            <span class="ident">user_id</span>,
+        <span class="prelude-val">Ok</span>(AuthenticateResult {
+            session_key,
+            export_key,
+            user_id,
         })
     }
 }
 
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">authenticate_start</span>(
-    <span class="ident">channel</span>: <span class="kw-2">&amp;mut</span> <span class="ident">ClientChannel</span>,
-    <span class="ident">client_login_start_result</span>: <span class="kw-2">&amp;</span><span class="ident">ClientLoginStartResult</span><span class="op">&lt;</span><span class="ident">OpaqueCipherSuite</span><span class="op">&gt;</span>,
-    <span class="ident">account_name</span>: <span class="kw-2">&amp;</span><span class="ident">AccountName</span>,
-) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">server::AuthenticateStart</span>, <span class="ident">LockKeeperClientError</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">reply</span> <span class="op">=</span> <span class="ident">client::AuthenticateStart</span> {
-        <span class="ident">credential_request</span>: <span class="ident">client_login_start_result</span>.<span class="ident">message</span>.<span class="ident">clone</span>(),
-        <span class="ident">account_name</span>: <span class="ident">account_name</span>.<span class="ident">clone</span>(),
+<span class="kw">async fn </span>authenticate_start(
+    channel: <span class="kw-2">&amp;mut </span>ClientChannel,
+    client_login_start_result: <span class="kw-2">&amp;</span>ClientLoginStartResult&lt;OpaqueCipherSuite&gt;,
+    account_name: <span class="kw-2">&amp;</span>AccountName,
+) -&gt; <span class="prelude-ty">Result</span>&lt;server::AuthenticateStart, LockKeeperClientError&gt; {
+    <span class="kw">let </span>reply = client::AuthenticateStart {
+        credential_request: client_login_start_result.message.clone(),
+        account_name: account_name.clone(),
     };
 
-    <span class="ident">channel</span>.<span class="ident">send</span>(<span class="ident">reply</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    channel.send(reply).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="prelude-val">Ok</span>(<span class="ident">channel</span>.<span class="ident">receive</span>().<span class="kw">await</span><span class="question-mark">?</span>)
+    <span class="prelude-val">Ok</span>(channel.receive().<span class="kw">await</span><span class="question-mark">?</span>)
 }
 
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">authenticate_finish</span>(
-    <span class="ident">channel</span>: <span class="kw-2">&amp;mut</span> <span class="ident">ClientChannel</span>,
-    <span class="ident">account_name</span>: <span class="kw-2">&amp;</span><span class="ident">AccountName</span>,
-    <span class="ident">password</span>: <span class="kw-2">&amp;</span><span class="ident">Password</span>,
-    <span class="ident">client_start_result</span>: <span class="ident">ClientLoginStartResult</span><span class="op">&lt;</span><span class="ident">OpaqueCipherSuite</span><span class="op">&gt;</span>,
-    <span class="ident">server_start_result</span>: <span class="ident">server::AuthenticateStart</span>,
-) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">ClientLoginFinishResult</span><span class="op">&lt;</span><span class="ident">OpaqueCipherSuite</span><span class="op">&gt;</span>, <span class="ident">LockKeeperClientError</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">client_login_finish_result</span> <span class="op">=</span> <span class="ident">client_start_result</span>.<span class="ident">state</span>.<span class="ident">finish</span>(
-        <span class="ident">password</span>.<span class="ident">as_bytes</span>(),
-        <span class="ident">server_start_result</span>.<span class="ident">credential_response</span>,
-        <span class="ident">ClientLoginFinishParameters::default</span>(),
+<span class="kw">async fn </span>authenticate_finish(
+    channel: <span class="kw-2">&amp;mut </span>ClientChannel,
+    account_name: <span class="kw-2">&amp;</span>AccountName,
+    password: <span class="kw-2">&amp;</span>Password,
+    client_start_result: ClientLoginStartResult&lt;OpaqueCipherSuite&gt;,
+    server_start_result: server::AuthenticateStart,
+) -&gt; <span class="prelude-ty">Result</span>&lt;ClientLoginFinishResult&lt;OpaqueCipherSuite&gt;, LockKeeperClientError&gt; {
+    <span class="kw">let </span>client_login_finish_result = client_start_result.state.finish(
+        password.as_bytes(),
+        server_start_result.credential_response,
+        ClientLoginFinishParameters::default(),
     )<span class="question-mark">?</span>;
 
-    <span class="kw">let</span> <span class="ident">reply</span> <span class="op">=</span> <span class="ident">client::AuthenticateFinish</span> {
-        <span class="ident">credential_finalization</span>: <span class="ident">client_login_finish_result</span>.<span class="ident">message</span>.<span class="ident">clone</span>(),
-        <span class="ident">account_name</span>: <span class="ident">account_name</span>.<span class="ident">clone</span>(),
+    <span class="kw">let </span>reply = client::AuthenticateFinish {
+        credential_finalization: client_login_finish_result.message.clone(),
+        account_name: account_name.clone(),
     };
 
-    <span class="ident">channel</span>.<span class="ident">send</span>(<span class="ident">reply</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    channel.send(reply).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let</span> <span class="ident">server_finish</span>: <span class="ident">server::AuthenticateFinish</span> <span class="op">=</span> <span class="ident">channel</span>.<span class="ident">receive</span>().<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>server_finish: server::AuthenticateFinish = channel.receive().<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">if</span> <span class="ident">server_finish</span>.<span class="ident">success</span> {
-        <span class="prelude-val">Ok</span>(<span class="ident">client_login_finish_result</span>)
-    } <span class="kw">else</span> {
-        <span class="prelude-val">Err</span>(<span class="ident">LockKeeperClientError::ServerReturnedFailure</span>)
+    <span class="kw">if </span>server_finish.success {
+        <span class="prelude-val">Ok</span>(client_login_finish_result)
+    } <span class="kw">else </span>{
+        <span class="prelude-val">Err</span>(LockKeeperClientError::ServerReturnedFailure)
     }
 }
 
-<span class="doccomment">/// Retrieve the authenticated user ID from the server.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// NB: The unused `_session_key` will have to be passed to receive in order to</span>
-<span class="doccomment">/// check authentication.</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">retrieve_user_id</span>(
-    <span class="ident">channel</span>: <span class="kw-2">&amp;mut</span> <span class="ident">ClientChannel</span>,
-    <span class="ident">_session_key</span>: <span class="kw-2">&amp;</span><span class="ident">OpaqueSessionKey</span>,
-) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">UserId</span>, <span class="ident">LockKeeperClientError</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">received_id</span>: <span class="ident">server::SendUserId</span> <span class="op">=</span> <span class="ident">channel</span>.<span class="ident">receive</span>().<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="prelude-val">Ok</span>(<span class="ident">received_id</span>.<span class="ident">user_id</span>)
+<span class="doccomment">/// Retrieve the authenticated user ID from the server.
+///
+/// NB: The unused `_session_key` will have to be passed to receive in order to
+/// check authentication.
+</span><span class="kw">async fn </span>retrieve_user_id(
+    channel: <span class="kw-2">&amp;mut </span>ClientChannel,
+    _session_key: <span class="kw-2">&amp;</span>OpaqueSessionKey,
+) -&gt; <span class="prelude-ty">Result</span>&lt;UserId, LockKeeperClientError&gt; {
+    <span class="kw">let </span>received_id: server::SendUserId = channel.receive().<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="prelude-val">Ok</span>(received_id.user_id)
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="lock_keeper_client" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="lock_keeper_client" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

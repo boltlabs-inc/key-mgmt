@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `lock-keeper-key-server/src/server/session_key_cache.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>session_key_cache.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../lock_keeper_key_server/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../lock_keeper_key_server/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../lock_keeper_key_server/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `lock-keeper-key-server/src/server/session_key_cache.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>session_key_cache.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../lock_keeper_key_server/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../lock_keeper_key_server/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../lock_keeper_key_server/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -221,228 +221,228 @@
 <span id="221">221</span>
 <span id="222">222</span>
 <span id="223">223</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">lock_keeper</span>::{<span class="ident">crypto::OpaqueSessionKey</span>, <span class="ident">types::database::user::UserId</span>};
-<span class="kw">use</span> <span class="ident">std::collections::hash_map::Entry</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>lock_keeper::{crypto::OpaqueSessionKey, types::database::user::UserId};
+<span class="kw">use </span>std::collections::hash_map::Entry;
 
-<span class="kw">use</span> <span class="ident">std::collections::HashMap</span>;
+<span class="kw">use </span>std::collections::HashMap;
 
-<span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">server::Context</span>, <span class="ident">LockKeeperServerError</span>};
-<span class="kw">use</span> <span class="ident">lock_keeper::types::operations::ClientAction</span>;
-<span class="kw">use</span> <span class="ident">std::time</span>::{<span class="ident">Duration</span>, <span class="ident">Instant</span>};
-<span class="kw">use</span> <span class="ident">thiserror::Error</span>;
+<span class="kw">use crate</span>::{server::Context, LockKeeperServerError};
+<span class="kw">use </span>lock_keeper::types::operations::ClientAction;
+<span class="kw">use </span>std::time::{Duration, Instant};
+<span class="kw">use </span>thiserror::Error;
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Error</span>, <span class="ident">PartialOrd</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">SessionKeyCacheError</span> {
-    <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;TODO&quot;</span>)]</span>
-    <span class="ident">SessionKeyExists</span>,
-    <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;Session key has expired.&quot;</span>)]</span>
-    <span class="ident">ExpiredSessionKey</span>,
-    <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;No session key for this user.&quot;</span>)]</span>
-    <span class="ident">MissingSessionKey</span>,
-    <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;An invariant of this type was not upheld.&quot;</span>)]</span>
-    <span class="ident">InternalInvariantError</span>,
+<span class="attribute">#[derive(Debug, Error, PartialOrd, PartialEq, Eq)]
+</span><span class="kw">pub enum </span>SessionKeyCacheError {
+    <span class="attribute">#[error(<span class="string">&quot;TODO&quot;</span>)]
+    </span>SessionKeyExists,
+    <span class="attribute">#[error(<span class="string">&quot;Session key has expired.&quot;</span>)]
+    </span>ExpiredSessionKey,
+    <span class="attribute">#[error(<span class="string">&quot;No session key for this user.&quot;</span>)]
+    </span>MissingSessionKey,
+    <span class="attribute">#[error(<span class="string">&quot;An invariant of this type was not upheld.&quot;</span>)]
+    </span>InternalInvariantError,
 }
 
-<span class="doccomment">/// Cache holding our session keys, per user, after authentication. Maps</span>
-<span class="doccomment">/// [`UserId`]s to [`OpaqueSessionKey`]s. Keys are tagged with a timestamp. A</span>
-<span class="doccomment">/// key is considered invalid after [`Self::expiration`] time has elapsed.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct</span> <span class="ident">SessionKeyCache</span> {
-    <span class="doccomment">/// Map from user ids to (timestamp, keys).</span>
-    <span class="ident">cache</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">UserId</span>, (<span class="ident">Instant</span>, <span class="ident">OpaqueSessionKey</span>)<span class="op">&gt;</span>,
-    <span class="doccomment">/// Time a key is considered valid for.</span>
-    <span class="ident">expiration</span>: <span class="ident">Duration</span>,
+<span class="doccomment">/// Cache holding our session keys, per user, after authentication. Maps
+/// [`UserId`]s to [`OpaqueSessionKey`]s. Keys are tagged with a timestamp. A
+/// key is considered invalid after [`Self::expiration`] time has elapsed.
+</span><span class="attribute">#[derive(Debug)]
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>SessionKeyCache {
+    <span class="doccomment">/// Map from user ids to (timestamp, keys).
+    </span>cache: HashMap&lt;UserId, (Instant, OpaqueSessionKey)&gt;,
+    <span class="doccomment">/// Time a key is considered valid for.
+    </span>expiration: Duration,
 }
 
-<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">unused</span>)]</span>
-<span class="kw">impl</span> <span class="ident">SessionKeyCache</span> {
-    <span class="doccomment">/// Amount of time a key is considered valid for. Sixty seconds for now. May</span>
-    <span class="doccomment">/// change later.</span>
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const</span> <span class="ident">DEFAULT_EXPIRATION_TIME</span>: <span class="ident">Duration</span> <span class="op">=</span> <span class="ident">Duration::from_secs</span>(<span class="number">60</span>);
+<span class="attribute">#[allow(unused)]
+</span><span class="kw">impl </span>SessionKeyCache {
+    <span class="doccomment">/// Amount of time a key is considered valid for. Sixty seconds for now. May
+    /// change later.
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const </span>DEFAULT_EXPIRATION_TIME: Duration = Duration::from_secs(<span class="number">60</span>);
 
-    <span class="doccomment">/// Create a new [`SessionKeyCache`] with the given `expiration` interval.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">expiration</span>: <span class="ident">Duration</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">cache</span>: <span class="ident">HashMap::new</span>(),
-            <span class="ident">expiration</span>,
+    <span class="doccomment">/// Create a new [`SessionKeyCache`] with the given `expiration` interval.
+    </span><span class="kw">pub fn </span>new(expiration: Duration) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            cache: HashMap::new(),
+            expiration,
         }
     }
 
-    <span class="doccomment">/// Add a new session key for the specified user. The previous key for that</span>
-    <span class="doccomment">/// will be overwritten.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">insert</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">user</span>: <span class="ident">UserId</span>, <span class="ident">key</span>: <span class="ident">OpaqueSessionKey</span>) {
-        <span class="kw">let</span> <span class="ident">existing</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">cache</span>.<span class="ident">insert</span>(<span class="ident">user</span>, (<span class="ident">Instant::now</span>(), <span class="ident">key</span>));
+    <span class="doccomment">/// Add a new session key for the specified user. The previous key for that
+    /// will be overwritten.
+    </span><span class="kw">pub fn </span>insert(<span class="kw-2">&amp;mut </span><span class="self">self</span>, user: UserId, key: OpaqueSessionKey) {
+        <span class="kw">let </span>existing = <span class="self">self</span>.cache.insert(user, (Instant::now(), key));
 
-        <span class="kw">if</span> <span class="ident">existing</span>.<span class="ident">is_some</span>() {
+        <span class="kw">if </span>existing.is_some() {
             <span class="macro">tracing::info!</span>(<span class="string">&quot;Previous session key overwritten.&quot;</span>);
         }
     }
 
-    <span class="doccomment">/// Get the session key for the specified user, if one exists.</span>
-    <span class="doccomment">/// This function checks if the key has expired and returns an error</span>
-    <span class="doccomment">/// instead.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_key</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">user</span>: <span class="ident">UserId</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">OpaqueSessionKey</span>, <span class="ident">SessionKeyCacheError</span><span class="op">&gt;</span> {
-        <span class="kw">match</span> <span class="self">self</span>.<span class="ident">cache</span>.<span class="ident">entry</span>(<span class="ident">user</span>) {
-            <span class="ident">Entry::Occupied</span>(<span class="ident">entry</span>) =&gt; {
-                <span class="kw">let</span> (<span class="ident">timestamp</span>, <span class="ident">key</span>) <span class="op">=</span> <span class="ident">entry</span>.<span class="ident">get</span>();
+    <span class="doccomment">/// Get the session key for the specified user, if one exists.
+    /// This function checks if the key has expired and returns an error
+    /// instead.
+    </span><span class="kw">pub fn </span>get_key(<span class="kw-2">&amp;mut </span><span class="self">self</span>, user: UserId) -&gt; <span class="prelude-ty">Result</span>&lt;OpaqueSessionKey, SessionKeyCacheError&gt; {
+        <span class="kw">match </span><span class="self">self</span>.cache.entry(user) {
+            Entry::Occupied(entry) =&gt; {
+                <span class="kw">let </span>(timestamp, key) = entry.get();
 
-                <span class="comment">// If key is expired remove it and report an error.</span>
-                <span class="kw">if</span> <span class="ident">timestamp</span>.<span class="ident">elapsed</span>() <span class="op">&gt;</span><span class="op">=</span> <span class="self">self</span>.<span class="ident">expiration</span> {
+                <span class="comment">// If key is expired remove it and report an error.
+                </span><span class="kw">if </span>timestamp.elapsed() &gt;= <span class="self">self</span>.expiration {
                     <span class="macro">tracing::info!</span>(<span class="string">&quot;Session key is expired.&quot;</span>);
-                    <span class="comment">// We don&#39;t care about this expired key.</span>
-                    <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="ident">entry</span>.<span class="ident">remove</span>();
-                    <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">SessionKeyCacheError::ExpiredSessionKey</span>);
+                    <span class="comment">// We don&#39;t care about this expired key.
+                    </span><span class="kw">let _ </span>= entry.remove();
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(SessionKeyCacheError::ExpiredSessionKey);
                 }
-                <span class="prelude-val">Ok</span>(<span class="ident">key</span>.<span class="ident">clone</span>())
+                <span class="prelude-val">Ok</span>(key.clone())
             }
-            <span class="ident">Entry::Vacant</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">Err</span>(<span class="ident">SessionKeyCacheError::MissingSessionKey</span>),
+            Entry::Vacant(<span class="kw">_</span>) =&gt; <span class="prelude-val">Err</span>(SessionKeyCacheError::MissingSessionKey),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">check_key</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">context</span>: <span class="kw-2">&amp;</span><span class="ident">Context</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">LockKeeperServerError</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">metadata</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">context</span>.<span class="ident">metadata</span>;
-        <span class="kw">match</span> <span class="ident">metadata</span>.<span class="ident">action</span>() {
-            <span class="comment">// These actions are unauthenticated</span>
-            <span class="ident">ClientAction::Authenticate</span> <span class="op">|</span> <span class="ident">ClientAction::Register</span> =&gt; <span class="prelude-val">Ok</span>(()),
-            <span class="comment">// The rest of the actions must be authenticated</span>
-            <span class="kw">_</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">user_id</span> <span class="op">=</span> <span class="ident">metadata</span>
-                    .<span class="ident">user_id</span>()
-                    .<span class="ident">as_ref</span>()
-                    .<span class="ident">ok_or</span>(<span class="ident">LockKeeperServerError::InvalidAccount</span>)<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="ident">server_session_key</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">get_key</span>(<span class="ident">user_id</span>.<span class="ident">clone</span>())<span class="question-mark">?</span>;
+    <span class="kw">pub fn </span>check_key(<span class="kw-2">&amp;mut </span><span class="self">self</span>, context: <span class="kw-2">&amp;</span>Context) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
+        <span class="kw">let </span>metadata = <span class="kw-2">&amp;</span>context.metadata;
+        <span class="kw">match </span>metadata.action() {
+            <span class="comment">// These actions are unauthenticated
+            </span>ClientAction::Authenticate | ClientAction::Register =&gt; <span class="prelude-val">Ok</span>(()),
+            <span class="comment">// The rest of the actions must be authenticated
+            </span><span class="kw">_ </span>=&gt; {
+                <span class="kw">let </span>user_id = metadata
+                    .user_id()
+                    .as_ref()
+                    .ok_or(LockKeeperServerError::InvalidAccount)<span class="question-mark">?</span>;
+                <span class="kw">let </span>server_session_key = <span class="self">self</span>.get_key(user_id.clone())<span class="question-mark">?</span>;
                 <span class="prelude-val">Ok</span>(())
             }
         }
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">SessionKeyCache</span> {
-    <span class="kw">fn</span> <span class="ident">default</span>() -&gt; <span class="self">Self</span> {
-        <span class="ident">SessionKeyCache::new</span>(<span class="ident">SessionKeyCache::DEFAULT_EXPIRATION_TIME</span>)
+<span class="kw">impl </span>Default <span class="kw">for </span>SessionKeyCache {
+    <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
+        SessionKeyCache::new(SessionKeyCache::DEFAULT_EXPIRATION_TIME)
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
-<span class="kw">mod</span> <span class="ident">tests</span> {
-    <span class="kw">use</span> <span class="kw">crate</span>::{
-        <span class="ident">server::session_key_cache</span>::{<span class="ident">SessionKeyCache</span>, <span class="ident">SessionKeyCacheError</span>},
-        <span class="ident">LockKeeperServerError</span>,
+<span class="attribute">#[cfg(test)]
+</span><span class="kw">mod </span>tests {
+    <span class="kw">use crate</span>::{
+        server::session_key_cache::{SessionKeyCache, SessionKeyCacheError},
+        LockKeeperServerError,
     };
-    <span class="kw">use</span> <span class="ident">generic_array::GenericArray</span>;
-    <span class="kw">use</span> <span class="ident">lock_keeper</span>::{<span class="ident">crypto::OpaqueSessionKey</span>, <span class="ident">types::database::user::UserId</span>};
-    <span class="kw">use</span> <span class="ident">rand</span>::{<span class="ident">prelude::StdRng</span>, <span class="ident">SeedableRng</span>};
-    <span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">thread</span>, <span class="ident">time::Duration</span>};
+    <span class="kw">use </span>generic_array::GenericArray;
+    <span class="kw">use </span>lock_keeper::{crypto::OpaqueSessionKey, types::database::user::UserId};
+    <span class="kw">use </span>rand::{prelude::StdRng, SeedableRng};
+    <span class="kw">use </span>std::{thread, time::Duration};
 
-    <span class="kw">type</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">std::result::Result</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">LockKeeperServerError</span><span class="op">&gt;</span>;
+    <span class="kw">type </span><span class="prelude-ty">Result</span>&lt;T&gt; = std::result::Result&lt;T, LockKeeperServerError&gt;;
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">key_does_not_exist</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">cache</span> <span class="op">=</span> <span class="ident">SessionKeyCache::default</span>();
-        <span class="kw">let</span> <span class="ident">id</span> <span class="op">=</span> <span class="ident">get_temp_user_id</span>()<span class="question-mark">?</span>;
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>key_does_not_exist() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>cache = SessionKeyCache::default();
+        <span class="kw">let </span>id = get_temp_user_id()<span class="question-mark">?</span>;
 
-        <span class="kw">match</span> <span class="ident">cache</span>.<span class="ident">get_key</span>(<span class="ident">id</span>) {
+        <span class="kw">match </span>cache.get_key(id) {
             <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; {
                 <span class="macro">panic!</span>(<span class="string">&quot;Key should not exist.&quot;</span>)
             }
-            <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
-                <span class="macro">assert_eq!</span>(<span class="ident">e</span>, <span class="ident">SessionKeyCacheError::MissingSessionKey</span>);
+            <span class="prelude-val">Err</span>(e) =&gt; {
+                <span class="macro">assert_eq!</span>(e, SessionKeyCacheError::MissingSessionKey);
             }
         }
 
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="doccomment">/// Ensure we can get the key back without encountering expiration error.</span>
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">get_key_back</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">cache</span> <span class="op">=</span> <span class="ident">SessionKeyCache::default</span>();
-        <span class="kw">let</span> <span class="ident">id</span> <span class="op">=</span> <span class="ident">get_temp_user_id</span>()<span class="question-mark">?</span>;
-        <span class="kw">let</span> <span class="ident">key</span> <span class="op">=</span> <span class="ident">get_temp_session_key</span>();
+    <span class="doccomment">/// Ensure we can get the key back without encountering expiration error.
+    </span><span class="attribute">#[test]
+    </span><span class="kw">fn </span>get_key_back() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>cache = SessionKeyCache::default();
+        <span class="kw">let </span>id = get_temp_user_id()<span class="question-mark">?</span>;
+        <span class="kw">let </span>key = get_temp_session_key();
 
-        <span class="ident">cache</span>.<span class="ident">insert</span>(<span class="ident">id</span>.<span class="ident">clone</span>(), <span class="ident">key</span>);
+        cache.insert(id.clone(), key);
 
-        <span class="comment">// We got a key back.</span>
-        <span class="kw">let</span> <span class="ident">_key_ref</span> <span class="op">=</span> <span class="ident">cache</span>.<span class="ident">get_key</span>(<span class="ident">id</span>)<span class="question-mark">?</span>;
+        <span class="comment">// We got a key back.
+        </span><span class="kw">let </span>_key_ref = cache.get_key(id)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="doccomment">/// Insert key twice and ensure code runs all the way.</span>
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">overwrite_existing_key</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">cache</span> <span class="op">=</span> <span class="ident">SessionKeyCache::default</span>();
-        <span class="kw">let</span> <span class="ident">id</span> <span class="op">=</span> <span class="ident">get_temp_user_id</span>()<span class="question-mark">?</span>;
-        <span class="kw">let</span> <span class="ident">key</span> <span class="op">=</span> <span class="ident">get_temp_session_key</span>();
+    <span class="doccomment">/// Insert key twice and ensure code runs all the way.
+    </span><span class="attribute">#[test]
+    </span><span class="kw">fn </span>overwrite_existing_key() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>cache = SessionKeyCache::default();
+        <span class="kw">let </span>id = get_temp_user_id()<span class="question-mark">?</span>;
+        <span class="kw">let </span>key = get_temp_session_key();
 
-        <span class="ident">cache</span>.<span class="ident">insert</span>(<span class="ident">id</span>.<span class="ident">clone</span>(), <span class="ident">key</span>);
-        <span class="kw">let</span> <span class="ident">second_key</span> <span class="op">=</span> <span class="ident">get_temp_session_key</span>();
-        <span class="ident">cache</span>.<span class="ident">insert</span>(<span class="ident">id</span>, <span class="ident">second_key</span>);
+        cache.insert(id.clone(), key);
+        <span class="kw">let </span>second_key = get_temp_session_key();
+        cache.insert(id, second_key);
 
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="doccomment">/// Test key expiration logic when enough time has passed that the key</span>
-    <span class="doccomment">/// should be expired.</span>
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">key_expired</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="comment">// Keys expire instantly</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">cache</span> <span class="op">=</span> <span class="ident">SessionKeyCache::new</span>(<span class="ident">Duration::from_secs</span>(<span class="number">0</span>));
-        <span class="kw">let</span> <span class="ident">id</span> <span class="op">=</span> <span class="ident">get_temp_user_id</span>()<span class="question-mark">?</span>;
-        <span class="kw">let</span> <span class="ident">key</span> <span class="op">=</span> <span class="ident">get_temp_session_key</span>();
-        <span class="ident">cache</span>.<span class="ident">insert</span>(<span class="ident">id</span>.<span class="ident">clone</span>(), <span class="ident">key</span>);
+    <span class="doccomment">/// Test key expiration logic when enough time has passed that the key
+    /// should be expired.
+    </span><span class="attribute">#[test]
+    </span><span class="kw">fn </span>key_expired() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="comment">// Keys expire instantly
+        </span><span class="kw">let </span><span class="kw-2">mut </span>cache = SessionKeyCache::new(Duration::from_secs(<span class="number">0</span>));
+        <span class="kw">let </span>id = get_temp_user_id()<span class="question-mark">?</span>;
+        <span class="kw">let </span>key = get_temp_session_key();
+        cache.insert(id.clone(), key);
 
-        <span class="comment">// Verify key is expired.</span>
-        <span class="kw">match</span> <span class="ident">cache</span>.<span class="ident">get_key</span>(<span class="ident">id</span>) {
+        <span class="comment">// Verify key is expired.
+        </span><span class="kw">match </span>cache.get_key(id) {
             <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Key should be expired&quot;</span>),
-            <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
+            <span class="prelude-val">Err</span>(e) =&gt; {
                 <span class="macro">assert_eq!</span>(
-                    <span class="ident">e</span>,
-                    <span class="ident">SessionKeyCacheError::ExpiredSessionKey</span>,
-                    <span class="string">&quot;Unexpected error returned.&quot;</span>
-                )
+                    e,
+                    SessionKeyCacheError::ExpiredSessionKey,
+                    <span class="string">&quot;Unexpected error returned.&quot;
+                </span>)
             }
         }
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="doccomment">/// Longer running test. Don&#39;t always run.</span>
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="attribute">#[<span class="ident">ignore</span>]</span>
-    <span class="kw">fn</span> <span class="ident">key_expired2</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="comment">// Handle a longer timeout.</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">cache</span> <span class="op">=</span> <span class="ident">SessionKeyCache::new</span>(<span class="ident">Duration::from_millis</span>(<span class="number">10</span>));
-        <span class="kw">let</span> <span class="ident">id</span> <span class="op">=</span> <span class="ident">get_temp_user_id</span>()<span class="question-mark">?</span>;
-        <span class="kw">let</span> <span class="ident">key</span> <span class="op">=</span> <span class="ident">get_temp_session_key</span>();
-        <span class="ident">cache</span>.<span class="ident">insert</span>(<span class="ident">id</span>.<span class="ident">clone</span>(), <span class="ident">key</span>);
+    <span class="doccomment">/// Longer running test. Don&#39;t always run.
+    </span><span class="attribute">#[test]
+    #[ignore]
+    </span><span class="kw">fn </span>key_expired2() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="comment">// Handle a longer timeout.
+        </span><span class="kw">let </span><span class="kw-2">mut </span>cache = SessionKeyCache::new(Duration::from_millis(<span class="number">10</span>));
+        <span class="kw">let </span>id = get_temp_user_id()<span class="question-mark">?</span>;
+        <span class="kw">let </span>key = get_temp_session_key();
+        cache.insert(id.clone(), key);
 
-        <span class="comment">// Sleep for a while so key expires.</span>
-        <span class="ident">thread::sleep</span>(<span class="ident">Duration::from_millis</span>(<span class="number">10</span>));
+        <span class="comment">// Sleep for a while so key expires.
+        </span>thread::sleep(Duration::from_millis(<span class="number">10</span>));
 
-        <span class="comment">// Verify key is expired.</span>
-        <span class="kw">match</span> <span class="ident">cache</span>.<span class="ident">get_key</span>(<span class="ident">id</span>) {
+        <span class="comment">// Verify key is expired.
+        </span><span class="kw">match </span>cache.get_key(id) {
             <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Key should be expired&quot;</span>),
-            <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
+            <span class="prelude-val">Err</span>(e) =&gt; {
                 <span class="macro">assert_eq!</span>(
-                    <span class="ident">e</span>,
-                    <span class="ident">SessionKeyCacheError::ExpiredSessionKey</span>,
-                    <span class="string">&quot;Unexpected error returned.&quot;</span>
-                )
+                    e,
+                    SessionKeyCacheError::ExpiredSessionKey,
+                    <span class="string">&quot;Unexpected error returned.&quot;
+                </span>)
             }
         }
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">fn</span> <span class="ident">get_temp_session_key</span>() -&gt; <span class="ident">OpaqueSessionKey</span> {
-        <span class="kw">const</span> <span class="ident">FILLER</span>: <span class="ident">u8</span> <span class="op">=</span> <span class="number">42</span>;
-        <span class="ident">OpaqueSessionKey::from</span>(<span class="ident">GenericArray::from</span>([<span class="ident">FILLER</span>; <span class="number">64</span>]))
+    <span class="kw">fn </span>get_temp_session_key() -&gt; OpaqueSessionKey {
+        <span class="kw">const </span>FILLER: u8 = <span class="number">42</span>;
+        OpaqueSessionKey::from(GenericArray::from([FILLER; <span class="number">64</span>]))
     }
 
-    <span class="kw">fn</span> <span class="ident">get_temp_user_id</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">UserId</span><span class="op">&gt;</span> {
-        <span class="comment">// Deterministic seed. No need for our test to be nondeterministic.</span>
-        <span class="kw">const</span> <span class="ident">SEED</span>: <span class="ident">u64</span> <span class="op">=</span> <span class="number">1234</span>;
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rng</span> <span class="op">=</span> <span class="ident">StdRng::seed_from_u64</span>(<span class="ident">SEED</span>);
-        <span class="prelude-val">Ok</span>(<span class="ident">UserId::new</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>)<span class="question-mark">?</span>)
+    <span class="kw">fn </span>get_temp_user_id() -&gt; <span class="prelude-ty">Result</span>&lt;UserId&gt; {
+        <span class="comment">// Deterministic seed. No need for our test to be nondeterministic.
+        </span><span class="kw">const </span>SEED: u64 = <span class="number">1234</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>rng = StdRng::seed_from_u64(SEED);
+        <span class="prelude-val">Ok</span>(UserId::new(<span class="kw-2">&amp;mut </span>rng)<span class="question-mark">?</span>)
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="lock_keeper_key_server" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="lock_keeper_key_server" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

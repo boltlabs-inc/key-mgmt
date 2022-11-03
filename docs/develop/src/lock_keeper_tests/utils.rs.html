@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `lock-keeper-tests/src/utils.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>utils.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../lock_keeper_tests/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../lock_keeper_tests/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../lock_keeper_tests/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `lock-keeper-tests/src/utils.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>utils.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../lock_keeper_tests/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../lock_keeper_tests/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../lock_keeper_tests/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -223,230 +223,230 @@
 <span id="223">223</span>
 <span id="224">224</span>
 <span id="225">225</span>
-</pre><pre class="rust"><code><span class="doccomment">//! Various testing utilities</span>
+</pre><pre class="rust"><code><span class="doccomment">//! Various testing utilities
 
-<span class="kw">use</span> <span class="ident">std::sync</span>::{<span class="ident">Arc</span>, <span class="ident">Mutex</span>};
+</span><span class="kw">use </span>std::sync::{Arc, Mutex};
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::Config</span>;
-<span class="kw">use</span> <span class="ident">colored::Colorize</span>;
-<span class="kw">use</span> <span class="ident">futures::Future</span>;
-<span class="kw">use</span> <span class="ident">lock_keeper::config::opaque::OpaqueCipherSuite</span>;
-<span class="kw">use</span> <span class="ident">opaque_ke</span>::{
-    <span class="ident">ClientRegistration</span>, <span class="ident">ClientRegistrationFinishParameters</span>, <span class="ident">ServerRegistration</span>, <span class="ident">ServerSetup</span>,
+<span class="kw">use </span><span class="kw">crate</span>::Config;
+<span class="kw">use </span>colored::Colorize;
+<span class="kw">use </span>futures::Future;
+<span class="kw">use </span>lock_keeper::config::opaque::OpaqueCipherSuite;
+<span class="kw">use </span>opaque_ke::{
+    ClientRegistration, ClientRegistrationFinishParameters, ServerRegistration, ServerSetup,
 };
-<span class="kw">use</span> <span class="ident">rand</span>::{<span class="ident">distributions::Alphanumeric</span>, <span class="ident">Rng</span>};
+<span class="kw">use </span>rand::{distributions::Alphanumeric, Rng};
 
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">RNG_SEED</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>; <span class="number">32</span>] <span class="op">=</span> <span class="string">b&quot;we love deterministic testing!!!&quot;</span>;
+<span class="kw">pub const </span>RNG_SEED: <span class="kw-2">&amp;</span>[u8; <span class="number">32</span>] = <span class="string">b&quot;we love deterministic testing!!!&quot;</span>;
 
-<span class="doccomment">/// Add random text to the end of a string</span>
-<span class="doccomment">/// # Example</span>
-<span class="doccomment">/// ```</span>
-<span class="doccomment">/// let user = tagged(&quot;user&quot;);</span>
-<span class="doccomment">/// println!(&quot;{user}&quot;);</span>
-<span class="doccomment">/// // Prints something like &quot;user-1h65k35&quot;</span>
-<span class="doccomment">/// ```</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">tagged</span>(<span class="ident">text</span>: <span class="kw">impl</span> <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span>) -&gt; <span class="ident">String</span> {
-    <span class="kw">let</span> <span class="ident">text</span> <span class="op">=</span> <span class="ident">text</span>.<span class="ident">as_ref</span>();
-    <span class="kw">let</span> <span class="ident">tag</span>: <span class="ident">String</span> <span class="op">=</span> <span class="ident">rand::thread_rng</span>()
-        .<span class="ident">sample_iter</span>(<span class="kw-2">&amp;</span><span class="ident">Alphanumeric</span>)
-        .<span class="ident">take</span>(<span class="number">7</span>)
-        .<span class="ident">map</span>(<span class="ident">char::from</span>)
-        .<span class="ident">collect</span>();
+<span class="doccomment">/// Add random text to the end of a string
+/// # Example
+/// ```
+/// let user = tagged(&quot;user&quot;);
+/// println!(&quot;{user}&quot;);
+/// // Prints something like &quot;user-1h65k35&quot;
+/// ```
+</span><span class="kw">pub fn </span>tagged(text: <span class="kw">impl </span>AsRef&lt;str&gt;) -&gt; String {
+    <span class="kw">let </span>text = text.as_ref();
+    <span class="kw">let </span>tag: String = rand::thread_rng()
+        .sample_iter(<span class="kw-2">&amp;</span>Alphanumeric)
+        .take(<span class="number">7</span>)
+        .map(char::from)
+        .collect();
 
     <span class="macro">format!</span>(<span class="string">&quot;{text}-{tag}&quot;</span>)
 }
 
-<span class="doccomment">/// Locally simulates OPAQUE registration to get a valid</span>
-<span class="doccomment">/// `ServerRegistration` for remaining tests.</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">server_registration</span>() -&gt; <span class="ident">ServerRegistration</span><span class="op">&lt;</span><span class="ident">OpaqueCipherSuite</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rng</span> <span class="op">=</span> <span class="ident">rand::thread_rng</span>();
+<span class="doccomment">/// Locally simulates OPAQUE registration to get a valid
+/// `ServerRegistration` for remaining tests.
+</span><span class="kw">pub fn </span>server_registration() -&gt; ServerRegistration&lt;OpaqueCipherSuite&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>rng = rand::thread_rng();
 
-    <span class="kw">let</span> <span class="ident">server_setup</span> <span class="op">=</span> <span class="ident">ServerSetup</span>::<span class="op">&lt;</span><span class="ident">OpaqueCipherSuite</span><span class="op">&gt;</span><span class="ident">::new</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>);
-    <span class="kw">let</span> <span class="ident">client_reg_start_result</span> <span class="op">=</span>
-        <span class="ident">ClientRegistration</span>::<span class="op">&lt;</span><span class="ident">OpaqueCipherSuite</span><span class="op">&gt;</span><span class="ident">::start</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>, <span class="string">b&quot;password&quot;</span>).<span class="ident">unwrap</span>();
-    <span class="kw">let</span> <span class="ident">server_reg_start_result</span> <span class="op">=</span> <span class="ident">ServerRegistration</span>::<span class="op">&lt;</span><span class="ident">OpaqueCipherSuite</span><span class="op">&gt;</span><span class="ident">::start</span>(
-        <span class="kw-2">&amp;</span><span class="ident">server_setup</span>,
-        <span class="ident">client_reg_start_result</span>.<span class="ident">message</span>,
+    <span class="kw">let </span>server_setup = ServerSetup::&lt;OpaqueCipherSuite&gt;::new(<span class="kw-2">&amp;mut </span>rng);
+    <span class="kw">let </span>client_reg_start_result =
+        ClientRegistration::&lt;OpaqueCipherSuite&gt;::start(<span class="kw-2">&amp;mut </span>rng, <span class="string">b&quot;password&quot;</span>).unwrap();
+    <span class="kw">let </span>server_reg_start_result = ServerRegistration::&lt;OpaqueCipherSuite&gt;::start(
+        <span class="kw-2">&amp;</span>server_setup,
+        client_reg_start_result.message,
         <span class="string">b&quot;email@email.com&quot;</span>,
     )
-    .<span class="ident">unwrap</span>();
-    <span class="kw">let</span> <span class="ident">client_reg_finish_result</span> <span class="op">=</span> <span class="ident">client_reg_start_result</span>
-        .<span class="ident">state</span>
-        .<span class="ident">finish</span>(
-            <span class="kw-2">&amp;mut</span> <span class="ident">rng</span>,
+    .unwrap();
+    <span class="kw">let </span>client_reg_finish_result = client_reg_start_result
+        .state
+        .finish(
+            <span class="kw-2">&amp;mut </span>rng,
             <span class="string">b&quot;password&quot;</span>,
-            <span class="ident">server_reg_start_result</span>.<span class="ident">message</span>,
-            <span class="ident">ClientRegistrationFinishParameters::default</span>(),
+            server_reg_start_result.message,
+            ClientRegistrationFinishParameters::default(),
         )
-        .<span class="ident">unwrap</span>();
-    <span class="ident">ServerRegistration</span>::<span class="op">&lt;</span><span class="ident">OpaqueCipherSuite</span><span class="op">&gt;</span><span class="ident">::finish</span>(<span class="ident">client_reg_finish_result</span>.<span class="ident">message</span>)
+        .unwrap();
+    ServerRegistration::&lt;OpaqueCipherSuite&gt;::finish(client_reg_finish_result.message)
 }
 
-<span class="doccomment">/// Generate a sequence of random bytes with the given length.</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">random_bytes</span>(<span class="kw-2">mut</span> <span class="ident">rng</span>: <span class="kw">impl</span> <span class="ident">Rng</span>, <span class="ident">len</span>: <span class="ident">usize</span>) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span> {
-    <span class="ident">std::iter::repeat_with</span>(<span class="op">|</span><span class="op">|</span> <span class="ident">rng</span>.<span class="ident">gen</span>()).<span class="ident">take</span>(<span class="ident">len</span>).<span class="ident">collect</span>()
+<span class="doccomment">/// Generate a sequence of random bytes with the given length.
+</span><span class="kw">pub fn </span>random_bytes(<span class="kw-2">mut </span>rng: <span class="kw">impl </span>Rng, len: usize) -&gt; Vec&lt;u8&gt; {
+    std::iter::repeat_with(|| rng.gen()).take(len).collect()
 }
 
-<span class="doccomment">/// Pass a list of async test functions with parameters included.</span>
-<span class="doccomment">/// All test functions must return `anyhow::Result&lt;()&gt;`.</span>
-<span class="doccomment">/// Tests will run in parallel and report the names of any failing test.</span>
-<span class="doccomment">/// # Example</span>
-<span class="doccomment">/// ```no_run</span>
-<span class="doccomment">/// run_parallel(test_1(), test_2(&amp;db))</span>
-<span class="doccomment">/// ```</span>
-<span class="attribute">#[<span class="ident">macro_export</span>]</span>
-<span class="macro">macro_rules!</span> <span class="ident">run_parallel</span> {
-    (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">config</span>:<span class="ident">expr</span>, $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">task</span>:<span class="ident">expr</span>),<span class="op">+</span>,) =&gt; {
-        <span class="macro">run_parallel!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">config</span>, $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">task</span>),<span class="op">+</span>)
+<span class="doccomment">/// Pass a list of async test functions with parameters included.
+/// All test functions must return `anyhow::Result&lt;()&gt;`.
+/// Tests will run in parallel and report the names of any failing test.
+/// # Example
+/// ```no_run
+/// run_parallel(test_1(), test_2(&amp;db))
+/// ```
+</span><span class="attribute">#[macro_export]
+</span><span class="macro">macro_rules! </span>run_parallel {
+    (<span class="macro-nonterminal">$config</span>:expr, $(<span class="macro-nonterminal">$task</span>:expr),+,) =&gt; {
+        <span class="macro">run_parallel!</span>(<span class="macro-nonterminal">$config</span>, $(<span class="macro-nonterminal">$task</span>),+)
     };
-    (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">config</span>:<span class="ident">expr</span>, $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">task</span>:<span class="ident">expr</span>),<span class="op">+</span>) =&gt; {
-        <span class="comment">// Stick this in a scope so it can return a result</span>
-        {
-            <span class="kw">use</span> <span class="ident">std::sync</span>::{<span class="ident">Arc</span>, <span class="ident">Mutex</span>};
-            <span class="kw">use</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">crate::utils::TestResult</span>;
+    (<span class="macro-nonterminal">$config</span>:expr, $(<span class="macro-nonterminal">$task</span>:expr),+) =&gt; {
+        <span class="comment">// Stick this in a scope so it can return a result
+        </span>{
+            <span class="kw">use </span>std::sync::{Arc, Mutex};
+            <span class="kw">use </span><span class="macro-nonterminal">$crate::utils::TestResult</span>;
 
-            <span class="kw">let</span> <span class="ident">results</span> <span class="op">=</span> <span class="ident">Arc::new</span>(<span class="ident">Mutex::new</span>(<span class="ident">Vec::new</span>()));
-            <span class="macro">tokio::try_join!</span>($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">crate::utils::run_test_case</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">config</span>, <span class="macro">stringify!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">task</span>), <span class="macro-nonterminal">$</span><span class="macro-nonterminal">task</span>, <span class="ident">results</span>.<span class="ident">clone</span>())),<span class="op">+</span>)<span class="question-mark">?</span>;
+            <span class="kw">let </span>results = Arc::new(Mutex::new(Vec::new()));
+            <span class="macro">tokio::try_join!</span>($(<span class="macro-nonterminal">$crate::utils::run_test_case</span>(<span class="macro-nonterminal">$config</span>, <span class="macro">stringify!</span>(<span class="macro-nonterminal">$task</span>), <span class="macro-nonterminal">$task</span>, results.clone())),+)<span class="question-mark">?</span>;
 
-            <span class="kw">let</span> <span class="ident">results</span> <span class="op">=</span> <span class="ident">results</span>.<span class="ident">lock</span>().<span class="ident">unwrap</span>().<span class="ident">clone</span>();
+            <span class="kw">let </span>results = results.lock().unwrap().clone();
 
-            <span class="prelude-val">Ok</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">TestResult</span><span class="op">&gt;</span>, <span class="ident">anyhow::Error</span><span class="op">&gt;</span>(<span class="ident">results</span>)
+            <span class="prelude-val">Ok</span>::&lt;Vec&lt;TestResult&gt;, anyhow::Error&gt;(results)
         }
     };
 }
 
-<span class="doccomment">/// Runs a test case and manually handles any panics triggered by `assert`</span>
-<span class="doccomment">/// macros.</span>
-<span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">run_test_case</span>(
-    <span class="ident">config</span>: <span class="ident">Config</span>,
-    <span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>,
-    <span class="ident">task</span>: <span class="kw">impl</span> <span class="ident">Future</span><span class="op">&lt;</span><span class="ident">Output</span> <span class="op">=</span> <span class="ident">anyhow::Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
-    <span class="ident">results</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">Mutex</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">TestResult</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-) -&gt; <span class="ident">anyhow::Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-    <span class="kw">use</span> <span class="ident">futures::FutureExt</span>;
-    <span class="kw">use</span> <span class="ident">TestResult</span>::<span class="kw-2">*</span>;
+<span class="doccomment">/// Runs a test case and manually handles any panics triggered by `assert`
+/// macros.
+</span><span class="kw">pub async fn </span>run_test_case(
+    config: Config,
+    name: <span class="kw-2">&amp;</span>str,
+    task: <span class="kw">impl </span>Future&lt;Output = anyhow::Result&lt;()&gt;&gt; + Send + <span class="lifetime">&#39;static</span>,
+    results: Arc&lt;Mutex&lt;Vec&lt;TestResult&gt;&gt;&gt;,
+) -&gt; anyhow::Result&lt;()&gt; {
+    <span class="kw">use </span>futures::FutureExt;
+    <span class="kw">use </span>TestResult::<span class="kw-2">*</span>;
 
-    <span class="comment">// Create string for result so that we can print the whole thing at once</span>
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">test_result</span> <span class="op">=</span> <span class="ident">String::new</span>();
+    <span class="comment">// Create string for result so that we can print the whole thing at once
+    </span><span class="kw">let </span><span class="kw-2">mut </span>test_result = String::new();
 
-    <span class="comment">// Get name of test from function name</span>
-    <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="ident">name</span>
-        .<span class="ident">split</span>(<span class="string">&#39;(&#39;</span>)
-        .<span class="ident">next</span>()
-        .<span class="ident">expect</span>(<span class="string">&quot;Function has at least one character&quot;</span>);
-    <span class="ident">test_result</span>.<span class="ident">push_str</span>(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;\n{name}:\n&quot;</span>));
+    <span class="comment">// Get name of test from function name
+    </span><span class="kw">let </span>name = name
+        .split(<span class="string">&#39;(&#39;</span>)
+        .next()
+        .expect(<span class="string">&quot;Function has at least one character&quot;</span>);
+    test_result.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;\n{name}:\n&quot;</span>));
 
-    <span class="kw">if</span> <span class="op">!</span><span class="ident">config</span>.<span class="ident">filters</span>.<span class="ident">matches</span>(<span class="ident">name</span>) {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">results</span> <span class="op">=</span> <span class="ident">results</span>.<span class="ident">lock</span>().<span class="ident">unwrap</span>();
-        <span class="ident">results</span>.<span class="ident">push</span>(<span class="ident">Skipped</span>);
-        <span class="ident">test_result</span>.<span class="ident">push_str</span>(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, <span class="string">&quot;skipped\n&quot;</span>.<span class="ident">bright_blue</span>()));
+    <span class="kw">if </span>!config.filters.matches(name) {
+        <span class="kw">let </span><span class="kw-2">mut </span>results = results.lock().unwrap();
+        results.push(Skipped);
+        test_result.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, <span class="string">&quot;skipped\n&quot;</span>.bright_blue()));
         <span class="macro">println!</span>(<span class="string">&quot;{test_result}&quot;</span>);
-        <span class="kw">return</span> <span class="prelude-val">Ok</span>(());
+        <span class="kw">return </span><span class="prelude-val">Ok</span>(());
     }
 
-    <span class="kw">let</span> <span class="ident">handle</span> <span class="op">=</span> <span class="ident">tokio::spawn</span>(<span class="ident">task</span>);
+    <span class="kw">let </span>handle = tokio::spawn(task);
 
-    <span class="comment">// Store normal panic hook so we can set it back later</span>
-    <span class="kw">let</span> <span class="ident">panic_hook</span> <span class="op">=</span> <span class="ident">std::panic::take_hook</span>();
+    <span class="comment">// Store normal panic hook so we can set it back later
+    </span><span class="kw">let </span>panic_hook = std::panic::take_hook();
 
-    <span class="comment">// Create an new panic hook to catch assert! checks</span>
-    <span class="ident">std::panic::set_hook</span>(<span class="ident">Box::new</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> {
-        <span class="comment">// Don&#39;t print panic details</span>
-    }));
+    <span class="comment">// Create an new panic hook to catch assert! checks
+    </span>std::panic::set_hook(Box::new(|<span class="kw">_</span>| {
+        <span class="comment">// Don&#39;t print panic details
+    </span>}));
 
-    <span class="comment">// Catch any panic and print test result</span>
-    <span class="kw">match</span> <span class="ident">handle</span>.<span class="ident">catch_unwind</span>().<span class="kw">await</span> {
-        <span class="comment">// task returned at all</span>
-        <span class="prelude-val">Ok</span>(<span class="prelude-val">Ok</span>(<span class="ident">res</span>)) =&gt; {
-            <span class="kw">match</span> <span class="ident">res</span> {
-                <span class="comment">// task returned and it was Ok</span>
-                <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; {
+    <span class="comment">// Catch any panic and print test result
+    </span><span class="kw">match </span>handle.catch_unwind().<span class="kw">await </span>{
+        <span class="comment">// task returned at all
+        </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Ok</span>(res)) =&gt; {
+            <span class="kw">match </span>res {
+                <span class="comment">// task returned and it was Ok
+                </span><span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; {
                     {
-                        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">results</span> <span class="op">=</span> <span class="ident">results</span>.<span class="ident">lock</span>().<span class="ident">unwrap</span>();
-                        <span class="ident">results</span>.<span class="ident">push</span>(<span class="ident">Passed</span>);
+                        <span class="kw">let </span><span class="kw-2">mut </span>results = results.lock().unwrap();
+                        results.push(Passed);
                     }
-                    <span class="ident">test_result</span>.<span class="ident">push_str</span>(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, <span class="string">&quot;ok\n&quot;</span>.<span class="ident">green</span>()));
+                    test_result.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, <span class="string">&quot;ok\n&quot;</span>.green()));
                 }
-                <span class="comment">// task returned but it was Err</span>
-                <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
+                <span class="comment">// task returned but it was Err
+                </span><span class="prelude-val">Err</span>(e) =&gt; {
                     {
-                        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">results</span> <span class="op">=</span> <span class="ident">results</span>.<span class="ident">lock</span>().<span class="ident">unwrap</span>();
-                        <span class="ident">results</span>.<span class="ident">push</span>(<span class="ident">Failed</span>);
+                        <span class="kw">let </span><span class="kw-2">mut </span>results = results.lock().unwrap();
+                        results.push(Failed);
                     }
-                    <span class="ident">test_result</span>.<span class="ident">push_str</span>(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}: {}\n&quot;</span>, <span class="string">&quot;failed&quot;</span>.<span class="ident">red</span>(), <span class="ident">e</span>));
+                    test_result.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}: {}\n&quot;</span>, <span class="string">&quot;failed&quot;</span>.red(), e));
                 }
             }
         }
-        <span class="prelude-val">Ok</span>(<span class="prelude-val">Err</span>(<span class="ident">err</span>)) =&gt; {
-            <span class="comment">// Get panic message from error</span>
-            <span class="kw">match</span> <span class="ident">err</span>.<span class="ident">try_into_panic</span>() {
-                <span class="prelude-val">Ok</span>(<span class="ident">panic</span>) =&gt; {
+        <span class="prelude-val">Ok</span>(<span class="prelude-val">Err</span>(err)) =&gt; {
+            <span class="comment">// Get panic message from error
+            </span><span class="kw">match </span>err.try_into_panic() {
+                <span class="prelude-val">Ok</span>(panic) =&gt; {
                     {
-                        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">results</span> <span class="op">=</span> <span class="ident">results</span>.<span class="ident">lock</span>().<span class="ident">unwrap</span>();
-                        <span class="ident">results</span>.<span class="ident">push</span>(<span class="ident">Failed</span>);
+                        <span class="kw">let </span><span class="kw-2">mut </span>results = results.lock().unwrap();
+                        results.push(Failed);
                     }
-                    <span class="ident">test_result</span>.<span class="ident">push_str</span>(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, <span class="string">&quot;Test panicked\n&quot;</span>.<span class="ident">red</span>()));
+                    test_result.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, <span class="string">&quot;Test panicked\n&quot;</span>.red()));
 
-                    <span class="comment">// Try to convert message to `&amp;str` or `String` and print</span>
-                    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">message</span>) <span class="op">=</span> <span class="ident">panic</span>.<span class="ident">downcast_ref</span>::<span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">str</span><span class="op">&gt;</span>() {
-                        <span class="ident">test_result</span>.<span class="ident">push_str</span>(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{message}\n&quot;</span>));
+                    <span class="comment">// Try to convert message to `&amp;str` or `String` and print
+                    </span><span class="kw">if let </span><span class="prelude-val">Some</span>(message) = panic.downcast_ref::&lt;<span class="kw-2">&amp;</span>str&gt;() {
+                        test_result.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{message}\n&quot;</span>));
                     }
-                    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">message</span>) <span class="op">=</span> <span class="ident">panic</span>.<span class="ident">downcast_ref</span>::<span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>() {
-                        <span class="ident">test_result</span>.<span class="ident">push_str</span>(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{message}\n&quot;</span>));
+                    <span class="kw">if let </span><span class="prelude-val">Some</span>(message) = panic.downcast_ref::&lt;String&gt;() {
+                        test_result.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{message}\n&quot;</span>));
                     }
                 }
-                <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
-                    <span class="ident">test_result</span>.<span class="ident">push_str</span>(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}: {}\n&quot;</span>, <span class="string">&quot;failed&quot;</span>.<span class="ident">red</span>(), <span class="ident">e</span>));
+                <span class="prelude-val">Err</span>(e) =&gt; {
+                    test_result.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}: {}\n&quot;</span>, <span class="string">&quot;failed&quot;</span>.red(), e));
                 }
             }
         }
-        <span class="prelude-val">Err</span>(<span class="ident">err</span>) =&gt; {
+        <span class="prelude-val">Err</span>(err) =&gt; {
             {
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">results</span> <span class="op">=</span> <span class="ident">results</span>.<span class="ident">lock</span>().<span class="ident">unwrap</span>();
-                <span class="ident">results</span>.<span class="ident">push</span>(<span class="ident">Failed</span>);
+                <span class="kw">let </span><span class="kw-2">mut </span>results = results.lock().unwrap();
+                results.push(Failed);
             }
-            <span class="ident">test_result</span>.<span class="ident">push_str</span>(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;failed: {:?}\n&quot;</span>, <span class="ident">err</span>));
+            test_result.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;failed: {:?}\n&quot;</span>, err));
         }
     }
 
     <span class="macro">println!</span>(<span class="string">&quot;{test_result}&quot;</span>);
 
-    <span class="comment">// Replace original panic hook</span>
-    <span class="ident">std::panic::set_hook</span>(<span class="ident">panic_hook</span>);
+    <span class="comment">// Replace original panic hook
+    </span>std::panic::set_hook(panic_hook);
 
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Copy</span>, <span class="ident">Debug</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">TestResult</span> {
-    <span class="ident">Passed</span>,
-    <span class="ident">Failed</span>,
-    <span class="ident">Skipped</span>,
+<span class="attribute">#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+</span><span class="kw">pub enum </span>TestResult {
+    Passed,
+    Failed,
+    Skipped,
 }
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">report_test_results</span>(<span class="ident">results</span>: <span class="kw-2">&amp;</span>[<span class="ident">TestResult</span>]) -&gt; <span class="ident">String</span> {
-    <span class="kw">use</span> <span class="ident">TestResult</span>::<span class="kw-2">*</span>;
+<span class="kw">pub fn </span>report_test_results(results: <span class="kw-2">&amp;</span>[TestResult]) -&gt; String {
+    <span class="kw">use </span>TestResult::<span class="kw-2">*</span>;
 
-    <span class="kw">let</span> <span class="ident">any_failed</span> <span class="op">=</span> <span class="ident">results</span>.<span class="ident">iter</span>().<span class="ident">any</span>(<span class="op">|</span><span class="ident">r</span><span class="op">|</span> <span class="kw-2">*</span><span class="ident">r</span> <span class="op">==</span> <span class="ident">Failed</span>);
-    <span class="kw">if</span> <span class="ident">any_failed</span> {
-        <span class="kw">return</span> <span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, <span class="string">&quot;FAILED&quot;</span>.<span class="ident">red</span>());
+    <span class="kw">let </span>any_failed = results.iter().any(|r| <span class="kw-2">*</span>r == Failed);
+    <span class="kw">if </span>any_failed {
+        <span class="kw">return </span><span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, <span class="string">&quot;FAILED&quot;</span>.red());
     }
 
-    <span class="kw">let</span> <span class="ident">num_results</span> <span class="op">=</span> <span class="ident">results</span>.<span class="ident">len</span>();
-    <span class="kw">let</span> <span class="ident">num_skipped</span> <span class="op">=</span> <span class="ident">results</span>.<span class="ident">iter</span>().<span class="ident">filter</span>(<span class="op">|</span><span class="ident">r</span><span class="op">|</span> <span class="kw-2">*</span><span class="kw-2">*</span><span class="ident">r</span> <span class="op">==</span> <span class="ident">Skipped</span>).<span class="ident">count</span>();
+    <span class="kw">let </span>num_results = results.len();
+    <span class="kw">let </span>num_skipped = results.iter().filter(|r| <span class="kw-2">**</span>r == Skipped).count();
 
-    <span class="kw">if</span> <span class="ident">num_skipped</span> <span class="op">==</span> <span class="ident">num_results</span> {
-        <span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, <span class="string">&quot;SKIPPED&quot;</span>.<span class="ident">bright_blue</span>())
-    } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">num_skipped</span> <span class="op">&gt;</span> <span class="number">0</span> {
+    <span class="kw">if </span>num_skipped == num_results {
+        <span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, <span class="string">&quot;SKIPPED&quot;</span>.bright_blue())
+    } <span class="kw">else if </span>num_skipped &gt; <span class="number">0 </span>{
         <span class="macro">format!</span>(
             <span class="string">&quot;{} ({} {})&quot;</span>,
-            <span class="string">&quot;PASSED&quot;</span>.<span class="ident">green</span>(),
-            <span class="ident">num_skipped</span>,
-            <span class="string">&quot;SKIPPED&quot;</span>.<span class="ident">bright_blue</span>()
+            <span class="string">&quot;PASSED&quot;</span>.green(),
+            num_skipped,
+            <span class="string">&quot;SKIPPED&quot;</span>.bright_blue()
         )
-    } <span class="kw">else</span> {
-        <span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, <span class="string">&quot;PASSED&quot;</span>.<span class="ident">green</span>())
+    } <span class="kw">else </span>{
+        <span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, <span class="string">&quot;PASSED&quot;</span>.green())
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="lock_keeper_tests" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="lock_keeper_tests" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

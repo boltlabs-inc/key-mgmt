@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `lock-keeper-key-server/src/operations/create_storage_key.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>create_storage_key.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../lock_keeper_key_server/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../lock_keeper_key_server/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../lock_keeper_key_server/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `lock-keeper-key-server/src/operations/create_storage_key.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>create_storage_key.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../lock_keeper_key_server/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../lock_keeper_key_server/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../lock_keeper_key_server/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -77,84 +77,84 @@
 <span id="77">77</span>
 <span id="78">78</span>
 <span id="79">79</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">crate</span>::{
-    <span class="ident">error::LockKeeperServerError</span>,
-    <span class="ident">server</span>::{<span class="ident">Context</span>, <span class="ident">Operation</span>},
+</pre><pre class="rust"><code><span class="kw">use crate</span>::{
+    error::LockKeeperServerError,
+    server::{Context, Operation},
 };
 
-<span class="kw">use</span> <span class="ident">async_trait::async_trait</span>;
-<span class="kw">use</span> <span class="ident">lock_keeper</span>::{
-    <span class="ident">infrastructure::channel::ServerChannel</span>,
-    <span class="ident">types</span>::{
-        <span class="ident">database::user::UserId</span>,
-        <span class="ident">operations::create_storage_key</span>::{<span class="ident">client</span>, <span class="ident">server</span>},
+<span class="kw">use </span>async_trait::async_trait;
+<span class="kw">use </span>lock_keeper::{
+    infrastructure::channel::ServerChannel,
+    types::{
+        database::user::UserId,
+        operations::create_storage_key::{client, server},
     },
 };
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">CreateStorageKey</span>;
+<span class="attribute">#[derive(Debug)]
+</span><span class="kw">pub struct </span>CreateStorageKey;
 
-<span class="attribute">#[<span class="ident">async_trait</span>]</span>
-<span class="kw">impl</span> <span class="ident">Operation</span> <span class="kw">for</span> <span class="ident">CreateStorageKey</span> {
-    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">operation</span>(
+<span class="attribute">#[async_trait]
+</span><span class="kw">impl </span>Operation <span class="kw">for </span>CreateStorageKey {
+    <span class="kw">async fn </span>operation(
         <span class="self">self</span>,
-        <span class="ident">channel</span>: <span class="kw-2">&amp;mut</span> <span class="ident">ServerChannel</span>,
-        <span class="ident">context</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">LockKeeperServerError</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">user_id</span> <span class="op">=</span> <span class="ident">send_user_id</span>(<span class="ident">channel</span>, <span class="ident">context</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="ident">store_storage_key</span>(<span class="ident">user_id</span>, <span class="ident">channel</span>, <span class="ident">context</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+        channel: <span class="kw-2">&amp;mut </span>ServerChannel,
+        context: <span class="kw-2">&amp;mut </span>Context,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
+        <span class="kw">let </span>user_id = send_user_id(channel, context).<span class="kw">await</span><span class="question-mark">?</span>;
+        store_storage_key(user_id, channel, context).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
     }
 }
 
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">send_user_id</span>(
-    <span class="ident">channel</span>: <span class="kw-2">&amp;mut</span> <span class="ident">ServerChannel</span>,
-    <span class="ident">context</span>: <span class="kw-2">&amp;</span><span class="ident">Context</span>,
-) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">UserId</span>, <span class="ident">LockKeeperServerError</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">request</span>: <span class="ident">client::RequestUserId</span> <span class="op">=</span> <span class="ident">channel</span>.<span class="ident">receive</span>().<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="ident">user</span> <span class="op">=</span> <span class="ident">context</span>.<span class="ident">db</span>.<span class="ident">find_user</span>(<span class="kw-2">&amp;</span><span class="ident">request</span>.<span class="ident">account_name</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="kw">async fn </span>send_user_id(
+    channel: <span class="kw-2">&amp;mut </span>ServerChannel,
+    context: <span class="kw-2">&amp;</span>Context,
+) -&gt; <span class="prelude-ty">Result</span>&lt;UserId, LockKeeperServerError&gt; {
+    <span class="kw">let </span>request: client::RequestUserId = channel.receive().<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>user = context.db.find_user(<span class="kw-2">&amp;</span>request.account_name).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">user</span>) <span class="op">=</span> <span class="ident">user</span> {
-        <span class="kw">if</span> <span class="ident">user</span>.<span class="ident">storage_key</span>.<span class="ident">is_some</span>() {
-            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">LockKeeperServerError::StorageKeyAlreadySet</span>);
+    <span class="kw">if let </span><span class="prelude-val">Some</span>(user) = user {
+        <span class="kw">if </span>user.storage_key.is_some() {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(LockKeeperServerError::StorageKeyAlreadySet);
         }
 
-        <span class="kw">let</span> <span class="ident">reply</span> <span class="op">=</span> <span class="ident">server::SendUserId</span> {
-            <span class="ident">user_id</span>: <span class="ident">user</span>.<span class="ident">user_id</span>.<span class="ident">clone</span>(),
+        <span class="kw">let </span>reply = server::SendUserId {
+            user_id: user.user_id.clone(),
         };
 
-        <span class="ident">channel</span>.<span class="ident">send</span>(<span class="ident">reply</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+        channel.send(reply).<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="prelude-val">Ok</span>(<span class="ident">user</span>.<span class="ident">user_id</span>)
-    } <span class="kw">else</span> {
-        <span class="prelude-val">Err</span>(<span class="ident">LockKeeperServerError::InvalidAccount</span>)
+        <span class="prelude-val">Ok</span>(user.user_id)
+    } <span class="kw">else </span>{
+        <span class="prelude-val">Err</span>(LockKeeperServerError::InvalidAccount)
     }
 }
 
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">store_storage_key</span>(
-    <span class="ident">user_id</span>: <span class="ident">UserId</span>,
-    <span class="ident">channel</span>: <span class="kw-2">&amp;mut</span> <span class="ident">ServerChannel</span>,
-    <span class="ident">context</span>: <span class="kw-2">&amp;</span><span class="ident">Context</span>,
-) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">LockKeeperServerError</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">client_message</span>: <span class="ident">client::SendStorageKey</span> <span class="op">=</span> <span class="ident">channel</span>.<span class="ident">receive</span>().<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="kw">async fn </span>store_storage_key(
+    user_id: UserId,
+    channel: <span class="kw-2">&amp;mut </span>ServerChannel,
+    context: <span class="kw-2">&amp;</span>Context,
+) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
+    <span class="kw">let </span>client_message: client::SendStorageKey = channel.receive().<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">if</span> <span class="ident">client_message</span>.<span class="ident">user_id</span> <span class="op">!</span><span class="op">=</span> <span class="ident">user_id</span> {
-        <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">LockKeeperServerError::InvalidAccount</span>);
+    <span class="kw">if </span>client_message.user_id != user_id {
+        <span class="kw">return </span><span class="prelude-val">Err</span>(LockKeeperServerError::InvalidAccount);
     }
 
-    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Err</span>(<span class="ident">error</span>) <span class="op">=</span> <span class="ident">context</span>
-        .<span class="ident">db</span>
-        .<span class="ident">set_storage_key</span>(<span class="kw-2">&amp;</span><span class="ident">user_id</span>, <span class="ident">client_message</span>.<span class="ident">storage_key</span>)
-        .<span class="kw">await</span>
-    {
-        <span class="ident">context</span>.<span class="ident">db</span>.<span class="ident">delete_user</span>(<span class="kw-2">&amp;</span><span class="ident">user_id</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">error</span>);
+    <span class="kw">if let </span><span class="prelude-val">Err</span>(error) = context
+        .db
+        .set_storage_key(<span class="kw-2">&amp;</span>user_id, client_message.storage_key)
+        .<span class="kw">await
+    </span>{
+        context.db.delete_user(<span class="kw-2">&amp;</span>user_id).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">return </span><span class="prelude-val">Err</span>(error);
     }
 
-    <span class="kw">let</span> <span class="ident">reply</span> <span class="op">=</span> <span class="ident">server::CreateStorageKeyResult</span> { <span class="ident">success</span>: <span class="bool-val">true</span> };
-    <span class="ident">channel</span>.<span class="ident">send</span>(<span class="ident">reply</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>reply = server::CreateStorageKeyResult { success: <span class="bool-val">true </span>};
+    channel.send(reply).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="lock_keeper_key_server" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="lock_keeper_key_server" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

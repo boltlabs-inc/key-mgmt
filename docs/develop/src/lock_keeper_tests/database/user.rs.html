@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `lock-keeper-tests/src/database/user.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>user.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../lock_keeper_tests/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../lock_keeper_tests/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../lock_keeper_tests/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `lock-keeper-tests/src/database/user.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>user.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../lock_keeper_tests/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../lock_keeper_tests/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../lock_keeper_tests/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -183,190 +183,190 @@
 <span id="183">183</span>
 <span id="184">184</span>
 <span id="185">185</span>
-</pre><pre class="rust"><code><span class="doccomment">//! Integration tests for user objects in the database</span>
+</pre><pre class="rust"><code><span class="doccomment">//! Integration tests for user objects in the database
 
-<span class="kw">use</span> <span class="ident">std::str::FromStr</span>;
+</span><span class="kw">use </span>std::str::FromStr;
 
-<span class="kw">use</span> <span class="ident">colored::Colorize</span>;
-<span class="kw">use</span> <span class="ident">lock_keeper::types::database::user</span>::{<span class="ident">AccountName</span>, <span class="ident">User</span>, <span class="ident">UserId</span>};
-<span class="kw">use</span> <span class="ident">lock_keeper_key_server::LockKeeperServerError</span>;
-<span class="kw">use</span> <span class="ident">rand</span>::{<span class="ident">rngs::StdRng</span>, <span class="ident">SeedableRng</span>};
+<span class="kw">use </span>colored::Colorize;
+<span class="kw">use </span>lock_keeper::types::database::user::{AccountName, User, UserId};
+<span class="kw">use </span>lock_keeper_key_server::LockKeeperServerError;
+<span class="kw">use </span>rand::{rngs::StdRng, SeedableRng};
 
-<span class="kw">use</span> <span class="kw">crate</span>::{
-    <span class="ident">database::USERS_TABLE</span>,
-    <span class="ident">run_parallel</span>,
-    <span class="ident">utils</span>::{<span class="ident">server_registration</span>, <span class="ident">tagged</span>, <span class="ident">TestResult</span>},
-    <span class="ident">Config</span>,
+<span class="kw">use crate</span>::{
+    database::USERS_TABLE,
+    run_parallel,
+    utils::{server_registration, tagged, TestResult},
+    Config,
 };
 
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::TestDatabase</span>;
+<span class="kw">use </span><span class="kw">super</span>::TestDatabase;
 
-<span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">run_tests</span>(<span class="ident">config</span>: <span class="ident">Config</span>) -&gt; <span class="ident">anyhow::Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">TestResult</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, <span class="string">&quot;Running user tests&quot;</span>.<span class="ident">cyan</span>());
+<span class="kw">pub async fn </span>run_tests(config: Config) -&gt; anyhow::Result&lt;Vec&lt;TestResult&gt;&gt; {
+    <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, <span class="string">&quot;Running user tests&quot;</span>.cyan());
 
-    <span class="kw">let</span> <span class="ident">db</span> <span class="op">=</span> <span class="ident">TestDatabase::new</span>(<span class="string">&quot;user_tests&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> <span class="macro">run_parallel!</span>(
-        <span class="ident">config</span>.<span class="ident">clone</span>(),
-        <span class="ident">user_findable_by_account_name</span>(<span class="ident">db</span>.<span class="ident">clone</span>()),
-        <span class="ident">user_findable_by_id</span>(<span class="ident">db</span>.<span class="ident">clone</span>()),
-        <span class="ident">multiple_connections_do_not_overwrite_db</span>(),
-        <span class="ident">unique_indices_enforced</span>(<span class="ident">db</span>.<span class="ident">clone</span>()),
-        <span class="ident">user_is_deleted</span>(<span class="ident">db</span>.<span class="ident">clone</span>()),
-        <span class="ident">storage_key_is_set</span>(<span class="ident">db</span>.<span class="ident">clone</span>())
+    <span class="kw">let </span>db = TestDatabase::new(<span class="string">&quot;user_tests&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>result = <span class="macro">run_parallel!</span>(
+        config.clone(),
+        user_findable_by_account_name(db.clone()),
+        user_findable_by_id(db.clone()),
+        multiple_connections_do_not_overwrite_db(),
+        unique_indices_enforced(db.clone()),
+        user_is_deleted(db.clone()),
+        storage_key_is_set(db.clone())
     )<span class="question-mark">?</span>;
 
-    <span class="ident">db</span>.<span class="ident">drop</span>().<span class="kw">await</span><span class="question-mark">?</span>;
+    db.drop().<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="prelude-val">Ok</span>(<span class="ident">result</span>)
+    <span class="prelude-val">Ok</span>(result)
 }
 
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">user_findable_by_account_name</span>(<span class="ident">db</span>: <span class="ident">TestDatabase</span>) -&gt; <span class="ident">anyhow::Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-    <span class="kw">let</span> (<span class="kw">_</span>, <span class="ident">account_name</span>) <span class="op">=</span> <span class="ident">db</span>.<span class="ident">create_test_user</span>().<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="kw">async fn </span>user_findable_by_account_name(db: TestDatabase) -&gt; anyhow::Result&lt;()&gt; {
+    <span class="kw">let </span>(<span class="kw">_</span>, account_name) = db.create_test_user().<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let</span> <span class="ident">user</span> <span class="op">=</span> <span class="ident">db</span>.<span class="ident">find_user</span>(<span class="kw-2">&amp;</span><span class="ident">account_name</span>).<span class="kw">await</span><span class="question-mark">?</span>.<span class="ident">unwrap</span>();
-    <span class="macro">assert_eq!</span>(<span class="ident">user</span>.<span class="ident">account_name</span>, <span class="ident">account_name</span>);
+    <span class="kw">let </span>user = db.find_user(<span class="kw-2">&amp;</span>account_name).<span class="kw">await</span><span class="question-mark">?</span>.unwrap();
+    <span class="macro">assert_eq!</span>(user.account_name, account_name);
 
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">user_findable_by_id</span>(<span class="ident">db</span>: <span class="ident">TestDatabase</span>) -&gt; <span class="ident">anyhow::Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-    <span class="kw">let</span> (<span class="ident">user_id</span>, <span class="ident">account_name</span>) <span class="op">=</span> <span class="ident">db</span>.<span class="ident">create_test_user</span>().<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="kw">async fn </span>user_findable_by_id(db: TestDatabase) -&gt; anyhow::Result&lt;()&gt; {
+    <span class="kw">let </span>(user_id, account_name) = db.create_test_user().<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let</span> <span class="ident">user</span> <span class="op">=</span> <span class="ident">db</span>.<span class="ident">find_user</span>(<span class="kw-2">&amp;</span><span class="ident">account_name</span>).<span class="kw">await</span><span class="question-mark">?</span>.<span class="ident">unwrap</span>();
-    <span class="macro">assert_eq!</span>(<span class="ident">user</span>.<span class="ident">user_id</span>, <span class="ident">user_id</span>);
+    <span class="kw">let </span>user = db.find_user(<span class="kw-2">&amp;</span>account_name).<span class="kw">await</span><span class="question-mark">?</span>.unwrap();
+    <span class="macro">assert_eq!</span>(user.user_id, user_id);
 
-    <span class="kw">let</span> <span class="ident">user</span> <span class="op">=</span> <span class="ident">db</span>.<span class="ident">find_user_by_id</span>(<span class="kw-2">&amp;</span><span class="ident">user_id</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="macro">assert!</span>(<span class="ident">user</span>.<span class="ident">is_some</span>());
+    <span class="kw">let </span>user = db.find_user_by_id(<span class="kw-2">&amp;</span>user_id).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="macro">assert!</span>(user.is_some());
 
-    <span class="kw">let</span> <span class="ident">user</span> <span class="op">=</span> <span class="ident">user</span>.<span class="ident">unwrap</span>();
-    <span class="macro">assert_eq!</span>(<span class="ident">user</span>.<span class="ident">user_id</span>, <span class="ident">user_id</span>);
+    <span class="kw">let </span>user = user.unwrap();
+    <span class="macro">assert_eq!</span>(user.user_id, user_id);
 
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">multiple_connections_do_not_overwrite_db</span>() -&gt; <span class="ident">anyhow::Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">db</span> <span class="op">=</span> <span class="ident">TestDatabase::new</span>(<span class="string">&quot;multiple_connections_do_not_overwrite_db&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="kw">async fn </span>multiple_connections_do_not_overwrite_db() -&gt; anyhow::Result&lt;()&gt; {
+    <span class="kw">let </span>db = TestDatabase::new(<span class="string">&quot;multiple_connections_do_not_overwrite_db&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rng</span> <span class="op">=</span> <span class="ident">StdRng::from_entropy</span>();
+    <span class="kw">let </span><span class="kw-2">mut </span>rng = StdRng::from_entropy();
 
-    <span class="kw">let</span> <span class="ident">server_registration</span> <span class="op">=</span> <span class="ident">server_registration</span>();
+    <span class="kw">let </span>server_registration = server_registration();
 
-    <span class="comment">// Add two users</span>
-    <span class="kw">let</span> <span class="ident">uid1</span> <span class="op">=</span> <span class="ident">UserId::new</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>)<span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="ident">db</span>
-        .<span class="ident">create_user</span>(
-            <span class="kw-2">&amp;</span><span class="ident">uid1</span>,
-            <span class="kw-2">&amp;</span><span class="ident">AccountName::from_str</span>(<span class="kw-2">&amp;</span><span class="ident">tagged</span>(<span class="string">&quot;user&quot;</span>))<span class="question-mark">?</span>,
-            <span class="kw-2">&amp;</span><span class="ident">server_registration</span>,
+    <span class="comment">// Add two users
+    </span><span class="kw">let </span>uid1 = UserId::new(<span class="kw-2">&amp;mut </span>rng)<span class="question-mark">?</span>;
+    <span class="kw">let _ </span>= db
+        .create_user(
+            <span class="kw-2">&amp;</span>uid1,
+            <span class="kw-2">&amp;</span>AccountName::from_str(<span class="kw-2">&amp;</span>tagged(<span class="string">&quot;user&quot;</span>))<span class="question-mark">?</span>,
+            <span class="kw-2">&amp;</span>server_registration,
         )
         .<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let</span> <span class="ident">uid2</span> <span class="op">=</span> <span class="ident">UserId::new</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>)<span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="ident">db</span>
-        .<span class="ident">create_user</span>(
-            <span class="kw-2">&amp;</span><span class="ident">uid2</span>,
-            <span class="kw-2">&amp;</span><span class="ident">AccountName::from_str</span>(<span class="kw-2">&amp;</span><span class="ident">tagged</span>(<span class="string">&quot;user&quot;</span>))<span class="question-mark">?</span>,
-            <span class="kw-2">&amp;</span><span class="ident">server_registration</span>,
+    <span class="kw">let </span>uid2 = UserId::new(<span class="kw-2">&amp;mut </span>rng)<span class="question-mark">?</span>;
+    <span class="kw">let _ </span>= db
+        .create_user(
+            <span class="kw-2">&amp;</span>uid2,
+            <span class="kw-2">&amp;</span>AccountName::from_str(<span class="kw-2">&amp;</span>tagged(<span class="string">&quot;user&quot;</span>))<span class="question-mark">?</span>,
+            <span class="kw-2">&amp;</span>server_registration,
         )
         .<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="comment">// Check that the database holds two users.</span>
-    <span class="macro">assert_eq!</span>(
+    <span class="comment">// Check that the database holds two users.
+    </span><span class="macro">assert_eq!</span>(
         <span class="number">2</span>,
-        <span class="ident">db</span>.<span class="ident">mongo</span>
-            .<span class="ident">collection</span>::<span class="op">&lt;</span><span class="ident">User</span><span class="op">&gt;</span>(<span class="ident">USERS_TABLE</span>)
-            .<span class="ident">estimated_document_count</span>(<span class="prelude-val">None</span>)
-            .<span class="kw">await</span><span class="question-mark">?</span>
-    );
+        db.mongo
+            .collection::&lt;User&gt;(USERS_TABLE)
+            .estimated_document_count(<span class="prelude-val">None</span>)
+            .<span class="kw">await</span><span class="question-mark">?
+    </span>);
 
-    <span class="comment">// Reconnect and make sure it still has two users.</span>
-    <span class="kw">let</span> <span class="ident">reconnected_db</span> <span class="op">=</span> <span class="ident">TestDatabase::from_db_name</span>(<span class="kw-2">&amp;</span><span class="ident">db</span>.<span class="ident">spec</span>.<span class="ident">db_name</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="comment">// Reconnect and make sure it still has two users.
+    </span><span class="kw">let </span>reconnected_db = TestDatabase::from_db_name(<span class="kw-2">&amp;</span>db.spec.db_name).<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="macro">assert_eq!</span>(
         <span class="number">2</span>,
-        <span class="ident">reconnected_db</span>
-            .<span class="ident">mongo</span>
-            .<span class="ident">collection</span>::<span class="op">&lt;</span><span class="ident">User</span><span class="op">&gt;</span>(<span class="ident">USERS_TABLE</span>)
-            .<span class="ident">estimated_document_count</span>(<span class="prelude-val">None</span>)
-            .<span class="kw">await</span><span class="question-mark">?</span>
-    );
+        reconnected_db
+            .mongo
+            .collection::&lt;User&gt;(USERS_TABLE)
+            .estimated_document_count(<span class="prelude-val">None</span>)
+            .<span class="kw">await</span><span class="question-mark">?
+    </span>);
 
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">unique_indices_enforced</span>(<span class="ident">db</span>: <span class="ident">TestDatabase</span>) -&gt; <span class="ident">anyhow::Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rng</span> <span class="op">=</span> <span class="ident">StdRng::from_entropy</span>();
+<span class="kw">async fn </span>unique_indices_enforced(db: TestDatabase) -&gt; anyhow::Result&lt;()&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>rng = StdRng::from_entropy();
 
-    <span class="comment">// Add the &quot;baseline&quot; user.</span>
-    <span class="kw">let</span> <span class="ident">user_id</span> <span class="op">=</span> <span class="ident">UserId::new</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>)<span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="ident">account_name</span> <span class="op">=</span> <span class="ident">AccountName::from_str</span>(<span class="kw-2">&amp;</span><span class="ident">tagged</span>(<span class="string">&quot;user&quot;</span>))<span class="question-mark">?</span>;
+    <span class="comment">// Add the &quot;baseline&quot; user.
+    </span><span class="kw">let </span>user_id = UserId::new(<span class="kw-2">&amp;mut </span>rng)<span class="question-mark">?</span>;
+    <span class="kw">let </span>account_name = AccountName::from_str(<span class="kw-2">&amp;</span>tagged(<span class="string">&quot;user&quot;</span>))<span class="question-mark">?</span>;
 
-    <span class="kw">let</span> <span class="ident">server_registration</span> <span class="op">=</span> <span class="ident">server_registration</span>();
-    <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="ident">db</span>
-        .<span class="ident">create_user</span>(<span class="kw-2">&amp;</span><span class="ident">user_id</span>, <span class="kw-2">&amp;</span><span class="ident">account_name</span>, <span class="kw-2">&amp;</span><span class="ident">server_registration</span>)
+    <span class="kw">let </span>server_registration = server_registration();
+    <span class="kw">let _ </span>= db
+        .create_user(<span class="kw-2">&amp;</span>user_id, <span class="kw-2">&amp;</span>account_name, <span class="kw-2">&amp;</span>server_registration)
         .<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="comment">// Matching UserIds can&#39;t be added.</span>
-    <span class="kw">let</span> <span class="ident">different_an</span> <span class="op">=</span> <span class="ident">AccountName::from_str</span>(<span class="kw-2">&amp;</span><span class="ident">tagged</span>(<span class="string">&quot;user&quot;</span>))<span class="question-mark">?</span>;
-    <span class="macro">assert!</span>(<span class="ident">db</span>
-        .<span class="ident">create_user</span>(<span class="kw-2">&amp;</span><span class="ident">user_id</span>, <span class="kw-2">&amp;</span><span class="ident">different_an</span>, <span class="kw-2">&amp;</span><span class="ident">server_registration</span>)
-        .<span class="kw">await</span>
-        .<span class="ident">is_err</span>());
+    <span class="comment">// Matching UserIds can&#39;t be added.
+    </span><span class="kw">let </span>different_an = AccountName::from_str(<span class="kw-2">&amp;</span>tagged(<span class="string">&quot;user&quot;</span>))<span class="question-mark">?</span>;
+    <span class="macro">assert!</span>(db
+        .create_user(<span class="kw-2">&amp;</span>user_id, <span class="kw-2">&amp;</span>different_an, <span class="kw-2">&amp;</span>server_registration)
+        .<span class="kw">await
+        </span>.is_err());
 
-    <span class="comment">// Matching AccountNames can&#39;t be added.</span>
-    <span class="kw">let</span> <span class="ident">different_uid</span> <span class="op">=</span> <span class="ident">UserId::new</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>)<span class="question-mark">?</span>;
-    <span class="macro">assert!</span>(<span class="ident">db</span>
-        .<span class="ident">create_user</span>(<span class="kw-2">&amp;</span><span class="ident">different_uid</span>, <span class="kw-2">&amp;</span><span class="ident">account_name</span>, <span class="kw-2">&amp;</span><span class="ident">server_registration</span>)
-        .<span class="kw">await</span>
-        .<span class="ident">is_err</span>());
+    <span class="comment">// Matching AccountNames can&#39;t be added.
+    </span><span class="kw">let </span>different_uid = UserId::new(<span class="kw-2">&amp;mut </span>rng)<span class="question-mark">?</span>;
+    <span class="macro">assert!</span>(db
+        .create_user(<span class="kw-2">&amp;</span>different_uid, <span class="kw-2">&amp;</span>account_name, <span class="kw-2">&amp;</span>server_registration)
+        .<span class="kw">await
+        </span>.is_err());
 
-    <span class="comment">// Matching both can&#39;t be added.</span>
-    <span class="macro">assert!</span>(<span class="ident">db</span>
-        .<span class="ident">create_user</span>(<span class="kw-2">&amp;</span><span class="ident">user_id</span>, <span class="kw-2">&amp;</span><span class="ident">account_name</span>, <span class="kw-2">&amp;</span><span class="ident">server_registration</span>)
-        .<span class="kw">await</span>
-        .<span class="ident">is_err</span>());
-
-    <span class="prelude-val">Ok</span>(())
-}
-
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">user_is_deleted</span>(<span class="ident">db</span>: <span class="ident">TestDatabase</span>) -&gt; <span class="ident">anyhow::Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-    <span class="kw">let</span> (<span class="ident">user_id</span>, <span class="kw">_</span>) <span class="op">=</span> <span class="ident">db</span>.<span class="ident">create_test_user</span>().<span class="kw">await</span><span class="question-mark">?</span>;
-
-    <span class="comment">// Ensure that the user was created</span>
-    <span class="kw">let</span> <span class="ident">user</span> <span class="op">=</span> <span class="ident">db</span>.<span class="ident">find_user_by_id</span>(<span class="kw-2">&amp;</span><span class="ident">user_id</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="macro">assert!</span>(<span class="ident">user</span>.<span class="ident">is_some</span>());
-
-    <span class="comment">// Delete the user</span>
-    <span class="ident">db</span>.<span class="ident">delete_user</span>(<span class="kw-2">&amp;</span><span class="ident">user_id</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-
-    <span class="comment">// Ensure that the user was deleted</span>
-    <span class="kw">let</span> <span class="ident">user</span> <span class="op">=</span> <span class="ident">db</span>.<span class="ident">find_user_by_id</span>(<span class="kw-2">&amp;</span><span class="ident">user_id</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="macro">assert!</span>(<span class="ident">user</span>.<span class="ident">is_none</span>());
-
-    <span class="comment">// Ensure that an error is returned if the user is deleted again</span>
-    <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> <span class="ident">db</span>.<span class="ident">delete_user</span>(<span class="kw-2">&amp;</span><span class="ident">user_id</span>).<span class="kw">await</span>;
-    <span class="macro">assert!</span>(<span class="macro">matches!</span>(<span class="ident">result</span>, <span class="prelude-val">Err</span>(<span class="ident">LockKeeperServerError::InvalidAccount</span>)));
+    <span class="comment">// Matching both can&#39;t be added.
+    </span><span class="macro">assert!</span>(db
+        .create_user(<span class="kw-2">&amp;</span>user_id, <span class="kw-2">&amp;</span>account_name, <span class="kw-2">&amp;</span>server_registration)
+        .<span class="kw">await
+        </span>.is_err());
 
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="doccomment">/// Test that `set_storage_key` works correctly</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">storage_key_is_set</span>(<span class="ident">db</span>: <span class="ident">TestDatabase</span>) -&gt; <span class="ident">anyhow::Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-    <span class="kw">let</span> (<span class="ident">user_id</span>, <span class="ident">account_name</span>) <span class="op">=</span> <span class="ident">db</span>.<span class="ident">create_test_user</span>().<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="kw">async fn </span>user_is_deleted(db: TestDatabase) -&gt; anyhow::Result&lt;()&gt; {
+    <span class="kw">let </span>(user_id, <span class="kw">_</span>) = db.create_test_user().<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="comment">// Ensure that the user was created an no storage key is set</span>
-    <span class="kw">let</span> <span class="ident">user</span> <span class="op">=</span> <span class="ident">db</span>.<span class="ident">find_user</span>(<span class="kw-2">&amp;</span><span class="ident">account_name</span>).<span class="kw">await</span><span class="question-mark">?</span>.<span class="ident">unwrap</span>();
-    <span class="macro">assert!</span>(<span class="ident">user</span>.<span class="ident">storage_key</span>.<span class="ident">is_none</span>());
+    <span class="comment">// Ensure that the user was created
+    </span><span class="kw">let </span>user = db.find_user_by_id(<span class="kw-2">&amp;</span>user_id).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="macro">assert!</span>(user.is_some());
 
-    <span class="comment">// Create a storage key</span>
-    <span class="kw">let</span> (<span class="ident">storage_key</span>, <span class="kw">_</span>) <span class="op">=</span> <span class="ident">db</span>.<span class="ident">create_test_storage_key</span>(<span class="kw-2">&amp;</span><span class="ident">user_id</span>)<span class="question-mark">?</span>;
+    <span class="comment">// Delete the user
+    </span>db.delete_user(<span class="kw-2">&amp;</span>user_id).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="comment">// Set storage key and check that it is correct in the database</span>
-    <span class="ident">db</span>.<span class="ident">set_storage_key</span>(<span class="kw-2">&amp;</span><span class="ident">user_id</span>, <span class="ident">storage_key</span>.<span class="ident">clone</span>()).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="comment">// Ensure that the user was deleted
+    </span><span class="kw">let </span>user = db.find_user_by_id(<span class="kw-2">&amp;</span>user_id).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="macro">assert!</span>(user.is_none());
 
-    <span class="kw">let</span> <span class="ident">user</span> <span class="op">=</span> <span class="ident">db</span>.<span class="ident">find_user</span>(<span class="kw-2">&amp;</span><span class="ident">account_name</span>).<span class="kw">await</span><span class="question-mark">?</span>.<span class="ident">unwrap</span>();
-    <span class="macro">assert_eq!</span>(<span class="ident">user</span>.<span class="ident">storage_key</span>, <span class="prelude-val">Some</span>(<span class="ident">storage_key</span>.<span class="ident">clone</span>()));
+    <span class="comment">// Ensure that an error is returned if the user is deleted again
+    </span><span class="kw">let </span>result = db.delete_user(<span class="kw-2">&amp;</span>user_id).<span class="kw">await</span>;
+    <span class="macro">assert!</span>(<span class="macro">matches!</span>(result, <span class="prelude-val">Err</span>(LockKeeperServerError::InvalidAccount)));
+
+    <span class="prelude-val">Ok</span>(())
+}
+
+<span class="doccomment">/// Test that `set_storage_key` works correctly
+</span><span class="kw">async fn </span>storage_key_is_set(db: TestDatabase) -&gt; anyhow::Result&lt;()&gt; {
+    <span class="kw">let </span>(user_id, account_name) = db.create_test_user().<span class="kw">await</span><span class="question-mark">?</span>;
+
+    <span class="comment">// Ensure that the user was created an no storage key is set
+    </span><span class="kw">let </span>user = db.find_user(<span class="kw-2">&amp;</span>account_name).<span class="kw">await</span><span class="question-mark">?</span>.unwrap();
+    <span class="macro">assert!</span>(user.storage_key.is_none());
+
+    <span class="comment">// Create a storage key
+    </span><span class="kw">let </span>(storage_key, <span class="kw">_</span>) = db.create_test_storage_key(<span class="kw-2">&amp;</span>user_id)<span class="question-mark">?</span>;
+
+    <span class="comment">// Set storage key and check that it is correct in the database
+    </span>db.set_storage_key(<span class="kw-2">&amp;</span>user_id, storage_key.clone()).<span class="kw">await</span><span class="question-mark">?</span>;
+
+    <span class="kw">let </span>user = db.find_user(<span class="kw-2">&amp;</span>account_name).<span class="kw">await</span><span class="question-mark">?</span>.unwrap();
+    <span class="macro">assert_eq!</span>(user.storage_key, <span class="prelude-val">Some</span>(storage_key.clone()));
 
     <span class="prelude-val">Ok</span>(())
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="lock_keeper_tests" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="lock_keeper_tests" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

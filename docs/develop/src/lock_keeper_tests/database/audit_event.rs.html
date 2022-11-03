@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `lock-keeper-tests/src/database/audit_event.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>audit_event.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../lock_keeper_tests/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../lock_keeper_tests/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../lock_keeper_tests/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `lock-keeper-tests/src/database/audit_event.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>audit_event.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../lock_keeper_tests/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../lock_keeper_tests/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../lock_keeper_tests/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -197,204 +197,204 @@
 <span id="197">197</span>
 <span id="198">198</span>
 <span id="199">199</span>
-</pre><pre class="rust"><code><span class="doccomment">//! Integration tests for audit event objects in the database</span>
+</pre><pre class="rust"><code><span class="doccomment">//! Integration tests for audit event objects in the database
 
-<span class="kw">use</span> <span class="ident">colored::Colorize</span>;
-<span class="kw">use</span> <span class="ident">lock_keeper</span>::{
-    <span class="ident">crypto::KeyId</span>,
-    <span class="ident">types</span>::{
-        <span class="ident">audit_event</span>::{<span class="ident">AuditEvent</span>, <span class="ident">AuditEventOptions</span>, <span class="ident">EventStatus</span>, <span class="ident">EventType</span>},
-        <span class="ident">database::user</span>::{<span class="ident">AccountName</span>, <span class="ident">UserId</span>},
-        <span class="ident">operations::ClientAction</span>,
+</span><span class="kw">use </span>colored::Colorize;
+<span class="kw">use </span>lock_keeper::{
+    crypto::KeyId,
+    types::{
+        audit_event::{AuditEvent, AuditEventOptions, EventStatus, EventType},
+        database::user::{AccountName, UserId},
+        operations::ClientAction,
     },
 };
-<span class="kw">use</span> <span class="ident">lock_keeper_key_server</span>::{<span class="ident">database::Database</span>, <span class="ident">LockKeeperServerError</span>};
-<span class="kw">use</span> <span class="ident">mongodb::bson::DateTime</span>;
-<span class="kw">use</span> <span class="ident">rand</span>::{
-    <span class="ident">rngs::StdRng</span>,
-    <span class="ident">seq</span>::{<span class="ident">IteratorRandom</span>, <span class="ident">SliceRandom</span>},
-    <span class="ident">SeedableRng</span>,
+<span class="kw">use </span>lock_keeper_key_server::{database::Database, LockKeeperServerError};
+<span class="kw">use </span>mongodb::bson::DateTime;
+<span class="kw">use </span>rand::{
+    rngs::StdRng,
+    seq::{IteratorRandom, SliceRandom},
+    SeedableRng,
 };
-<span class="kw">use</span> <span class="ident">strum::IntoEnumIterator</span>;
+<span class="kw">use </span>strum::IntoEnumIterator;
 
-<span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">run_parallel</span>, <span class="ident">utils::TestResult</span>, <span class="ident">Config</span>};
+<span class="kw">use crate</span>::{run_parallel, utils::TestResult, Config};
 
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::TestDatabase</span>;
+<span class="kw">use </span><span class="kw">super</span>::TestDatabase;
 
-<span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">run_tests</span>(<span class="ident">config</span>: <span class="ident">Config</span>) -&gt; <span class="ident">anyhow::Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">TestResult</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, <span class="string">&quot;Running audit event tests&quot;</span>.<span class="ident">cyan</span>());
+<span class="kw">pub async fn </span>run_tests(config: Config) -&gt; anyhow::Result&lt;Vec&lt;TestResult&gt;&gt; {
+    <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, <span class="string">&quot;Running audit event tests&quot;</span>.cyan());
 
-    <span class="kw">let</span> <span class="ident">db</span> <span class="op">=</span> <span class="ident">TestDatabase::new</span>(<span class="string">&quot;audit_event_tests&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> <span class="macro">run_parallel!</span>(
-        <span class="ident">config</span>.<span class="ident">clone</span>(),
-        <span class="ident">event_type_filter_works</span>(<span class="ident">db</span>.<span class="ident">clone</span>()),
-        <span class="ident">key_id_filter_works</span>(<span class="ident">db</span>.<span class="ident">clone</span>()),
-        <span class="ident">after_date_filter_works</span>(<span class="ident">db</span>.<span class="ident">clone</span>()),
-        <span class="ident">before_date_filter_works</span>(<span class="ident">db</span>.<span class="ident">clone</span>())
+    <span class="kw">let </span>db = TestDatabase::new(<span class="string">&quot;audit_event_tests&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>result = <span class="macro">run_parallel!</span>(
+        config.clone(),
+        event_type_filter_works(db.clone()),
+        key_id_filter_works(db.clone()),
+        after_date_filter_works(db.clone()),
+        before_date_filter_works(db.clone())
     )<span class="question-mark">?</span>;
 
-    <span class="ident">db</span>.<span class="ident">drop</span>().<span class="kw">await</span><span class="question-mark">?</span>;
+    db.drop().<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="prelude-val">Ok</span>(<span class="ident">result</span>)
+    <span class="prelude-val">Ok</span>(result)
 }
 
-<span class="kw">const</span> <span class="ident">NUM_LOGS</span>: <span class="ident">u32</span> <span class="op">=</span> <span class="number">10</span>;
-<span class="kw">const</span> <span class="ident">NUM_SAMPLE</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="ident">NUM_LOGS</span> <span class="kw">as</span> <span class="ident">usize</span> <span class="op">/</span> <span class="number">2</span>;
+<span class="kw">const </span>NUM_LOGS: u32 = <span class="number">10</span>;
+<span class="kw">const </span>NUM_SAMPLE: usize = NUM_LOGS <span class="kw">as </span>usize / <span class="number">2</span>;
 
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">create_random_audit_events</span>(
-    <span class="ident">account_name</span>: <span class="kw-2">&amp;</span><span class="ident">AccountName</span>,
-    <span class="ident">user_id</span>: <span class="kw-2">&amp;</span><span class="ident">UserId</span>,
-    <span class="ident">db</span>: <span class="kw-2">&amp;</span><span class="ident">Database</span>,
-) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">KeyId</span><span class="op">&gt;</span>, <span class="ident">LockKeeperServerError</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rng</span> <span class="op">=</span> <span class="ident">StdRng::from_entropy</span>();
+<span class="kw">async fn </span>create_random_audit_events(
+    account_name: <span class="kw-2">&amp;</span>AccountName,
+    user_id: <span class="kw-2">&amp;</span>UserId,
+    db: <span class="kw-2">&amp;</span>Database,
+) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;KeyId&gt;, LockKeeperServerError&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>rng = StdRng::from_entropy();
 
-    <span class="kw">let</span> <span class="ident">action_list</span> <span class="op">=</span> <span class="ident">ClientAction::iter</span>().<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>();
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">key_ids</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
-    <span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span>..<span class="ident">NUM_LOGS</span> {
-        <span class="kw">let</span> <span class="ident">key_id</span> <span class="op">=</span> <span class="ident">KeyId::generate</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>, <span class="ident">user_id</span>)<span class="question-mark">?</span>;
-        <span class="kw">let</span> <span class="ident">key_id_copy</span> <span class="op">=</span> <span class="ident">key_id</span>.<span class="ident">clone</span>();
-        <span class="kw">let</span> <span class="ident">action</span> <span class="op">=</span> <span class="ident">action_list</span>.<span class="ident">choose</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>).<span class="ident">unwrap</span>();
-        <span class="ident">db</span>.<span class="ident">create_audit_event</span>(<span class="ident">account_name</span>, <span class="kw-2">&amp;</span><span class="prelude-val">Some</span>(<span class="ident">key_id</span>), <span class="ident">action</span>, <span class="ident">EventStatus::Started</span>)
+    <span class="kw">let </span>action_list = ClientAction::iter().collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+    <span class="kw">let </span><span class="kw-2">mut </span>key_ids = Vec::new();
+    <span class="kw">for _ in </span><span class="number">0</span>..NUM_LOGS {
+        <span class="kw">let </span>key_id = KeyId::generate(<span class="kw-2">&amp;mut </span>rng, user_id)<span class="question-mark">?</span>;
+        <span class="kw">let </span>key_id_copy = key_id.clone();
+        <span class="kw">let </span>action = action_list.choose(<span class="kw-2">&amp;mut </span>rng).unwrap();
+        db.create_audit_event(account_name, <span class="kw-2">&amp;</span><span class="prelude-val">Some</span>(key_id), action, EventStatus::Started)
             .<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="ident">key_ids</span>.<span class="ident">push</span>(<span class="ident">key_id_copy</span>);
+        key_ids.push(key_id_copy);
     }
-    <span class="prelude-val">Ok</span>(<span class="ident">key_ids</span>)
+    <span class="prelude-val">Ok</span>(key_ids)
 }
 
-<span class="kw">fn</span> <span class="ident">compare_actions</span>(<span class="ident">audit_events</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">AuditEvent</span><span class="op">&gt;</span>, <span class="ident">event_type</span>: <span class="ident">EventType</span>) {
-    <span class="kw">let</span> <span class="ident">actual_actions</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">ClientAction</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">audit_events</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">a</span><span class="op">|</span> <span class="ident">a</span>.<span class="ident">action</span>()).<span class="ident">collect</span>();
-    <span class="kw">let</span> <span class="ident">expected_actions</span> <span class="op">=</span> <span class="ident">event_type</span>.<span class="ident">into_client_actions</span>();
-    <span class="macro">assert!</span>(<span class="ident">actual_actions</span>
-        .<span class="ident">iter</span>()
-        .<span class="ident">all</span>(<span class="op">|</span><span class="ident">item</span><span class="op">|</span> <span class="ident">expected_actions</span>.<span class="ident">contains</span>(<span class="ident">item</span>)));
+<span class="kw">fn </span>compare_actions(audit_events: Vec&lt;AuditEvent&gt;, event_type: EventType) {
+    <span class="kw">let </span>actual_actions: Vec&lt;ClientAction&gt; = audit_events.iter().map(|a| a.action()).collect();
+    <span class="kw">let </span>expected_actions = event_type.into_client_actions();
+    <span class="macro">assert!</span>(actual_actions
+        .iter()
+        .all(|item| expected_actions.contains(item)));
 }
 
-<span class="kw">fn</span> <span class="ident">compare_key_ids</span>(<span class="ident">audit_events</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">AuditEvent</span><span class="op">&gt;</span>, <span class="ident">expected_key_ids</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">KeyId</span><span class="op">&gt;</span>) {
-    <span class="kw">let</span> <span class="ident">actual_key_ids</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">KeyId</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">audit_events</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">a</span><span class="op">|</span> <span class="ident">a</span>.<span class="ident">key_id</span>().<span class="ident">unwrap</span>()).<span class="ident">collect</span>();
-    <span class="macro">assert!</span>(<span class="ident">actual_key_ids</span>
-        .<span class="ident">iter</span>()
-        .<span class="ident">all</span>(<span class="op">|</span><span class="ident">item</span><span class="op">|</span> <span class="ident">expected_key_ids</span>.<span class="ident">contains</span>(<span class="ident">item</span>)));
+<span class="kw">fn </span>compare_key_ids(audit_events: Vec&lt;AuditEvent&gt;, expected_key_ids: Vec&lt;KeyId&gt;) {
+    <span class="kw">let </span>actual_key_ids: Vec&lt;<span class="kw-2">&amp;</span>KeyId&gt; = audit_events.iter().map(|a| a.key_id().unwrap()).collect();
+    <span class="macro">assert!</span>(actual_key_ids
+        .iter()
+        .all(|item| expected_key_ids.contains(item)));
 }
 
-<span class="kw">fn</span> <span class="ident">check_after_date</span>(<span class="ident">audit_events</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">AuditEvent</span><span class="op">&gt;</span>, <span class="ident">after_date</span>: <span class="ident">DateTime</span>) {
-    <span class="kw">let</span> <span class="ident">actual_dates</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">DateTime</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">audit_events</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">a</span><span class="op">|</span> <span class="ident">a</span>.<span class="ident">date</span>()).<span class="ident">collect</span>();
-    <span class="macro">assert!</span>(<span class="ident">actual_dates</span>.<span class="ident">iter</span>().<span class="ident">all</span>(<span class="op">|</span><span class="ident">item</span><span class="op">|</span> <span class="ident">after_date</span> <span class="op">&lt;</span><span class="op">=</span> <span class="kw-2">*</span><span class="ident">item</span>));
+<span class="kw">fn </span>check_after_date(audit_events: Vec&lt;AuditEvent&gt;, after_date: DateTime) {
+    <span class="kw">let </span>actual_dates: Vec&lt;DateTime&gt; = audit_events.iter().map(|a| a.date()).collect();
+    <span class="macro">assert!</span>(actual_dates.iter().all(|item| after_date &lt;= <span class="kw-2">*</span>item));
 }
 
-<span class="kw">fn</span> <span class="ident">check_before_date</span>(<span class="ident">audit_events</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">AuditEvent</span><span class="op">&gt;</span>, <span class="ident">before_date</span>: <span class="ident">DateTime</span>) {
-    <span class="kw">let</span> <span class="ident">actual_dates</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">DateTime</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">audit_events</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">a</span><span class="op">|</span> <span class="ident">a</span>.<span class="ident">date</span>()).<span class="ident">collect</span>();
-    <span class="macro">assert!</span>(<span class="ident">actual_dates</span>.<span class="ident">iter</span>().<span class="ident">all</span>(<span class="op">|</span><span class="ident">item</span><span class="op">|</span> <span class="ident">before_date</span> <span class="op">&gt;</span><span class="op">=</span> <span class="kw-2">*</span><span class="ident">item</span>));
+<span class="kw">fn </span>check_before_date(audit_events: Vec&lt;AuditEvent&gt;, before_date: DateTime) {
+    <span class="kw">let </span>actual_dates: Vec&lt;DateTime&gt; = audit_events.iter().map(|a| a.date()).collect();
+    <span class="macro">assert!</span>(actual_dates.iter().all(|item| before_date &gt;= <span class="kw-2">*</span>item));
 }
 
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">event_type_filter_works</span>(<span class="ident">db</span>: <span class="ident">TestDatabase</span>) -&gt; <span class="ident">anyhow::Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-    <span class="kw">let</span> (<span class="ident">user_id</span>, <span class="ident">account_name</span>) <span class="op">=</span> <span class="ident">db</span>.<span class="ident">create_test_user</span>().<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="kw">async fn </span>event_type_filter_works(db: TestDatabase) -&gt; anyhow::Result&lt;()&gt; {
+    <span class="kw">let </span>(user_id, account_name) = db.create_test_user().<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="comment">// Create random audit events</span>
-    <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="ident">create_random_audit_events</span>(<span class="kw-2">&amp;</span><span class="ident">account_name</span>, <span class="kw-2">&amp;</span><span class="ident">user_id</span>, <span class="kw-2">&amp;</span><span class="ident">db</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="comment">// Create random audit events
+    </span><span class="kw">let _ </span>= create_random_audit_events(<span class="kw-2">&amp;</span>account_name, <span class="kw-2">&amp;</span>user_id, <span class="kw-2">&amp;</span>db).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="comment">// Retrieve all 3 types of audit events</span>
-    <span class="kw">let</span> <span class="ident">key_only_audit</span> <span class="op">=</span> <span class="ident">db</span>
-        .<span class="ident">find_audit_events</span>(
-            <span class="kw-2">&amp;</span><span class="ident">account_name</span>,
-            <span class="ident">EventType::KeyOnly</span>,
-            <span class="ident">AuditEventOptions::default</span>(),
+    <span class="comment">// Retrieve all 3 types of audit events
+    </span><span class="kw">let </span>key_only_audit = db
+        .find_audit_events(
+            <span class="kw-2">&amp;</span>account_name,
+            EventType::KeyOnly,
+            AuditEventOptions::default(),
         )
         .<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="ident">system_only_audit</span> <span class="op">=</span> <span class="ident">db</span>
-        .<span class="ident">find_audit_events</span>(
-            <span class="kw-2">&amp;</span><span class="ident">account_name</span>,
-            <span class="ident">EventType::SystemOnly</span>,
-            <span class="ident">AuditEventOptions::default</span>(),
+    <span class="kw">let </span>system_only_audit = db
+        .find_audit_events(
+            <span class="kw-2">&amp;</span>account_name,
+            EventType::SystemOnly,
+            AuditEventOptions::default(),
         )
         .<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="ident">all_audit</span> <span class="op">=</span> <span class="ident">db</span>
-        .<span class="ident">find_audit_events</span>(<span class="kw-2">&amp;</span><span class="ident">account_name</span>, <span class="ident">EventType::All</span>, <span class="ident">AuditEventOptions::default</span>())
+    <span class="kw">let </span>all_audit = db
+        .find_audit_events(<span class="kw-2">&amp;</span>account_name, EventType::All, AuditEventOptions::default())
         .<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="comment">// Make sure each type has the correct actions</span>
-    <span class="ident">compare_actions</span>(<span class="ident">key_only_audit</span>, <span class="ident">EventType::KeyOnly</span>);
-    <span class="ident">compare_actions</span>(<span class="ident">system_only_audit</span>, <span class="ident">EventType::SystemOnly</span>);
-    <span class="ident">compare_actions</span>(<span class="ident">all_audit</span>, <span class="ident">EventType::All</span>);
+    <span class="comment">// Make sure each type has the correct actions
+    </span>compare_actions(key_only_audit, EventType::KeyOnly);
+    compare_actions(system_only_audit, EventType::SystemOnly);
+    compare_actions(all_audit, EventType::All);
 
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">key_id_filter_works</span>(<span class="ident">db</span>: <span class="ident">TestDatabase</span>) -&gt; <span class="ident">anyhow::Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-    <span class="kw">let</span> (<span class="ident">user_id</span>, <span class="ident">account_name</span>) <span class="op">=</span> <span class="ident">db</span>.<span class="ident">create_test_user</span>().<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="kw">async fn </span>key_id_filter_works(db: TestDatabase) -&gt; anyhow::Result&lt;()&gt; {
+    <span class="kw">let </span>(user_id, account_name) = db.create_test_user().<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let</span> <span class="ident">key_ids</span> <span class="op">=</span> <span class="ident">create_random_audit_events</span>(<span class="kw-2">&amp;</span><span class="ident">account_name</span>, <span class="kw-2">&amp;</span><span class="ident">user_id</span>, <span class="kw-2">&amp;</span><span class="ident">db</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>key_ids = create_random_audit_events(<span class="kw-2">&amp;</span>account_name, <span class="kw-2">&amp;</span>user_id, <span class="kw-2">&amp;</span>db).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let</span> <span class="ident">sample</span> <span class="op">=</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rng</span> <span class="op">=</span> <span class="ident">rand::thread_rng</span>();
-        <span class="ident">key_ids</span>.<span class="ident">into_iter</span>().<span class="ident">choose_multiple</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>, <span class="ident">NUM_SAMPLE</span>)
+    <span class="kw">let </span>sample = {
+        <span class="kw">let </span><span class="kw-2">mut </span>rng = rand::thread_rng();
+        key_ids.into_iter().choose_multiple(<span class="kw-2">&amp;mut </span>rng, NUM_SAMPLE)
     };
 
-    <span class="comment">// Retrieve audits for just one key</span>
-    <span class="kw">let</span> <span class="ident">options</span> <span class="op">=</span> <span class="ident">AuditEventOptions</span> {
-        <span class="ident">key_ids</span>: <span class="prelude-val">Some</span>(<span class="ident">sample</span>.<span class="ident">clone</span>()),
-        <span class="ident">after_date</span>: <span class="prelude-val">None</span>,
-        <span class="ident">before_date</span>: <span class="prelude-val">None</span>,
+    <span class="comment">// Retrieve audits for just one key
+    </span><span class="kw">let </span>options = AuditEventOptions {
+        key_ids: <span class="prelude-val">Some</span>(sample.clone()),
+        after_date: <span class="prelude-val">None</span>,
+        before_date: <span class="prelude-val">None</span>,
     };
-    <span class="kw">let</span> <span class="ident">key_audit</span> <span class="op">=</span> <span class="ident">db</span>
-        .<span class="ident">find_audit_events</span>(<span class="kw-2">&amp;</span><span class="ident">account_name</span>, <span class="ident">EventType::All</span>, <span class="ident">options</span>)
+    <span class="kw">let </span>key_audit = db
+        .find_audit_events(<span class="kw-2">&amp;</span>account_name, EventType::All, options)
         .<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="comment">// Make sure only the first 5 key IDs are included</span>
-    <span class="ident">compare_key_ids</span>(<span class="ident">key_audit</span>, <span class="ident">sample</span>);
+    <span class="comment">// Make sure only the first 5 key IDs are included
+    </span>compare_key_ids(key_audit, sample);
 
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">after_date_filter_works</span>(<span class="ident">db</span>: <span class="ident">TestDatabase</span>) -&gt; <span class="ident">anyhow::Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-    <span class="comment">// Add a user</span>
-    <span class="kw">let</span> (<span class="ident">user_id</span>, <span class="ident">account_name</span>) <span class="op">=</span> <span class="ident">db</span>.<span class="ident">create_test_user</span>().<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="kw">async fn </span>after_date_filter_works(db: TestDatabase) -&gt; anyhow::Result&lt;()&gt; {
+    <span class="comment">// Add a user
+    </span><span class="kw">let </span>(user_id, account_name) = db.create_test_user().<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="comment">// Use timestamp as comparison date</span>
-    <span class="kw">let</span> <span class="ident">after_date</span> <span class="op">=</span> <span class="ident">DateTime::now</span>();
+    <span class="comment">// Use timestamp as comparison date
+    </span><span class="kw">let </span>after_date = DateTime::now();
 
-    <span class="comment">// Create random audit events</span>
-    <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="ident">create_random_audit_events</span>(<span class="kw-2">&amp;</span><span class="ident">account_name</span>, <span class="kw-2">&amp;</span><span class="ident">user_id</span>, <span class="kw-2">&amp;</span><span class="ident">db</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="comment">// Create random audit events
+    </span><span class="kw">let _ </span>= create_random_audit_events(<span class="kw-2">&amp;</span>account_name, <span class="kw-2">&amp;</span>user_id, <span class="kw-2">&amp;</span>db).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="comment">// Retrieve after the comparison date</span>
-    <span class="kw">let</span> <span class="ident">options</span> <span class="op">=</span> <span class="ident">AuditEventOptions</span> {
-        <span class="ident">key_ids</span>: <span class="prelude-val">None</span>,
-        <span class="ident">after_date</span>: <span class="prelude-val">Some</span>(<span class="ident">after_date</span>),
-        <span class="ident">before_date</span>: <span class="prelude-val">None</span>,
+    <span class="comment">// Retrieve after the comparison date
+    </span><span class="kw">let </span>options = AuditEventOptions {
+        key_ids: <span class="prelude-val">None</span>,
+        after_date: <span class="prelude-val">Some</span>(after_date),
+        before_date: <span class="prelude-val">None</span>,
     };
-    <span class="kw">let</span> <span class="ident">after_date_audit</span> <span class="op">=</span> <span class="ident">db</span>
-        .<span class="ident">find_audit_events</span>(<span class="kw-2">&amp;</span><span class="ident">account_name</span>, <span class="ident">EventType::All</span>, <span class="ident">options</span>)
+    <span class="kw">let </span>after_date_audit = db
+        .find_audit_events(<span class="kw-2">&amp;</span>account_name, EventType::All, options)
         .<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="comment">// Check that there are only audit events that happened after &quot;after_date&quot;</span>
-    <span class="ident">check_after_date</span>(<span class="ident">after_date_audit</span>, <span class="ident">after_date</span>);
+    <span class="comment">// Check that there are only audit events that happened after &quot;after_date&quot;
+    </span>check_after_date(after_date_audit, after_date);
 
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">before_date_filter_works</span>(<span class="ident">db</span>: <span class="ident">TestDatabase</span>) -&gt; <span class="ident">anyhow::Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-    <span class="comment">// Add a user</span>
-    <span class="kw">let</span> (<span class="ident">user_id</span>, <span class="ident">account_name</span>) <span class="op">=</span> <span class="ident">db</span>.<span class="ident">create_test_user</span>().<span class="kw">await</span><span class="question-mark">?</span>;
+<span class="kw">async fn </span>before_date_filter_works(db: TestDatabase) -&gt; anyhow::Result&lt;()&gt; {
+    <span class="comment">// Add a user
+    </span><span class="kw">let </span>(user_id, account_name) = db.create_test_user().<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="comment">// Use timestamp as comparison date</span>
-    <span class="kw">let</span> <span class="ident">before_date</span> <span class="op">=</span> <span class="ident">DateTime::now</span>();
+    <span class="comment">// Use timestamp as comparison date
+    </span><span class="kw">let </span>before_date = DateTime::now();
 
-    <span class="comment">// Create random audit events</span>
-    <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="ident">create_random_audit_events</span>(<span class="kw-2">&amp;</span><span class="ident">account_name</span>, <span class="kw-2">&amp;</span><span class="ident">user_id</span>, <span class="kw-2">&amp;</span><span class="ident">db</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="comment">// Create random audit events
+    </span><span class="kw">let _ </span>= create_random_audit_events(<span class="kw-2">&amp;</span>account_name, <span class="kw-2">&amp;</span>user_id, <span class="kw-2">&amp;</span>db).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="comment">// Retrieve before the comparison date</span>
-    <span class="kw">let</span> <span class="ident">options</span> <span class="op">=</span> <span class="ident">AuditEventOptions</span> {
-        <span class="ident">key_ids</span>: <span class="prelude-val">None</span>,
-        <span class="ident">after_date</span>: <span class="prelude-val">None</span>,
-        <span class="ident">before_date</span>: <span class="prelude-val">Some</span>(<span class="ident">before_date</span>),
+    <span class="comment">// Retrieve before the comparison date
+    </span><span class="kw">let </span>options = AuditEventOptions {
+        key_ids: <span class="prelude-val">None</span>,
+        after_date: <span class="prelude-val">None</span>,
+        before_date: <span class="prelude-val">Some</span>(before_date),
     };
-    <span class="kw">let</span> <span class="ident">before_date_audit</span> <span class="op">=</span> <span class="ident">db</span>
-        .<span class="ident">find_audit_events</span>(<span class="kw-2">&amp;</span><span class="ident">account_name</span>, <span class="ident">EventType::All</span>, <span class="ident">options</span>)
+    <span class="kw">let </span>before_date_audit = db
+        .find_audit_events(<span class="kw-2">&amp;</span>account_name, EventType::All, options)
         .<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="comment">// Check that there are only audit events that happened before &quot;before_date&quot;</span>
-    <span class="ident">check_before_date</span>(<span class="ident">before_date_audit</span>, <span class="ident">before_date</span>);
+    <span class="comment">// Check that there are only audit events that happened before &quot;before_date&quot;
+    </span>check_before_date(before_date_audit, before_date);
 
     <span class="prelude-val">Ok</span>(())
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="lock_keeper_tests" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0 (a55dd71d5 2022-09-19)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="lock_keeper_tests" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>
