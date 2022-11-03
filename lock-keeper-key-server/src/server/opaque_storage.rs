@@ -22,7 +22,7 @@ pub fn create_or_retrieve_server_key_opaque(
         Err(_) => {
             let server_setup = ServerSetup::<OpaqueCipherSuite>::new(rng);
             std::fs::create_dir_all(
-                &service
+                service
                     .opaque_server_key
                     .parent()
                     .ok_or(LockKeeperServerError::InvalidOpaqueDirectory)?,
