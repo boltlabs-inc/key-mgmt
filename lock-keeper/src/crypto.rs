@@ -13,6 +13,7 @@ use serde::{Deserialize, Serialize};
 use sha3::{Digest, Sha3_256};
 use std::{array::IntoIter, convert::TryFrom};
 use tracing::error;
+use zeroize::ZeroizeOnDrop;
 
 use crate::types::database::user::UserId;
 
@@ -34,7 +35,7 @@ pub use signing_key::{
 /// This key should not be stored or saved beyond the lifetime of a single
 /// authentication session. It should not be passed out to the local calling
 /// application.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, ZeroizeOnDrop)]
 pub struct OpaqueSessionKey(Box<[u8; 64]>);
 
 impl From<GenericArray<u8, U64>> for OpaqueSessionKey {
@@ -493,6 +494,32 @@ mod test {
             .decrypt_storage_key(MasterKey::derive_master_key(export_key.into())?, &user_id)
             .is_err());
 
+        Ok(())
+    }
+
+    #[test]
+    fn opaque_session_key_gets_zeroized() -> Result<(), LockKeeperError> {
+        let key = [1_u8; 64];
+        let opaque_session_key = OpaqueSessionKey(key.into());
+        let ptr = opaque_session_key.0.as_ptr();
+
+        drop(opaque_session_key);
+
+        let after_drop = unsafe { core::slice::from_raw_parts(ptr, 64) };
+        assert_ne!(key, after_drop);
+        Ok(())
+    }
+
+    #[test]
+    fn opaque_export_key_gets_zeroized() -> Result<(), LockKeeperError> {
+        let key = [1_u8; 64];
+        let opaque_export_key = OpaqueExportKey(key.into());
+        let ptr = opaque_export_key.0.as_ptr();
+
+        drop(opaque_export_key);
+
+        let after_drop = unsafe { core::slice::from_raw_parts(ptr, 64) };
+        assert_ne!(key, after_drop);
         Ok(())
     }
 }

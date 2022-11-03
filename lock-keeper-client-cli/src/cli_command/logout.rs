@@ -8,7 +8,7 @@ pub struct Logout {}
 #[async_trait]
 impl CliCommand for Logout {
     async fn execute(self: Box<Self>, state: &mut State) -> Result<(), Error> {
-        state.credentials = None;
+        state.client = None;
         Ok(())
     }
 

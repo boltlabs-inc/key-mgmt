@@ -36,7 +36,7 @@ pub async fn run(config: Config, storage_path: PathBuf) -> anyhow::Result<()> {
 /// Returns a dynamic trait representing the parsed command or an error if no
 /// such command exist.
 fn parse_input(state: &State) -> anyhow::Result<Box<dyn CliCommand>> {
-    if state.credentials.is_some() {
+    if state.client.is_some() {
         print!("> ");
     } else {
         print!("| ");

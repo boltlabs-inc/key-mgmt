@@ -39,8 +39,9 @@ tokio = { version = "1", features = ["full"] }
 tokio-rustls = "0.23"
 tokio-stream = "0.1"
 toml = "0.5"
-tonic =  "0.8"
+tonic = "0.8"
 tracing = "0.1"
 tracing-futures = "0.2"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 uuid = "1.1.2"
+zeroize = "1.5"

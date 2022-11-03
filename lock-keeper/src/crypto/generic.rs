@@ -9,6 +9,7 @@ use thiserror::Error;
 
 #[cfg(test)]
 use std::convert::Infallible;
+use zeroize::Zeroize;
 
 /// Errors that arise in the cryptography module.
 #[derive(Debug, Clone, Copy, Error)]
@@ -93,7 +94,7 @@ pub struct Encrypted<T> {
 /// A well-formed symmetric encryption key for an AEAD scheme.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(super) struct EncryptionKey {
-    key: chacha20poly1305::Key,
+    key: Box<chacha20poly1305::Key>,
 
     #[allow(unused)]
     context: AssociatedData,
@@ -103,7 +104,7 @@ impl EncryptionKey {
     /// Generate a new symmetric AEAD encryption key from scratch.
     pub(super) fn new(rng: &mut (impl CryptoRng + RngCore)) -> Self {
         Self {
-            key: ChaCha20Poly1305::generate_key(rng),
+            key: Box::new(ChaCha20Poly1305::generate_key(rng)),
             context: AssociatedData::new().with_str("ChaCha20Poly1305 with 96-bit nonce."),
         }
     }
@@ -111,7 +112,7 @@ impl EncryptionKey {
     // Use the given bytes as a symmetric AEAD encryption key.
     pub(super) fn from_bytes(key_material: [u8; 32], context: AssociatedData) -> Self {
         Self {
-            key: key_material.into(),
+            key: Box::new(key_material.into()),
             context,
         }
     }
@@ -121,6 +122,12 @@ impl EncryptionKey {
     // This should explicitly stay pub(super) to avoid abuse.
     pub(super) fn into_bytes(self) -> [u8; 32] {
         self.key.into()
+    }
+}
+
+impl Drop for EncryptionKey {
+    fn drop(&mut self) {
+        self.key.zeroize();
     }
 }
 
@@ -141,8 +148,8 @@ impl From<EncryptionKey> for Vec<u8> {
     fn from(key: EncryptionKey) -> Self {
         // len || key || context
         iter::once(key.key.len() as u8)
-            .chain(key.key)
-            .chain::<Vec<u8>>(key.context.into())
+            .chain(*key.key)
+            .chain::<Vec<u8>>(key.context.to_owned().into())
             .collect()
     }
 }
@@ -167,7 +174,7 @@ impl TryFrom<Vec<u8>> for EncryptionKey {
             .into();
 
         Ok(Self {
-            key: *chacha20poly1305::Key::from_slice(key),
+            key: Box::from(*chacha20poly1305::Key::from_slice(key)),
             context: context.try_into()?,
         })
     }
@@ -333,6 +340,7 @@ mod test {
     use std::collections::HashSet;
 
     use super::*;
+    use crate::LockKeeperError;
     use rand::Rng;
 
     #[test]
@@ -560,5 +568,18 @@ mod test {
             encrypted_bytes.ciphertext[len / 2] ^= 1;
             assert!(encrypted_bytes.decrypt(&enc_key).is_err());
         }
+    }
+
+    #[test]
+    fn encryption_key_gets_zeroized() -> Result<(), LockKeeperError> {
+        let key_bytes = [1; 32];
+        let key = EncryptionKey::from_bytes(key_bytes, AssociatedData::default());
+        let ptr = key.key.as_ptr();
+
+        drop(key);
+
+        let after_drop = unsafe { core::slice::from_raw_parts(ptr, 32) };
+        assert_ne!(key_bytes, after_drop);
+        Ok(())
     }
 }

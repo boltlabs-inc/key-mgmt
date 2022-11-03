@@ -1,7 +1,4 @@
-use crate::{
-    cli_command::CliCommand,
-    state::{Credentials, State},
-};
+use crate::{cli_command::CliCommand, state::State};
 use async_trait::async_trait;
 use lock_keeper::types::database::user::AccountName;
 use lock_keeper_client::{client::Password, LockKeeperClient};
@@ -15,14 +12,15 @@ pub struct Authenticate {
 #[async_trait]
 impl CliCommand for Authenticate {
     async fn execute(self: Box<Self>, state: &mut State) -> Result<(), anyhow::Error> {
-        LockKeeperClient::authenticated_client(&self.account_name, &self.password, &state.config)
-            .await?;
+        let client = LockKeeperClient::authenticated_client(
+            &self.account_name,
+            &self.password,
+            &state.config,
+        )
+        .await?;
 
         println!("Logged in to {}", self.account_name);
-        state.credentials = Some(Credentials {
-            account_name: self.account_name,
-            password: self.password,
-        });
+        state.client = Some(client);
         Ok(())
     }
 

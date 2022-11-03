@@ -24,28 +24,23 @@ use tokio::sync::{mpsc, Mutex};
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::Request;
 use tracing::error;
+use zeroize::{Zeroize, ZeroizeOnDrop};
 
 // TODO: password security, e.g. memory management, etc... #54
-#[derive(Debug, Default)]
-pub struct Password(String);
-
-impl ToString for Password {
-    fn to_string(&self) -> String {
-        self.0.to_string()
-    }
-}
+#[derive(Debug, Default, Zeroize, ZeroizeOnDrop)]
+pub struct Password(Vec<u8>);
 
 impl FromStr for Password {
     type Err = LockKeeperClientError;
 
-    fn from_str(s: &str) -> Result<Self> {
-        Ok(Password(s.to_string()))
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Password(s.as_bytes().to_vec()))
     }
 }
 
 impl Password {
     pub fn as_bytes(&self) -> &[u8] {
-        self.0.as_bytes()
+        &self.0[..]
     }
 }
 
@@ -225,5 +220,24 @@ impl LockKeeperClient {
             .ciphertext
             .decrypt_storage_key(self.master_key.clone(), self.user_id())?;
         Ok(storage_key)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use lock_keeper::LockKeeperError;
+
+    #[test]
+    fn password_gets_zeroized() -> Result<(), LockKeeperError> {
+        let password_bytes = b"test";
+        let password = Password(password_bytes.to_vec());
+        let ptr = password.0.as_ptr();
+
+        drop(password);
+
+        let after_drop = unsafe { core::slice::from_raw_parts(ptr, 4) };
+        assert_ne!(password_bytes, after_drop);
+        Ok(())
     }
 }

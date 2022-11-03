@@ -8,8 +8,8 @@ pub struct List {}
 #[async_trait]
 impl CliCommand for List {
     async fn execute(self: Box<Self>, state: &mut State) -> Result<(), Error> {
-        let credentials = state.get_credentials()?;
-        state.storage.list(&credentials.account_name)?;
+        let lock_keeper_client = state.get_client()?;
+        state.storage.list(lock_keeper_client.account_name())?;
         Ok(())
     }
 
