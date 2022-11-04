@@ -6,6 +6,7 @@ use k256::ecdsa::{
 };
 use rand::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
+use zeroize::ZeroizeOnDrop;
 
 use super::{generic::AssociatedData, CryptoError, Encrypted, KeyId, StorageKey};
 
@@ -63,9 +64,10 @@ impl Signable for SignableBytes {
 /// pair.
 ///
 /// This can be generated locally by the client or remotely by the server.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, ZeroizeOnDrop)]
 pub struct SigningKeyPair {
     signing_key: SigningKey,
+    #[zeroize(skip)]
     context: AssociatedData,
 }
 
@@ -89,7 +91,7 @@ impl From<SigningKeyPair> for PlaceholderEncryptedSigningKeyPair {
     fn from(key_pair: SigningKeyPair) -> Self {
         Self {
             signing_key: key_pair.signing_key.to_bytes().to_vec(),
-            context: key_pair.context,
+            context: key_pair.context.to_owned(),
         }
     }
 }
@@ -296,7 +298,7 @@ impl From<SigningKeyPair> for Export {
     fn from(key_pair: SigningKeyPair) -> Self {
         Self {
             key_material: key_pair.signing_key.to_bytes().to_vec(),
-            context: key_pair.context.into(),
+            context: key_pair.context.to_owned().into(),
         }
     }
 }
@@ -323,7 +325,7 @@ impl From<SigningKeyPair> for Vec<u8> {
             .into_iter()
             .chain(std::iter::once(signing_key.len() as u8))
             .chain(signing_key)
-            .chain::<Vec<u8>>(key_pair.context.into())
+            .chain::<Vec<u8>>(key_pair.context.to_owned().into())
             .collect()
     }
 }

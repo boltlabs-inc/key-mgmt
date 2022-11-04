@@ -9,7 +9,7 @@ use thiserror::Error;
 
 #[cfg(test)]
 use std::convert::Infallible;
-use zeroize::Zeroize;
+use zeroize::ZeroizeOnDrop;
 
 /// Errors that arise in the cryptography module.
 #[derive(Debug, Clone, Copy, Error)]
@@ -92,11 +92,12 @@ pub struct Encrypted<T> {
 }
 
 /// A well-formed symmetric encryption key for an AEAD scheme.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ZeroizeOnDrop)]
 pub(super) struct EncryptionKey {
     key: Box<chacha20poly1305::Key>,
 
     #[allow(unused)]
+    #[zeroize(skip)]
     context: AssociatedData,
 }
 
@@ -125,11 +126,11 @@ impl EncryptionKey {
     }
 }
 
-impl Drop for EncryptionKey {
-    fn drop(&mut self) {
-        self.key.zeroize();
-    }
-}
+// impl Drop for EncryptionKey {
+//     fn drop(&mut self) {
+//         self.key.zeroize();
+//     }
+// }
 
 #[cfg(test)]
 impl EncryptionKey {
@@ -196,7 +197,10 @@ where
         enc_key: &EncryptionKey,
         object: T,
         associated_data: &AssociatedData,
-    ) -> Result<Encrypted<T>, CryptoError> {
+    ) -> Result<Encrypted<T>, CryptoError>
+    where
+        T: ZeroizeOnDrop,
+    {
         // Set up cipher with key
         let cipher = ChaCha20Poly1305::new(&enc_key.key);
 
@@ -248,11 +252,12 @@ where
 ///
 /// This type isn't public -- it holds generic secret material and associated
 /// data, but does not enforce any properties on the key material.
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, ZeroizeOnDrop)]
 pub(super) struct Secret {
     /// The actual bytes of secret material.
     material: Vec<u8>,
     /// Additional context about the secret.
+    #[zeroize(skip)]
     context: AssociatedData,
 }
 
@@ -299,9 +304,9 @@ impl Secret {
 impl From<Secret> for Vec<u8> {
     fn from(secret: Secret) -> Self {
         // key len || key material || context len || context
-        let ad: Vec<u8> = secret.context.into();
+        let ad: Vec<u8> = secret.context.to_owned().into();
         iter::once(secret.material.len() as u8)
-            .chain(secret.material)
+            .chain(secret.material.to_owned())
             .chain(iter::once(ad.len() as u8))
             .chain(ad)
             .collect()
@@ -437,7 +442,11 @@ mod test {
         // by putting them into a set. Insert will return false if a secret
         // already exists in the set.
         assert!((0..1000)
-            .map(|_| Secret::generate(&mut rng, 32, AssociatedData::default()).material)
+            .map(
+                |_| Secret::generate(&mut rng, 32, AssociatedData::default())
+                    .material
+                    .to_owned()
+            )
             .all(|secret| uniq.insert(secret)))
     }
 
@@ -471,12 +480,30 @@ mod test {
         assert_eq!(secret.context, complicated_ad);
     }
 
+    /// A struct wrapped around a byte vector to add ZeroizeOnDrop
+    #[derive(Debug, Clone, PartialEq, Eq, ZeroizeOnDrop)]
+    struct RandomBytes(Vec<u8>);
+
+    impl From<RandomBytes> for Vec<u8> {
+        fn from(bytes: RandomBytes) -> Self {
+            bytes.0.clone()
+        }
+    }
+
+    impl TryFrom<Vec<u8>> for RandomBytes {
+        type Error = CryptoError;
+        fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
+            Ok(Self(bytes))
+        }
+    }
+
     /// Generates random bytes, encrypts them, and returns them along with the
     /// key used for encryption.
     fn encrypt_random_bytes(
         rng: &mut (impl CryptoRng + RngCore),
-    ) -> (Vec<u8>, Encrypted<Vec<u8>>, EncryptionKey) {
-        let bytes: Vec<u8> = std::iter::repeat_with(|| rng.gen()).take(64).collect();
+    ) -> (RandomBytes, Encrypted<RandomBytes>, EncryptionKey) {
+        let bytes: RandomBytes =
+            RandomBytes(std::iter::repeat_with(|| rng.gen()).take(64).collect());
         let enc_key = EncryptionKey::new(rng);
         let encrypted_bytes =
             Encrypted::encrypt(rng, &enc_key, bytes.clone(), &AssociatedData::default()).unwrap();
@@ -491,7 +518,7 @@ mod test {
             let (bytes, encrypted_bytes, enc_key) = encrypt_random_bytes(&mut rng);
 
             // Make sure encryption isn't obviously broken.
-            assert_ne!(bytes, encrypted_bytes.ciphertext);
+            assert_ne!(bytes, RandomBytes(encrypted_bytes.ciphertext.clone()));
             assert_ne!(Vec::from([0; 32]), encrypted_bytes.ciphertext);
 
             // Make sure encrypted object includes the expected associated data.

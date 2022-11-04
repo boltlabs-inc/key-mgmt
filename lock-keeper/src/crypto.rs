@@ -51,7 +51,7 @@ impl From<GenericArray<u8, U64>> for OpaqueSessionKey {
 /// [`StorageKey`]. It should not be stored or saved beyond the lifetime of a
 /// single authentication session. It should never be sent to the server or
 /// passed out to the local calling application.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, ZeroizeOnDrop)]
 pub struct MasterKey(EncryptionKey);
 
 impl MasterKey {
@@ -154,7 +154,7 @@ impl MasterKey {
 /// the calling application.
 /// It should not be stored or saved beyond the lifetime of a single
 /// authentication session.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, ZeroizeOnDrop)]
 pub struct StorageKey(EncryptionKey);
 
 impl StorageKey {
@@ -174,7 +174,7 @@ impl From<StorageKey> for Vec<u8> {
             .as_bytes()
             .iter()
             .copied()
-            .chain::<Vec<u8>>(key.0.into())
+            .chain::<Vec<u8>>(key.0.to_owned().into())
             .collect()
     }
 }
@@ -361,7 +361,7 @@ mod test {
 
         assert!((0..1000)
             .map(|_| StorageKey::generate(&mut rng))
-            .all(|storage_key| uniq.insert(storage_key.0)));
+            .all(|storage_key| uniq.insert(storage_key.0.to_owned())));
     }
 
     #[test]
