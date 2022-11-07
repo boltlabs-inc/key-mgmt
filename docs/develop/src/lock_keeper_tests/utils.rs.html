@@ -227,7 +227,7 @@
 
 </span><span class="kw">use </span>std::sync::{Arc, Mutex};
 
-<span class="kw">use </span><span class="kw">crate</span>::Config;
+<span class="kw">use crate</span>::{error::Result, Config};
 <span class="kw">use </span>colored::Colorize;
 <span class="kw">use </span>futures::Future;
 <span class="kw">use </span>lock_keeper::config::opaque::OpaqueCipherSuite;
@@ -288,7 +288,7 @@
 }
 
 <span class="doccomment">/// Pass a list of async test functions with parameters included.
-/// All test functions must return `anyhow::Result&lt;()&gt;`.
+/// All test functions must return [`Result&lt;()&gt;`].
 /// Tests will run in parallel and report the names of any failing test.
 /// # Example
 /// ```no_run
@@ -303,14 +303,14 @@
         <span class="comment">// Stick this in a scope so it can return a result
         </span>{
             <span class="kw">use </span>std::sync::{Arc, Mutex};
-            <span class="kw">use </span><span class="macro-nonterminal">$crate::utils::TestResult</span>;
+            <span class="kw">use </span><span class="macro-nonterminal">$</span><span class="kw">crate</span>::{<span class="macro-nonterminal">error::LockKeeperTestError</span>, utils::TestResult};
 
             <span class="kw">let </span>results = Arc::new(Mutex::new(Vec::new()));
             <span class="macro">tokio::try_join!</span>($(<span class="macro-nonterminal">$crate::utils::run_test_case</span>(<span class="macro-nonterminal">$config</span>, <span class="macro">stringify!</span>(<span class="macro-nonterminal">$task</span>), <span class="macro-nonterminal">$task</span>, results.clone())),+)<span class="question-mark">?</span>;
 
             <span class="kw">let </span>results = results.lock().unwrap().clone();
 
-            <span class="prelude-val">Ok</span>::&lt;Vec&lt;TestResult&gt;, anyhow::Error&gt;(results)
+            <span class="prelude-val">Ok</span>::&lt;Vec&lt;TestResult&gt;, LockKeeperTestError&gt;(results)
         }
     };
 }
@@ -320,9 +320,9 @@
 </span><span class="kw">pub async fn </span>run_test_case(
     config: Config,
     name: <span class="kw-2">&amp;</span>str,
-    task: <span class="kw">impl </span>Future&lt;Output = anyhow::Result&lt;()&gt;&gt; + Send + <span class="lifetime">&#39;static</span>,
+    task: <span class="kw">impl </span>Future&lt;Output = <span class="prelude-ty">Result</span>&lt;()&gt;&gt; + Send + <span class="lifetime">&#39;static</span>,
     results: Arc&lt;Mutex&lt;Vec&lt;TestResult&gt;&gt;&gt;,
-) -&gt; anyhow::Result&lt;()&gt; {
+) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">use </span>futures::FutureExt;
     <span class="kw">use </span>TestResult::<span class="kw-2">*</span>;
 

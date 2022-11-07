@@ -79,11 +79,15 @@
 <span id="79">79</span>
 <span id="80">80</span>
 <span id="81">81</span>
+<span id="82">82</span>
+<span id="83">83</span>
 </pre><pre class="rust"><code><span class="kw">pub mod </span>config;
 <span class="kw">pub mod </span>database;
 <span class="kw">pub mod </span>end_to_end;
+<span class="kw">pub mod </span>error;
 <span class="kw">pub mod </span>utils;
 
+<span class="kw">use </span><span class="kw">crate</span>::error::LockKeeperTestError;
 <span class="kw">use </span>clap::Parser;
 <span class="kw">use </span>config::Config;
 <span class="kw">use </span>lock_keeper_client::LockKeeperClient;
@@ -110,14 +114,14 @@
 }
 
 <span class="kw">impl </span>FromStr <span class="kw">for </span>TestType {
-    <span class="kw">type </span><span class="prelude-val">Err </span>= anyhow::Error;
+    <span class="kw">type </span><span class="prelude-val">Err </span>= LockKeeperTestError;
 
     <span class="kw">fn </span>from_str(s: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Err&gt; {
         <span class="kw">match </span>s {
             <span class="string">&quot;all&quot; </span>=&gt; <span class="prelude-val">Ok</span>(TestType::All),
             <span class="string">&quot;e2e&quot; </span>=&gt; <span class="prelude-val">Ok</span>(TestType::E2E),
             <span class="string">&quot;integration&quot; </span>=&gt; <span class="prelude-val">Ok</span>(TestType::Integration),
-            <span class="kw">_ </span>=&gt; <span class="macro">anyhow::bail!</span>(<span class="string">&quot;Invalid test type: {}&quot;</span>, s),
+            <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(LockKeeperTestError::InvalidTestType(s.to_string())),
         }
     }
 }

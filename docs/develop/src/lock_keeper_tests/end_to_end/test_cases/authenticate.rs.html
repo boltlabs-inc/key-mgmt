@@ -69,6 +69,7 @@
 <span id="69">69</span>
 <span id="70">70</span>
 <span id="71">71</span>
+<span id="72">72</span>
 </pre><pre class="rust"><code><span class="kw">use </span>colored::Colorize;
 <span class="kw">use </span>lock_keeper::{
     config::client::Config,
@@ -82,12 +83,13 @@
         operations::{authenticate, check_audit_events, compare_errors},
         test_cases::{init_test_state, TestState},
     },
+    error::Result,
     run_parallel,
     utils::{tagged, TestResult},
     Config <span class="kw">as </span>TestConfig,
 };
 
-<span class="kw">pub async fn </span>run_tests(config: TestConfig) -&gt; anyhow::Result&lt;Vec&lt;TestResult&gt;&gt; {
+<span class="kw">pub async fn </span>run_tests(config: TestConfig) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;TestResult&gt;&gt; {
     <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, <span class="string">&quot;Running authenticate tests&quot;</span>.cyan());
 
     <span class="kw">let </span>result = <span class="macro">run_parallel!</span>(
@@ -100,7 +102,7 @@
     <span class="prelude-val">Ok</span>(result)
 }
 
-<span class="kw">async fn </span>multiple_sessions_from_same_client_allowed(config: Config) -&gt; anyhow::Result&lt;()&gt; {
+<span class="kw">async fn </span>multiple_sessions_from_same_client_allowed(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">let </span>state = init_test_state(config).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="kw">let </span>_first_login = authenticate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>;
@@ -110,7 +112,7 @@
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="kw">async fn </span>cannot_authenticate_with_wrong_password(config: Config) -&gt; anyhow::Result&lt;()&gt; {
+<span class="kw">async fn </span>cannot_authenticate_with_wrong_password(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">let </span>state = init_test_state(config.clone()).<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="kw">let </span>wrong_password = Password::from_str(tagged(<span class="string">&quot;wrong_password&quot;</span>).as_str())<span class="question-mark">?</span>;
 
@@ -126,7 +128,7 @@
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="kw">async fn </span>authenticate_before_register_fails(config: Config) -&gt; anyhow::Result&lt;()&gt; {
+<span class="kw">async fn </span>authenticate_before_register_fails(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">let </span>account_name = AccountName::from_str(tagged(<span class="string">&quot;user&quot;</span>).as_str())<span class="question-mark">?</span>;
     <span class="kw">let </span>password = Password::from_str(tagged(<span class="string">&quot;password&quot;</span>).as_str())<span class="question-mark">?</span>;
 

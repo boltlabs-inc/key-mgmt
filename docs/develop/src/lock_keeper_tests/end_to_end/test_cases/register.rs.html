@@ -46,6 +46,7 @@
 <span id="46">46</span>
 <span id="47">47</span>
 <span id="48">48</span>
+<span id="49">49</span>
 </pre><pre class="rust"><code><span class="kw">use </span>colored::Colorize;
 <span class="kw">use </span>lock_keeper::{
     config::client::Config,
@@ -59,12 +60,13 @@
         operations::{check_audit_events, compare_errors, register},
         test_cases::TestState,
     },
+    error::Result,
     run_parallel,
     utils::{tagged, TestResult},
     Config <span class="kw">as </span>TestConfig,
 };
 
-<span class="kw">pub async fn </span>run_tests(config: TestConfig) -&gt; anyhow::Result&lt;Vec&lt;TestResult&gt;&gt; {
+<span class="kw">pub async fn </span>run_tests(config: TestConfig) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;TestResult&gt;&gt; {
     <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, <span class="string">&quot;Running register tests&quot;</span>.cyan());
 
     <span class="kw">let </span>result = <span class="macro">run_parallel!</span>(
@@ -75,7 +77,7 @@
     <span class="prelude-val">Ok</span>(result)
 }
 
-<span class="kw">async fn </span>register_same_user_twice(config: Config) -&gt; anyhow::Result&lt;()&gt; {
+<span class="kw">async fn </span>register_same_user_twice(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">let </span>account_name = AccountName::from_str(tagged(<span class="string">&quot;user&quot;</span>).as_str())<span class="question-mark">?</span>;
     <span class="kw">let </span>password = Password::from_str(tagged(<span class="string">&quot;password&quot;</span>).as_str())<span class="question-mark">?</span>;
     register(<span class="kw-2">&amp;</span>account_name, <span class="kw-2">&amp;</span>password, <span class="kw-2">&amp;</span>config).<span class="kw">await</span><span class="question-mark">?</span>;

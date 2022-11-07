@@ -160,7 +160,7 @@
 <span class="kw">use </span>generic_array::{typenum::U64, GenericArray};
 <span class="kw">use </span>std::{ops::Deref, str::FromStr};
 
-<span class="kw">use crate</span>::{utils::report_test_results, Config};
+<span class="kw">use crate</span>::{error::Result, utils::report_test_results, Config};
 <span class="kw">use </span>lock_keeper::{
     config::server::DatabaseSpec,
     crypto::{Encrypted, OpaqueExportKey, StorageKey},
@@ -173,7 +173,7 @@
 
 <span class="kw">pub const </span>USERS_TABLE: <span class="kw-2">&amp;</span>str = <span class="string">&quot;users&quot;</span>;
 
-<span class="kw">pub async fn </span>run_tests(config: <span class="kw-2">&amp;</span>Config) -&gt; anyhow::Result&lt;()&gt; {
+<span class="kw">pub async fn </span>run_tests(config: <span class="kw-2">&amp;</span>Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="macro">println!</span>(<span class="string">&quot;Running database tests&quot;</span>);
 
     <span class="kw">let </span>audit_event_results = audit_event::run_tests(config.clone()).<span class="kw">await</span><span class="question-mark">?</span>;
@@ -213,14 +213,14 @@
 <span class="kw">impl </span>TestDatabase {
     <span class="doccomment">/// Create a new test database with random characters appended to name.
     /// This is what you probably want to use.
-    </span><span class="kw">pub async fn </span>new(db_name: <span class="kw">impl </span>AsRef&lt;str&gt;) -&gt; anyhow::Result&lt;<span class="self">Self</span>&gt; {
+    </span><span class="kw">pub async fn </span>new(db_name: <span class="kw">impl </span>AsRef&lt;str&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         <span class="self">Self</span>::from_db_name(tagged(db_name)).<span class="kw">await
     </span>}
 
     <span class="doccomment">/// Create a new test database with a specific name.
     /// Use this to reconnect to a [`TestDatabase`] created with the `new`
     /// function.
-    </span><span class="kw">pub async fn </span>from_db_name(db_name: <span class="kw">impl </span>Into&lt;String&gt;) -&gt; anyhow::Result&lt;<span class="self">Self</span>&gt; {
+    </span><span class="kw">pub async fn </span>from_db_name(db_name: <span class="kw">impl </span>Into&lt;String&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         <span class="kw">use </span>mongodb::{options::ClientOptions, Client};
 
         <span class="kw">let </span>mongodb_uri = <span class="string">&quot;mongodb://localhost:27017&quot;</span>;
@@ -244,13 +244,13 @@
     <span class="doccomment">/// Drops the underlying database. Call this when you&#39;re done using the test
     /// database. Some day Rust will have async `Drop` and we can do this
     /// properly.
-    </span><span class="kw">pub async fn </span>drop(<span class="self">self</span>) -&gt; anyhow::Result&lt;()&gt; {
+    </span><span class="kw">pub async fn </span>drop(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="self">self</span>.mongo.drop(<span class="prelude-val">None</span>).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
     }
 
     <span class="doccomment">/// Create an export key for testing using random bytes.
-    </span><span class="kw">fn </span>create_test_export_key(rng: <span class="kw-2">&amp;mut </span>StdRng) -&gt; anyhow::Result&lt;OpaqueExportKey&gt; {
+    </span><span class="kw">fn </span>create_test_export_key(rng: <span class="kw-2">&amp;mut </span>StdRng) -&gt; <span class="prelude-ty">Result</span>&lt;OpaqueExportKey&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>key = [<span class="number">0_u8</span>; <span class="number">64</span>];
         rng.try_fill(<span class="kw-2">&amp;mut </span>key)<span class="question-mark">?</span>;
 
@@ -265,7 +265,7 @@
     </span><span class="kw">pub fn </span>create_test_storage_key(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         user_id: <span class="kw-2">&amp;</span>UserId,
-    ) -&gt; anyhow::Result&lt;(Encrypted&lt;StorageKey&gt;, OpaqueExportKey)&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(Encrypted&lt;StorageKey&gt;, OpaqueExportKey)&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>rng = StdRng::from_entropy();
 
         <span class="comment">// Create a storage key
@@ -279,7 +279,7 @@
 
     <span class="doccomment">/// Creates a test user with a randomized name and returns the id and
     /// account name.
-    </span><span class="kw">pub async fn </span>create_test_user(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; anyhow::Result&lt;(UserId, AccountName)&gt; {
+    </span><span class="kw">pub async fn </span>create_test_user(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(UserId, AccountName)&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>rng = StdRng::from_entropy();
 
         <span class="kw">let </span>user_id = UserId::new(<span class="kw-2">&amp;mut </span>rng)<span class="question-mark">?</span>;

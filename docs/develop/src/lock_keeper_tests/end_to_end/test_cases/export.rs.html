@@ -111,6 +111,7 @@
 <span id="111">111</span>
 <span id="112">112</span>
 <span id="113">113</span>
+<span id="114">114</span>
 </pre><pre class="rust"><code><span class="kw">use </span>colored::Colorize;
 <span class="kw">use </span>lock_keeper::{
     config::client::Config,
@@ -126,12 +127,13 @@
         },
         test_cases::init_test_state,
     },
+    error::Result,
     run_parallel,
     utils::TestResult,
     Config <span class="kw">as </span>TestConfig,
 };
 
-<span class="kw">pub async fn </span>run_tests(config: TestConfig) -&gt; anyhow::Result&lt;Vec&lt;TestResult&gt;&gt; {
+<span class="kw">pub async fn </span>run_tests(config: TestConfig) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;TestResult&gt;&gt; {
     <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, <span class="string">&quot;Running export tests&quot;</span>.cyan());
 
     <span class="kw">let </span>result = <span class="macro">run_parallel!</span>(
@@ -147,7 +149,7 @@
     <span class="prelude-val">Ok</span>(result)
 }
 
-<span class="kw">async fn </span>export_works(config: Config) -&gt; anyhow::Result&lt;()&gt; {
+<span class="kw">async fn </span>export_works(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">let </span>state = init_test_state(config).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="kw">let </span>(key_id, local_storage) = generate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>;
@@ -162,7 +164,7 @@
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="kw">async fn </span>cannot_export_fake_key(config: Config) -&gt; anyhow::Result&lt;()&gt; {
+<span class="kw">async fn </span>cannot_export_fake_key(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">let </span>state = init_test_state(config).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="kw">let </span>fake_key_id = generate_fake_key_id(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>;
@@ -173,7 +175,7 @@
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="kw">async fn </span>cannot_export_signing_key_as_secret(config: Config) -&gt; anyhow::Result&lt;()&gt; {
+<span class="kw">async fn </span>cannot_export_signing_key_as_secret(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">let </span>state = init_test_state(config).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="kw">let </span>(key_id, <span class="kw">_</span>) = import_signing_key(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>;
@@ -184,7 +186,7 @@
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="kw">async fn </span>export_signing_key_works(config: Config) -&gt; anyhow::Result&lt;()&gt; {
+<span class="kw">async fn </span>export_signing_key_works(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">let </span>state = init_test_state(config).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="kw">let </span>(key_id, bytes_original) = import_signing_key(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>;
@@ -203,7 +205,7 @@
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="kw">async fn </span>cannot_export_fake_signing_key(config: Config) -&gt; anyhow::Result&lt;()&gt; {
+<span class="kw">async fn </span>cannot_export_fake_signing_key(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">let </span>state = init_test_state(config).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="kw">let </span>fake_key_id = generate_fake_key_id(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>;
@@ -214,7 +216,7 @@
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="kw">async fn </span>cannot_export_secret_as_signing_key(config: Config) -&gt; anyhow::Result&lt;()&gt; {
+<span class="kw">async fn </span>cannot_export_secret_as_signing_key(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">let </span>state = init_test_state(config).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="kw">let </span>(key_id, <span class="kw">_</span>) = generate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>;

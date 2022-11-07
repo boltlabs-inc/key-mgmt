@@ -54,6 +54,7 @@
 <span id="54">54</span>
 <span id="55">55</span>
 <span id="56">56</span>
+<span id="57">57</span>
 </pre><pre class="rust"><code><span class="kw">use </span>colored::Colorize;
 <span class="kw">use </span>lock_keeper::{
     config::client::Config,
@@ -68,12 +69,13 @@
         operations::{check_audit_events, remote_generate, remote_sign_bytes},
         test_cases::init_test_state,
     },
+    error::Result,
     run_parallel,
     utils::{<span class="self">self</span>, TestResult, RNG_SEED},
     Config <span class="kw">as </span>TestConfig,
 };
 
-<span class="kw">pub async fn </span>run_tests(config: TestConfig) -&gt; anyhow::Result&lt;Vec&lt;TestResult&gt;&gt; {
+<span class="kw">pub async fn </span>run_tests(config: TestConfig) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;TestResult&gt;&gt; {
     <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, <span class="string">&quot;Running remote sign tests&quot;</span>.cyan());
 
     <span class="kw">let </span>result = <span class="macro">run_parallel!</span>(
@@ -84,7 +86,7 @@
     <span class="prelude-val">Ok</span>(result)
 }
 
-<span class="kw">async fn </span>remote_sign_works(config: Config) -&gt; anyhow::Result&lt;()&gt; {
+<span class="kw">async fn </span>remote_sign_works(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">let </span>state = init_test_state(config).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="kw">let </span>RemoteGenerateResult { key_id, public_key } = remote_generate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>;

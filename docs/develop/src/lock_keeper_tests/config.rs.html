@@ -51,7 +51,7 @@
 
 </span><span class="kw">use </span>lock_keeper::config::client;
 
-<span class="kw">use </span><span class="kw">crate</span>::Cli;
+<span class="kw">use crate</span>::{error::LockKeeperTestError, Cli};
 
 <span class="attribute">#[derive(Debug, Clone)]
 </span><span class="kw">pub struct </span>Config {
@@ -60,7 +60,7 @@
 }
 
 <span class="kw">impl </span>TryFrom&lt;Cli&gt; <span class="kw">for </span>Config {
-    <span class="kw">type </span>Error = anyhow::Error;
+    <span class="kw">type </span>Error = LockKeeperTestError;
 
     <span class="kw">fn </span>try_from(cli: Cli) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
         <span class="kw">let </span>client_config = client::Config::load(<span class="kw-2">&amp;</span>cli.client_config)<span class="question-mark">?</span>;
