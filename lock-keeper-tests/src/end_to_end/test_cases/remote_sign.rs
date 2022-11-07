@@ -12,12 +12,13 @@ use crate::{
         operations::{check_audit_events, remote_generate, remote_sign_bytes},
         test_cases::init_test_state,
     },
+    error::Result,
     run_parallel,
     utils::{self, TestResult, RNG_SEED},
     Config as TestConfig,
 };
 
-pub async fn run_tests(config: TestConfig) -> anyhow::Result<Vec<TestResult>> {
+pub async fn run_tests(config: TestConfig) -> Result<Vec<TestResult>> {
     println!("{}", "Running remote sign tests".cyan());
 
     let result = run_parallel!(
@@ -28,7 +29,7 @@ pub async fn run_tests(config: TestConfig) -> anyhow::Result<Vec<TestResult>> {
     Ok(result)
 }
 
-async fn remote_sign_works(config: Config) -> anyhow::Result<()> {
+async fn remote_sign_works(config: Config) -> Result<()> {
     let state = init_test_state(config).await?;
 
     let RemoteGenerateResult { key_id, public_key } = remote_generate(&state).await?;

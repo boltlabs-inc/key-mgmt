@@ -7,7 +7,7 @@ pub mod user;
 use generic_array::{typenum::U64, GenericArray};
 use std::{ops::Deref, str::FromStr};
 
-use crate::{utils::report_test_results, Config};
+use crate::{error::Result, utils::report_test_results, Config};
 use lock_keeper::{
     config::server::DatabaseSpec,
     crypto::{Encrypted, OpaqueExportKey, StorageKey},
@@ -20,7 +20,7 @@ use crate::utils::{server_registration, tagged};
 
 pub const USERS_TABLE: &str = "users";
 
-pub async fn run_tests(config: &Config) -> anyhow::Result<()> {
+pub async fn run_tests(config: &Config) -> Result<()> {
     println!("Running database tests");
 
     let audit_event_results = audit_event::run_tests(config.clone()).await?;
@@ -60,14 +60,14 @@ impl Deref for TestDatabase {
 impl TestDatabase {
     /// Create a new test database with random characters appended to name.
     /// This is what you probably want to use.
-    pub async fn new(db_name: impl AsRef<str>) -> anyhow::Result<Self> {
+    pub async fn new(db_name: impl AsRef<str>) -> Result<Self> {
         Self::from_db_name(tagged(db_name)).await
     }
 
     /// Create a new test database with a specific name.
     /// Use this to reconnect to a [`TestDatabase`] created with the `new`
     /// function.
-    pub async fn from_db_name(db_name: impl Into<String>) -> anyhow::Result<Self> {
+    pub async fn from_db_name(db_name: impl Into<String>) -> Result<Self> {
         use mongodb::{options::ClientOptions, Client};
 
         let mongodb_uri = "mongodb://localhost:27017";
@@ -91,13 +91,13 @@ impl TestDatabase {
     /// Drops the underlying database. Call this when you're done using the test
     /// database. Some day Rust will have async `Drop` and we can do this
     /// properly.
-    pub async fn drop(self) -> anyhow::Result<()> {
+    pub async fn drop(self) -> Result<()> {
         self.mongo.drop(None).await?;
         Ok(())
     }
 
     /// Create an export key for testing using random bytes.
-    fn create_test_export_key(rng: &mut StdRng) -> anyhow::Result<OpaqueExportKey> {
+    fn create_test_export_key(rng: &mut StdRng) -> Result<OpaqueExportKey> {
         let mut key = [0_u8; 64];
         rng.try_fill(&mut key)?;
 
@@ -112,7 +112,7 @@ impl TestDatabase {
     pub fn create_test_storage_key(
         &self,
         user_id: &UserId,
-    ) -> anyhow::Result<(Encrypted<StorageKey>, OpaqueExportKey)> {
+    ) -> Result<(Encrypted<StorageKey>, OpaqueExportKey)> {
         let mut rng = StdRng::from_entropy();
 
         // Create a storage key
@@ -126,7 +126,7 @@ impl TestDatabase {
 
     /// Creates a test user with a randomized name and returns the id and
     /// account name.
-    pub async fn create_test_user(&self) -> anyhow::Result<(UserId, AccountName)> {
+    pub async fn create_test_user(&self) -> Result<(UserId, AccountName)> {
         let mut rng = StdRng::from_entropy();
 
         let user_id = UserId::new(&mut rng)?;

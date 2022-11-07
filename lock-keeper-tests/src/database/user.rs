@@ -9,6 +9,7 @@ use rand::{rngs::StdRng, SeedableRng};
 
 use crate::{
     database::USERS_TABLE,
+    error::Result,
     run_parallel,
     utils::{server_registration, tagged, TestResult},
     Config,
@@ -16,7 +17,7 @@ use crate::{
 
 use super::TestDatabase;
 
-pub async fn run_tests(config: Config) -> anyhow::Result<Vec<TestResult>> {
+pub async fn run_tests(config: Config) -> Result<Vec<TestResult>> {
     println!("{}", "Running user tests".cyan());
 
     let db = TestDatabase::new("user_tests").await?;
@@ -35,7 +36,7 @@ pub async fn run_tests(config: Config) -> anyhow::Result<Vec<TestResult>> {
     Ok(result)
 }
 
-async fn user_findable_by_account_name(db: TestDatabase) -> anyhow::Result<()> {
+async fn user_findable_by_account_name(db: TestDatabase) -> Result<()> {
     let (_, account_name) = db.create_test_user().await?;
 
     let user = db.find_user(&account_name).await?.unwrap();
@@ -44,7 +45,7 @@ async fn user_findable_by_account_name(db: TestDatabase) -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn user_findable_by_id(db: TestDatabase) -> anyhow::Result<()> {
+async fn user_findable_by_id(db: TestDatabase) -> Result<()> {
     let (user_id, account_name) = db.create_test_user().await?;
 
     let user = db.find_user(&account_name).await?.unwrap();
@@ -59,7 +60,7 @@ async fn user_findable_by_id(db: TestDatabase) -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn multiple_connections_do_not_overwrite_db() -> anyhow::Result<()> {
+async fn multiple_connections_do_not_overwrite_db() -> Result<()> {
     let db = TestDatabase::new("multiple_connections_do_not_overwrite_db").await?;
 
     let mut rng = StdRng::from_entropy();
@@ -108,7 +109,7 @@ async fn multiple_connections_do_not_overwrite_db() -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn unique_indices_enforced(db: TestDatabase) -> anyhow::Result<()> {
+async fn unique_indices_enforced(db: TestDatabase) -> Result<()> {
     let mut rng = StdRng::from_entropy();
 
     // Add the "baseline" user.
@@ -143,7 +144,7 @@ async fn unique_indices_enforced(db: TestDatabase) -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn user_is_deleted(db: TestDatabase) -> anyhow::Result<()> {
+async fn user_is_deleted(db: TestDatabase) -> Result<()> {
     let (user_id, _) = db.create_test_user().await?;
 
     // Ensure that the user was created
@@ -165,7 +166,7 @@ async fn user_is_deleted(db: TestDatabase) -> anyhow::Result<()> {
 }
 
 /// Test that `set_storage_key` works correctly
-async fn storage_key_is_set(db: TestDatabase) -> anyhow::Result<()> {
+async fn storage_key_is_set(db: TestDatabase) -> Result<()> {
     let (user_id, account_name) = db.create_test_user().await?;
 
     // Ensure that the user was created an no storage key is set

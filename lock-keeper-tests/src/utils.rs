@@ -2,7 +2,7 @@
 
 use std::sync::{Arc, Mutex};
 
-use crate::Config;
+use crate::{error::Result, Config};
 use colored::Colorize;
 use futures::Future;
 use lock_keeper::config::opaque::OpaqueCipherSuite;
@@ -63,7 +63,7 @@ pub fn random_bytes(mut rng: impl Rng, len: usize) -> Vec<u8> {
 }
 
 /// Pass a list of async test functions with parameters included.
-/// All test functions must return `anyhow::Result<()>`.
+/// All test functions must return [`Result<()>`].
 /// Tests will run in parallel and report the names of any failing test.
 /// # Example
 /// ```no_run
@@ -78,14 +78,14 @@ macro_rules! run_parallel {
         // Stick this in a scope so it can return a result
         {
             use std::sync::{Arc, Mutex};
-            use $crate::utils::TestResult;
+            use $crate::{error::LockKeeperTestError, utils::TestResult};
 
             let results = Arc::new(Mutex::new(Vec::new()));
             tokio::try_join!($($crate::utils::run_test_case($config, stringify!($task), $task, results.clone())),+)?;
 
             let results = results.lock().unwrap().clone();
 
-            Ok::<Vec<TestResult>, anyhow::Error>(results)
+            Ok::<Vec<TestResult>, LockKeeperTestError>(results)
         }
     };
 }
@@ -95,9 +95,9 @@ macro_rules! run_parallel {
 pub async fn run_test_case(
     config: Config,
     name: &str,
-    task: impl Future<Output = anyhow::Result<()>> + Send + 'static,
+    task: impl Future<Output = Result<()>> + Send + 'static,
     results: Arc<Mutex<Vec<TestResult>>>,
-) -> anyhow::Result<()> {
+) -> Result<()> {
     use futures::FutureExt;
     use TestResult::*;
 

@@ -1,8 +1,10 @@
 pub mod config;
 pub mod database;
 pub mod end_to_end;
+pub mod error;
 pub mod utils;
 
+use crate::error::LockKeeperTestError;
 use clap::Parser;
 use config::Config;
 use lock_keeper_client::LockKeeperClient;
@@ -29,14 +31,14 @@ pub enum TestType {
 }
 
 impl FromStr for TestType {
-    type Err = anyhow::Error;
+    type Err = LockKeeperTestError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "all" => Ok(TestType::All),
             "e2e" => Ok(TestType::E2E),
             "integration" => Ok(TestType::Integration),
-            _ => anyhow::bail!("Invalid test type: {}", s),
+            _ => Err(LockKeeperTestError::InvalidTestType(s.to_string())),
         }
     }
 }

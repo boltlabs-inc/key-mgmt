@@ -9,12 +9,13 @@ use crate::{
         operations::{check_audit_events, import_signing_key},
         test_cases::init_test_state,
     },
+    error::Result,
     run_parallel,
     utils::TestResult,
     Config as TestConfig,
 };
 
-pub async fn run_tests(config: TestConfig) -> anyhow::Result<Vec<TestResult>> {
+pub async fn run_tests(config: TestConfig) -> Result<Vec<TestResult>> {
     println!("{}", "Running import tests".cyan());
 
     let result = run_parallel!(config.clone(), import_works(config.client_config.clone()),)?;
@@ -22,7 +23,7 @@ pub async fn run_tests(config: TestConfig) -> anyhow::Result<Vec<TestResult>> {
     Ok(result)
 }
 
-async fn import_works(config: Config) -> anyhow::Result<()> {
+async fn import_works(config: Config) -> Result<()> {
     let state = init_test_state(config).await?;
 
     let import_res = import_signing_key(&state).await;

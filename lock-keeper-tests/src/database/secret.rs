@@ -8,11 +8,11 @@ use lock_keeper::{
 use lock_keeper_key_server::database::Database;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
-use crate::{run_parallel, utils::TestResult, Config};
+use crate::{error::Result, run_parallel, utils::TestResult, Config};
 
 use super::TestDatabase;
 
-pub async fn run_tests(config: Config) -> anyhow::Result<Vec<TestResult>> {
+pub async fn run_tests(config: Config) -> Result<Vec<TestResult>> {
     println!("{}", "Running secret tests".cyan());
 
     let db = TestDatabase::new("secret_tests").await?;
@@ -27,7 +27,7 @@ pub async fn run_tests(config: Config) -> anyhow::Result<Vec<TestResult>> {
     Ok(result)
 }
 
-async fn user_is_serializable_after_adding_secrets(db: TestDatabase) -> anyhow::Result<()> {
+async fn user_is_serializable_after_adding_secrets(db: TestDatabase) -> Result<()> {
     // Add a user and get their storage key
     let (user_id, account_name) = db.create_test_user().await?;
     let (encrypted_storage_key, export_key) = db.create_test_storage_key(&user_id)?;
@@ -49,7 +49,7 @@ async fn user_is_serializable_after_adding_secrets(db: TestDatabase) -> anyhow::
     Ok(())
 }
 
-async fn cannot_get_another_users_secrets(db: TestDatabase) -> anyhow::Result<()> {
+async fn cannot_get_another_users_secrets(db: TestDatabase) -> Result<()> {
     // Init RNG for test
     let mut rng = StdRng::from_entropy();
 
@@ -87,7 +87,7 @@ async fn add_arbitrary_secret(
     rng: &mut StdRng,
     storage_key: &StorageKey,
     user_id: &UserId,
-) -> anyhow::Result<KeyId> {
+) -> Result<KeyId> {
     let key_id = KeyId::generate(rng, user_id)?;
     let (_, encrypted) = Secret::create_and_encrypt(rng, storage_key, user_id, &key_id)?;
 
@@ -97,11 +97,7 @@ async fn add_arbitrary_secret(
     Ok(key_id)
 }
 
-async fn import_signing_key(
-    db: &Database,
-    rng: &mut StdRng,
-    user_id: &UserId,
-) -> anyhow::Result<KeyId> {
+async fn import_signing_key(db: &Database, rng: &mut StdRng, user_id: &UserId) -> Result<KeyId> {
     let key_id = KeyId::generate(rng, user_id)?;
     let import = Import {
         key_material: rand::thread_rng().gen::<[u8; 32]>().to_vec(),
@@ -118,7 +114,7 @@ async fn remote_generate_signing_key(
     db: &Database,
     rng: &mut StdRng,
     user_id: &UserId,
-) -> anyhow::Result<KeyId> {
+) -> Result<KeyId> {
     let key_id = KeyId::generate(rng, user_id)?;
     let signing_key = SigningKeyPair::remote_generate(rng, user_id, &key_id);
 

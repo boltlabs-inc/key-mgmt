@@ -11,12 +11,13 @@ use crate::{
         operations::{authenticate, check_audit_events, compare_errors},
         test_cases::{init_test_state, TestState},
     },
+    error::Result,
     run_parallel,
     utils::{tagged, TestResult},
     Config as TestConfig,
 };
 
-pub async fn run_tests(config: TestConfig) -> anyhow::Result<Vec<TestResult>> {
+pub async fn run_tests(config: TestConfig) -> Result<Vec<TestResult>> {
     println!("{}", "Running authenticate tests".cyan());
 
     let result = run_parallel!(
@@ -29,7 +30,7 @@ pub async fn run_tests(config: TestConfig) -> anyhow::Result<Vec<TestResult>> {
     Ok(result)
 }
 
-async fn multiple_sessions_from_same_client_allowed(config: Config) -> anyhow::Result<()> {
+async fn multiple_sessions_from_same_client_allowed(config: Config) -> Result<()> {
     let state = init_test_state(config).await?;
 
     let _first_login = authenticate(&state).await?;
@@ -39,7 +40,7 @@ async fn multiple_sessions_from_same_client_allowed(config: Config) -> anyhow::R
     Ok(())
 }
 
-async fn cannot_authenticate_with_wrong_password(config: Config) -> anyhow::Result<()> {
+async fn cannot_authenticate_with_wrong_password(config: Config) -> Result<()> {
     let state = init_test_state(config.clone()).await?;
     let wrong_password = Password::from_str(tagged("wrong_password").as_str())?;
 
@@ -55,7 +56,7 @@ async fn cannot_authenticate_with_wrong_password(config: Config) -> anyhow::Resu
     Ok(())
 }
 
-async fn authenticate_before_register_fails(config: Config) -> anyhow::Result<()> {
+async fn authenticate_before_register_fails(config: Config) -> Result<()> {
     let account_name = AccountName::from_str(tagged("user").as_str())?;
     let password = Password::from_str(tagged("password").as_str())?;
 
