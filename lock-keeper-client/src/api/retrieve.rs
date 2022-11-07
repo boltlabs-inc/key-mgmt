@@ -73,8 +73,11 @@ impl LockKeeperClient {
         let result = match context {
             RetrieveContext::Null => None,
             RetrieveContext::LocalOnly => {
-                let signing_key_pair: SigningKeyPair =
-                    server_response.stored_signing_key.signing_key.try_into()?;
+                let signing_key_pair: SigningKeyPair = server_response
+                    .stored_signing_key
+                    .signing_key
+                    .to_owned()
+                    .try_into()?;
                 let wrapped_signing_key = LocalStorage {
                     material: signing_key_pair,
                 };

@@ -52,15 +52,20 @@ impl Password {
 /// during which multiple requests can be made to the server.
 ///
 /// TODO #30: This abstraction needs a lot of design attention.
-#[derive(Debug)]
+#[derive(Debug, ZeroizeOnDrop)]
 #[allow(unused)]
 pub struct LockKeeperClient {
     session_key: OpaqueSessionKey,
+    #[zeroize(skip)]
     config: Config,
+    #[zeroize(skip)]
     account_name: AccountName,
+    #[zeroize(skip)]
     user_id: UserId,
     master_key: MasterKey,
+    #[zeroize(skip)]
     tonic_client: LockKeeperRpcClient<LockKeeperRpcClientInner>,
+    #[zeroize(skip)]
     pub(crate) rng: Arc<Mutex<StdRng>>,
 }
 
@@ -72,9 +77,11 @@ type LockKeeperRpcClientInner = hyper::Client<
     UnsyncBoxBody<tonic::codegen::Bytes, tonic::Status>,
 >;
 
+#[derive(ZeroizeOnDrop)]
 pub(crate) struct AuthenticateResult {
     pub(crate) session_key: OpaqueSessionKey,
     pub(crate) master_key: MasterKey,
+    #[zeroize(skip)]
     pub(crate) user_id: UserId,
 }
 
@@ -130,22 +137,18 @@ impl LockKeeperClient {
             Self::handle_authentication(&mut client_channel, &mut rng, account_name, password)
                 .await;
         match result {
-            Ok(AuthenticateResult {
-                session_key,
-                master_key,
-                user_id,
-            }) => {
+            Ok(auth_result) => {
                 // TODO #186: receive User ID over authenticated channel (under session_key)
                 let client = LockKeeperClient {
-                    session_key,
+                    session_key: auth_result.session_key.clone(),
                     config: config.clone(),
                     tonic_client: client,
                     rng: Arc::new(Mutex::new(rng)),
                     account_name: account_name.clone(),
-                    user_id,
-                    master_key,
+                    user_id: auth_result.user_id.clone(),
+                    master_key: auth_result.master_key.clone(),
                 };
-
+                drop(auth_result);
                 Ok(LockKeeperResponse::from_channel(client_channel, client))
             }
             Err(e) => {

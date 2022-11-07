@@ -81,9 +81,10 @@ pub struct SigningPublicKey(VerifyingKey);
 ///
 /// This can only be "decrypted" by the server.
 /// TODO #307: Replace this placeholder with actual encryption.
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, ZeroizeOnDrop)]
 pub struct PlaceholderEncryptedSigningKeyPair {
     signing_key: Vec<u8>,
+    #[zeroize(skip)]
     context: AssociatedData,
 }
 
@@ -102,7 +103,7 @@ impl TryFrom<PlaceholderEncryptedSigningKeyPair> for SigningKeyPair {
         Ok(Self {
             signing_key: SigningKey::from_bytes(key_pair.signing_key.as_slice())
                 .map_err(|_| CryptoError::ConversionError)?,
-            context: key_pair.context,
+            context: key_pair.context.to_owned(),
         })
     }
 }
@@ -288,9 +289,10 @@ impl Import {
 }
 
 /// Raw material for an exported signing key.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ZeroizeOnDrop)]
 pub struct Export {
     pub key_material: Vec<u8>,
+    #[zeroize(skip)]
     pub context: Vec<u8>,
 }
 
@@ -308,7 +310,7 @@ impl Export {
     pub fn into_signing_key(self) -> Result<SigningKeyPair, LockKeeperError> {
         let signing_key = SigningKey::from_bytes(self.key_material.as_slice())
             .map_err(|_| CryptoError::ConversionError)?;
-        let context = self.context.try_into()?;
+        let context = self.context.to_owned().try_into()?;
         Ok(SigningKeyPair {
             signing_key,
             context,

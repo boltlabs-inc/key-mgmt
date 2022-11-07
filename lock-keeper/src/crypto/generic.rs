@@ -126,12 +126,6 @@ impl EncryptionKey {
     }
 }
 
-// impl Drop for EncryptionKey {
-//     fn drop(&mut self) {
-//         self.key.zeroize();
-//     }
-// }
-
 #[cfg(test)]
 impl EncryptionKey {
     // Get the length of the key. This should always return 32.

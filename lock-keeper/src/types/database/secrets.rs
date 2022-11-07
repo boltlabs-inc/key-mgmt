@@ -2,6 +2,7 @@
 
 use crate::crypto::{Encrypted, KeyId, PlaceholderEncryptedSigningKeyPair, Secret, SigningKeyPair};
 use serde::{Deserialize, Serialize};
+use zeroize::ZeroizeOnDrop;
 
 /// Holds user's stored secrets of all types
 #[derive(Debug, Default, Deserialize, Serialize)]
@@ -54,10 +55,12 @@ impl StoredEncryptedSigningKeyPair {
 ///
 /// This is used to hold signing key pairs sent by the client in the clear and
 /// encrypted by the server.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, ZeroizeOnDrop)]
 pub struct StoredSigningKeyPair {
     pub signing_key: PlaceholderEncryptedSigningKeyPair,
+    #[zeroize(skip)]
     pub key_id: KeyId,
+    #[zeroize(skip)]
     pub retrieved: bool,
 }
 

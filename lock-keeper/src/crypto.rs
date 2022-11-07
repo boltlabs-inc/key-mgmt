@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use sha3::{Digest, Sha3_256};
 use std::{array::IntoIter, convert::TryFrom};
 use tracing::error;
-use zeroize::ZeroizeOnDrop;
+use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use crate::types::database::user::UserId;
 
@@ -35,7 +35,7 @@ pub use signing_key::{
 /// This key should not be stored or saved beyond the lifetime of a single
 /// authentication session. It should not be passed out to the local calling
 /// application.
-#[derive(Debug, Clone, ZeroizeOnDrop)]
+#[derive(Debug, Clone, Zeroize, ZeroizeOnDrop)]
 pub struct OpaqueSessionKey(Box<[u8; 64]>);
 
 impl From<GenericArray<u8, U64>> for OpaqueSessionKey {
