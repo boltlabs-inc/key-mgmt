@@ -11,12 +11,13 @@ use crate::{
         operations::{check_audit_events, compare_errors, register},
         test_cases::TestState,
     },
+    error::Result,
     run_parallel,
     utils::{tagged, TestResult},
     Config as TestConfig,
 };
 
-pub async fn run_tests(config: TestConfig) -> anyhow::Result<Vec<TestResult>> {
+pub async fn run_tests(config: TestConfig) -> Result<Vec<TestResult>> {
     println!("{}", "Running register tests".cyan());
 
     let result = run_parallel!(
@@ -27,7 +28,7 @@ pub async fn run_tests(config: TestConfig) -> anyhow::Result<Vec<TestResult>> {
     Ok(result)
 }
 
-async fn register_same_user_twice(config: Config) -> anyhow::Result<()> {
+async fn register_same_user_twice(config: Config) -> Result<()> {
     let account_name = AccountName::from_str(tagged("user").as_str())?;
     let password = Password::from_str(tagged("password").as_str())?;
     register(&account_name, &password, &config).await?;

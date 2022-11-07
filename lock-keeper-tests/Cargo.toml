@@ -29,5 +29,4 @@ tracing-futures.workspace = true
 tracing-subscriber.workspace = true
 
 # Other dependencies
-anyhow = "1.0"
 colored = "2.0"

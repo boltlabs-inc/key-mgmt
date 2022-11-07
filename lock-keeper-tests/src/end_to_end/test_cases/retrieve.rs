@@ -15,12 +15,13 @@ use crate::{
         },
         test_cases::init_test_state,
     },
+    error::Result,
     run_parallel,
     utils::TestResult,
     Config as TestConfig,
 };
 
-pub async fn run_tests(config: TestConfig) -> anyhow::Result<Vec<TestResult>> {
+pub async fn run_tests(config: TestConfig) -> Result<Vec<TestResult>> {
     println!("{}", "Running retrieve tests".cyan());
 
     let result = run_parallel!(
@@ -33,7 +34,7 @@ pub async fn run_tests(config: TestConfig) -> anyhow::Result<Vec<TestResult>> {
     Ok(result)
 }
 
-async fn retrieve_local_only_works(config: Config) -> anyhow::Result<()> {
+async fn retrieve_local_only_works(config: Config) -> Result<()> {
     let state = init_test_state(config).await?;
 
     let (key_id, local_storage) = generate(&state).await?;
@@ -50,7 +51,7 @@ async fn retrieve_local_only_works(config: Config) -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn retrieve_null_works(config: Config) -> anyhow::Result<()> {
+async fn retrieve_null_works(config: Config) -> Result<()> {
     let state = init_test_state(config).await?;
 
     let (key_id, _) = generate(&state).await?;
@@ -64,7 +65,7 @@ async fn retrieve_null_works(config: Config) -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn cannot_retrieve_fake_key(config: Config) -> anyhow::Result<()> {
+async fn cannot_retrieve_fake_key(config: Config) -> Result<()> {
     let state = init_test_state(config).await?;
 
     let fake_key_id = generate_fake_key_id(&state).await?;

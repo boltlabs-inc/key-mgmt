@@ -9,7 +9,7 @@ use lock_keeper::{
         operations::ClientAction,
     },
 };
-use lock_keeper_key_server::{database::Database, LockKeeperServerError};
+use lock_keeper_key_server::database::Database;
 use mongodb::bson::DateTime;
 use rand::{
     rngs::StdRng,
@@ -18,11 +18,11 @@ use rand::{
 };
 use strum::IntoEnumIterator;
 
-use crate::{run_parallel, utils::TestResult, Config};
+use crate::{error::Result, run_parallel, utils::TestResult, Config};
 
 use super::TestDatabase;
 
-pub async fn run_tests(config: Config) -> anyhow::Result<Vec<TestResult>> {
+pub async fn run_tests(config: Config) -> Result<Vec<TestResult>> {
     println!("{}", "Running audit event tests".cyan());
 
     let db = TestDatabase::new("audit_event_tests").await?;
@@ -46,7 +46,7 @@ async fn create_random_audit_events(
     account_name: &AccountName,
     user_id: &UserId,
     db: &Database,
-) -> Result<Vec<KeyId>, LockKeeperServerError> {
+) -> Result<Vec<KeyId>> {
     let mut rng = StdRng::from_entropy();
 
     let action_list = ClientAction::iter().collect::<Vec<_>>();
@@ -87,7 +87,7 @@ fn check_before_date(audit_events: Vec<AuditEvent>, before_date: DateTime) {
     assert!(actual_dates.iter().all(|item| before_date >= *item));
 }
 
-async fn event_type_filter_works(db: TestDatabase) -> anyhow::Result<()> {
+async fn event_type_filter_works(db: TestDatabase) -> Result<()> {
     let (user_id, account_name) = db.create_test_user().await?;
 
     // Create random audit events
@@ -120,7 +120,7 @@ async fn event_type_filter_works(db: TestDatabase) -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn key_id_filter_works(db: TestDatabase) -> anyhow::Result<()> {
+async fn key_id_filter_works(db: TestDatabase) -> Result<()> {
     let (user_id, account_name) = db.create_test_user().await?;
 
     let key_ids = create_random_audit_events(&account_name, &user_id, &db).await?;
@@ -146,7 +146,7 @@ async fn key_id_filter_works(db: TestDatabase) -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn after_date_filter_works(db: TestDatabase) -> anyhow::Result<()> {
+async fn after_date_filter_works(db: TestDatabase) -> Result<()> {
     // Add a user
     let (user_id, account_name) = db.create_test_user().await?;
 
@@ -172,7 +172,7 @@ async fn after_date_filter_works(db: TestDatabase) -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn before_date_filter_works(db: TestDatabase) -> anyhow::Result<()> {
+async fn before_date_filter_works(db: TestDatabase) -> Result<()> {
     // Add a user
     let (user_id, account_name) = db.create_test_user().await?;
 

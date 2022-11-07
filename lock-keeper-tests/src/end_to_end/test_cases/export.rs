@@ -13,12 +13,13 @@ use crate::{
         },
         test_cases::init_test_state,
     },
+    error::Result,
     run_parallel,
     utils::TestResult,
     Config as TestConfig,
 };
 
-pub async fn run_tests(config: TestConfig) -> anyhow::Result<Vec<TestResult>> {
+pub async fn run_tests(config: TestConfig) -> Result<Vec<TestResult>> {
     println!("{}", "Running export tests".cyan());
 
     let result = run_parallel!(
@@ -34,7 +35,7 @@ pub async fn run_tests(config: TestConfig) -> anyhow::Result<Vec<TestResult>> {
     Ok(result)
 }
 
-async fn export_works(config: Config) -> anyhow::Result<()> {
+async fn export_works(config: Config) -> Result<()> {
     let state = init_test_state(config).await?;
 
     let (key_id, local_storage) = generate(&state).await?;
@@ -49,7 +50,7 @@ async fn export_works(config: Config) -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn cannot_export_fake_key(config: Config) -> anyhow::Result<()> {
+async fn cannot_export_fake_key(config: Config) -> Result<()> {
     let state = init_test_state(config).await?;
 
     let fake_key_id = generate_fake_key_id(&state).await?;
@@ -60,7 +61,7 @@ async fn cannot_export_fake_key(config: Config) -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn cannot_export_signing_key_as_secret(config: Config) -> anyhow::Result<()> {
+async fn cannot_export_signing_key_as_secret(config: Config) -> Result<()> {
     let state = init_test_state(config).await?;
 
     let (key_id, _) = import_signing_key(&state).await?;
@@ -71,7 +72,7 @@ async fn cannot_export_signing_key_as_secret(config: Config) -> anyhow::Result<(
     Ok(())
 }
 
-async fn export_signing_key_works(config: Config) -> anyhow::Result<()> {
+async fn export_signing_key_works(config: Config) -> Result<()> {
     let state = init_test_state(config).await?;
 
     let (key_id, bytes_original) = import_signing_key(&state).await?;
@@ -90,7 +91,7 @@ async fn export_signing_key_works(config: Config) -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn cannot_export_fake_signing_key(config: Config) -> anyhow::Result<()> {
+async fn cannot_export_fake_signing_key(config: Config) -> Result<()> {
     let state = init_test_state(config).await?;
 
     let fake_key_id = generate_fake_key_id(&state).await?;
@@ -101,7 +102,7 @@ async fn cannot_export_fake_signing_key(config: Config) -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn cannot_export_secret_as_signing_key(config: Config) -> anyhow::Result<()> {
+async fn cannot_export_secret_as_signing_key(config: Config) -> Result<()> {
     let state = init_test_state(config).await?;
 
     let (key_id, _) = generate(&state).await?;

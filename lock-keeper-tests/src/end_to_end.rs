@@ -2,12 +2,12 @@
 
 pub mod operations;
 pub mod test_cases;
-use crate::{config::Config, utils::report_test_results};
+use crate::{config::Config, error::Result, utils::report_test_results};
 use test_cases::{
     authenticate, export, generate, import, register, remote_generate, remote_sign, retrieve,
 };
 
-pub async fn run_tests(config: &Config) -> anyhow::Result<()> {
+pub async fn run_tests(config: &Config) -> Result<()> {
     println!("Running end-to-end tests");
 
     let register_results = register::run_tests(config.clone()).await?;

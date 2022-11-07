@@ -2,7 +2,7 @@
 
 use lock_keeper::config::client;
 
-use crate::Cli;
+use crate::{error::LockKeeperTestError, Cli};
 
 #[derive(Debug, Clone)]
 pub struct Config {
@@ -11,7 +11,7 @@ pub struct Config {
 }
 
 impl TryFrom<Cli> for Config {
-    type Error = anyhow::Error;
+    type Error = LockKeeperTestError;
 
     fn try_from(cli: Cli) -> Result<Self, Self::Error> {
         let client_config = client::Config::load(&cli.client_config)?;
