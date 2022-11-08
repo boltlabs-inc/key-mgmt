@@ -239,7 +239,7 @@ impl Encrypted<SigningKeyPair> {
 }
 
 /// Raw material for an imported signing key.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ZeroizeOnDrop)]
 pub struct Import {
     pub key_material: Vec<u8>,
 }
