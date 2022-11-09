@@ -31,8 +31,8 @@ pub enum LockKeeperServerError {
     // Wrapped errors
     #[error(transparent)]
     Bincode(#[from] bincode::Error),
-    #[error(transparent)]
-    Bson(#[from] mongodb::bson::ser::Error),
+    #[error("Database error: {0}")]
+    Database(Box<dyn std::error::Error + Send + Sync>),
     #[error(transparent)]
     EnvVar(#[from] std::env::VarError),
     #[error(transparent)]
@@ -41,8 +41,6 @@ pub enum LockKeeperServerError {
     Io(#[from] std::io::Error),
     #[error(transparent)]
     LockKeeper(#[from] lock_keeper::LockKeeperError),
-    #[error(transparent)]
-    MongoDb(#[from] mongodb::error::Error),
     #[error("OPAQUE protocol error: {}", .0)]
     OpaqueProtocol(opaque_ke::errors::ProtocolError),
     #[error(transparent)]
@@ -57,6 +55,12 @@ pub enum LockKeeperServerError {
     TonicTransport(#[from] tonic::transport::Error),
     #[error(transparent)]
     WebPki(#[from] tokio_rustls::webpki::Error),
+}
+
+impl LockKeeperServerError {
+    pub fn database(error: impl std::error::Error + Send + Sync + 'static) -> Self {
+        Self::Database(Box::new(error))
+    }
 }
 
 impl From<opaque_ke::errors::ProtocolError> for LockKeeperServerError {
@@ -92,7 +96,6 @@ impl From<LockKeeperServerError> for Status {
             | LockKeeperServerError::Hyper(_)
             | LockKeeperServerError::Io(_)
             | LockKeeperServerError::InvalidOpaqueDirectory
-            | LockKeeperServerError::Bson(_)
             | LockKeeperServerError::Bincode(_)
             | LockKeeperServerError::OpaqueProtocol(_)
             | LockKeeperServerError::PrivateKeyMissing
@@ -100,7 +103,7 @@ impl From<LockKeeperServerError> for Status {
             | LockKeeperServerError::Rustls(_)
             | LockKeeperServerError::StrumParseError(_)
             | LockKeeperServerError::Toml(_)
-            | LockKeeperServerError::MongoDb(_)
+            | LockKeeperServerError::Database(_)
             | LockKeeperServerError::WebPki(_) => Status::internal("Internal server error"),
         }
     }

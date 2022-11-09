@@ -3,6 +3,7 @@ use crate::{
     LockKeeperServerError,
 };
 
+use crate::database::DataStore;
 use async_trait::async_trait;
 use lock_keeper::{
     crypto::KeyId,
@@ -14,11 +15,11 @@ use lock_keeper::{
 pub struct ImportSigningKey;
 
 #[async_trait]
-impl Operation for ImportSigningKey {
+impl<DB: DataStore> Operation<DB> for ImportSigningKey {
     async fn operation(
         self,
         channel: &mut ServerChannel,
-        context: &mut Context,
+        context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
         // Receive UserId and key material from client
         let request: client::Request = channel.receive().await?;
@@ -39,7 +40,8 @@ impl Operation for ImportSigningKey {
         context
             .db
             .add_remote_secret(&request.user_id, signing_key, key_id.clone())
-            .await?;
+            .await
+            .map_err(LockKeeperServerError::database)?;
 
         // Serialize KeyId and send to client
         let reply = server::Response { key_id };

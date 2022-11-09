@@ -1,6 +1,7 @@
 use colored::Colorize;
 use lock_keeper::types::{audit_event::EventStatus, operations::ClientAction};
-use lock_keeper_client::{Config, LockKeeperClientError};
+use lock_keeper_client::Config;
+use tonic::Status;
 
 use crate::{
     error::Result,
@@ -52,7 +53,7 @@ async fn cannot_export_fake_key(config: Config) -> Result<()> {
 
     let fake_key_id = generate_fake_key_id(&state).await?;
     let bytes_res = export(&state, &fake_key_id).await;
-    compare_errors(bytes_res, LockKeeperClientError::InvalidAccount);
+    compare_errors(bytes_res, Status::internal("Internal server error"));
     check_audit_events(&state, EventStatus::Failed, ClientAction::Export).await?;
 
     Ok(())
@@ -63,7 +64,7 @@ async fn cannot_export_signing_key_as_secret(config: Config) -> Result<()> {
 
     let (key_id, _) = import_signing_key(&state).await?;
     let export_res = export(&state, &key_id).await;
-    compare_errors(export_res, LockKeeperClientError::InvalidAccount);
+    compare_errors(export_res, Status::internal("Internal server error"));
     check_audit_events(&state, EventStatus::Failed, ClientAction::Export).await?;
 
     Ok(())
@@ -93,7 +94,7 @@ async fn cannot_export_fake_signing_key(config: Config) -> Result<()> {
 
     let fake_key_id = generate_fake_key_id(&state).await?;
     let export_res = export_signing_key(&state, &fake_key_id).await;
-    compare_errors(export_res, LockKeeperClientError::InvalidAccount);
+    compare_errors(export_res, Status::internal("Internal server error"));
     check_audit_events(&state, EventStatus::Failed, ClientAction::ExportSigningKey).await?;
 
     Ok(())
@@ -104,7 +105,7 @@ async fn cannot_export_secret_as_signing_key(config: Config) -> Result<()> {
 
     let (key_id, _) = generate(&state).await?;
     let export_res = export_signing_key(&state, &key_id).await;
-    compare_errors(export_res, LockKeeperClientError::InvalidAccount);
+    compare_errors(export_res, Status::internal("Internal server error"));
     check_audit_events(&state, EventStatus::Failed, ClientAction::ExportSigningKey).await?;
 
     Ok(())

@@ -16,7 +16,8 @@ use lock_keeper::{
     crypto::{Encrypted, OpaqueExportKey, StorageKey},
     types::database::user::{AccountName, UserId},
 };
-use lock_keeper_key_server::{config::DatabaseSpec, database::Database};
+use lock_keeper_key_server::{config::DatabaseSpec, database::DataStore};
+use lock_keeper_mongodb::Database;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
 use crate::utils::{server_registration, tagged};

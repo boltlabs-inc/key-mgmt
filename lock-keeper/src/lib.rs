@@ -4,7 +4,6 @@
 //! ⚠️ __Usage__: This crate should _not_ be used directly by developers outside
 //! of Bolt Labs. It is designed as a dependency for other crates in the
 //! ecosystem, including `lock-keeper-key-server` and `lock-keeper-client`.
-#![warn(missing_debug_implementations)]
 #![warn(unused_results)]
 #![warn(future_incompatible)]
 #![warn(unused)]

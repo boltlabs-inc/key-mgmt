@@ -15,7 +15,6 @@ bytes.workspace = true
 futures.workspace = true
 generic-array.workspace = true
 http.workspace = true
-mongodb.workspace = true
 opaque-ke.workspace = true
 prost.workspace = true
 rand.workspace = true

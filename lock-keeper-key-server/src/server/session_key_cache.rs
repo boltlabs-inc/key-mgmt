@@ -3,7 +3,7 @@ use std::collections::hash_map::Entry;
 
 use std::collections::HashMap;
 
-use crate::{server::Context, LockKeeperServerError};
+use crate::{database::DataStore, server::Context, LockKeeperServerError};
 use lock_keeper::types::operations::ClientAction;
 use std::time::{Duration, Instant};
 use thiserror::Error;
@@ -76,7 +76,10 @@ impl SessionKeyCache {
         }
     }
 
-    pub fn check_key(&mut self, context: &Context) -> Result<(), LockKeeperServerError> {
+    pub fn check_key<DB: DataStore>(
+        &mut self,
+        context: &Context<DB>,
+    ) -> Result<(), LockKeeperServerError> {
         let metadata = &context.metadata;
         match metadata.action() {
             // These actions are unauthenticated

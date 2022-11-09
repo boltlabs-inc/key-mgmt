@@ -1,5 +1,5 @@
 use crate::{
-    config::Config, database::Database, error::LockKeeperServerError, server::LockKeeperKeyServer,
+    config::Config, database::DataStore, error::LockKeeperServerError, server::LockKeeperKeyServer,
 };
 
 use hyper::server::conn::Http;
@@ -14,11 +14,14 @@ use tonic::transport::{server::Routes, Server};
 use tracing::{error, info};
 
 /// Starts a full Lock Keeper server stack based on the given config.
-pub async fn start_lock_keeper_server(config: Config) -> Result<(), LockKeeperServerError> {
+pub async fn start_lock_keeper_server<DB: DataStore + Clone>(
+    config: Config,
+    db: DB,
+) -> Result<(), LockKeeperServerError> {
     tracing::info!("Starting Lock Keeper key server");
-    let db = Database::connect(&config.database).await?;
+    let db = Arc::new(db);
     // Collect the futures for the result of running each specified server
-    let server_future = start_service(&config, &db);
+    let server_future = start_service(&config, db);
 
     tracing::info!("Lock Keeper key server started");
 
@@ -37,7 +40,10 @@ pub async fn start_lock_keeper_server(config: Config) -> Result<(), LockKeeperSe
 
 /// Starts a new thread that accepts connections and sends them through our
 /// service stack.
-async fn start_service(config: &Config, db: &Database) -> Result<(), LockKeeperServerError> {
+async fn start_service<DB: DataStore + Clone>(
+    config: &Config,
+    db: Arc<DB>,
+) -> Result<(), LockKeeperServerError> {
     // Clone `Arc`s for the various resources we need in this server
     let config = config.clone();
     let db = db.clone();

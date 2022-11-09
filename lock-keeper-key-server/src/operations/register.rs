@@ -4,6 +4,7 @@ use crate::{
 };
 use std::ops::DerefMut;
 
+use crate::database::DataStore;
 use async_trait::async_trait;
 use lock_keeper::{
     config::opaque::OpaqueCipherSuite,
@@ -19,11 +20,11 @@ use opaque_ke::ServerRegistration;
 pub struct Register;
 
 #[async_trait]
-impl Operation for Register {
+impl<DB: DataStore> Operation<DB> for Register {
     async fn operation(
         self,
         channel: &mut ServerChannel,
-        context: &mut Context,
+        context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
         let account_name = register_start(channel, context).await?;
         register_finish(&account_name, channel, context).await?;
@@ -32,15 +33,19 @@ impl Operation for Register {
     }
 }
 
-async fn register_start(
+async fn register_start<DB: DataStore>(
     channel: &mut ServerChannel,
-    context: &Context,
+    context: &Context<DB>,
 ) -> Result<AccountName, LockKeeperServerError> {
     // Receive start message from client
     let start_message: client::RegisterStart = channel.receive().await?;
 
     // Abort registration if UserId already exists
-    let user = context.db.find_user(&start_message.account_name).await?;
+    let user = context
+        .db
+        .find_user(&start_message.account_name)
+        .await
+        .map_err(LockKeeperServerError::database)?;
 
     if user.is_some() {
         Err(LockKeeperServerError::AccountAlreadyRegistered)
@@ -63,10 +68,10 @@ async fn register_start(
     }
 }
 
-async fn register_finish(
+async fn register_finish<DB: DataStore>(
     account_name: &AccountName,
     channel: &mut ServerChannel,
-    context: &Context,
+    context: &Context<DB>,
 ) -> Result<(), LockKeeperServerError> {
     // Receive finish message from client
     let finish_message: client::RegisterFinish = channel.receive().await?;
@@ -83,11 +88,18 @@ async fn register_finish(
         };
 
         // If the user ID is fresh, create the new user
-        if context.db.find_user_by_id(&user_id).await?.is_none() {
-            let _object_id = context
+        if context
+            .db
+            .find_user_by_id(&user_id)
+            .await
+            .map_err(LockKeeperServerError::database)?
+            .is_none()
+        {
+            let _user = context
                 .db
                 .create_user(&user_id, account_name, &server_registration)
-                .await?;
+                .await
+                .map_err(LockKeeperServerError::database)?;
             break;
         }
     }

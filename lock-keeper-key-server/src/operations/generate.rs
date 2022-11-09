@@ -3,6 +3,7 @@ use crate::{
     LockKeeperServerError,
 };
 
+use crate::database::DataStore;
 use async_trait::async_trait;
 use lock_keeper::{
     crypto::KeyId,
@@ -14,11 +15,11 @@ use lock_keeper::{
 pub struct Generate;
 
 #[async_trait]
-impl Operation for Generate {
+impl<DB: DataStore> Operation<DB> for Generate {
     async fn operation(
         self,
         channel: &mut ServerChannel,
-        context: &mut Context,
+        context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
         // Generate step: receive UserId and reply with new KeyId
         let key_id = generate_key(channel, context).await?;
@@ -30,9 +31,9 @@ impl Operation for Generate {
     }
 }
 
-async fn generate_key(
+async fn generate_key<DB: DataStore>(
     channel: &mut ServerChannel,
-    context: &Context,
+    context: &Context<DB>,
 ) -> Result<KeyId, LockKeeperServerError> {
     // Receive UserId from client
     let generate_message: client::Generate = channel.receive().await?;
@@ -49,9 +50,9 @@ async fn generate_key(
     Ok(key_id)
 }
 
-async fn store_key(
+async fn store_key<DB: DataStore>(
     channel: &mut ServerChannel,
-    context: &Context,
+    context: &Context<DB>,
     key_id: &KeyId,
 ) -> Result<(), LockKeeperServerError> {
     // Receive Encrypted<Secret> from client
@@ -65,7 +66,8 @@ async fn store_key(
             store_message.ciphertext,
             key_id.clone(),
         )
-        .await?;
+        .await
+        .map_err(LockKeeperServerError::database)?;
 
     // Reply with the success:true if successful
     let reply = server::Store { success: true };

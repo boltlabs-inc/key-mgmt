@@ -6,7 +6,7 @@ pub(crate) mod session_key_cache;
 pub(crate) use operation::Operation;
 pub use service::start_lock_keeper_server;
 
-use crate::{config::Config, database::Database, error::LockKeeperServerError, operations};
+use crate::{config::Config, error::LockKeeperServerError, operations};
 
 use lock_keeper::{
     constants::METADATA,
@@ -15,28 +15,27 @@ use lock_keeper::{
     types::{Message, MessageStream},
 };
 
-use crate::server::session_key_cache::SessionKeyCache;
+use crate::{database::DataStore, server::session_key_cache::SessionKeyCache};
 use lock_keeper::types::operations::RequestMetadata;
 use rand::{rngs::StdRng, SeedableRng};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tonic::{Request, Response, Status};
 
-#[derive(Debug)]
-pub struct LockKeeperKeyServer {
+pub struct LockKeeperKeyServer<DB: DataStore> {
     config: Arc<Config>,
-    db: Arc<Database>,
+    db: Arc<DB>,
     rng: Arc<Mutex<StdRng>>,
     session_key_cache: Arc<Mutex<SessionKeyCache>>,
 }
 
-impl LockKeeperKeyServer {
-    pub fn new(db: Database, config: Config) -> Result<Self, LockKeeperServerError> {
+impl<DB: DataStore> LockKeeperKeyServer<DB> {
+    pub fn new(db: Arc<DB>, config: Config) -> Result<Self, LockKeeperServerError> {
         let rng = StdRng::from_entropy();
 
         Ok(Self {
             config: Arc::new(config),
-            db: Arc::new(db),
+            db,
             rng: Arc::new(Mutex::new(rng)),
             session_key_cache: Arc::new(Mutex::new(SessionKeyCache::default())),
         })
@@ -45,7 +44,7 @@ impl LockKeeperKeyServer {
     pub(crate) fn context(
         &self,
         request: &Request<tonic::Streaming<Message>>,
-    ) -> Result<Context, LockKeeperServerError> {
+    ) -> Result<Context<DB>, LockKeeperServerError> {
         // Parse RequestMetadata
         let metadata = Self::parse_metadata(request)?;
 
@@ -72,8 +71,8 @@ impl LockKeeperKeyServer {
     }
 }
 
-pub(crate) struct Context {
-    pub db: Arc<Database>,
+pub(crate) struct Context<DB: DataStore> {
+    pub db: Arc<DB>,
     pub config: Arc<Config>,
     pub rng: Arc<Mutex<StdRng>>,
     pub metadata: RequestMetadata,
@@ -83,7 +82,7 @@ pub(crate) struct Context {
 }
 
 #[tonic::async_trait]
-impl LockKeeperRpc for LockKeeperKeyServer {
+impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
     type AuthenticateStream = MessageStream;
     type CreateStorageKeyStream = MessageStream;
     type GenerateStream = MessageStream;

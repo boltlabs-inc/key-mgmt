@@ -1,0 +1,22 @@
+[package]
+name = "key-server-cli"
+version.workspace = true
+edition = "2021"
+
+[dependencies]
+# Git dependencies
+lock-keeper = { version = "0.2.0", path = "../../lock-keeper" }
+lock-keeper-key-server = { version = "0.2.0", path = "../../lock-keeper-key-server" }
+lock-keeper-mongodb = { version = "0.2.0", path = "../../databases/lock-keeper-mongodb" }
+
+# Workspace dependencies
+clap.workspace = true
+tokio.workspace = true
+tokio-rustls.workspace = true
+tokio-stream.workspace = true
+tracing.workspace = true
+tracing-futures.workspace = true
+tracing-subscriber.workspace = true
+
+# Other dependencies
+base64 = "0.13"

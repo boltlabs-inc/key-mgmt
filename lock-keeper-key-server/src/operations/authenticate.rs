@@ -3,6 +3,7 @@ use crate::{
     server::{Context, Operation},
 };
 
+use crate::database::DataStore;
 use async_trait::async_trait;
 use lock_keeper::{
     config::opaque::OpaqueCipherSuite,
@@ -24,11 +25,11 @@ struct AuthenticateStartResult {
 pub struct Authenticate;
 
 #[async_trait]
-impl Operation for Authenticate {
+impl<DB: DataStore> Operation<DB> for Authenticate {
     async fn operation(
         self,
         channel: &mut ServerChannel,
-        context: &mut Context,
+        context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
         let result = authenticate_start(channel, context).await?;
         let session_key = authenticate_finish(channel, result.login_start_result).await?;
@@ -43,20 +44,24 @@ impl Operation for Authenticate {
 
 /// Returns the server-side start message along with a login result that will be
 /// used in the finish step.
-async fn authenticate_start(
+async fn authenticate_start<DB: DataStore>(
     channel: &mut ServerChannel,
-    context: &Context,
+    context: &Context<DB>,
 ) -> Result<AuthenticateStartResult, LockKeeperServerError> {
     // Receive start message from client
     let start_message: client::AuthenticateStart = channel.receive().await?;
 
     // Check that user with corresponding UserId exists and get their
     // server_registration
-    let (server_registration, user_id) =
-        match context.db.find_user(&start_message.account_name).await? {
-            Some(user) => user.into_parts(),
-            None => return Err(LockKeeperServerError::InvalidAccount),
-        };
+    let (server_registration, user_id) = match context
+        .db
+        .find_user(&start_message.account_name)
+        .await
+        .map_err(LockKeeperServerError::database)?
+    {
+        Some(user) => user.into_parts(),
+        None => return Err(LockKeeperServerError::InvalidAccount),
+    };
 
     let server_login_start_result = {
         let mut local_rng = context.rng.lock().await;

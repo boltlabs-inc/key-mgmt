@@ -9,7 +9,8 @@ use lock_keeper::{
         operations::ClientAction,
     },
 };
-use lock_keeper_key_server::database::Database;
+use lock_keeper_key_server::database::DataStore;
+use lock_keeper_mongodb::Database;
 use mongodb::bson::DateTime;
 use rand::{
     rngs::StdRng,

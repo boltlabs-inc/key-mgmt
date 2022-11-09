@@ -1,4 +1,5 @@
 use crate::{
+    database::DataStore,
     server::{Context, Operation},
     LockKeeperServerError,
 };
@@ -12,11 +13,11 @@ use lock_keeper::{
 pub struct RetrieveAuditEvents;
 
 #[async_trait]
-impl Operation for RetrieveAuditEvents {
+impl<DB: DataStore> Operation<DB> for RetrieveAuditEvents {
     async fn operation(
         self,
         channel: &mut ServerChannel,
-        context: &mut Context,
+        context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
         // Receive event type and options for audit events to return
         let request: client::Request = channel.receive().await?;
@@ -28,7 +29,8 @@ impl Operation for RetrieveAuditEvents {
                 request.event_type,
                 request.options,
             )
-            .await?;
+            .await
+            .map_err(LockKeeperServerError::database)?;
 
         let reply = server::Response {
             summary_record: audit_events,

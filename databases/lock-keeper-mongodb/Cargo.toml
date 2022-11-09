@@ -1,0 +1,20 @@
+[package]
+name = "lock-keeper-mongodb"
+version.workspace = true
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# Git dependencies
+lock-keeper = { version = "0.2.0", path = "../../lock-keeper" }
+lock-keeper-key-server = { version = "0.2.0", path = "../../lock-keeper-key-server" }
+
+# Workspace dependencies
+async-trait.workspace = true
+futures.workspace = true
+opaque-ke.workspace = true
+thiserror.workspace = true
+
+# Other dependencies
+mongodb = "2.3.0"
