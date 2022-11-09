@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":[["FindCommand","Helper type to generate functions for all our CliCommand implementors. This function generates the proper help string from a command string or alias."],["Help",""],["HelpString","Helper type to generate help strings based on the methods provided by the [CliCommand] trait."]]};
