@@ -18,7 +18,9 @@ tracing.workspace = true
 tracing-futures.workspace = true
 tracing-subscriber.workspace = true
 rand.workspace = true
+async-trait.workspace = true
 
 # Other dependencies
 anyhow = "1"
 hex = "0.4"
+colored = "2.0"
