@@ -168,6 +168,17 @@ If this doesn't help, you can do a full system prune. This will delete your cach
 docker system prune -a --volumes
 ```
 
+## About the use of Zeroize
+
+In our client and server we make use of the [zeroize](https://docs.rs/zeroize/latest/zeroize/) library to make sure secrets get properly removed from memory after dropping. This library will make sure that the memory is set to zero after the secret is of no use anymore. 
+Most of the secrets are annotated with the trait [ZeroizeOnDrop](https://docs.rs/zeroize/latest/zeroize/trait.ZeroizeOnDrop.html) which assures the allocated memory gets set to zero as soon as the object gets dropped.
+
+The zeroize crate guarantees the following:
+1. The zeroing operation can’t be “optimized away” by the compiler.
+2. All subsequent reads to memory will see “zeroized” values.
+
+For more information about this carte and its usage, we refer the reader to the [zeroize documentation.](https://docs.rs/zeroize/latest/zeroize/)
+
 ## Build documentation
 
 To build the API documentation for the project:
