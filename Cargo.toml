@@ -43,3 +43,4 @@ tonic =  "0.8"
 tracing = "0.1"
 tracing-futures = "0.2"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+uuid = "1.1.2"

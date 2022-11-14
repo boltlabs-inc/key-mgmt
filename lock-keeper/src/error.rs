@@ -14,6 +14,8 @@ pub enum LockKeeperError {
     // Request errors
     #[error("Invalid client action")]
     InvalidClientAction,
+    #[error("Network message missing required metadata")]
+    MetadataNotFound,
 
     // Channel errors
     #[error("Invalid message")]
@@ -35,6 +37,8 @@ pub enum LockKeeperError {
     #[error("tokio Sender error: {}", .0)]
     TokioSender(String),
     #[error(transparent)]
+    TonicMetadata(#[from] tonic::metadata::errors::InvalidMetadataValueBytes),
+    #[error(transparent)]
     TonicStatus(#[from] tonic::Status),
 }
 
@@ -54,7 +58,9 @@ impl From<LockKeeperError> for Status {
     fn from(error: LockKeeperError) -> Self {
         match error {
             // Errors that are safe to return to the client
-            LockKeeperError::InvalidMessage => Status::invalid_argument(error.to_string()),
+            LockKeeperError::InvalidMessage | LockKeeperError::MetadataNotFound => {
+                Status::invalid_argument(error.to_string())
+            }
             LockKeeperError::NoMessageReceived => Status::deadline_exceeded(error.to_string()),
             // Errors that the client should not see
             LockKeeperError::InvalidClientAction
@@ -64,6 +70,7 @@ impl From<LockKeeperError> for Status {
             | LockKeeperError::OpaqueProtocol(_)
             | LockKeeperError::SerdeJson(_)
             | LockKeeperError::TokioSender(_)
+            | LockKeeperError::TonicMetadata(_)
             | LockKeeperError::TonicStatus(_) => Status::internal("Internal server error"),
         }
     }

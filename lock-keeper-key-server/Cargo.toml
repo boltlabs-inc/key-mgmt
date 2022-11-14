@@ -32,6 +32,7 @@ tonic.workspace = true
 tracing.workspace = true
 tracing-futures.workspace = true
 tracing-subscriber.workspace = true
+uuid.workspace = true
 
 # Other dependencies
 strum = { version = "0.24.1", features = ["derive"] }

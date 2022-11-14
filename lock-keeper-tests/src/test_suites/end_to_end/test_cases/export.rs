@@ -1,6 +1,6 @@
 use colored::Colorize;
 use lock_keeper::types::{audit_event::EventStatus, operations::ClientAction};
-use lock_keeper_client::Config;
+use lock_keeper_client::{api::GenerateResult, Config};
 use tonic::Status;
 
 use crate::{
@@ -36,11 +36,14 @@ pub async fn run_tests(config: TestConfig) -> Result<Vec<TestResult>> {
 async fn export_works(config: Config) -> Result<()> {
     let state = init_test_state(config).await?;
 
-    let (key_id, local_storage) = generate(&state).await?;
+    let GenerateResult {
+        key_id,
+        local_storage,
+    } = generate(&state).await?.into_inner();
     let bytes_res = export(&state, &key_id).await;
     assert!(bytes_res.is_ok());
 
-    let bytes_new = bytes_res?;
+    let bytes_new = bytes_res?.into_inner();
     let bytes_original: Vec<u8> = local_storage.material.into();
     assert_eq!(bytes_new, bytes_original);
     check_audit_events(&state, EventStatus::Successful, ClientAction::Export).await?;
@@ -62,7 +65,7 @@ async fn cannot_export_fake_key(config: Config) -> Result<()> {
 async fn cannot_export_signing_key_as_secret(config: Config) -> Result<()> {
     let state = init_test_state(config).await?;
 
-    let (key_id, _) = import_signing_key(&state).await?;
+    let (key_id, _) = import_signing_key(&state).await?.into_inner();
     let export_res = export(&state, &key_id).await;
     compare_errors(export_res, Status::internal("Internal server error"));
     check_audit_events(&state, EventStatus::Failed, ClientAction::Export).await?;
@@ -73,11 +76,11 @@ async fn cannot_export_signing_key_as_secret(config: Config) -> Result<()> {
 async fn export_signing_key_works(config: Config) -> Result<()> {
     let state = init_test_state(config).await?;
 
-    let (key_id, bytes_original) = import_signing_key(&state).await?;
+    let (key_id, bytes_original) = import_signing_key(&state).await?.into_inner();
     let export_res = export_signing_key(&state, &key_id).await;
     assert!(export_res.is_ok());
 
-    let export = export_res?;
+    let export = export_res?.into_inner();
     assert_eq!(export.key_material, bytes_original);
     check_audit_events(
         &state,
@@ -103,7 +106,7 @@ async fn cannot_export_fake_signing_key(config: Config) -> Result<()> {
 async fn cannot_export_secret_as_signing_key(config: Config) -> Result<()> {
     let state = init_test_state(config).await?;
 
-    let (key_id, _) = generate(&state).await?;
+    let GenerateResult { key_id, .. } = generate(&state).await?.into_inner();
     let export_res = export_signing_key(&state, &key_id).await;
     compare_errors(export_res, Status::internal("Internal server error"));
     check_audit_events(&state, EventStatus::Failed, ClientAction::ExportSigningKey).await?;

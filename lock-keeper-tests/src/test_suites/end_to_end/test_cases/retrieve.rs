@@ -3,7 +3,7 @@ use lock_keeper::types::{
     audit_event::EventStatus,
     operations::{retrieve::RetrieveContext, ClientAction},
 };
-use lock_keeper_client::Config;
+use lock_keeper_client::{api::GenerateResult, Config};
 use tonic::Status;
 
 use crate::{
@@ -35,11 +35,14 @@ pub async fn run_tests(config: TestConfig) -> Result<Vec<TestResult>> {
 async fn retrieve_local_only_works(config: Config) -> Result<()> {
     let state = init_test_state(config).await?;
 
-    let (key_id, local_storage) = generate(&state).await?;
+    let GenerateResult {
+        key_id,
+        local_storage,
+    } = generate(&state).await?.into_inner();
     let local_storage_res = retrieve(&state, &key_id, RetrieveContext::LocalOnly).await;
     assert!(local_storage_res.is_ok());
 
-    let local_storage_opt = local_storage_res?;
+    let local_storage_opt = local_storage_res?.into_inner();
     assert!(local_storage_opt.is_some());
 
     let local_storage_new = local_storage_opt.unwrap();
@@ -52,11 +55,11 @@ async fn retrieve_local_only_works(config: Config) -> Result<()> {
 async fn retrieve_null_works(config: Config) -> Result<()> {
     let state = init_test_state(config).await?;
 
-    let (key_id, _) = generate(&state).await?;
+    let GenerateResult { key_id, .. } = generate(&state).await?.into_inner();
     let local_storage_res = retrieve(&state, &key_id, RetrieveContext::Null).await;
     assert!(local_storage_res.is_ok());
 
-    let local_storage_opt = local_storage_res?;
+    let local_storage_opt = local_storage_res?.into_inner();
     assert!(local_storage_opt.is_none());
     check_audit_events(&state, EventStatus::Successful, ClientAction::Retrieve).await?;
 

@@ -17,6 +17,8 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumIter, EnumString};
+use tonic::metadata::{Ascii, MetadataValue};
+use uuid::Uuid;
 
 /// Options for actions the Lock Keeper client can take.
 #[derive(
@@ -38,7 +40,7 @@ pub enum ClientAction {
     RetrieveStorageKey,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct RequestMetadata {
     account_name: AccountName,
     action: ClientAction,
@@ -54,16 +56,6 @@ impl RequestMetadata {
         }
     }
 
-    pub fn to_vec(&self) -> Result<Vec<u8>, LockKeeperError> {
-        let vec = serde_json::to_vec(self)?;
-        Ok(vec)
-    }
-
-    pub fn from_slice(slice: &[u8]) -> Result<Self, LockKeeperError> {
-        let metadata: Self = serde_json::from_slice(slice)?;
-        Ok(metadata)
-    }
-
     pub fn account_name(&self) -> &AccountName {
         &self.account_name
     }
@@ -74,5 +66,48 @@ impl RequestMetadata {
 
     pub fn user_id(&self) -> &Option<UserId> {
         &self.user_id
+    }
+}
+
+impl TryFrom<&RequestMetadata> for MetadataValue<Ascii> {
+    type Error = LockKeeperError;
+
+    fn try_from(value: &RequestMetadata) -> Result<Self, Self::Error> {
+        let bytes = serde_json::to_vec(value)?;
+        Ok(MetadataValue::try_from(bytes)?)
+    }
+}
+
+impl TryFrom<&MetadataValue<Ascii>> for RequestMetadata {
+    type Error = LockKeeperError;
+
+    fn try_from(value: &MetadataValue<Ascii>) -> Result<Self, Self::Error> {
+        let bytes = value.as_bytes();
+        let metadata = serde_json::from_slice(bytes)?;
+        Ok(metadata)
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct ResponseMetadata {
+    pub request_id: Uuid,
+}
+
+impl TryFrom<ResponseMetadata> for MetadataValue<Ascii> {
+    type Error = LockKeeperError;
+
+    fn try_from(value: ResponseMetadata) -> Result<Self, Self::Error> {
+        let bytes = serde_json::to_vec(&value)?;
+        Ok(MetadataValue::try_from(bytes)?)
+    }
+}
+
+impl TryFrom<&MetadataValue<Ascii>> for ResponseMetadata {
+    type Error = LockKeeperError;
+
+    fn try_from(value: &MetadataValue<Ascii>) -> Result<Self, Self::Error> {
+        let bytes = value.as_bytes();
+        let metadata = serde_json::from_slice(bytes)?;
+        Ok(metadata)
     }
 }

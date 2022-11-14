@@ -1,9 +1,12 @@
-use lock_keeper::{crypto::OpaqueSessionKey, types::database::user::UserId};
+use lock_keeper::{
+    crypto::OpaqueSessionKey,
+    types::{database::user::UserId, operations::RequestMetadata},
+};
 use std::collections::hash_map::Entry;
 
 use std::collections::HashMap;
 
-use crate::{database::DataStore, server::Context, LockKeeperServerError};
+use crate::{database::DataStore, LockKeeperServerError};
 use lock_keeper::types::operations::ClientAction;
 use std::time::{Duration, Instant};
 use thiserror::Error;
@@ -78,9 +81,8 @@ impl SessionKeyCache {
 
     pub fn check_key<DB: DataStore>(
         &mut self,
-        context: &Context<DB>,
+        metadata: &RequestMetadata,
     ) -> Result<(), LockKeeperServerError> {
-        let metadata = &context.metadata;
         match metadata.action() {
             // These actions are unauthenticated
             ClientAction::Authenticate | ClientAction::Register => Ok(()),

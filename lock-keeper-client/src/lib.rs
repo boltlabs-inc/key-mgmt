@@ -8,7 +8,9 @@ pub mod api;
 pub mod client;
 pub mod config;
 pub mod error;
+pub mod response;
 
 pub use client::LockKeeperClient;
 pub use config::Config;
-pub use error::LockKeeperClientError;
+pub use error::{LockKeeperClientError, Result};
+pub use response::LockKeeperResponse;

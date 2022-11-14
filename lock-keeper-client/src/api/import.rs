@@ -1,4 +1,4 @@
-use crate::{LockKeeperClient, LockKeeperClientError};
+use crate::{LockKeeperClient, LockKeeperClientError, LockKeeperResponse};
 use lock_keeper::{
     crypto::{Import, KeyId},
     infrastructure::channel::ClientChannel,
@@ -8,9 +8,9 @@ use lock_keeper::{
 impl LockKeeperClient {
     pub(crate) async fn handle_import_signing_key(
         &self,
-        channel: &mut ClientChannel,
+        mut channel: ClientChannel,
         key_material: Vec<u8>,
-    ) -> Result<KeyId, LockKeeperClientError> {
+    ) -> Result<LockKeeperResponse<KeyId>, LockKeeperClientError> {
         let key_material = Import { key_material };
         // Send UserId and key material to server
         let request = client::Request {
@@ -22,6 +22,9 @@ impl LockKeeperClient {
         // Get KeyId for imported key from server
         let server_response: server::Response = channel.receive().await?;
 
-        Ok(server_response.key_id)
+        Ok(LockKeeperResponse::from_channel(
+            channel,
+            server_response.key_id,
+        ))
     }
 }

@@ -72,7 +72,7 @@ impl DataStore for Database {
         &self,
         actor: &AccountName,
         secret_id: &Option<KeyId>,
-        action: &ClientAction,
+        action: ClientAction,
         status: EventStatus,
     ) -> Result<(), Self::Error> {
         self.create_audit_event(actor, secret_id, action, status)

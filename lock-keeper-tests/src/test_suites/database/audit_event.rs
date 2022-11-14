@@ -56,7 +56,7 @@ async fn create_random_audit_events(
         let key_id = KeyId::generate(&mut rng, user_id)?;
         let key_id_copy = key_id.clone();
         let action = action_list.choose(&mut rng).unwrap();
-        db.create_audit_event(account_name, &Some(key_id), action, EventStatus::Started)
+        db.create_audit_event(account_name, &Some(key_id), *action, EventStatus::Started)
             .await?;
         key_ids.push(key_id_copy);
     }

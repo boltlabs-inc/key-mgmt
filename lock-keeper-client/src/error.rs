@@ -2,6 +2,8 @@ use lock_keeper::LockKeeperError;
 use thiserror::Error;
 use tonic::{Code, Status};
 
+pub type Result<T> = std::result::Result<T, LockKeeperClientError>;
+
 #[derive(Debug, Error)]
 pub enum LockKeeperClientError {
     #[error("Health check failed: {0}")]
@@ -41,8 +43,6 @@ pub enum LockKeeperClientError {
     Rustls(#[from] rustls::Error),
     #[error(transparent)]
     Toml(#[from] toml::de::Error),
-    #[error(transparent)]
-    TonicMetadata(#[from] tonic::metadata::errors::InvalidMetadataValueBytes),
     #[error(transparent)]
     TonicStatus(Status),
     #[error(transparent)]

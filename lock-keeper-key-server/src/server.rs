@@ -9,14 +9,12 @@ pub use service::start_lock_keeper_server;
 use crate::{config::Config, error::LockKeeperServerError, operations};
 
 use lock_keeper::{
-    constants::METADATA,
     crypto::KeyId,
     rpc::{lock_keeper_rpc_server::LockKeeperRpc, HealthCheck},
     types::{Message, MessageStream},
 };
 
 use crate::{database::DataStore, server::session_key_cache::SessionKeyCache};
-use lock_keeper::types::operations::RequestMetadata;
 use rand::{rngs::StdRng, SeedableRng};
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -41,33 +39,14 @@ impl<DB: DataStore> LockKeeperKeyServer<DB> {
         })
     }
 
-    pub(crate) fn context(
-        &self,
-        request: &Request<tonic::Streaming<Message>>,
-    ) -> Result<Context<DB>, LockKeeperServerError> {
-        // Parse RequestMetadata
-        let metadata = Self::parse_metadata(request)?;
-
-        Ok(Context {
+    pub(crate) fn context(&self) -> Context<DB> {
+        Context {
             config: self.config.clone(),
             db: self.db.clone(),
             rng: self.rng.clone(),
-            metadata,
             key_id: None,
             session_key_cache: self.session_key_cache.clone(),
-        })
-    }
-
-    fn parse_metadata(
-        request: &Request<tonic::Streaming<Message>>,
-    ) -> Result<RequestMetadata, Status> {
-        let val_bytes = request
-            .metadata()
-            .get(METADATA)
-            .ok_or_else(|| Status::invalid_argument("No metadata found"))?
-            .as_bytes();
-        let metadata = RequestMetadata::from_slice(val_bytes)?;
-        Ok(metadata)
+        }
     }
 }
 
@@ -75,7 +54,6 @@ pub(crate) struct Context<DB: DataStore> {
     pub db: Arc<DB>,
     pub config: Arc<Config>,
     pub rng: Arc<Mutex<StdRng>>,
-    pub metadata: RequestMetadata,
     pub key_id: Option<KeyId>,
     /// Our user session keys are held in this cache after authentication.
     pub session_key_cache: Arc<Mutex<SessionKeyCache>>,
@@ -103,9 +81,8 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         &self,
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::RegisterStream>, Status> {
-        let context = self.context(&request)?;
         Ok(operations::Register
-            .handle_request(context, request)
+            .handle_request(self.context(), request)
             .await?)
     }
 
@@ -113,9 +90,8 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         &self,
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::AuthenticateStream>, Status> {
-        let context = self.context(&request)?;
         Ok(operations::Authenticate
-            .handle_request(context, request)
+            .handle_request(self.context(), request)
             .await?)
     }
 
@@ -123,9 +99,8 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         &self,
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::CreateStorageKeyStream>, Status> {
-        let context = self.context(&request)?;
         Ok(operations::CreateStorageKey
-            .handle_request(context, request)
+            .handle_request(self.context(), request)
             .await?)
     }
 
@@ -133,9 +108,8 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         &self,
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::GenerateStream>, Status> {
-        let context = self.context(&request)?;
         Ok(operations::Generate
-            .handle_request(context, request)
+            .handle_request(self.context(), request)
             .await?)
     }
 
@@ -143,9 +117,8 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         &self,
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::ImportSigningKeyStream>, Status> {
-        let context = self.context(&request)?;
         Ok(operations::ImportSigningKey
-            .handle_request(context, request)
+            .handle_request(self.context(), request)
             .await?)
     }
 
@@ -153,9 +126,8 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         &self,
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::RemoteGenerateStream>, Status> {
-        let context = self.context(&request)?;
         Ok(operations::RemoteGenerate
-            .handle_request(context, request)
+            .handle_request(self.context(), request)
             .await?)
     }
 
@@ -163,9 +135,8 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         &self,
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::RemoteSignBytesStream>, Status> {
-        let context = self.context(&request)?;
         Ok(operations::RemoteSignBytes
-            .handle_request(context, request)
+            .handle_request(self.context(), request)
             .await?)
     }
 
@@ -173,9 +144,8 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         &self,
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::RetrieveStream>, Status> {
-        let context = self.context(&request)?;
         Ok(operations::Retrieve
-            .handle_request(context, request)
+            .handle_request(self.context(), request)
             .await?)
     }
 
@@ -183,9 +153,8 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         &self,
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::RetrieveAuditEventsStream>, Status> {
-        let context = self.context(&request)?;
         Ok(operations::RetrieveAuditEvents
-            .handle_request(context, request)
+            .handle_request(self.context(), request)
             .await?)
     }
 
@@ -193,9 +162,8 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         &self,
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::RetrieveStorageKeyStream>, Status> {
-        let context = self.context(&request)?;
         Ok(operations::RetrieveStorageKey
-            .handle_request(context, request)
+            .handle_request(self.context(), request)
             .await?)
     }
 
@@ -203,9 +171,8 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         &self,
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::RetrieveSigningKeyStream>, Status> {
-        let context = self.context(&request)?;
         Ok(operations::RetrieveSigningKey
-            .handle_request(context, request)
+            .handle_request(self.context(), request)
             .await?)
     }
 }
