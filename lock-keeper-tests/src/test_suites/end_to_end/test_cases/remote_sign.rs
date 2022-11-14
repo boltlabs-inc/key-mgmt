@@ -1,19 +1,18 @@
 use colored::Colorize;
 use lock_keeper::{
-    config::client::Config,
     crypto::{Signable, SignableBytes},
     types::{audit_event::EventStatus, operations::ClientAction},
 };
-use lock_keeper_client::api::RemoteGenerateResult;
+use lock_keeper_client::{api::RemoteGenerateResult, Config};
 use rand::{rngs::StdRng, SeedableRng};
 
 use crate::{
-    end_to_end::{
+    error::Result,
+    run_parallel,
+    test_suites::end_to_end::{
         operations::{check_audit_events, remote_generate, remote_sign_bytes},
         test_cases::init_test_state,
     },
-    error::Result,
-    run_parallel,
     utils::{self, TestResult, RNG_SEED},
     Config as TestConfig,
 };

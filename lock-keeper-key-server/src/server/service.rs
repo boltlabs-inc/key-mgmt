@@ -1,11 +1,9 @@
-use crate::{database::Database, error::LockKeeperServerError, server::LockKeeperKeyServer};
-
-use futures::stream::{FuturesUnordered, StreamExt};
-use hyper::server::conn::Http;
-use lock_keeper::{
-    config::server::{Config, Service},
-    rpc::lock_keeper_rpc_server::LockKeeperRpcServer,
+use crate::{
+    config::Config, database::Database, error::LockKeeperServerError, server::LockKeeperKeyServer,
 };
+
+use hyper::server::conn::Http;
+use lock_keeper::rpc::lock_keeper_rpc_server::LockKeeperRpcServer;
 use std::{net::SocketAddr, sync::Arc};
 use tokio::{
     net::{TcpListener, TcpStream},
@@ -20,18 +18,14 @@ pub async fn start_lock_keeper_server(config: Config) -> Result<(), LockKeeperSe
     tracing::info!("Starting Lock Keeper key server");
     let db = Database::connect(&config.database).await?;
     // Collect the futures for the result of running each specified server
-    let mut server_futures: FuturesUnordered<_> = config
-        .services
-        .iter()
-        .map(|service| start_service(service, &config, &db))
-        .collect();
+    let server_future = start_service(&config, &db);
 
     tracing::info!("Lock Keeper key server started");
 
     // Wait for the server to finish
     tokio::select! {
         _ = signal::ctrl_c() => info!("Terminated by user"),
-        Some(Err(e)) = server_futures.next() => {
+        Err(e) = server_future => {
             error!("Error: {}", e);
         },
         else => {
@@ -43,21 +37,16 @@ pub async fn start_lock_keeper_server(config: Config) -> Result<(), LockKeeperSe
 
 /// Starts a new thread that accepts connections and sends them through our
 /// service stack.
-async fn start_service(
-    service: &Service,
-    config: &Config,
-    db: &Database,
-) -> Result<(), LockKeeperServerError> {
+async fn start_service(config: &Config, db: &Database) -> Result<(), LockKeeperServerError> {
     // Clone `Arc`s for the various resources we need in this server
     let config = config.clone();
     let db = db.clone();
-    let service = Arc::new(service.clone());
 
-    let tls = service.tls_config()?;
+    let tls = config.tls_config.clone();
 
-    let rpc_server = LockKeeperKeyServer::new(db, config, service)?;
-    let addr = rpc_server.service.address;
-    let port = rpc_server.service.port;
+    let rpc_server = LockKeeperKeyServer::new(db, config)?;
+    let addr = rpc_server.config.address;
+    let port = rpc_server.config.port;
 
     let svc = Server::builder()
         .add_service(LockKeeperRpcServer::new(rpc_server))

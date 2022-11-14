@@ -1,6 +1,5 @@
-use crate::end_to_end::test_cases::TestState;
+use crate::test_suites::end_to_end::test_cases::TestState;
 use lock_keeper::{
-    config::client::Config,
     crypto::{Export, KeyId, Secret, Signable, Signature},
     types::{
         audit_event::{AuditEventOptions, EventStatus, EventType},
@@ -11,7 +10,7 @@ use lock_keeper::{
 use lock_keeper_client::{
     api::{LocalStorage, RemoteGenerateResult},
     client::Password,
-    LockKeeperClient, LockKeeperClientError,
+    Config, LockKeeperClient, LockKeeperClientError,
 };
 use rand::{prelude::StdRng, Rng, SeedableRng};
 

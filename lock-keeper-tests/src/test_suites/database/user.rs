@@ -8,9 +8,9 @@ use lock_keeper_key_server::LockKeeperServerError;
 use rand::{rngs::StdRng, SeedableRng};
 
 use crate::{
-    database::USERS_TABLE,
     error::Result,
     run_parallel,
+    test_suites::database::USERS_TABLE,
     utils::{server_registration, tagged, TestResult},
     Config,
 };

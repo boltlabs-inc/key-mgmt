@@ -1,6 +1,3 @@
-//! Configuration types including config file definitions and cryptography
-//! configurations.
+//! Configuration types
 
-pub mod client;
 pub mod opaque;
-pub mod server;

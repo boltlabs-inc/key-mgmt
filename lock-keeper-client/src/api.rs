@@ -15,9 +15,8 @@ mod remote_sign_bytes;
 mod retrieve;
 mod retrieve_audit_events;
 
-use crate::{client::Password, LockKeeperClient, LockKeeperClientError};
+use crate::{client::Password, config::Config, LockKeeperClient, LockKeeperClientError};
 use lock_keeper::{
-    config::client::Config,
     crypto::{Export, KeyId, Secret, Signable, Signature},
     types::{
         audit_event::{AuditEvent, AuditEventOptions, EventType},
@@ -48,10 +47,12 @@ impl LockKeeperClient {
                 if response.into_inner() == (HealthCheck { check: true }) {
                     Ok(())
                 } else {
-                    Err(LockKeeperClientError::HealthCheckFailed)
+                    Err(LockKeeperClientError::HealthCheckFailed(
+                        "Invalid response from health check method.".to_string(),
+                    ))
                 }
             }
-            Err(_) => Err(LockKeeperClientError::HealthCheckFailed),
+            Err(e) => Err(e.into()),
         }
     }
 

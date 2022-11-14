@@ -40,10 +40,7 @@ jobs:
           args: --debug cargo-make
 
       - name: Start Server
-        run: cargo make start-server-detached
+        run: cargo make start-server-detached-all
           
-      - name: Run end-to-end tests
-        run: cargo make e2e
-
-      - name: Run integration tests
-        run: cargo make integration
+      - name: Run all tests
+        run: cargo make all-tests

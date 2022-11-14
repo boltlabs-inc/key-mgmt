@@ -28,7 +28,7 @@ Refer to the [current design specification](https://github.com/boltlabs-inc/key-
 
 ### Dependencies:
 
-- A recent version of [stable Rust](https://www.rust-lang.org/) to build the Lock Keeper project. Version 1.64 is the minimum required version.
+- A recent version of [stable Rust](https://www.rust-lang.org/) to build the Lock Keeper project. Version 1.65 is the minimum required version.
 - OpenSSL. You should be able to install this using your package manager of choice.
 - `protoc` is required to build .proto files. It can be installed using `brew` for MacOS or `apt install` for Linux. Further instructions [here](https://grpc.io/docs/protoc-installation/).
 - [cargo-make](https://github.com/sagiegurari/cargo-make) can be installed with `cargo install cargo-make`.
@@ -116,6 +116,38 @@ Tests can be run against a local server with:
 ```bash
 cargo make e2e
 ```
+
+## TLS mutual authentication
+
+Mutual authentication can be enabled in server and client configs. See `ServerMutualAuth.toml` and `ClientMutualAuth.toml` 
+for examples.
+
+To run a server with mutual auth enabled, use your preferred `cargo make` task and append `-mutual-auth` to the end. For example, 
+to run a server in the foreground with mutual auth use `cargo make start-server-mutual-auth`.
+
+To run both servers at the same time, append `-all` to the end. For example, `cargo make start-server-all`.
+
+In order to run the mutual authentication integration tests, you must have both servers running.
+
+# Private key security
+The key server always requires a private key. 
+The private key can optionally be provided via a file path in the server config.
+Alternatively, the raw bytes for a private key can be passed to the `lock_keeper_key_server::Config` constructors.
+This alternative allows the server to secure its private key however it chooses.
+
+The `key-server-cli` binary included with the `lock-keeper-key-server` crate provides a command-line argument to accept a private
+key as a base64 string.
+
+Example:
+
+```bash
+cargo run --bin key-server-cli dev/local/ServerMutualAuth.toml --private-key "$(cat dev/test-pki/gen/certs/server.key | base64)"
+```
+
+`LockKeeperClient` requires a private key if client authentication is enabled. 
+The private key can optionally be provided via a file path in the client config.
+Alternatively, the raw bytes for a private key can be passed to the `lock_keeper_client::Config` constructors.
+This alternative allows the client to secure its private key however it chooses.
 
 ## Running the interactive client
 
