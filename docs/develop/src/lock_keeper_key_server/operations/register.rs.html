@@ -100,16 +100,9 @@
 <span id="100">100</span>
 <span id="101">101</span>
 <span id="102">102</span>
-<span id="103">103</span>
-<span id="104">104</span>
-<span id="105">105</span>
-<span id="106">106</span>
-<span id="107">107</span>
-<span id="108">108</span>
-<span id="109">109</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{
     error::LockKeeperServerError,
-    server::{opaque_storage::create_or_retrieve_server_key_opaque, Context, Operation},
+    server::{Context, Operation},
 };
 <span class="kw">use </span>std::ops::DerefMut;
 
@@ -148,13 +141,6 @@
     <span class="comment">// Receive start message from client
     </span><span class="kw">let </span>start_message: client::RegisterStart = channel.receive().<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="comment">// Get server key for OPAQUE
-    </span><span class="kw">let </span>server_setup = {
-        <span class="kw">let </span><span class="kw-2">mut </span>rng = context.rng.lock().<span class="kw">await</span>;
-
-        create_or_retrieve_server_key_opaque(<span class="kw-2">&amp;mut </span>rng, <span class="kw-2">&amp;</span>context.service)<span class="question-mark">?
-    </span>};
-
     <span class="comment">// Abort registration if UserId already exists
     </span><span class="kw">let </span>user = context.db.find_user(<span class="kw-2">&amp;</span>start_message.account_name).<span class="kw">await</span><span class="question-mark">?</span>;
 
@@ -163,7 +149,7 @@
     } <span class="kw">else </span>{
         <span class="comment">// Registration can continue if user ID doesn&#39;t exist yet
         </span><span class="kw">let </span>server_registration_start_result = ServerRegistration::&lt;OpaqueCipherSuite&gt;::start(
-            <span class="kw-2">&amp;</span>server_setup,
+            <span class="kw-2">&amp;</span>context.config.opaque_server_setup,
             start_message.registration_request,
             start_message.account_name.as_bytes(),
         )<span class="question-mark">?</span>;

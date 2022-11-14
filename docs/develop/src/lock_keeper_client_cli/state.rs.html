@@ -78,8 +78,8 @@
 </span><span class="kw">use </span>std::path::PathBuf;
 
 <span class="kw">use </span><span class="kw">crate</span>::storage::{Entry, Storage};
-<span class="kw">use </span>lock_keeper::{config::client::Config, types::database::user::AccountName};
-<span class="kw">use </span>lock_keeper_client::client::Password;
+<span class="kw">use </span>lock_keeper::types::database::user::AccountName;
+<span class="kw">use </span>lock_keeper_client::{client::Password, Config};
 
 <span class="doccomment">/// In-memory state for a running application
 </span><span class="attribute">#[derive(Debug)]

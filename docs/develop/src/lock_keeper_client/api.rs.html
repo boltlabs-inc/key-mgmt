@@ -226,6 +226,7 @@
 <span id="226">226</span>
 <span id="227">227</span>
 <span id="228">228</span>
+<span id="229">229</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Full implementation of the public API for the Lock Keeper client library.
 //!
 //! This API is designed for use with a local client application - that is, an
@@ -243,9 +244,8 @@
 <span class="kw">mod </span>retrieve;
 <span class="kw">mod </span>retrieve_audit_events;
 
-<span class="kw">use crate</span>::{client::Password, LockKeeperClient, LockKeeperClientError};
+<span class="kw">use crate</span>::{client::Password, config::Config, LockKeeperClient, LockKeeperClientError};
 <span class="kw">use </span>lock_keeper::{
-    config::client::Config,
     crypto::{Export, KeyId, Secret, Signable, Signature},
     types::{
         audit_event::{AuditEvent, AuditEventOptions, EventType},
@@ -276,10 +276,12 @@
                 <span class="kw">if </span>response.into_inner() == (HealthCheck { check: <span class="bool-val">true </span>}) {
                     <span class="prelude-val">Ok</span>(())
                 } <span class="kw">else </span>{
-                    <span class="prelude-val">Err</span>(LockKeeperClientError::HealthCheckFailed)
+                    <span class="prelude-val">Err</span>(LockKeeperClientError::HealthCheckFailed(
+                        <span class="string">&quot;Invalid response from health check method.&quot;</span>.to_string(),
+                    ))
                 }
             }
-            <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">Err</span>(LockKeeperClientError::HealthCheckFailed),
+            <span class="prelude-val">Err</span>(e) =&gt; <span class="prelude-val">Err</span>(e.into()),
         }
     }
 

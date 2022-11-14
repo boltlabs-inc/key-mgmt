@@ -76,23 +76,13 @@
 <span id="76">76</span>
 <span id="77">77</span>
 <span id="78">78</span>
-<span id="79">79</span>
-<span id="80">80</span>
-<span id="81">81</span>
-<span id="82">82</span>
-<span id="83">83</span>
-<span id="84">84</span>
-<span id="85">85</span>
-<span id="86">86</span>
-<span id="87">87</span>
-<span id="88">88</span>
-<span id="89">89</span>
-</pre><pre class="rust"><code><span class="kw">use </span>lock_keeper::config::{opaque::OpaqueCipherSuite, server::Service};
+</pre><pre class="rust"><code><span class="kw">use </span>lock_keeper::config::opaque::OpaqueCipherSuite;
 <span class="kw">use </span>opaque_ke::{keypair::PrivateKey, Ristretto255, ServerSetup};
 <span class="kw">use </span>rand::rngs::StdRng;
 <span class="kw">use </span>std::{
     fs::File,
     io::{Read, Write},
+    path::Path,
 };
 
 <span class="kw">use </span><span class="kw">crate</span>::LockKeeperServerError;
@@ -103,20 +93,20 @@
 /// TODO: replace with decent and secure storage for server keys #56
 </span><span class="kw">pub fn </span>create_or_retrieve_server_key_opaque(
     rng: <span class="kw-2">&amp;mut </span>StdRng,
-    service: <span class="kw-2">&amp;</span>Service,
+    opaque_server_key_path: <span class="kw">impl </span>AsRef&lt;Path&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;ServerSetup&lt;OpaqueCipherSuite, PrivateKey&lt;Ristretto255&gt;&gt;, LockKeeperServerError&gt; {
-    <span class="kw">let </span>server_key_file = File::open(<span class="kw-2">&amp;</span>service.opaque_server_key);
+    <span class="kw">let </span>server_key_file = File::open(opaque_server_key_path.as_ref());
     <span class="kw">match </span>server_key_file {
         <span class="comment">// Server key file doesn&#39;t exist yet, create new
         </span><span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
             <span class="kw">let </span>server_setup = ServerSetup::&lt;OpaqueCipherSuite&gt;::new(rng);
             std::fs::create_dir_all(
-                service
-                    .opaque_server_key
+                opaque_server_key_path
+                    .as_ref()
                     .parent()
                     .ok_or(LockKeeperServerError::InvalidOpaqueDirectory)<span class="question-mark">?</span>,
             )<span class="question-mark">?</span>;
-            <span class="kw">let </span><span class="kw-2">mut </span>file = File::create(<span class="kw-2">&amp;</span>service.opaque_server_key)<span class="question-mark">?</span>;
+            <span class="kw">let </span><span class="kw-2">mut </span>file = File::create(opaque_server_key_path)<span class="question-mark">?</span>;
             file.write_all(bincode::serialize(<span class="kw-2">&amp;</span>server_setup)<span class="question-mark">?</span>.as_slice())<span class="question-mark">?</span>;
             <span class="prelude-val">Ok</span>(server_setup)
         }
@@ -135,45 +125,33 @@
 <span class="attribute">#[cfg(test)]
 </span><span class="kw">mod </span>tests {
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
-    <span class="kw">use </span>lock_keeper::config::server::Service;
     <span class="kw">use </span>rand::SeedableRng;
-    <span class="kw">use </span>std::{
-        env::temp_dir,
-        net::{IpAddr, Ipv4Addr},
-        path::Path,
-    };
+    <span class="kw">use </span>std::{env::temp_dir, path::Path};
 
     <span class="attribute">#[tokio::test]
     </span><span class="kw">async fn </span>opaque_server_key_is_retrievable() {
         <span class="kw">let </span><span class="kw-2">mut </span>rng = StdRng::from_entropy();
-        <span class="kw">let </span>service = <span class="kw-2">&amp;</span>Service {
-            address: IpAddr::V4(Ipv4Addr::new(<span class="number">127</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>)),
-            port: <span class="number">0</span>,
-            private_key: Default::default(),
-            certificate: Default::default(),
-            opaque_path: temp_dir().join(<span class="string">&quot;opaque&quot;</span>),
-            opaque_server_key: temp_dir().join(<span class="string">&quot;opaque/server_setup&quot;</span>),
-        };
+        <span class="kw">let </span>key_path = temp_dir().join(<span class="string">&quot;opaque/server_setup&quot;</span>);
 
         <span class="comment">// Delete file from previous run if it exists
-        </span><span class="kw">let _ </span>= std::fs::remove_file(<span class="kw-2">&amp;</span>service.opaque_server_key);
+        </span><span class="kw">let _ </span>= std::fs::remove_file(<span class="kw-2">&amp;</span>key_path);
 
         <span class="comment">// First, the storage key doesn&#39;t exist
-        </span><span class="macro">assert!</span>(!Path::new(<span class="kw-2">&amp;</span>service.opaque_server_key).is_file());
+        </span><span class="macro">assert!</span>(!Path::new(<span class="kw-2">&amp;</span>key_path).is_file());
 
-        <span class="kw">let </span>server_setup = create_or_retrieve_server_key_opaque(<span class="kw-2">&amp;mut </span>rng, service).unwrap();
+        <span class="kw">let </span>server_setup = create_or_retrieve_server_key_opaque(<span class="kw-2">&amp;mut </span>rng, <span class="kw-2">&amp;</span>key_path).unwrap();
 
         <span class="comment">// Then, it does exist
-        </span><span class="macro">assert!</span>(Path::new(<span class="kw-2">&amp;</span>service.opaque_server_key).exists());
+        </span><span class="macro">assert!</span>(Path::new(<span class="kw-2">&amp;</span>key_path).exists());
 
         <span class="kw">let </span>retrieved_server_setup =
-            create_or_retrieve_server_key_opaque(<span class="kw-2">&amp;mut </span>rng, service).unwrap();
+            create_or_retrieve_server_key_opaque(<span class="kw-2">&amp;mut </span>rng, <span class="kw-2">&amp;</span>key_path).unwrap();
 
         <span class="comment">// Re-retrieving gets the same thing back
         </span><span class="macro">assert_eq!</span>(server_setup, retrieved_server_setup);
 
         <span class="comment">// Clean up
-        </span><span class="macro">assert!</span>(std::fs::remove_file(<span class="kw-2">&amp;</span>service.opaque_server_key).is_ok());
+        </span><span class="macro">assert!</span>(std::fs::remove_file(<span class="kw-2">&amp;</span>key_path).is_ok());
     }
 }
 </code></pre></div>

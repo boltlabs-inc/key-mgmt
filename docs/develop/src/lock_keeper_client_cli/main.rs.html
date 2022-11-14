@@ -30,14 +30,14 @@
 <span class="kw">mod </span>storage;
 
 <span class="kw">use </span>clap::Parser;
-<span class="kw">use </span>lock_keeper::config::client::Config;
+<span class="kw">use </span>lock_keeper_client::Config;
 <span class="kw">use </span>tracing::info;
 <span class="kw">use </span>tracing_subscriber::EnvFilter;
 
 <span class="attribute">#[tokio::main]
 </span><span class="kw">pub async fn </span>main() {
     <span class="kw">let </span>cli = cli::Cli::parse();
-    <span class="kw">let </span>config = Config::load(<span class="kw-2">&amp;</span>cli.config).unwrap();
+    <span class="kw">let </span>config = Config::from_file(<span class="kw-2">&amp;</span>cli.config, <span class="prelude-val">None</span>).unwrap();
 
     tracing_subscriber::fmt::Subscriber::builder()
         .with_env_filter(EnvFilter::from_default_env())

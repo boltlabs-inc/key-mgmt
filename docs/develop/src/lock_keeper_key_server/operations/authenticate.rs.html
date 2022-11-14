@@ -111,14 +111,9 @@
 <span id="111">111</span>
 <span id="112">112</span>
 <span id="113">113</span>
-<span id="114">114</span>
-<span id="115">115</span>
-<span id="116">116</span>
-<span id="117">117</span>
-<span id="118">118</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{
     error::LockKeeperServerError,
-    server::{opaque_storage::create_or_retrieve_server_key_opaque, Context, Operation},
+    server::{Context, Operation},
 };
 
 <span class="kw">use </span>async_trait::async_trait;
@@ -168,11 +163,6 @@
     <span class="comment">// Receive start message from client
     </span><span class="kw">let </span>start_message: client::AuthenticateStart = channel.receive().<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let </span>server_setup = {
-        <span class="kw">let </span><span class="kw-2">mut </span>local_rng = context.rng.lock().<span class="kw">await</span>;
-        create_or_retrieve_server_key_opaque(<span class="kw-2">&amp;mut </span>local_rng, <span class="kw-2">&amp;</span>context.service)<span class="question-mark">?
-    </span>};
-
     <span class="comment">// Check that user with corresponding UserId exists and get their
     // server_registration
     </span><span class="kw">let </span>(server_registration, user_id) =
@@ -186,7 +176,7 @@
 
         ServerLogin::start(
             <span class="kw-2">&amp;mut *</span>local_rng,
-            <span class="kw-2">&amp;</span>server_setup,
+            <span class="kw-2">&amp;</span>context.config.opaque_server_setup,
             <span class="prelude-val">Some</span>(server_registration),
             start_message.credential_request,
             start_message.account_name.as_bytes(),

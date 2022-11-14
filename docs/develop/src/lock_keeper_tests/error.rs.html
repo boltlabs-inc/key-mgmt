@@ -17,6 +17,12 @@
 <span id="17">17</span>
 <span id="18">18</span>
 <span id="19">19</span>
+<span id="20">20</span>
+<span id="21">21</span>
+<span id="22">22</span>
+<span id="23">23</span>
+<span id="24">24</span>
+<span id="25">25</span>
 </pre><pre class="rust"><code><span class="kw">use </span>thiserror::Error;
 
 <span class="kw">pub type </span><span class="prelude-ty">Result</span>&lt;T&gt; = std::result::Result&lt;T, LockKeeperTestError&gt;;
@@ -25,6 +31,12 @@
 </span><span class="kw">pub enum </span>LockKeeperTestError {
     <span class="attribute">#[error(<span class="string">&quot;Invalid test type: {0}&quot;</span>)]
     </span>InvalidTestType(String),
+    <span class="attribute">#[error(<span class="string">&quot;Failed to contact key server after maximum number of retries.&quot;</span>)]
+    </span>WaitForServerTimedOut,
+
+    <span class="comment">// Wrapped Errors
+    </span><span class="attribute">#[error(transparent)]
+    </span>Io(<span class="attribute">#[from] </span>std::io::Error),
     <span class="attribute">#[error(<span class="string">&quot;LockKeeperError: {0:?}&quot;</span>)]
     </span>LockKeeper(<span class="attribute">#[from] </span>lock_keeper::LockKeeperError),
     <span class="attribute">#[error(<span class="string">&quot;LockKeeperClientError: {0:?}&quot;</span>)]

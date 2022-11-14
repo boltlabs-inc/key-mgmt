@@ -69,37 +69,22 @@
 <span id="69">69</span>
 <span id="70">70</span>
 <span id="71">71</span>
-<span id="72">72</span>
-<span id="73">73</span>
-<span id="74">74</span>
-<span id="75">75</span>
-<span id="76">76</span>
-<span id="77">77</span>
-<span id="78">78</span>
-<span id="79">79</span>
-<span id="80">80</span>
-<span id="81">81</span>
-<span id="82">82</span>
-<span id="83">83</span>
 </pre><pre class="rust"><code><span class="kw">pub mod </span>config;
-<span class="kw">pub mod </span>database;
-<span class="kw">pub mod </span>end_to_end;
 <span class="kw">pub mod </span>error;
+<span class="kw">pub mod </span>test_suites;
 <span class="kw">pub mod </span>utils;
 
 <span class="kw">use </span><span class="kw">crate</span>::error::LockKeeperTestError;
 <span class="kw">use </span>clap::Parser;
 <span class="kw">use </span>config::Config;
-<span class="kw">use </span>lock_keeper_client::LockKeeperClient;
-<span class="kw">use </span>std::{path::PathBuf, str::FromStr, time::Duration};
-
-<span class="kw">const </span>NUM_RETRIES: u32 = <span class="number">10</span>;
-<span class="kw">const </span>RETRY_DELAY: Duration = Duration::from_secs(<span class="number">10</span>);
+<span class="kw">use </span>std::{path::PathBuf, str::FromStr};
 
 <span class="attribute">#[derive(Debug, Parser)]
 </span><span class="kw">pub struct </span>Cli {
     <span class="attribute">#[clap(default_value = <span class="string">&quot;./dev/local/Client.toml&quot;</span>)]
     </span><span class="kw">pub </span>client_config: PathBuf,
+    <span class="attribute">#[clap(default_value = <span class="string">&quot;./dev/local/ClientMutualAuth.toml&quot;</span>)]
+    </span><span class="kw">pub </span>mutual_auth_client_config: PathBuf,
     <span class="attribute">#[clap(long = <span class="string">&quot;filter&quot;</span>)]
     </span><span class="kw">pub </span>filters: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
     <span class="attribute">#[clap(long, default_value = <span class="string">&quot;all&quot;</span>)]
@@ -109,8 +94,10 @@
 <span class="attribute">#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 </span><span class="kw">pub enum </span>TestType {
     All,
+    ConfigFiles,
     E2E,
     Integration,
+    MutualAuth,
 }
 
 <span class="kw">impl </span>FromStr <span class="kw">for </span>TestType {
@@ -119,8 +106,10 @@
     <span class="kw">fn </span>from_str(s: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Err&gt; {
         <span class="kw">match </span>s {
             <span class="string">&quot;all&quot; </span>=&gt; <span class="prelude-val">Ok</span>(TestType::All),
+            <span class="string">&quot;config-files&quot; </span>=&gt; <span class="prelude-val">Ok</span>(TestType::ConfigFiles),
             <span class="string">&quot;e2e&quot; </span>=&gt; <span class="prelude-val">Ok</span>(TestType::E2E),
             <span class="string">&quot;integration&quot; </span>=&gt; <span class="prelude-val">Ok</span>(TestType::Integration),
+            <span class="string">&quot;mutual-auth&quot; </span>=&gt; <span class="prelude-val">Ok</span>(TestType::MutualAuth),
             <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(LockKeeperTestError::InvalidTestType(s.to_string())),
         }
     }
@@ -131,38 +120,25 @@
     <span class="kw">let </span>cli = Cli::parse();
     <span class="kw">let </span>test_type = cli.test_type;
     <span class="kw">let </span>config = Config::try_from(cli).unwrap();
-    wait_for_server(<span class="kw-2">&amp;</span>config).<span class="kw">await</span>;
+    utils::wait_for_server(<span class="kw-2">&amp;</span>config.client_config).<span class="kw">await</span>.unwrap();
 
     <span class="kw">match </span>test_type {
         TestType::All =&gt; {
-            database::run_tests(<span class="kw-2">&amp;</span>config).<span class="kw">await</span>.unwrap();
-            end_to_end::run_tests(<span class="kw-2">&amp;</span>config).<span class="kw">await</span>.unwrap();
+            test_suites::run_all(<span class="kw-2">&amp;</span>config).<span class="kw">await</span>.unwrap();
+        }
+        TestType::ConfigFiles =&gt; {
+            test_suites::config_files::run_tests(<span class="kw-2">&amp;</span>config).<span class="kw">await</span>.unwrap();
         }
         TestType::E2E =&gt; {
-            end_to_end::run_tests(<span class="kw-2">&amp;</span>config).<span class="kw">await</span>.unwrap();
+            test_suites::end_to_end::run_tests(<span class="kw-2">&amp;</span>config).<span class="kw">await</span>.unwrap();
         }
         TestType::Integration =&gt; {
-            database::run_tests(<span class="kw-2">&amp;</span>config).<span class="kw">await</span>.unwrap();
+            test_suites::database::run_tests(<span class="kw-2">&amp;</span>config).<span class="kw">await</span>.unwrap();
+        }
+        TestType::MutualAuth =&gt; {
+            test_suites::mutual_auth::run_tests(<span class="kw-2">&amp;</span>config).<span class="kw">await</span>.unwrap();
         }
     }
-}
-
-<span class="kw">async fn </span>wait_for_server(config: <span class="kw-2">&amp;</span>Config) {
-    <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..NUM_RETRIES {
-        <span class="macro">println!</span>(<span class="string">&quot;Attempting to connect to server...&quot;</span>);
-        <span class="kw">match </span>LockKeeperClient::health(<span class="kw-2">&amp;</span>config.client_config).<span class="kw">await </span>{
-            <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="kw">return</span>,
-            <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
-                <span class="macro">println!</span>(<span class="string">&quot;Server connection failed. Retrying in {:?}&quot;</span>, RETRY_DELAY);
-                <span class="kw">if </span>i == <span class="number">0 </span>{
-                    <span class="macro">println!</span>(<span class="string">&quot;Did you remember to run `cargo make start`?&quot;</span>)
-                }
-                std::thread::sleep(RETRY_DELAY);
-            }
-        }
-    }
-
-    <span class="macro">panic!</span>(<span class="string">&quot;Failed to connect to server.&quot;</span>);
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="lock_keeper_tests" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

@@ -100,25 +100,12 @@
 <span id="100">100</span>
 <span id="101">101</span>
 <span id="102">102</span>
-<span id="103">103</span>
-<span id="104">104</span>
-<span id="105">105</span>
-<span id="106">106</span>
-<span id="107">107</span>
-<span id="108">108</span>
-<span id="109">109</span>
-<span id="110">110</span>
-<span id="111">111</span>
-<span id="112">112</span>
-<span id="113">113</span>
-</pre><pre class="rust"><code><span class="kw">use crate</span>::{database::Database, error::LockKeeperServerError, server::LockKeeperKeyServer};
-
-<span class="kw">use </span>futures::stream::{FuturesUnordered, StreamExt};
-<span class="kw">use </span>hyper::server::conn::Http;
-<span class="kw">use </span>lock_keeper::{
-    config::server::{Config, Service},
-    rpc::lock_keeper_rpc_server::LockKeeperRpcServer,
+</pre><pre class="rust"><code><span class="kw">use crate</span>::{
+    config::Config, database::Database, error::LockKeeperServerError, server::LockKeeperKeyServer,
 };
+
+<span class="kw">use </span>hyper::server::conn::Http;
+<span class="kw">use </span>lock_keeper::rpc::lock_keeper_rpc_server::LockKeeperRpcServer;
 <span class="kw">use </span>std::{net::SocketAddr, sync::Arc};
 <span class="kw">use </span>tokio::{
     net::{TcpListener, TcpStream},
@@ -133,18 +120,14 @@
     <span class="macro">tracing::info!</span>(<span class="string">&quot;Starting Lock Keeper key server&quot;</span>);
     <span class="kw">let </span>db = Database::connect(<span class="kw-2">&amp;</span>config.database).<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="comment">// Collect the futures for the result of running each specified server
-    </span><span class="kw">let </span><span class="kw-2">mut </span>server_futures: FuturesUnordered&lt;<span class="kw">_</span>&gt; = config
-        .services
-        .iter()
-        .map(|service| start_service(service, <span class="kw-2">&amp;</span>config, <span class="kw-2">&amp;</span>db))
-        .collect();
+    </span><span class="kw">let </span>server_future = start_service(<span class="kw-2">&amp;</span>config, <span class="kw-2">&amp;</span>db);
 
     <span class="macro">tracing::info!</span>(<span class="string">&quot;Lock Keeper key server started&quot;</span>);
 
     <span class="comment">// Wait for the server to finish
     </span><span class="macro">tokio::select! </span>{
         <span class="kw">_ </span>= signal::ctrl_c() =&gt; <span class="macro">info!</span>(<span class="string">&quot;Terminated by user&quot;</span>),
-        <span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(e)) = server_futures.next() =&gt; {
+        <span class="prelude-val">Err</span>(e) = server_future =&gt; {
             <span class="macro">error!</span>(<span class="string">&quot;Error: {}&quot;</span>, e);
         },
         <span class="kw">else </span>=&gt; {
@@ -156,21 +139,16 @@
 
 <span class="doccomment">/// Starts a new thread that accepts connections and sends them through our
 /// service stack.
-</span><span class="kw">async fn </span>start_service(
-    service: <span class="kw-2">&amp;</span>Service,
-    config: <span class="kw-2">&amp;</span>Config,
-    db: <span class="kw-2">&amp;</span>Database,
-) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
+</span><span class="kw">async fn </span>start_service(config: <span class="kw-2">&amp;</span>Config, db: <span class="kw-2">&amp;</span>Database) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
     <span class="comment">// Clone `Arc`s for the various resources we need in this server
     </span><span class="kw">let </span>config = config.clone();
     <span class="kw">let </span>db = db.clone();
-    <span class="kw">let </span>service = Arc::new(service.clone());
 
-    <span class="kw">let </span>tls = service.tls_config()<span class="question-mark">?</span>;
+    <span class="kw">let </span>tls = config.tls_config.clone();
 
-    <span class="kw">let </span>rpc_server = LockKeeperKeyServer::new(db, config, service)<span class="question-mark">?</span>;
-    <span class="kw">let </span>addr = rpc_server.service.address;
-    <span class="kw">let </span>port = rpc_server.service.port;
+    <span class="kw">let </span>rpc_server = LockKeeperKeyServer::new(db, config)<span class="question-mark">?</span>;
+    <span class="kw">let </span>addr = rpc_server.config.address;
+    <span class="kw">let </span>port = rpc_server.config.port;
 
     <span class="kw">let </span>svc = Server::builder()
         .add_service(LockKeeperRpcServer::new(rpc_server))

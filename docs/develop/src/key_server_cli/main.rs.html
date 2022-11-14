@@ -17,23 +17,41 @@
 <span id="17">17</span>
 <span id="18">18</span>
 <span id="19">19</span>
+<span id="20">20</span>
+<span id="21">21</span>
+<span id="22">22</span>
+<span id="23">23</span>
+<span id="24">24</span>
+<span id="25">25</span>
+<span id="26">26</span>
+<span id="27">27</span>
+<span id="28">28</span>
 </pre><pre class="rust"><code><span class="kw">use </span>std::path::PathBuf;
 
 <span class="kw">use </span>clap::Parser;
-<span class="kw">use </span>lock_keeper::config::server::Config;
-<span class="kw">use </span>lock_keeper_key_server::server::start_lock_keeper_server;
+<span class="kw">use </span>lock_keeper_key_server::{config::Config, server::start_lock_keeper_server};
 
 <span class="attribute">#[derive(Debug, Parser)]
 </span><span class="kw">pub struct </span>Cli {
-    <span class="kw">pub </span>config: PathBuf,
+    <span class="doccomment">/// Path to the server config file
+    </span><span class="kw">pub </span>config: PathBuf,
+    <span class="doccomment">/// Base64 encoded private key data
+    </span><span class="attribute">#[clap(long)]
+    </span><span class="kw">pub </span>private_key: <span class="prelude-ty">Option</span>&lt;String&gt;,
 }
 
 <span class="attribute">#[tokio::main]
 </span><span class="kw">pub async fn </span>main() {
     tracing_subscriber::fmt().init();
     <span class="kw">let </span>cli = Cli::parse();
+    <span class="kw">let </span>private_key_bytes = cli
+        .private_key
+        .map(String::into_bytes)
+        .map(base64::decode)
+        .transpose()
+        .unwrap();
 
-    <span class="kw">let </span>config = Config::load(<span class="kw-2">&amp;</span>cli.config).<span class="kw">await</span>.unwrap();
+    <span class="kw">let </span>config = Config::from_file(<span class="kw-2">&amp;</span>cli.config, private_key_bytes).unwrap();
     start_lock_keeper_server(config).<span class="kw">await</span>.unwrap();
 }
 </code></pre></div>

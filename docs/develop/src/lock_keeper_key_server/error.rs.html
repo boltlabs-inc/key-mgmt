@@ -93,6 +93,18 @@
 <span id="93">93</span>
 <span id="94">94</span>
 <span id="95">95</span>
+<span id="96">96</span>
+<span id="97">97</span>
+<span id="98">98</span>
+<span id="99">99</span>
+<span id="100">100</span>
+<span id="101">101</span>
+<span id="102">102</span>
+<span id="103">103</span>
+<span id="104">104</span>
+<span id="105">105</span>
+<span id="106">106</span>
+<span id="107">107</span>
 </pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::server::session_key_cache::SessionKeyCacheError;
 <span class="kw">use </span>thiserror::Error;
 <span class="kw">use </span>tonic::Status;
@@ -101,6 +113,8 @@
 </span><span class="kw">pub enum </span>LockKeeperServerError {
     <span class="attribute">#[error(<span class="string">&quot;Could not get service.&quot;</span>)]
     </span>MissingService,
+    <span class="attribute">#[error(<span class="string">&quot;Private key was not provided.&quot;</span>)]
+    </span>PrivateKeyMissing,
 
     <span class="attribute">#[error(<span class="string">&quot;Error in session keys cache.&quot;</span>)]
     </span>SessionKeyCache(<span class="attribute">#[from] </span>SessionKeyCacheError),
@@ -139,11 +153,17 @@
     <span class="attribute">#[error(<span class="string">&quot;OPAQUE protocol error: {}&quot;</span>, .<span class="number">0</span>)]
     </span>OpaqueProtocol(opaque_ke::errors::ProtocolError),
     <span class="attribute">#[error(transparent)]
+    </span>Rustls(<span class="attribute">#[from] </span>rustls::Error),
+    <span class="attribute">#[error(transparent)]
     </span>StrumParseError(<span class="attribute">#[from] </span>strum::ParseError),
+    <span class="attribute">#[error(transparent)]
+    </span>Toml(<span class="attribute">#[from] </span>toml::de::Error),
     <span class="attribute">#[error(transparent)]
     </span>TonicStatus(<span class="attribute">#[from] </span>tonic::Status),
     <span class="attribute">#[error(transparent)]
     </span>TonicTransport(<span class="attribute">#[from] </span>tonic::transport::Error),
+    <span class="attribute">#[error(transparent)]
+    </span>WebPki(<span class="attribute">#[from] </span>tokio_rustls::webpki::Error),
 }
 
 <span class="kw">impl </span>From&lt;opaque_ke::errors::ProtocolError&gt; <span class="kw">for </span>LockKeeperServerError {
@@ -182,9 +202,13 @@
             | LockKeeperServerError::Bson(<span class="kw">_</span>)
             | LockKeeperServerError::Bincode(<span class="kw">_</span>)
             | LockKeeperServerError::OpaqueProtocol(<span class="kw">_</span>)
+            | LockKeeperServerError::PrivateKeyMissing
             | LockKeeperServerError::EnvVar(<span class="kw">_</span>)
+            | LockKeeperServerError::Rustls(<span class="kw">_</span>)
             | LockKeeperServerError::StrumParseError(<span class="kw">_</span>)
-            | LockKeeperServerError::MongoDb(<span class="kw">_</span>) =&gt; Status::internal(<span class="string">&quot;Internal server error&quot;</span>),
+            | LockKeeperServerError::Toml(<span class="kw">_</span>)
+            | LockKeeperServerError::MongoDb(<span class="kw">_</span>)
+            | LockKeeperServerError::WebPki(<span class="kw">_</span>) =&gt; Status::internal(<span class="string">&quot;Internal server error&quot;</span>),
         }
     }
 }

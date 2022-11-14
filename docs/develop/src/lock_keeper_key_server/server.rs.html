@@ -210,16 +210,6 @@
 <span id="210">210</span>
 <span id="211">211</span>
 <span id="212">212</span>
-<span id="213">213</span>
-<span id="214">214</span>
-<span id="215">215</span>
-<span id="216">216</span>
-<span id="217">217</span>
-<span id="218">218</span>
-<span id="219">219</span>
-<span id="220">220</span>
-<span id="221">221</span>
-<span id="222">222</span>
 </pre><pre class="rust"><code><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>opaque_storage;
 <span class="kw">mod </span>operation;
 <span class="kw">mod </span>service;
@@ -228,10 +218,9 @@
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use </span>operation::Operation;
 <span class="kw">pub use </span>service::start_lock_keeper_server;
 
-<span class="kw">use crate</span>::{database::Database, error::LockKeeperServerError, operations};
+<span class="kw">use crate</span>::{config::Config, database::Database, error::LockKeeperServerError, operations};
 
 <span class="kw">use </span>lock_keeper::{
-    config::server::{Config, Service},
     constants::METADATA,
     crypto::KeyId,
     rpc::{lock_keeper_rpc_server::LockKeeperRpc, HealthCheck},
@@ -245,29 +234,21 @@
 <span class="kw">use </span>tokio::sync::Mutex;
 <span class="kw">use </span>tonic::{Request, Response, Status};
 
-<span class="doccomment">///
-</span><span class="attribute">#[allow(unused)]
-#[derive(Debug)]
+<span class="attribute">#[derive(Debug)]
 </span><span class="kw">pub struct </span>LockKeeperKeyServer {
-    config: Config,
+    config: Arc&lt;Config&gt;,
     db: Arc&lt;Database&gt;,
-    service: Arc&lt;Service&gt;,
     rng: Arc&lt;Mutex&lt;StdRng&gt;&gt;,
     session_key_cache: Arc&lt;Mutex&lt;SessionKeyCache&gt;&gt;,
 }
 
 <span class="kw">impl </span>LockKeeperKeyServer {
-    <span class="kw">pub fn </span>new(
-        db: Database,
-        config: Config,
-        service: Arc&lt;Service&gt;,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, LockKeeperServerError&gt; {
+    <span class="kw">pub fn </span>new(db: Database, config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, LockKeeperServerError&gt; {
         <span class="kw">let </span>rng = StdRng::from_entropy();
 
         <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
-            config,
+            config: Arc::new(config),
             db: Arc::new(db),
-            service,
             rng: Arc::new(Mutex::new(rng)),
             session_key_cache: Arc::new(Mutex::new(SessionKeyCache::default())),
         })
@@ -281,8 +262,8 @@
         </span><span class="kw">let </span>metadata = <span class="self">Self</span>::parse_metadata(request)<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(Context {
+            config: <span class="self">self</span>.config.clone(),
             db: <span class="self">self</span>.db.clone(),
-            service: <span class="self">self</span>.service.clone(),
             rng: <span class="self">self</span>.rng.clone(),
             metadata,
             key_id: <span class="prelude-val">None</span>,
@@ -303,10 +284,9 @@
     }
 }
 
-<span class="attribute">#[derive(Debug)]
-</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>Context {
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>Context {
     <span class="kw">pub </span>db: Arc&lt;Database&gt;,
-    <span class="kw">pub </span>service: Arc&lt;Service&gt;,
+    <span class="kw">pub </span>config: Arc&lt;Config&gt;,
     <span class="kw">pub </span>rng: Arc&lt;Mutex&lt;StdRng&gt;&gt;,
     <span class="kw">pub </span>metadata: RequestMetadata,
     <span class="kw">pub </span>key_id: <span class="prelude-ty">Option</span>&lt;KeyId&gt;,

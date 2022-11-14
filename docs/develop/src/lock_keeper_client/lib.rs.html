@@ -11,6 +11,8 @@
 <span id="11">11</span>
 <span id="12">12</span>
 <span id="13">13</span>
+<span id="14">14</span>
+<span id="15">15</span>
 </pre><pre class="rust"><code><span class="doccomment">//! This crate is an implementation of a client to a key management system.
 </span><span class="attribute">#![warn(missing_debug_implementations)]
 #![warn(unused_results)]
@@ -20,9 +22,11 @@
 
 </span><span class="kw">pub mod </span>api;
 <span class="kw">pub mod </span>client;
+<span class="kw">pub mod </span>config;
 <span class="kw">pub mod </span>error;
 
 <span class="kw">pub use </span>client::LockKeeperClient;
+<span class="kw">pub use </span>config::Config;
 <span class="kw">pub use </span>error::LockKeeperClientError;
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="lock_keeper_client" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

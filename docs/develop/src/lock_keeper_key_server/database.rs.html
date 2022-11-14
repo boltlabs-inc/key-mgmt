@@ -58,15 +58,13 @@
 <span id="58">58</span>
 <span id="59">59</span>
 <span id="60">60</span>
-<span id="61">61</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Database for key-servers.
 //!
 //! This database will hold information on users and the secret material
 //! they have stored in the key server.
 
-</span><span class="kw">use </span><span class="kw">crate</span>::constants;
+</span><span class="kw">use crate</span>::{config::DatabaseSpec, constants};
 <span class="kw">use </span>lock_keeper::{
-    config::server::DatabaseSpec,
     constants::{ACCOUNT_NAME, USER_ID},
     types::database::user::User,
 };

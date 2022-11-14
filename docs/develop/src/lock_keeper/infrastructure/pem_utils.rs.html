@@ -30,6 +30,11 @@
 <span id="30">30</span>
 <span id="31">31</span>
 <span id="32">32</span>
+<span id="33">33</span>
+<span id="34">34</span>
+<span id="35">35</span>
+<span id="36">36</span>
+<span id="37">37</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Convenience functions for dealing with PEM files.
 
 </span><span class="kw">use </span>std::path::Path;
@@ -51,9 +56,14 @@
 }
 
 <span class="doccomment">/// Returns the first private key found in the pemfile at the given path
-</span><span class="kw">pub fn </span>read_private_key(path: <span class="kw">impl </span>AsRef&lt;Path&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;PrivateKey, LockKeeperError&gt; {
-    <span class="kw">let </span>fd = std::fs::File::open(path.as_ref())<span class="question-mark">?</span>;
-    <span class="kw">let </span><span class="kw-2">mut </span>buf = std::io::BufReader::new(<span class="kw-2">&amp;</span>fd);
+</span><span class="kw">pub fn </span>read_private_key_from_file(path: <span class="kw">impl </span>AsRef&lt;Path&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;PrivateKey, LockKeeperError&gt; {
+    <span class="kw">let </span>bytes = std::fs::read(path)<span class="question-mark">?</span>;
+    read_private_key_from_bytes(<span class="kw-2">&amp;</span>bytes)
+}
+
+<span class="doccomment">/// Returns the first private key found in the given bytes
+</span><span class="kw">pub fn </span>read_private_key_from_bytes(bytes: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;PrivateKey, LockKeeperError&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>buf = std::io::BufReader::new(bytes);
     <span class="kw">let </span>key = rustls_pemfile::pkcs8_private_keys(<span class="kw-2">&amp;mut </span>buf)<span class="question-mark">?
         </span>.into_iter()
         .next()
