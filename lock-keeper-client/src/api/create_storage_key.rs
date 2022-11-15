@@ -1,6 +1,6 @@
 use crate::{client::LockKeeperClient, LockKeeperClientError};
 use lock_keeper::{
-    crypto::OpaqueExportKey,
+    crypto::MasterKey,
     infrastructure::channel::ClientChannel,
     types::{
         database::user::{AccountName, UserId},
@@ -15,10 +15,10 @@ impl LockKeeperClient {
         mut channel: ClientChannel,
         rng: &mut T,
         account_name: &AccountName,
-        export_key: OpaqueExportKey,
+        master_key: MasterKey,
     ) -> Result<(), LockKeeperClientError> {
         let user_id = request_user_id(&mut channel, account_name).await?;
-        create_and_send_storage_key(&mut channel, rng, user_id, export_key).await?;
+        create_and_send_storage_key(&mut channel, rng, user_id, master_key).await?;
 
         Ok(())
     }
@@ -42,9 +42,9 @@ async fn create_and_send_storage_key<T: CryptoRng + RngCore>(
     channel: &mut ClientChannel,
     rng: &mut T,
     user_id: UserId,
-    export_key: OpaqueExportKey,
+    master_key: MasterKey,
 ) -> Result<(), LockKeeperClientError> {
-    let storage_key = export_key.create_and_encrypt_storage_key(rng, &user_id)?;
+    let storage_key = master_key.create_and_encrypt_storage_key(rng, &user_id)?;
 
     let response = client::SendStorageKey {
         user_id,

@@ -3,7 +3,7 @@ use crate::client::{AuthenticateResult, LockKeeperClient, Password};
 use crate::LockKeeperClientError;
 use lock_keeper::{
     config::opaque::OpaqueCipherSuite,
-    crypto::OpaqueSessionKey,
+    crypto::{MasterKey, OpaqueSessionKey},
     infrastructure::channel::ClientChannel,
     types::{
         database::user::{AccountName, UserId},
@@ -40,14 +40,15 @@ impl LockKeeperClient {
         .await?;
 
         let session_key = client_login_finish_result.session_key.into();
-        let export_key = client_login_finish_result.export_key.into();
+        let export_key = client_login_finish_result.export_key;
 
         // Get user id
         let user_id = retrieve_user_id(&mut channel, &session_key).await?;
 
+        let master_key = MasterKey::derive_master_key(export_key)?;
         Ok(AuthenticateResult {
             session_key,
-            export_key,
+            master_key,
             user_id,
         })
     }

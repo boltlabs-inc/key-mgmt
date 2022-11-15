@@ -4,7 +4,7 @@ use crate::{
 };
 use lock_keeper::{
     config::opaque::OpaqueCipherSuite,
-    crypto::OpaqueExportKey,
+    crypto::MasterKey,
     infrastructure::channel::ClientChannel,
     types::{
         database::user::AccountName,
@@ -22,14 +22,14 @@ impl LockKeeperClient {
         rng: &mut T,
         account_name: &AccountName,
         password: &Password,
-    ) -> Result<OpaqueExportKey, LockKeeperClientError> {
+    ) -> Result<MasterKey, LockKeeperClientError> {
         // Handle start step
         let client_start_result = register_start(&mut channel, rng, account_name, password).await?;
 
         // Handle finish step
-        let export_key = register_finish(&mut channel, rng, password, client_start_result).await?;
+        let master_key = register_finish(&mut channel, rng, password, client_start_result).await?;
 
-        Ok(export_key)
+        Ok(master_key)
     }
 }
 
@@ -57,7 +57,7 @@ async fn register_finish<T: CryptoRng + RngCore>(
     rng: &mut T,
     password: &Password,
     client_start_result: ClientRegistrationStartResult<OpaqueCipherSuite>,
-) -> Result<OpaqueExportKey, LockKeeperClientError> {
+) -> Result<MasterKey, LockKeeperClientError> {
     let server_start_result: server::RegisterStart = channel.receive().await?;
 
     let client_finish_registration_result = client_start_result.state.finish(
@@ -75,7 +75,9 @@ async fn register_finish<T: CryptoRng + RngCore>(
     let result: server::RegisterFinish = channel.receive().await?;
 
     if result.success {
-        Ok(client_finish_registration_result.export_key.into())
+        let master_key =
+            MasterKey::derive_master_key(client_finish_registration_result.export_key)?;
+        Ok(master_key)
     } else {
         Err(LockKeeperClientError::ServerReturnedFailure)
     }

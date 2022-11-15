@@ -31,8 +31,8 @@ pub async fn run_tests(config: Config) -> Result<Vec<TestResult>> {
 async fn user_is_serializable_after_adding_secrets(db: TestDatabase) -> Result<()> {
     // Add a user and get their storage key
     let (user_id, account_name) = db.create_test_user().await?;
-    let (encrypted_storage_key, export_key) = db.create_test_storage_key(&user_id)?;
-    let storage_key = encrypted_storage_key.decrypt_storage_key(export_key, &user_id)?;
+    let (encrypted_storage_key, master_key) = db.create_test_storage_key(&user_id)?;
+    let storage_key = encrypted_storage_key.decrypt_storage_key(master_key, &user_id)?;
 
     // Init RNG for test
     let mut rng = StdRng::from_entropy();
@@ -56,8 +56,8 @@ async fn cannot_get_another_users_secrets(db: TestDatabase) -> Result<()> {
 
     // Add a user and get their storage key
     let (user_id, _) = db.create_test_user().await?;
-    let (encrypted_storage_key, export_key) = db.create_test_storage_key(&user_id)?;
-    let storage_key = encrypted_storage_key.decrypt_storage_key(export_key, &user_id)?;
+    let (encrypted_storage_key, master_key) = db.create_test_storage_key(&user_id)?;
+    let storage_key = encrypted_storage_key.decrypt_storage_key(master_key, &user_id)?;
 
     // Add another user
     let (other_user, _) = db.create_test_user().await?;

@@ -88,14 +88,14 @@ impl LockKeeperClient {
         let result =
             Self::handle_registration(client_channel, &mut rng, account_name, password).await;
         match result {
-            Ok(export_key) => {
+            Ok(master_key) => {
                 let client = Self::authenticate(client, account_name, password, config).await?;
 
                 // After authenticating we can create the storage key
                 let metadata = client.create_metadata(ClientAction::CreateStorageKey);
                 let client_channel =
                     Self::create_channel(&mut client.tonic_client(), &metadata).await?;
-                Self::handle_create_storage_key(client_channel, &mut rng, account_name, export_key)
+                Self::handle_create_storage_key(client_channel, &mut rng, account_name, master_key)
                     .await?;
 
                 Ok(())
