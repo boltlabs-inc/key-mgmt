@@ -106,12 +106,12 @@ impl TestDatabase {
         Ok(())
     }
 
-    /// Create an export key for testing using random bytes.
+    /// Create a master key for testing using random bytes.
     fn create_test_master_key(rng: &mut StdRng) -> Result<MasterKey> {
         let mut key = [0_u8; 64];
         rng.try_fill(&mut key)?;
 
-        // We can't create an export key directly from bytes so we convert it to a
+        // We can't create a master key directly from bytes so we convert it to a
         // GenericArray first.
         let key: GenericArray<u8, U64> = key.into();
 

@@ -40,12 +40,11 @@ impl LockKeeperClient {
         .await?;
 
         let session_key = client_login_finish_result.session_key.into();
-        let export_key = client_login_finish_result.export_key;
 
         // Get user id
         let user_id = retrieve_user_id(&mut channel, &session_key).await?;
 
-        let master_key = MasterKey::derive_master_key(export_key)?;
+        let master_key = MasterKey::derive_master_key(client_login_finish_result.export_key)?;
         Ok(AuthenticateResult {
             session_key,
             master_key,

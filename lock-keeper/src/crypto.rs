@@ -86,7 +86,10 @@ impl MasterKey {
     /// This must be run by the client.
     /// It takes the following steps:
     /// 1. Generate a new [`StorageKey`] to encrypt stored data with
-    /// 2. Encrypt the storage key under the master key, using an AEAD scheme
+    /// 2. Derive the decryption key from the master key,
+    ///    using the associated data
+    /// 2. Encrypt the storage key under the encryption key,
+    ///    using an AEAD scheme
     /// 3. Return the encrypted storage key
     pub fn create_and_encrypt_storage_key(
         self,
@@ -194,8 +197,10 @@ impl Encrypted<StorageKey> {
     /// retrieve a storage key from the server.
     ///
     /// This must be run by the client. It takes the following steps:
-    /// 1. Decrypt the encrypted storage key using the master key
-    /// 2. Return the decrypted [`StorageKey`]
+    /// 1. Derive the decryption key from the master key using
+    ///    the associated data
+    /// 2. Decrypt the encrypted storage key using the decryption key
+    /// 3. Return the decrypted [`StorageKey`]
     pub fn decrypt_storage_key(
         self,
         master_key: MasterKey,
@@ -209,8 +214,8 @@ impl Encrypted<StorageKey> {
             return Err(CryptoError::DecryptionFailed.into());
         }
 
-        let encryption_key = master_key.derive_key(expected_aad)?;
-        let decrypted = self.decrypt(&encryption_key)?;
+        let decryption_key = master_key.derive_key(self.associated_data.clone())?;
+        let decrypted = self.decrypt(&decryption_key)?;
         Ok(decrypted)
     }
 }
