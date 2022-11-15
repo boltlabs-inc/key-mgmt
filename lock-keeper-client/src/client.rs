@@ -64,9 +64,9 @@ pub struct LockKeeperClient {
     config: Config,
     account_name: AccountName,
     user_id: UserId,
+    master_key: MasterKey,
     tonic_client: LockKeeperRpcClient<LockKeeperRpcClientInner>,
     pub(crate) rng: Arc<Mutex<StdRng>>,
-    pub(crate) master_key: MasterKey,
 }
 
 /// Connection type used by `LockKeeperRpcClient`.
@@ -231,7 +231,7 @@ impl LockKeeperClient {
         // Decrypt storage_key
         let storage_key = response
             .ciphertext
-            .decrypt_storage_key(self.master_key.clone(), self.user_id())?;
+            .decrypt_storage_key(self.master_key().clone(), self.user_id())?;
         Ok(storage_key)
     }
 }
