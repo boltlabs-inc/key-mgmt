@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"constant":[["APPLICATION",""],["CONFIG_FILE",""],["LOCAL_SERVER_URI",""],["ORGANIZATION",""]],"fn":[["address",""],["config_path",""],["max_message_length",""],["max_pending_connection_retries",""],["message_timeout","Length of time (seconds) that a party waits for a normal message to be computed and sent."],["port",""]]};

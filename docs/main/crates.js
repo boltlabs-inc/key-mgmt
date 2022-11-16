@@ -1,1 +1,1 @@
-window.ALL_CRATES = ["dams","dams_client","dams_key_server","dams_tests","key_server_cli"];
+window.ALL_CRATES = ["key_server_cli","lock_keeper","lock_keeper_client","lock_keeper_client_cli","lock_keeper_key_server","lock_keeper_tests"];

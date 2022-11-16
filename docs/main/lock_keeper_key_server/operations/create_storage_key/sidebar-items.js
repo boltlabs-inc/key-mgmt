@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":[["send_user_id",""],["store_storage_key",""]],"struct":[["CreateStorageKey",""]]};

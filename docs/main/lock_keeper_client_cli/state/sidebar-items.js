@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":[["Credentials","User credentials"],["State","In-memory state for a running application"]]};

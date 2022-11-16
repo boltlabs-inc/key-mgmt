@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":[["start_dams_server","Starts a full DAMS server stack based on the given config."]],"struct":[["Context",""],["DamsKeyServer",""]]};

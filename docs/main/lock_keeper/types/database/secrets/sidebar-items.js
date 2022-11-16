@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":[["StoredEncryptedSecret","Wrapper around an [`Encrypted<Secret>`] and its [`KeyId`]"],["StoredEncryptedSigningKeyPair","Wrapper around an [`Encrypted<SigningKeyPair>`] and its [`KeyId`]."],["StoredSecrets","Holds user’s stored secrets of all types"],["StoredSigningKeyPair","Wrapper around an [`SigningKeyPair`] and its [`KeyId`]"]]};

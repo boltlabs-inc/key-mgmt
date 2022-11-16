@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":[["dams_rpc_client","Generated client implementations."],["dams_rpc_server","Generated server implementations."]],"struct":[["Message",""]]};
