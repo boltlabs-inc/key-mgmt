@@ -1,0 +1,11 @@
+address = "0.0.0.0"
+port = 1113
+private_key = "dev/test-pki/gen/certs/server.key"
+certificate_chain = "dev/test-pki/gen/certs/server.chain"
+client_auth = false
+opaque_path = "dev/opaque"
+opaque_server_key = "dev/opaque/server_setup"
+
+[database]
+mongodb_uri = 'mongodb://mongodb:27017'
+db_name = 'lock-keeper-test-db'

@@ -1,7 +1,44 @@
 [workspace]
 members = [
-    "dams",
-    "dams-client",
-    "dams-key-server",
-    "dams-tests"
+    "lock-keeper",
+    "lock-keeper-client",
+    "lock-keeper-client-cli",
+    "lock-keeper-key-server",
+    "lock-keeper-tests"
 ]
+
+[workspace.package]
+version = "0.2.0"
+
+[workspace.dependencies]
+argon2 = "0.4"
+async-trait = "0.1"
+bincode = "1"
+bson = { version = "2", features = ["uuid-1"] }
+bytes = { version = "1", features = ["serde"] }
+clap = { version = "3", features = ["derive"] }
+futures = "0.3"
+generic-array = "0.14"
+http = "0.2"
+http-body = "0.4"
+hyper = "0.14"
+hyper-rustls = { version = "0.23", features = ["http2"] }
+mongodb = "2.3.0"
+opaque-ke = { version = "2.0.0-pre.3", features = ["argon2"] }
+prost = "0.11.0"
+rand = "0.8"
+rustls = "0.20"
+rustls-pemfile = "1"
+serde = "1"
+serde_json = "1.0.85"
+serde_with = "1"
+strum = { version = "0.24.1", features = ["derive"] }
+thiserror = "1"
+tokio = { version = "1", features = ["full"] }
+tokio-rustls = "0.23"
+tokio-stream = "0.1"
+toml = "0.5"
+tonic =  "0.8"
+tracing = "0.1"
+tracing-futures = "0.2"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }

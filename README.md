@@ -1,10 +1,10 @@
-# Digital asset management system (DAMS)
+# Lock Keeper
 
 ## Overview
 
-The DAMS helps people store, retrieve and use the private keys associated with their digital assets. We're building a security-first system with layers of cryptography, hardware protection, and a misuse-resistant design to prevent theft and misuse of keys. 
+Lock Keeper helps people store, retrieve and use the private keys associated with their digital assets. We're building a security-first system with layers of cryptography, hardware protection, and a misuse-resistant design to prevent theft and misuse of keys. 
 
-The DAMS aims to provide a flexible system of components for managing digital assets and composed of the following:
+Lock Keeper aims to provide a flexible system of components for managing digital assets and composed of the following:
 
 * A **client library**: The *client* allows a user to generate and store a secret key in a distributed way, across multiple servers, and provides generic functionality for requesting a signature under the stored key, and reconstructs a full signature from a set of partial signatures. <br/>
 The client also includes the cryptographic functionality for:
@@ -22,16 +22,23 @@ The client also includes the cryptographic functionality for:
 
     * This server either returns a partial signature, if the signature request meets the designated policy, or returns an appropriate rejection message. 
 
-Refer to the [current design specification](https://github.com/boltlabs-inc/key-mgmt-spec) for the DAMS.
+Refer to the [current design specification](https://github.com/boltlabs-inc/key-mgmt-spec) for Lock Keeper.
 
 ## Install & Setup
 
 ### Dependencies:
 
-- A recent version of [stable Rust](https://www.rust-lang.org/) to build the DAMS project. We have tested with 1.59.0.
+- A recent version of [stable Rust](https://www.rust-lang.org/) to build the Lock Keeper project. Version 1.65 is the minimum required version.
 - OpenSSL. You should be able to install this using your package manager of choice.
-- [MongoDB](https://www.mongodb.com/try/download/community) is required to run `dams-key-server`. This includes running the integration tests.
 - `protoc` is required to build .proto files. It can be installed using `brew` for MacOS or `apt install` for Linux. Further instructions [here](https://grpc.io/docs/protoc-installation/).
+- [cargo-make](https://github.com/sagiegurari/cargo-make) can be installed with `cargo install cargo-make`.
+- [Docker](https://www.docker.com/). 
+- On Linux, you may need to install [Docker Compose](https://docs.docker.com/compose/install/) separately.
+
+In order to use the `cargo make` tasks on Linux, you need to be able to run Docker without `sudo`. You can find instructions for this [here](https://docs.docker.com/engine/install/linux-postinstall/#manage-docker-as-a-non-root-user).
+
+If you need to run the server outside of Docker, [MongoDB](https://www.mongodb.com/try/download/community) is also required.
+
 
 Once the required dependencies are installed, build the project as follows:
 
@@ -39,42 +46,136 @@ Once the required dependencies are installed, build the project as follows:
 cargo build --all-features --all-targets
 ```
 
-## Running local tests
-
-To run the doctests locally:
-
-```bash
-cargo test --all-features --doc --verbose
-```
-
-To run all unit and integration tests:
-
-- Start MongoDB in one terminal window (see the [MongoDB docs](https://www.mongodb.com/docs/manual/reference/configuration-options/) for default mongod.conf paths based on your OS):
-```bash
-mongod --config {path_to_mongod.conf}
-```
-
-- Open another terminal window, navigate to this repo and run:
-```bash
-cargo test --all-features --all-targets
-```
+## Running unit and doc tests
 
 We follow test-driven development practices and the test suite should be a close mapping to the functionality we currently implement at any given stage of development.
 
+
+To run unit tests:
+```bash
+cargo test --all-features
+```
+
+To run the doctests:
+
+```bash
+cargo test --all-features --doc
+```
+
+## Integration tests
+
+Integration tests are separated into two categories, end-to-end tests and general integration tests. Both categories require the key server to be running.
+
+Start the server running in the background. This will compile the project from scratch the first time you run it so it will take a while. It should be faster for future runs.
+```bash
+cargo make start
+```
+
+To run the end-to-end tests:
+```bash
+cargo make e2e
+```
+
+To run the integration tests:
+```bash
+cargo make integration
+```
+
+To run all tests including unit tests with a single command:
+```bash
+cargo make all-tests
+```
+
+The server will be running in the background so you can continue to run integration tests without starting the server again. To stop the server, run:
+```bash
+cargo make stop
+```
+
+If you want to watch server output in real-time, you can run the server in the foreground with:
+```bash
+cargo make start-server
+```
+
+Running the test binary directly offers some extra command line options.
+
+To only run tests whose name contains certain words, use the `--filter` option
+```bash
+cargo run --bin lock-keeper-tests -- --filter generate --filter retrieve
+```
+
 ## Running the server locally
 
-To run the server locally, make sure MongoDB is running as above. Then, generate an SSL cert locally using the provided script in the `dev/` directory:
+To run the server locally, first make sure MongoDB is running. You can run MongoDB [in Docker](https://www.mongodb.com/compatibility/docker) or [locally with a config file](https://www.mongodb.com/docs/manual/reference/configuration-options/).
+
+Then run:
 ```bash
-cd dev/
-./generate-certificates
+cargo make start-server-local
 ```
 
-Then, go back to the top level directory of this repo and run the following command to start the server:
+Tests can be run against a local server with:
 ```bash
-cargo run --bin key-server-cli server --config {path_to_server_config} run
+cargo make e2e
 ```
 
-There is an example server config file, `dev/Server.toml`. This will start the server on two endpoints, one for IPv4 and one for IPv6, and contains information to connect to a local instance of MongoDB.
+## TLS mutual authentication
+
+Mutual authentication can be enabled in server and client configs. See `ServerMutualAuth.toml` and `ClientMutualAuth.toml` 
+for examples.
+
+To run a server with mutual auth enabled, use your preferred `cargo make` task and append `-mutual-auth` to the end. For example, 
+to run a server in the foreground with mutual auth use `cargo make start-server-mutual-auth`.
+
+To run both servers at the same time, append `-all` to the end. For example, `cargo make start-server-all`.
+
+In order to run the mutual authentication integration tests, you must have both servers running.
+
+# Private key security
+The key server always requires a private key. 
+The private key can optionally be provided via a file path in the server config.
+Alternatively, the raw bytes for a private key can be passed to the `lock_keeper_key_server::Config` constructors.
+This alternative allows the server to secure its private key however it chooses.
+
+The `key-server-cli` binary included with the `lock-keeper-key-server` crate provides a command-line argument to accept a private
+key as a base64 string.
+
+Example:
+
+```bash
+cargo run --bin key-server-cli dev/local/ServerMutualAuth.toml --private-key "$(cat dev/test-pki/gen/certs/server.key | base64)"
+```
+
+`LockKeeperClient` requires a private key if client authentication is enabled. 
+The private key can optionally be provided via a file path in the client config.
+Alternatively, the raw bytes for a private key can be passed to the `lock_keeper_client::Config` constructors.
+This alternative allows the client to secure its private key however it chooses.
+
+## Running the interactive client
+
+Lock Keeper comes with an interactive client CLI that can be used to interact with a key server for basic testing and troubleshooting.
+See the `lock-keeper-client-cli` crate for more information.
+
+First start the key server:
+```bash
+cargo make start
+```
+
+Then run the client CLI:
+```bash
+cargo make cli
+```
+
+## Troubleshooting
+
+If you get a `no space left on device` error from Docker, try running:
+```bash
+docker image prune -a
+docker volume prune
+```
+
+If this doesn't help, you can do a full system prune. This will delete your cache and your next build will take a long time.
+```bash
+docker system prune -a --volumes
+```
 
 ## Build documentation
 
@@ -84,4 +185,19 @@ To build the API documentation for the project:
 RUSTDOCFLAGS="-Dwarnings" cargo doc --all-features --no-deps --open
 ```
 
-You can find the API docs in the source of the [client](dams-client/src/api.rs) and [policy engine](dams-key-server/src/policy_engine.rs).
+You can find the API docs in the source of the [client](lock-keeper-client/src/api.rs) and [policy engine](lock-keeper-key-server/src/policy_engine.rs).
+
+## Published Documentation
+
+Documentation from the `main` and `develop` branches is automatically deployed to GitHub Pages any time code is merged. There is a very basic index page for published documentation [here](https://boltlabs-inc.github.io/key-mgmt/).
+
+### `develop` docs
+
+[lock-keeper](https://boltlabs-inc.github.io/key-mgmt/develop/lock_keeper)  
+[lock-keeper-client](https://boltlabs-inc.github.io/key-mgmt/develop/lock_keeper_client)  
+[lock-keeper-key-server](https://boltlabs-inc.github.io/key-mgmt/develop/lock_keeper_key_server)  
+
+### `main` docs
+[dams](https://boltlabs-inc.github.io/key-mgmt/main/dams)  
+[dams-client](https://boltlabs-inc.github.io/key-mgmt/main/dams_client)  
+[dams-key-server](https://boltlabs-inc.github.io/key-mgmt/main/dams_key_server) 

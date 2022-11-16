@@ -1,0 +1,25 @@
+syntax = "proto3";
+package lock_keeper_rpc;
+
+service LockKeeperRpc {
+  rpc Authenticate (stream Message) returns (stream Message);
+  rpc CreateStorageKey (stream Message) returns (stream Message);
+  rpc Generate (stream Message) returns (stream Message);
+  rpc Health (HealthCheck) returns (HealthCheck);
+  rpc ImportSigningKey (stream Message) returns (stream Message);
+  rpc Register (stream Message) returns (stream Message);
+  rpc RemoteGenerate (stream Message) returns (stream Message);
+  rpc RemoteSignBytes (stream Message) returns (stream Message);
+  rpc Retrieve (stream Message) returns (stream Message);
+  rpc RetrieveAuditEvents (stream Message) returns (stream Message);
+  rpc RetrieveSigningKey (stream Message) returns (stream Message);
+  rpc RetrieveStorageKey (stream Message) returns (stream Message);
+}
+
+message Message {
+  bytes content = 1;
+}
+
+message HealthCheck {
+  bool check = 1;
+}

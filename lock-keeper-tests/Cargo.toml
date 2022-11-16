@@ -1,0 +1,32 @@
+[package]
+name = "lock-keeper-tests"
+version.workspace = true
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# Git dependencies
+lock-keeper = { version = "0.2.0", path = "../lock-keeper" }
+lock-keeper-key-server = { version = "0.2.0", path = "../lock-keeper-key-server" }
+lock-keeper-client = { version = "0.2.0", path = "../lock-keeper-client", features=["allow_explicit_certificate_trust"] }
+
+# Workspace dependencies
+clap.workspace = true
+futures.workspace = true
+generic-array.workspace = true
+mongodb.workspace = true
+opaque-ke.workspace = true
+rand.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+strum.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tonic.workspace = true
+tracing.workspace = true
+tracing-futures.workspace = true
+tracing-subscriber.workspace = true
+
+# Other dependencies
+colored = "2.0"

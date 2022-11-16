@@ -1,0 +1,2 @@
+server_uri = "https://key_server:1113"
+ca_chain = "dev/test-pki/gen/ca/signing-ca.chain"

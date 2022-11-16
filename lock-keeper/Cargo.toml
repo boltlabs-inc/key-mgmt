@@ -1,0 +1,43 @@
+[package]
+name = "lock-keeper"
+version.workspace = true
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# Workspace dependencies
+argon2.workspace = true
+async-trait.workspace = true
+bincode.workspace = true
+bson.workspace = true
+bytes.workspace = true
+futures.workspace = true
+generic-array.workspace = true
+http.workspace = true
+mongodb.workspace = true
+opaque-ke.workspace = true
+prost.workspace = true
+rand.workspace = true
+rustls.workspace = true
+rustls-pemfile.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+strum.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tokio-rustls.workspace = true
+tokio-stream.workspace = true
+tonic.workspace = true
+tracing.workspace = true
+
+# Other dependencies
+chacha20poly1305 = "0.10"
+hkdf = "0.12"
+k256 = { version = "0.11", features = ["ecdsa", "pem", "serde"] }
+sha3 = "0.10"
+uuid = "1.1.2"
+hex = "0.4"
+
+[build-dependencies]
+tonic-build = "0.8.0"
