@@ -5,7 +5,7 @@ use std::path::PathBuf;
 
 use crate::storage::{Entry, Storage};
 use lock_keeper::types::database::user::AccountName;
-use lock_keeper_client::{client::Password, Config, LockKeeperClient};
+use lock_keeper_client::{client::Password, Config};
 
 /// In-memory state for a running application
 #[derive(Debug)]
@@ -15,7 +15,7 @@ pub struct State {
     /// Local storage for key information
     pub storage: Storage,
     /// Contains the credentials of the currently logged-in user
-    pub client: Option<LockKeeperClient>,
+    pub credentials: Option<Credentials>,
 }
 
 impl State {
@@ -23,12 +23,12 @@ impl State {
         Ok(Self {
             config,
             storage: Storage::new(storage_path)?,
-            client: None,
+            credentials: None,
         })
     }
 
-    pub fn get_client(&self) -> Result<&LockKeeperClient, anyhow::Error> {
-        self.client
+    pub fn get_credentials(&self) -> Result<&Credentials, anyhow::Error> {
+        self.credentials
             .as_ref()
             .ok_or_else(|| anyhow::anyhow!("Not authenticated"))
     }
@@ -38,7 +38,7 @@ impl State {
     ///
     /// This operation will fail if no user is currently authenticated.
     pub fn get_key_id(&self, name: &str) -> Result<&Entry, anyhow::Error> {
-        let account_name = &self.get_client()?.account_name();
+        let account_name = &self.get_credentials()?.account_name;
         let entry = self
             .storage
             .get(account_name, name)?
@@ -53,15 +53,22 @@ impl State {
         name: Option<String>,
         entry: impl Into<Entry>,
     ) -> Result<String, anyhow::Error> {
-        let client = self.get_client()?;
+        let credentials = self.get_credentials()?;
 
         match name {
-            None => self.storage.store(client.account_name().clone(), entry),
+            None => self.storage.store(credentials.account_name.clone(), entry),
             Some(name) => {
                 self.storage
-                    .store_named(client.account_name().clone(), name.clone(), entry)?;
+                    .store_named(credentials.account_name.clone(), name.clone(), entry)?;
                 Ok(name)
             }
         }
     }
+}
+
+/// User credentials
+#[derive(Debug)]
+pub struct Credentials {
+    pub account_name: AccountName,
+    pub password: Password,
 }

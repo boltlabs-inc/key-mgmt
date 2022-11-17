@@ -10,7 +10,7 @@ pub struct Print {
 #[async_trait]
 impl CliCommand for Print {
     async fn execute(self: Box<Self>, state: &mut State) -> Result<(), Error> {
-        let _client = state.get_client()?;
+        let _credentials = state.get_credentials()?;
 
         // Get key_id from storage
         let entry = state.get_key_id(&self.name)?;

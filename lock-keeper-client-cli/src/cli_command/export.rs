@@ -5,6 +5,7 @@ use crate::{
 };
 use anyhow::Error;
 use async_trait::async_trait;
+use lock_keeper_client::LockKeeperClient;
 use tracing::info;
 
 #[derive(Debug)]

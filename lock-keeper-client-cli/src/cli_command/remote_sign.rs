@@ -2,6 +2,7 @@ use crate::{cli_command::CliCommand, state::State};
 use anyhow::Error;
 use async_trait::async_trait;
 use lock_keeper::crypto::SignableBytes;
+use lock_keeper_client::LockKeeperClient;
 
 #[derive(Debug)]
 pub struct RemoteSign {
