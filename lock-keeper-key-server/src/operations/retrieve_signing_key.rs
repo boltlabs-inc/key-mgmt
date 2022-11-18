@@ -3,6 +3,7 @@ use crate::{
     LockKeeperServerError,
 };
 
+use crate::database::DataStore;
 use async_trait::async_trait;
 use lock_keeper::{
     infrastructure::channel::ServerChannel,
@@ -13,11 +14,11 @@ use lock_keeper::{
 pub struct RetrieveSigningKey;
 
 #[async_trait]
-impl Operation for RetrieveSigningKey {
+impl<DB: DataStore> Operation<DB> for RetrieveSigningKey {
     async fn operation(
         self,
         channel: &mut ServerChannel,
-        context: &mut Context,
+        context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
         // Receive UserId from client
         let request: client::RequestSigningKey = channel.receive().await?;
@@ -27,7 +28,8 @@ impl Operation for RetrieveSigningKey {
         let stored_signing_key = context
             .db
             .get_user_signing_key(&request.user_id, &request.key_id)
-            .await?;
+            .await
+            .map_err(LockKeeperServerError::database)?;
 
         // Send StoredSigningKeyPair back
         let reply = server::ResponseSigningKey { stored_signing_key };

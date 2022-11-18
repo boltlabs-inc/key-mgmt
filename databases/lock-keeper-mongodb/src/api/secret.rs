@@ -1,6 +1,6 @@
-//! Module for operations on secrets in the database.
+//! Operations on secrets in the database.
 
-use crate::{constants, LockKeeperServerError};
+use crate::{constants::USERS, error::Error};
 use lock_keeper::{
     constants::USER_ID,
     crypto::{Encrypted, KeyId, Secret, SigningKeyPair},
@@ -16,13 +16,13 @@ use super::Database;
 impl Database {
     /// Add a [`StoredEncryptedSecret`] to a [`User`]'s list of arbitrary
     /// secrets
-    pub async fn add_user_secret(
+    pub(crate) async fn add_user_secret(
         &self,
         user_id: &UserId,
         secret: Encrypted<Secret>,
         key_id: KeyId,
-    ) -> Result<(), LockKeeperServerError> {
-        let collection = self.inner.collection::<User>(constants::USERS);
+    ) -> Result<(), Error> {
+        let collection = self.handle.collection::<User>(USERS);
         let stored_secret = StoredEncryptedSecret::new(secret, key_id);
         let stored_secret_bson = mongodb::bson::to_bson(&stored_secret)?;
         let filter = doc! { USER_ID: user_id };
@@ -30,18 +30,18 @@ impl Database {
         let _ = collection
             .find_one_and_update(filter, update, None)
             .await?
-            .ok_or(LockKeeperServerError::InvalidAccount)?;
+            .ok_or(Error::InvalidAccount)?;
         Ok(())
     }
 
     /// Get a [`User`]'s [`StoredEncryptedSecret`] based on its [`KeyId`]
-    pub async fn get_user_secret(
+    pub(crate) async fn get_user_secret(
         &self,
         user_id: &UserId,
         key_id: &KeyId,
-    ) -> Result<StoredEncryptedSecret, LockKeeperServerError> {
+    ) -> Result<StoredEncryptedSecret, Error> {
         // Get user collection
-        let collection = self.inner.collection::<User>(constants::USERS);
+        let collection = self.handle.collection::<User>(USERS);
         // Match on UserId and KeyId, update "retrieved" field to true
         let key_id_bson = mongodb::bson::to_bson(key_id)?;
         let filter = doc! { USER_ID: user_id, "secrets.arbitrary_secrets.key_id": key_id_bson };
@@ -49,7 +49,7 @@ impl Database {
         let user = collection
             .find_one_and_update(filter, update, None)
             .await?
-            .ok_or(LockKeeperServerError::InvalidAccount)?;
+            .ok_or(Error::InvalidAccount)?;
 
         // Filter found user to return stored secret
         let stored_secret = user
@@ -57,7 +57,7 @@ impl Database {
             .arbitrary_secrets
             .into_iter()
             .find(|x| x.key_id == *key_id)
-            .ok_or(LockKeeperServerError::KeyNotFound)?;
+            .ok_or(Error::KeyNotFound)?;
 
         Ok(stored_secret)
     }
@@ -65,13 +65,13 @@ impl Database {
     /// Add a [`StoredSigningKeyPair`] to a [`User`]'s list of arbitrary secrets
     /// TODO: This function temporarily stores an unencrypted key pair.
     /// WARNING: Do not use in production!
-    pub async fn add_remote_secret(
+    pub(crate) async fn add_remote_secret(
         &self,
         user_id: &UserId,
         secret: SigningKeyPair,
         key_id: KeyId,
-    ) -> Result<(), LockKeeperServerError> {
-        let collection = self.inner.collection::<User>(constants::USERS);
+    ) -> Result<(), Error> {
+        let collection = self.handle.collection::<User>(USERS);
         let stored_secret = StoredSigningKeyPair::new(secret, key_id);
         let stored_secret_bson = mongodb::bson::to_bson(&stored_secret)?;
         let filter = doc! { USER_ID: user_id };
@@ -80,18 +80,18 @@ impl Database {
         let _ = collection
             .find_one_and_update(filter, update, None)
             .await?
-            .ok_or(LockKeeperServerError::InvalidAccount)?;
+            .ok_or(Error::InvalidAccount)?;
         Ok(())
     }
 
     /// Get a [`User`]'s [`StoredSigningKeyPair`] based on its [`KeyId`]
-    pub async fn get_user_signing_key(
+    pub(crate) async fn get_user_signing_key(
         &self,
         user_id: &UserId,
         key_id: &KeyId,
-    ) -> Result<StoredSigningKeyPair, LockKeeperServerError> {
+    ) -> Result<StoredSigningKeyPair, Error> {
         // Get user collection
-        let collection = self.inner.collection::<User>(constants::USERS);
+        let collection = self.handle.collection::<User>(USERS);
         // Match on UserId and KeyId, update "retrieved" field to true
         let key_id_bson = mongodb::bson::to_bson(key_id)?;
         let filter =
@@ -100,7 +100,7 @@ impl Database {
         let user = collection
             .find_one_and_update(filter, update, None)
             .await?
-            .ok_or(LockKeeperServerError::InvalidAccount)?;
+            .ok_or(Error::InvalidAccount)?;
 
         // Filter found user to return stored secret
         let stored_secret = user
@@ -108,7 +108,7 @@ impl Database {
             .server_created_signing_keys
             .into_iter()
             .find(|x| x.key_id == *key_id)
-            .ok_or(LockKeeperServerError::KeyNotFound)?;
+            .ok_or(Error::KeyNotFound)?;
 
         Ok(stored_secret)
     }

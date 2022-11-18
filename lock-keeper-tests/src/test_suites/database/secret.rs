@@ -5,7 +5,8 @@ use lock_keeper::{
     crypto::{Import, KeyId, Secret, SigningKeyPair, StorageKey},
     types::database::user::UserId,
 };
-use lock_keeper_key_server::database::Database;
+use lock_keeper_key_server::database::DataStore;
+use lock_keeper_mongodb::Database;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
 use crate::{error::Result, run_parallel, utils::TestResult, Config};

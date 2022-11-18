@@ -13,6 +13,7 @@ use lock_keeper_client::{
     Config, LockKeeperClient, LockKeeperClientError,
 };
 use rand::{prelude::StdRng, Rng, SeedableRng};
+use std::fmt::Display;
 
 /// Generate a fake key ID to test retrieve/export failure cases.
 pub(crate) async fn generate_fake_key_id(
@@ -28,10 +29,10 @@ pub(crate) async fn generate_fake_key_id(
 }
 
 /// Helper to compare result errors.
-pub(crate) fn compare_errors<T>(
-    result: Result<T, LockKeeperClientError>,
-    expected_error: LockKeeperClientError,
-) {
+pub(crate) fn compare_errors<T, E>(result: Result<T, LockKeeperClientError>, expected_error: E)
+where
+    E: Into<LockKeeperClientError> + Display,
+{
     assert!(result.is_err());
 
     let actual_error = result.err().unwrap();

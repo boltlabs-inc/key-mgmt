@@ -3,6 +3,7 @@ use crate::{
     LockKeeperServerError,
 };
 
+use crate::database::DataStore;
 use async_trait::async_trait;
 use lock_keeper::{
     crypto::{KeyId, SigningKeyPair},
@@ -14,11 +15,11 @@ use lock_keeper::{
 pub struct RemoteGenerate;
 
 #[async_trait]
-impl Operation for RemoteGenerate {
+impl<DB: DataStore> Operation<DB> for RemoteGenerate {
     async fn operation(
         self,
         channel: &mut ServerChannel,
-        context: &mut Context,
+        context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
         let request: client::RequestRemoteGenerate = channel.receive().await?;
 
@@ -37,7 +38,8 @@ impl Operation for RemoteGenerate {
         context
             .db
             .add_remote_secret(&request.user_id, key_pair, key_id.clone())
-            .await?;
+            .await
+            .map_err(LockKeeperServerError::database)?;
 
         let response = server::ReturnKeyId { key_id, public_key };
 

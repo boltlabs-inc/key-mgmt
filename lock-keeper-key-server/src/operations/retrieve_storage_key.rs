@@ -1,4 +1,5 @@
 use crate::{
+    database::DataStore,
     server::{Context, Operation},
     LockKeeperServerError,
 };
@@ -12,11 +13,11 @@ use lock_keeper::{
 pub struct RetrieveStorageKey;
 
 #[async_trait]
-impl Operation for RetrieveStorageKey {
+impl<DB: DataStore> Operation<DB> for RetrieveStorageKey {
     async fn operation(
         self,
         channel: &mut ServerChannel,
-        context: &mut Context,
+        context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
         // Receive user ID and retrieve encrypted storage key for that user
         let request: client::Request = channel.receive().await?;
@@ -25,7 +26,8 @@ impl Operation for RetrieveStorageKey {
         let user = context
             .db
             .find_user_by_id(&request.user_id)
-            .await?
+            .await
+            .map_err(LockKeeperServerError::database)?
             .ok_or(LockKeeperServerError::InvalidAccount)?;
 
         // Send storage key if set

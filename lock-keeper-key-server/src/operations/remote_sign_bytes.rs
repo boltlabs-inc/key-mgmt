@@ -3,6 +3,7 @@ use crate::{
     LockKeeperServerError,
 };
 
+use crate::database::DataStore;
 use async_trait::async_trait;
 use lock_keeper::{
     crypto::{Signable, SigningKeyPair},
@@ -14,17 +15,18 @@ use lock_keeper::{
 pub struct RemoteSignBytes;
 
 #[async_trait]
-impl Operation for RemoteSignBytes {
+impl<DB: DataStore> Operation<DB> for RemoteSignBytes {
     async fn operation(
         self,
         channel: &mut ServerChannel,
-        context: &mut Context,
+        context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
         let request: client::RequestRemoteSign = channel.receive().await?;
         let key: SigningKeyPair = context
             .db
             .get_user_signing_key(&request.user_id, &request.key_id)
-            .await?
+            .await
+            .map_err(LockKeeperServerError::database)?
             .signing_key
             .try_into()?;
 

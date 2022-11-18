@@ -4,7 +4,8 @@ use std::str::FromStr;
 
 use colored::Colorize;
 use lock_keeper::types::database::user::{AccountName, User, UserId};
-use lock_keeper_key_server::LockKeeperServerError;
+use lock_keeper_key_server::database::DataStore;
+use lock_keeper_mongodb::error::Error;
 use rand::{rngs::StdRng, SeedableRng};
 
 use crate::{
@@ -160,7 +161,7 @@ async fn user_is_deleted(db: TestDatabase) -> Result<()> {
 
     // Ensure that an error is returned if the user is deleted again
     let result = db.delete_user(&user_id).await;
-    assert!(matches!(result, Err(LockKeeperServerError::InvalidAccount)));
+    assert!(matches!(result, Err(Error::InvalidAccount)));
 
     Ok(())
 }

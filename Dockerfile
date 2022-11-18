@@ -5,6 +5,6 @@ WORKDIR /usr/src/lock-keeper-key-server
 COPY . .
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/src/lock-keeper-key-server/target \
-    cargo install --path ./lock-keeper-key-server
+    cargo install --path ./bin/key-server-cli
 
 CMD ["key-server-cli", "./dev/docker/Server.toml"]

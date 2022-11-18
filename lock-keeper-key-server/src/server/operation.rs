@@ -7,17 +7,17 @@ use std::{thread, time::Duration};
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status, Streaming};
 
-use crate::{server::Context, LockKeeperServerError};
+use crate::{database::DataStore, server::Context, LockKeeperServerError};
 
 #[async_trait]
 /// A type implementing [`Operation`] can process `tonic` requests using a
 /// message-passing protocol facilitated by a [`ServerChannel`].
-pub(crate) trait Operation: Sized + Send + 'static {
+pub(crate) trait Operation<DB: DataStore>: Sized + Send + 'static {
     /// Core logic for a given operation.
     async fn operation(
         self,
         channel: &mut ServerChannel,
-        context: &mut Context,
+        context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError>;
 
     /// Takes a request from `tonic` and spawns a new thread to process that
@@ -26,7 +26,7 @@ pub(crate) trait Operation: Sized + Send + 'static {
     /// message is sent to the client.
     async fn handle_request(
         self,
-        context: Context,
+        context: Context<DB>,
         request: Request<Streaming<Message>>,
     ) -> Result<Response<MessageStream>, Status> {
         {
@@ -64,7 +64,11 @@ async fn handle_error(channel: &mut ServerChannel, e: LockKeeperServerError) {
     }
 }
 
-async fn audit_event(channel: &mut ServerChannel, context: &Context, status: EventStatus) {
+async fn audit_event<DB: DataStore>(
+    channel: &mut ServerChannel,
+    context: &Context<DB>,
+    status: EventStatus,
+) {
     let audit_event = context
         .db
         .create_audit_event(
@@ -73,7 +77,8 @@ async fn audit_event(channel: &mut ServerChannel, context: &Context, status: Eve
             &context.metadata.action(),
             status,
         )
-        .await;
+        .await
+        .map_err(|e| LockKeeperServerError::Database(Box::new(e)));
     if let Err(e) = audit_event {
         let _ = handle_error(channel, e);
     };

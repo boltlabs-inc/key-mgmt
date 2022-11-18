@@ -3,7 +3,8 @@ use lock_keeper::types::{
     audit_event::EventStatus,
     operations::{retrieve::RetrieveContext, ClientAction},
 };
-use lock_keeper_client::{Config, LockKeeperClientError};
+use lock_keeper_client::Config;
+use tonic::Status;
 
 use crate::{
     error::Result,
@@ -67,7 +68,7 @@ async fn cannot_retrieve_fake_key(config: Config) -> Result<()> {
 
     let fake_key_id = generate_fake_key_id(&state).await?;
     let local_storage_res = retrieve(&state, &fake_key_id, RetrieveContext::LocalOnly).await;
-    compare_errors(local_storage_res, LockKeeperClientError::InvalidAccount);
+    compare_errors(local_storage_res, Status::internal("Internal server error"));
     check_audit_events(&state, EventStatus::Failed, ClientAction::Retrieve).await?;
 
     Ok(())

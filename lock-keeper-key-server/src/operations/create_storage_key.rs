@@ -3,6 +3,7 @@ use crate::{
     server::{Context, Operation},
 };
 
+use crate::database::DataStore;
 use async_trait::async_trait;
 use lock_keeper::{
     infrastructure::channel::ServerChannel,
@@ -16,11 +17,11 @@ use lock_keeper::{
 pub struct CreateStorageKey;
 
 #[async_trait]
-impl Operation for CreateStorageKey {
+impl<DB: DataStore> Operation<DB> for CreateStorageKey {
     async fn operation(
         self,
         channel: &mut ServerChannel,
-        context: &mut Context,
+        context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
         let user_id = send_user_id(channel, context).await?;
         store_storage_key(user_id, channel, context).await?;
@@ -28,12 +29,16 @@ impl Operation for CreateStorageKey {
     }
 }
 
-async fn send_user_id(
+async fn send_user_id<DB: DataStore>(
     channel: &mut ServerChannel,
-    context: &Context,
+    context: &Context<DB>,
 ) -> Result<UserId, LockKeeperServerError> {
     let request: client::RequestUserId = channel.receive().await?;
-    let user = context.db.find_user(&request.account_name).await?;
+    let user = context
+        .db
+        .find_user(&request.account_name)
+        .await
+        .map_err(LockKeeperServerError::database)?;
 
     if let Some(user) = user {
         if user.storage_key.is_some() {
@@ -52,10 +57,10 @@ async fn send_user_id(
     }
 }
 
-async fn store_storage_key(
+async fn store_storage_key<DB: DataStore>(
     user_id: UserId,
     channel: &mut ServerChannel,
-    context: &Context,
+    context: &Context<DB>,
 ) -> Result<(), LockKeeperServerError> {
     let client_message: client::SendStorageKey = channel.receive().await?;
 
@@ -67,8 +72,13 @@ async fn store_storage_key(
         .db
         .set_storage_key(&user_id, client_message.storage_key)
         .await
+        .map_err(|e| LockKeeperServerError::Database(Box::new(e)))
     {
-        context.db.delete_user(&user_id).await?;
+        context
+            .db
+            .delete_user(&user_id)
+            .await
+            .map_err(LockKeeperServerError::database)?;
         return Err(error);
     }
 

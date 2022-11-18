@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use clap::Parser;
 use lock_keeper_key_server::{config::Config, server::start_lock_keeper_server};
+use lock_keeper_mongodb::Database;
 
 #[derive(Debug, Parser)]
 pub struct Cli {
@@ -24,5 +25,7 @@ pub async fn main() {
         .unwrap();
 
     let config = Config::from_file(&cli.config, private_key_bytes).unwrap();
-    start_lock_keeper_server(config).await.unwrap();
+
+    let mongo = Database::connect(&config.database).await.unwrap();
+    start_lock_keeper_server(config, mongo).await.unwrap();
 }

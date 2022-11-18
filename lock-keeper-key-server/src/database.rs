@@ -3,58 +3,107 @@
 //! This database will hold information on users and the secret material
 //! they have stored in the key server.
 
-use crate::{config::DatabaseSpec, constants};
+use async_trait::async_trait;
 use lock_keeper::{
-    constants::{ACCOUNT_NAME, USER_ID},
-    types::database::user::User,
+    config::opaque::OpaqueCipherSuite,
+    crypto::{Encrypted, KeyId, Secret, SigningKeyPair, StorageKey},
+    types::{
+        audit_event::{AuditEvent, AuditEventOptions, EventStatus, EventType},
+        database::{
+            secrets::{StoredEncryptedSecret, StoredSigningKeyPair},
+            user::{AccountName, User, UserId},
+        },
+        operations::ClientAction,
+    },
 };
-use mongodb::{
-    bson::doc,
-    options::{ClientOptions, IndexOptions},
-    Client, IndexModel,
-};
+use opaque_ke::ServerRegistration;
 
-use crate::error::LockKeeperServerError;
+/// Defines the expected interface between a key server and its database.
+///
+/// This trait definition is not complete. New trait methods may be added
+/// in future server versions.
+#[async_trait]
+pub trait DataStore: Send + Sync + 'static {
+    type Error: std::error::Error + Send + Sync + 'static;
+    // Audit event
+    /// Create a new [`AuditEvent`] for the given actor, action, and outcome
+    async fn create_audit_event(
+        &self,
+        actor: &AccountName,
+        secret_id: &Option<KeyId>,
+        action: &ClientAction,
+        status: EventStatus,
+    ) -> Result<(), Self::Error>;
 
-pub(crate) mod audit_event;
-pub(crate) mod secrets;
-pub(crate) mod user;
+    /// Find [`AuditEvent`]s that correspond to the event type and provided
+    /// filters
+    async fn find_audit_events(
+        &self,
+        account_name: &AccountName,
+        event_type: EventType,
+        options: AuditEventOptions,
+    ) -> Result<Vec<AuditEvent>, Self::Error>;
 
-#[derive(Clone, Debug)]
-pub struct Database {
-    inner: mongodb::Database,
-}
+    // Secret
+    /// Add a [`StoredEncryptedSecret`] to a [`User`]'s list of arbitrary
+    /// secrets
+    async fn add_user_secret(
+        &self,
+        user_id: &UserId,
+        secret: Encrypted<Secret>,
+        key_id: KeyId,
+    ) -> Result<(), Self::Error>;
 
-impl Database {
-    /// Connect to the MongoDB instance specified by the given [`DatabaseSpec`]
-    pub async fn connect(database_spec: &DatabaseSpec) -> Result<Self, LockKeeperServerError> {
-        // Parse a connection string into an options struct
-        let client_options = ClientOptions::parse(&database_spec.mongodb_uri).await?;
-        // Get a handle to the deployment
-        let client = Client::with_options(client_options)?;
-        // Get a handle to the database
-        let db = client.database(&database_spec.db_name);
+    /// Get a [`User`]'s [`StoredEncryptedSecret`] based on its [`KeyId`]
+    async fn get_user_secret(
+        &self,
+        user_id: &UserId,
+        key_id: &KeyId,
+    ) -> Result<StoredEncryptedSecret, Self::Error>;
 
-        // Enforce that the user ID is unique
-        let enforce_uniqueness = IndexOptions::builder().unique(true).build();
-        let user_id_index = IndexModel::builder()
-            .keys(doc! {USER_ID: 1})
-            .options(enforce_uniqueness)
-            .build();
+    /// Add a [`StoredSigningKeyPair`] to a [`User`]'s list of arbitrary secrets
+    /// TODO: This function will temporarily store an unencrypted key pair.
+    /// WARNING: Do not use in production!
+    async fn add_remote_secret(
+        &self,
+        user_id: &UserId,
+        secret: SigningKeyPair,
+        key_id: KeyId,
+    ) -> Result<(), Self::Error>;
 
-        // Enforce that the account name is unique
-        let enforce_uniqueness = IndexOptions::builder().unique(true).build();
-        let account_name_index = IndexModel::builder()
-            .keys(doc! {ACCOUNT_NAME: 1})
-            .options(enforce_uniqueness)
-            .build();
+    /// Get a [`User`]'s [`StoredSigningKeyPair`] based on its [`KeyId`]
+    async fn get_user_signing_key(
+        &self,
+        user_id: &UserId,
+        key_id: &KeyId,
+    ) -> Result<StoredSigningKeyPair, Self::Error>;
 
-        // Apply uniqueness to the database
-        let _created_indices = db
-            .collection::<User>(constants::USERS)
-            .create_indexes([user_id_index, account_name_index], None)
-            .await?;
+    // User
+    /// Create a new [`User`] with their authentication information and insert
+    /// it into the database.
+    async fn create_user(
+        &self,
+        user_id: &UserId,
+        account_name: &AccountName,
+        server_registration: &ServerRegistration<OpaqueCipherSuite>,
+    ) -> Result<User, Self::Error>;
 
-        Ok(Self { inner: db })
-    }
+    /// Find a [`User`] by their human-readable [`AccountName`].
+    async fn find_user(&self, account_name: &AccountName) -> Result<Option<User>, Self::Error>;
+
+    /// Find a [`User`] by their machine-readable [`UserId`].
+    async fn find_user_by_id(&self, user_id: &UserId) -> Result<Option<User>, Self::Error>;
+
+    /// Delete a [`User`] by their [`UserId`]
+    async fn delete_user(&self, user_id: &UserId) -> Result<(), Self::Error>;
+
+    /// Set the `storage_key` field for the [`User`] associated with a given
+    /// [`UserId`]
+    /// Returns a `LockKeeperServerError::InvalidAccount` if the given
+    /// `user_id` does not exist.
+    async fn set_storage_key(
+        &self,
+        user_id: &UserId,
+        storage_key: Encrypted<StorageKey>,
+    ) -> Result<(), Self::Error>;
 }
