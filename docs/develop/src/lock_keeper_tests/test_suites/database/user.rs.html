@@ -184,13 +184,15 @@
 <span id="184">184</span>
 <span id="185">185</span>
 <span id="186">186</span>
+<span id="187">187</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Integration tests for user objects in the database
 
 </span><span class="kw">use </span>std::str::FromStr;
 
 <span class="kw">use </span>colored::Colorize;
 <span class="kw">use </span>lock_keeper::types::database::user::{AccountName, User, UserId};
-<span class="kw">use </span>lock_keeper_key_server::LockKeeperServerError;
+<span class="kw">use </span>lock_keeper_key_server::database::DataStore;
+<span class="kw">use </span>lock_keeper_mongodb::error::Error;
 <span class="kw">use </span>rand::{rngs::StdRng, SeedableRng};
 
 <span class="kw">use crate</span>::{
@@ -346,7 +348,7 @@
 
     <span class="comment">// Ensure that an error is returned if the user is deleted again
     </span><span class="kw">let </span>result = db.delete_user(<span class="kw-2">&amp;</span>user_id).<span class="kw">await</span>;
-    <span class="macro">assert!</span>(<span class="macro">matches!</span>(result, <span class="prelude-val">Err</span>(LockKeeperServerError::InvalidAccount)));
+    <span class="macro">assert!</span>(<span class="macro">matches!</span>(result, <span class="prelude-val">Err</span>(Error::InvalidAccount)));
 
     <span class="prelude-val">Ok</span>(())
 }

@@ -100,12 +100,25 @@
 <span id="100">100</span>
 <span id="101">101</span>
 <span id="102">102</span>
+<span id="103">103</span>
+<span id="104">104</span>
+<span id="105">105</span>
+<span id="106">106</span>
+<span id="107">107</span>
+<span id="108">108</span>
+<span id="109">109</span>
+<span id="110">110</span>
+<span id="111">111</span>
+<span id="112">112</span>
+<span id="113">113</span>
+<span id="114">114</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{
     error::LockKeeperServerError,
     server::{Context, Operation},
 };
 <span class="kw">use </span>std::ops::DerefMut;
 
+<span class="kw">use </span><span class="kw">crate</span>::database::DataStore;
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>lock_keeper::{
     config::opaque::OpaqueCipherSuite,
@@ -121,11 +134,11 @@
 </span><span class="kw">pub struct </span>Register;
 
 <span class="attribute">#[async_trait]
-</span><span class="kw">impl </span>Operation <span class="kw">for </span>Register {
+</span><span class="kw">impl</span>&lt;DB: DataStore&gt; Operation&lt;DB&gt; <span class="kw">for </span>Register {
     <span class="kw">async fn </span>operation(
         <span class="self">self</span>,
         channel: <span class="kw-2">&amp;mut </span>ServerChannel,
-        context: <span class="kw-2">&amp;mut </span>Context,
+        context: <span class="kw-2">&amp;mut </span>Context&lt;DB&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
         <span class="kw">let </span>account_name = register_start(channel, context).<span class="kw">await</span><span class="question-mark">?</span>;
         register_finish(<span class="kw-2">&amp;</span>account_name, channel, context).<span class="kw">await</span><span class="question-mark">?</span>;
@@ -134,15 +147,19 @@
     }
 }
 
-<span class="kw">async fn </span>register_start(
+<span class="kw">async fn </span>register_start&lt;DB: DataStore&gt;(
     channel: <span class="kw-2">&amp;mut </span>ServerChannel,
-    context: <span class="kw-2">&amp;</span>Context,
+    context: <span class="kw-2">&amp;</span>Context&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;AccountName, LockKeeperServerError&gt; {
     <span class="comment">// Receive start message from client
     </span><span class="kw">let </span>start_message: client::RegisterStart = channel.receive().<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="comment">// Abort registration if UserId already exists
-    </span><span class="kw">let </span>user = context.db.find_user(<span class="kw-2">&amp;</span>start_message.account_name).<span class="kw">await</span><span class="question-mark">?</span>;
+    </span><span class="kw">let </span>user = context
+        .db
+        .find_user(<span class="kw-2">&amp;</span>start_message.account_name)
+        .<span class="kw">await
+        </span>.map_err(LockKeeperServerError::database)<span class="question-mark">?</span>;
 
     <span class="kw">if </span>user.is_some() {
         <span class="prelude-val">Err</span>(LockKeeperServerError::AccountAlreadyRegistered)
@@ -165,10 +182,10 @@
     }
 }
 
-<span class="kw">async fn </span>register_finish(
+<span class="kw">async fn </span>register_finish&lt;DB: DataStore&gt;(
     account_name: <span class="kw-2">&amp;</span>AccountName,
     channel: <span class="kw-2">&amp;mut </span>ServerChannel,
-    context: <span class="kw-2">&amp;</span>Context,
+    context: <span class="kw-2">&amp;</span>Context&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
     <span class="comment">// Receive finish message from client
     </span><span class="kw">let </span>finish_message: client::RegisterFinish = channel.receive().<span class="kw">await</span><span class="question-mark">?</span>;
@@ -185,11 +202,18 @@
         </span>};
 
         <span class="comment">// If the user ID is fresh, create the new user
-        </span><span class="kw">if </span>context.db.find_user_by_id(<span class="kw-2">&amp;</span>user_id).<span class="kw">await</span><span class="question-mark">?</span>.is_none() {
-            <span class="kw">let </span>_object_id = context
+        </span><span class="kw">if </span>context
+            .db
+            .find_user_by_id(<span class="kw-2">&amp;</span>user_id)
+            .<span class="kw">await
+            </span>.map_err(LockKeeperServerError::database)<span class="question-mark">?
+            </span>.is_none()
+        {
+            <span class="kw">let </span>_user = context
                 .db
                 .create_user(<span class="kw-2">&amp;</span>user_id, account_name, <span class="kw-2">&amp;</span>server_registration)
-                .<span class="kw">await</span><span class="question-mark">?</span>;
+                .<span class="kw">await
+                </span>.map_err(LockKeeperServerError::database)<span class="question-mark">?</span>;
             <span class="kw">break</span>;
         }
     }

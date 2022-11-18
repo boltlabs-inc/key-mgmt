@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":[["audit_event","Module for operations on audit events in the database."],["secrets","Module for operations on secrets in the database."],["user","Module for operations on users in the database."]],"struct":[["Database",""]]};
+window.SIDEBAR_ITEMS = {"trait":[["DataStore","Defines the expected interface between a key server and its database."]]};

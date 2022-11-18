@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":[["audit_event","Operations on audit events in the MongoDB database."],["secret","Operations on secrets in the database."],["user","Operations on users in the database."]],"struct":[["Database",""]]};

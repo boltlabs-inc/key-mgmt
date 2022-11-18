@@ -78,6 +78,11 @@
 <span id="78">78</span>
 <span id="79">79</span>
 <span id="80">80</span>
+<span id="81">81</span>
+<span id="82">82</span>
+<span id="83">83</span>
+<span id="84">84</span>
+<span id="85">85</span>
 </pre><pre class="rust"><code><span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>lock_keeper::{
     infrastructure::channel::ServerChannel,
@@ -87,17 +92,17 @@
 <span class="kw">use </span>tokio_stream::wrappers::ReceiverStream;
 <span class="kw">use </span>tonic::{Request, Response, Status, Streaming};
 
-<span class="kw">use crate</span>::{server::Context, LockKeeperServerError};
+<span class="kw">use crate</span>::{database::DataStore, server::Context, LockKeeperServerError};
 
 <span class="attribute">#[async_trait]
 </span><span class="doccomment">/// A type implementing [`Operation`] can process `tonic` requests using a
 /// message-passing protocol facilitated by a [`ServerChannel`].
-</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">trait </span>Operation: Sized + Send + <span class="lifetime">&#39;static </span>{
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">trait </span>Operation&lt;DB: DataStore&gt;: Sized + Send + <span class="lifetime">&#39;static </span>{
     <span class="doccomment">/// Core logic for a given operation.
     </span><span class="kw">async fn </span>operation(
         <span class="self">self</span>,
         channel: <span class="kw-2">&amp;mut </span>ServerChannel,
-        context: <span class="kw-2">&amp;mut </span>Context,
+        context: <span class="kw-2">&amp;mut </span>Context&lt;DB&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt;;
 
     <span class="doccomment">/// Takes a request from `tonic` and spawns a new thread to process that
@@ -106,7 +111,7 @@
     /// message is sent to the client.
     </span><span class="kw">async fn </span>handle_request(
         <span class="self">self</span>,
-        context: Context,
+        context: Context&lt;DB&gt;,
         request: Request&lt;Streaming&lt;Message&gt;&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;MessageStream&gt;, Status&gt; {
         {
@@ -144,7 +149,11 @@
     }
 }
 
-<span class="kw">async fn </span>audit_event(channel: <span class="kw-2">&amp;mut </span>ServerChannel, context: <span class="kw-2">&amp;</span>Context, status: EventStatus) {
+<span class="kw">async fn </span>audit_event&lt;DB: DataStore&gt;(
+    channel: <span class="kw-2">&amp;mut </span>ServerChannel,
+    context: <span class="kw-2">&amp;</span>Context&lt;DB&gt;,
+    status: EventStatus,
+) {
     <span class="kw">let </span>audit_event = context
         .db
         .create_audit_event(
@@ -153,7 +162,8 @@
             <span class="kw-2">&amp;</span>context.metadata.action(),
             status,
         )
-        .<span class="kw">await</span>;
+        .<span class="kw">await
+        </span>.map_err(|e| LockKeeperServerError::Database(Box::new(e)));
     <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = audit_event {
         <span class="kw">let _ </span>= handle_error(channel, e);
     };

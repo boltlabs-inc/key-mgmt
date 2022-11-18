@@ -109,9 +109,11 @@
 <span id="109">109</span>
 <span id="110">110</span>
 <span id="111">111</span>
+<span id="112">112</span>
 </pre><pre class="rust"><code><span class="kw">use </span>colored::Colorize;
 <span class="kw">use </span>lock_keeper::types::{audit_event::EventStatus, operations::ClientAction};
-<span class="kw">use </span>lock_keeper_client::{Config, LockKeeperClientError};
+<span class="kw">use </span>lock_keeper_client::Config;
+<span class="kw">use </span>tonic::Status;
 
 <span class="kw">use crate</span>::{
     error::Result,
@@ -163,7 +165,7 @@
 
     <span class="kw">let </span>fake_key_id = generate_fake_key_id(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="kw">let </span>bytes_res = export(<span class="kw-2">&amp;</span>state, <span class="kw-2">&amp;</span>fake_key_id).<span class="kw">await</span>;
-    compare_errors(bytes_res, LockKeeperClientError::InvalidAccount);
+    compare_errors(bytes_res, Status::internal(<span class="string">&quot;Internal server error&quot;</span>));
     check_audit_events(<span class="kw-2">&amp;</span>state, EventStatus::Failed, ClientAction::Export).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
@@ -174,7 +176,7 @@
 
     <span class="kw">let </span>(key_id, <span class="kw">_</span>) = import_signing_key(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="kw">let </span>export_res = export(<span class="kw-2">&amp;</span>state, <span class="kw-2">&amp;</span>key_id).<span class="kw">await</span>;
-    compare_errors(export_res, LockKeeperClientError::InvalidAccount);
+    compare_errors(export_res, Status::internal(<span class="string">&quot;Internal server error&quot;</span>));
     check_audit_events(<span class="kw-2">&amp;</span>state, EventStatus::Failed, ClientAction::Export).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
@@ -204,7 +206,7 @@
 
     <span class="kw">let </span>fake_key_id = generate_fake_key_id(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="kw">let </span>export_res = export_signing_key(<span class="kw-2">&amp;</span>state, <span class="kw-2">&amp;</span>fake_key_id).<span class="kw">await</span>;
-    compare_errors(export_res, LockKeeperClientError::InvalidAccount);
+    compare_errors(export_res, Status::internal(<span class="string">&quot;Internal server error&quot;</span>));
     check_audit_events(<span class="kw-2">&amp;</span>state, EventStatus::Failed, ClientAction::ExportSigningKey).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
@@ -215,7 +217,7 @@
 
     <span class="kw">let </span>(key_id, <span class="kw">_</span>) = generate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="kw">let </span>export_res = export_signing_key(<span class="kw-2">&amp;</span>state, <span class="kw-2">&amp;</span>key_id).<span class="kw">await</span>;
-    compare_errors(export_res, LockKeeperClientError::InvalidAccount);
+    compare_errors(export_res, Status::internal(<span class="string">&quot;Internal server error&quot;</span>));
     check_audit_events(<span class="kw-2">&amp;</span>state, EventStatus::Failed, ClientAction::ExportSigningKey).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())

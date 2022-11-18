@@ -77,11 +77,22 @@
 <span id="77">77</span>
 <span id="78">78</span>
 <span id="79">79</span>
+<span id="80">80</span>
+<span id="81">81</span>
+<span id="82">82</span>
+<span id="83">83</span>
+<span id="84">84</span>
+<span id="85">85</span>
+<span id="86">86</span>
+<span id="87">87</span>
+<span id="88">88</span>
+<span id="89">89</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{
     error::LockKeeperServerError,
     server::{Context, Operation},
 };
 
+<span class="kw">use </span><span class="kw">crate</span>::database::DataStore;
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>lock_keeper::{
     infrastructure::channel::ServerChannel,
@@ -95,11 +106,11 @@
 </span><span class="kw">pub struct </span>CreateStorageKey;
 
 <span class="attribute">#[async_trait]
-</span><span class="kw">impl </span>Operation <span class="kw">for </span>CreateStorageKey {
+</span><span class="kw">impl</span>&lt;DB: DataStore&gt; Operation&lt;DB&gt; <span class="kw">for </span>CreateStorageKey {
     <span class="kw">async fn </span>operation(
         <span class="self">self</span>,
         channel: <span class="kw-2">&amp;mut </span>ServerChannel,
-        context: <span class="kw-2">&amp;mut </span>Context,
+        context: <span class="kw-2">&amp;mut </span>Context&lt;DB&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
         <span class="kw">let </span>user_id = send_user_id(channel, context).<span class="kw">await</span><span class="question-mark">?</span>;
         store_storage_key(user_id, channel, context).<span class="kw">await</span><span class="question-mark">?</span>;
@@ -107,12 +118,16 @@
     }
 }
 
-<span class="kw">async fn </span>send_user_id(
+<span class="kw">async fn </span>send_user_id&lt;DB: DataStore&gt;(
     channel: <span class="kw-2">&amp;mut </span>ServerChannel,
-    context: <span class="kw-2">&amp;</span>Context,
+    context: <span class="kw-2">&amp;</span>Context&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;UserId, LockKeeperServerError&gt; {
     <span class="kw">let </span>request: client::RequestUserId = channel.receive().<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let </span>user = context.db.find_user(<span class="kw-2">&amp;</span>request.account_name).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>user = context
+        .db
+        .find_user(<span class="kw-2">&amp;</span>request.account_name)
+        .<span class="kw">await
+        </span>.map_err(LockKeeperServerError::database)<span class="question-mark">?</span>;
 
     <span class="kw">if let </span><span class="prelude-val">Some</span>(user) = user {
         <span class="kw">if </span>user.storage_key.is_some() {
@@ -131,10 +146,10 @@
     }
 }
 
-<span class="kw">async fn </span>store_storage_key(
+<span class="kw">async fn </span>store_storage_key&lt;DB: DataStore&gt;(
     user_id: UserId,
     channel: <span class="kw-2">&amp;mut </span>ServerChannel,
-    context: <span class="kw-2">&amp;</span>Context,
+    context: <span class="kw-2">&amp;</span>Context&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
     <span class="kw">let </span>client_message: client::SendStorageKey = channel.receive().<span class="kw">await</span><span class="question-mark">?</span>;
 
@@ -146,8 +161,13 @@
         .db
         .set_storage_key(<span class="kw-2">&amp;</span>user_id, client_message.storage_key)
         .<span class="kw">await
-    </span>{
-        context.db.delete_user(<span class="kw-2">&amp;</span>user_id).<span class="kw">await</span><span class="question-mark">?</span>;
+        </span>.map_err(|e| LockKeeperServerError::Database(Box::new(e)))
+    {
+        context
+            .db
+            .delete_user(<span class="kw-2">&amp;</span>user_id)
+            .<span class="kw">await
+            </span>.map_err(LockKeeperServerError::database)<span class="question-mark">?</span>;
         <span class="kw">return </span><span class="prelude-val">Err</span>(error);
     }
 

@@ -160,6 +160,7 @@
 <span id="160">160</span>
 <span id="161">161</span>
 <span id="162">162</span>
+<span id="163">163</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Database integration tests
 
 </span><span class="kw">pub mod </span>audit_event;
@@ -178,7 +179,8 @@
     crypto::{Encrypted, OpaqueExportKey, StorageKey},
     types::database::user::{AccountName, UserId},
 };
-<span class="kw">use </span>lock_keeper_key_server::{config::DatabaseSpec, database::Database};
+<span class="kw">use </span>lock_keeper_key_server::{config::DatabaseSpec, database::DataStore};
+<span class="kw">use </span>lock_keeper_mongodb::Database;
 <span class="kw">use </span>rand::{rngs::StdRng, Rng, SeedableRng};
 
 <span class="kw">use </span><span class="kw">crate</span>::utils::{server_registration, tagged};

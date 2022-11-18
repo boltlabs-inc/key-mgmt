@@ -23,6 +23,8 @@
 <span id="23">23</span>
 <span id="24">24</span>
 <span id="25">25</span>
+<span id="26">26</span>
+<span id="27">27</span>
 </pre><pre class="rust"><code><span class="kw">use </span>thiserror::Error;
 
 <span class="kw">pub type </span><span class="prelude-ty">Result</span>&lt;T&gt; = std::result::Result&lt;T, LockKeeperTestError&gt;;
@@ -43,6 +45,8 @@
     </span>LockKeeperClient(<span class="attribute">#[from] </span>lock_keeper_client::LockKeeperClientError),
     <span class="attribute">#[error(<span class="string">&quot;LockKeeperServerError: {0:?}&quot;</span>)]
     </span>LockKeeperServer(<span class="attribute">#[from] </span>lock_keeper_key_server::LockKeeperServerError),
+    <span class="attribute">#[error(<span class="string">&quot;LockKeeperMongoDb error: {0:?}&quot;</span>)]
+    </span>LockKeeperMongoDb(<span class="attribute">#[from] </span>lock_keeper_mongodb::error::Error),
     <span class="attribute">#[error(<span class="string">&quot;MongoDB error: {0:?}&quot;</span>)]
     </span>MongoDb(<span class="attribute">#[from] </span>mongodb::error::Error),
     <span class="attribute">#[error(<span class="string">&quot;RandError: {0:?}&quot;</span>)]

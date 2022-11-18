@@ -209,7 +209,6 @@
 <span id="209">209</span>
 <span id="210">210</span>
 <span id="211">211</span>
-<span id="212">212</span>
 </pre><pre class="rust"><code><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>opaque_storage;
 <span class="kw">mod </span>operation;
 <span class="kw">mod </span>service;
@@ -218,7 +217,7 @@
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use </span>operation::Operation;
 <span class="kw">pub use </span>service::start_lock_keeper_server;
 
-<span class="kw">use crate</span>::{config::Config, database::Database, error::LockKeeperServerError, operations};
+<span class="kw">use crate</span>::{config::Config, error::LockKeeperServerError, operations};
 
 <span class="kw">use </span>lock_keeper::{
     constants::METADATA,
@@ -227,28 +226,27 @@
     types::{Message, MessageStream},
 };
 
-<span class="kw">use </span><span class="kw">crate</span>::server::session_key_cache::SessionKeyCache;
+<span class="kw">use crate</span>::{database::DataStore, server::session_key_cache::SessionKeyCache};
 <span class="kw">use </span>lock_keeper::types::operations::RequestMetadata;
 <span class="kw">use </span>rand::{rngs::StdRng, SeedableRng};
 <span class="kw">use </span>std::sync::Arc;
 <span class="kw">use </span>tokio::sync::Mutex;
 <span class="kw">use </span>tonic::{Request, Response, Status};
 
-<span class="attribute">#[derive(Debug)]
-</span><span class="kw">pub struct </span>LockKeeperKeyServer {
+<span class="kw">pub struct </span>LockKeeperKeyServer&lt;DB: DataStore&gt; {
     config: Arc&lt;Config&gt;,
-    db: Arc&lt;Database&gt;,
+    db: Arc&lt;DB&gt;,
     rng: Arc&lt;Mutex&lt;StdRng&gt;&gt;,
     session_key_cache: Arc&lt;Mutex&lt;SessionKeyCache&gt;&gt;,
 }
 
-<span class="kw">impl </span>LockKeeperKeyServer {
-    <span class="kw">pub fn </span>new(db: Database, config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, LockKeeperServerError&gt; {
+<span class="kw">impl</span>&lt;DB: DataStore&gt; LockKeeperKeyServer&lt;DB&gt; {
+    <span class="kw">pub fn </span>new(db: Arc&lt;DB&gt;, config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, LockKeeperServerError&gt; {
         <span class="kw">let </span>rng = StdRng::from_entropy();
 
         <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
             config: Arc::new(config),
-            db: Arc::new(db),
+            db,
             rng: Arc::new(Mutex::new(rng)),
             session_key_cache: Arc::new(Mutex::new(SessionKeyCache::default())),
         })
@@ -257,7 +255,7 @@
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>context(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         request: <span class="kw-2">&amp;</span>Request&lt;tonic::Streaming&lt;Message&gt;&gt;,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;Context, LockKeeperServerError&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Context&lt;DB&gt;, LockKeeperServerError&gt; {
         <span class="comment">// Parse RequestMetadata
         </span><span class="kw">let </span>metadata = <span class="self">Self</span>::parse_metadata(request)<span class="question-mark">?</span>;
 
@@ -284,8 +282,8 @@
     }
 }
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>Context {
-    <span class="kw">pub </span>db: Arc&lt;Database&gt;,
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>Context&lt;DB: DataStore&gt; {
+    <span class="kw">pub </span>db: Arc&lt;DB&gt;,
     <span class="kw">pub </span>config: Arc&lt;Config&gt;,
     <span class="kw">pub </span>rng: Arc&lt;Mutex&lt;StdRng&gt;&gt;,
     <span class="kw">pub </span>metadata: RequestMetadata,
@@ -295,7 +293,7 @@
 }
 
 <span class="attribute">#[tonic::async_trait]
-</span><span class="kw">impl </span>LockKeeperRpc <span class="kw">for </span>LockKeeperKeyServer {
+</span><span class="kw">impl</span>&lt;DB: DataStore&gt; LockKeeperRpc <span class="kw">for </span>LockKeeperKeyServer&lt;DB&gt; {
     <span class="kw">type </span>AuthenticateStream = MessageStream;
     <span class="kw">type </span>CreateStorageKeyStream = MessageStream;
     <span class="kw">type </span>GenerateStream = MessageStream;

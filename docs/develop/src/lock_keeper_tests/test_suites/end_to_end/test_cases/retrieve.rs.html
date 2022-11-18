@@ -72,12 +72,14 @@
 <span id="72">72</span>
 <span id="73">73</span>
 <span id="74">74</span>
+<span id="75">75</span>
 </pre><pre class="rust"><code><span class="kw">use </span>colored::Colorize;
 <span class="kw">use </span>lock_keeper::types::{
     audit_event::EventStatus,
     operations::{retrieve::RetrieveContext, ClientAction},
 };
-<span class="kw">use </span>lock_keeper_client::{Config, LockKeeperClientError};
+<span class="kw">use </span>lock_keeper_client::Config;
+<span class="kw">use </span>tonic::Status;
 
 <span class="kw">use crate</span>::{
     error::Result,
@@ -141,7 +143,7 @@
 
     <span class="kw">let </span>fake_key_id = generate_fake_key_id(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="kw">let </span>local_storage_res = retrieve(<span class="kw-2">&amp;</span>state, <span class="kw-2">&amp;</span>fake_key_id, RetrieveContext::LocalOnly).<span class="kw">await</span>;
-    compare_errors(local_storage_res, LockKeeperClientError::InvalidAccount);
+    compare_errors(local_storage_res, Status::internal(<span class="string">&quot;Internal server error&quot;</span>));
     check_audit_events(<span class="kw-2">&amp;</span>state, EventStatus::Failed, ClientAction::Retrieve).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())

@@ -197,6 +197,7 @@
 <span id="197">197</span>
 <span id="198">198</span>
 <span id="199">199</span>
+<span id="200">200</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Integration tests for audit event objects in the database
 
 </span><span class="kw">use </span>colored::Colorize;
@@ -208,7 +209,8 @@
         operations::ClientAction,
     },
 };
-<span class="kw">use </span>lock_keeper_key_server::database::Database;
+<span class="kw">use </span>lock_keeper_key_server::database::DataStore;
+<span class="kw">use </span>lock_keeper_mongodb::Database;
 <span class="kw">use </span>mongodb::bson::DateTime;
 <span class="kw">use </span>rand::{
     rngs::StdRng,

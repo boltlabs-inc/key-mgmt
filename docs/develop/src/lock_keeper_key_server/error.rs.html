@@ -105,6 +105,9 @@
 <span id="105">105</span>
 <span id="106">106</span>
 <span id="107">107</span>
+<span id="108">108</span>
+<span id="109">109</span>
+<span id="110">110</span>
 </pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::server::session_key_cache::SessionKeyCacheError;
 <span class="kw">use </span>thiserror::Error;
 <span class="kw">use </span>tonic::Status;
@@ -138,8 +141,8 @@
     <span class="comment">// Wrapped errors
     </span><span class="attribute">#[error(transparent)]
     </span>Bincode(<span class="attribute">#[from] </span>bincode::Error),
-    <span class="attribute">#[error(transparent)]
-    </span>Bson(<span class="attribute">#[from] </span>mongodb::bson::ser::Error),
+    <span class="attribute">#[error(<span class="string">&quot;Database error: {0}&quot;</span>)]
+    </span>Database(Box&lt;<span class="kw">dyn </span>std::error::Error + Send + Sync&gt;),
     <span class="attribute">#[error(transparent)]
     </span>EnvVar(<span class="attribute">#[from] </span>std::env::VarError),
     <span class="attribute">#[error(transparent)]
@@ -148,8 +151,6 @@
     </span>Io(<span class="attribute">#[from] </span>std::io::Error),
     <span class="attribute">#[error(transparent)]
     </span>LockKeeper(<span class="attribute">#[from] </span>lock_keeper::LockKeeperError),
-    <span class="attribute">#[error(transparent)]
-    </span>MongoDb(<span class="attribute">#[from] </span>mongodb::error::Error),
     <span class="attribute">#[error(<span class="string">&quot;OPAQUE protocol error: {}&quot;</span>, .<span class="number">0</span>)]
     </span>OpaqueProtocol(opaque_ke::errors::ProtocolError),
     <span class="attribute">#[error(transparent)]
@@ -164,6 +165,12 @@
     </span>TonicTransport(<span class="attribute">#[from] </span>tonic::transport::Error),
     <span class="attribute">#[error(transparent)]
     </span>WebPki(<span class="attribute">#[from] </span>tokio_rustls::webpki::Error),
+}
+
+<span class="kw">impl </span>LockKeeperServerError {
+    <span class="kw">pub fn </span>database(error: <span class="kw">impl </span>std::error::Error + Send + Sync + <span class="lifetime">&#39;static</span>) -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>::Database(Box::new(error))
+    }
 }
 
 <span class="kw">impl </span>From&lt;opaque_ke::errors::ProtocolError&gt; <span class="kw">for </span>LockKeeperServerError {
@@ -199,7 +206,6 @@
             | LockKeeperServerError::Hyper(<span class="kw">_</span>)
             | LockKeeperServerError::Io(<span class="kw">_</span>)
             | LockKeeperServerError::InvalidOpaqueDirectory
-            | LockKeeperServerError::Bson(<span class="kw">_</span>)
             | LockKeeperServerError::Bincode(<span class="kw">_</span>)
             | LockKeeperServerError::OpaqueProtocol(<span class="kw">_</span>)
             | LockKeeperServerError::PrivateKeyMissing
@@ -207,7 +213,7 @@
             | LockKeeperServerError::Rustls(<span class="kw">_</span>)
             | LockKeeperServerError::StrumParseError(<span class="kw">_</span>)
             | LockKeeperServerError::Toml(<span class="kw">_</span>)
-            | LockKeeperServerError::MongoDb(<span class="kw">_</span>)
+            | LockKeeperServerError::Database(<span class="kw">_</span>)
             | LockKeeperServerError::WebPki(<span class="kw">_</span>) =&gt; Status::internal(<span class="string">&quot;Internal server error&quot;</span>),
         }
     }

@@ -36,11 +36,14 @@
 <span id="36">36</span>
 <span id="37">37</span>
 <span id="38">38</span>
+<span id="39">39</span>
+<span id="40">40</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{
     server::{Context, Operation},
     LockKeeperServerError,
 };
 
+<span class="kw">use </span><span class="kw">crate</span>::database::DataStore;
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>lock_keeper::{
     crypto::{Signable, SigningKeyPair},
@@ -52,17 +55,18 @@
 </span><span class="kw">pub struct </span>RemoteSignBytes;
 
 <span class="attribute">#[async_trait]
-</span><span class="kw">impl </span>Operation <span class="kw">for </span>RemoteSignBytes {
+</span><span class="kw">impl</span>&lt;DB: DataStore&gt; Operation&lt;DB&gt; <span class="kw">for </span>RemoteSignBytes {
     <span class="kw">async fn </span>operation(
         <span class="self">self</span>,
         channel: <span class="kw-2">&amp;mut </span>ServerChannel,
-        context: <span class="kw-2">&amp;mut </span>Context,
+        context: <span class="kw-2">&amp;mut </span>Context&lt;DB&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
         <span class="kw">let </span>request: client::RequestRemoteSign = channel.receive().<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">let </span>key: SigningKeyPair = context
             .db
             .get_user_signing_key(<span class="kw-2">&amp;</span>request.user_id, <span class="kw-2">&amp;</span>request.key_id)
-            .<span class="kw">await</span><span class="question-mark">?
+            .<span class="kw">await
+            </span>.map_err(LockKeeperServerError::database)<span class="question-mark">?
             </span>.signing_key
             .try_into()<span class="question-mark">?</span>;
 

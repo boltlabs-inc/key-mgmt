@@ -39,7 +39,10 @@
 <span id="39">39</span>
 <span id="40">40</span>
 <span id="41">41</span>
+<span id="42">42</span>
+<span id="43">43</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{
+    database::DataStore,
     server::{Context, Operation},
     LockKeeperServerError,
 };
@@ -53,11 +56,11 @@
 </span><span class="kw">pub struct </span>RetrieveAuditEvents;
 
 <span class="attribute">#[async_trait]
-</span><span class="kw">impl </span>Operation <span class="kw">for </span>RetrieveAuditEvents {
+</span><span class="kw">impl</span>&lt;DB: DataStore&gt; Operation&lt;DB&gt; <span class="kw">for </span>RetrieveAuditEvents {
     <span class="kw">async fn </span>operation(
         <span class="self">self</span>,
         channel: <span class="kw-2">&amp;mut </span>ServerChannel,
-        context: <span class="kw-2">&amp;mut </span>Context,
+        context: <span class="kw-2">&amp;mut </span>Context&lt;DB&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
         <span class="comment">// Receive event type and options for audit events to return
         </span><span class="kw">let </span>request: client::Request = channel.receive().<span class="kw">await</span><span class="question-mark">?</span>;
@@ -69,7 +72,8 @@
                 request.event_type,
                 request.options,
             )
-            .<span class="kw">await</span><span class="question-mark">?</span>;
+            .<span class="kw">await
+            </span>.map_err(LockKeeperServerError::database)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>reply = server::Response {
             summary_record: audit_events,

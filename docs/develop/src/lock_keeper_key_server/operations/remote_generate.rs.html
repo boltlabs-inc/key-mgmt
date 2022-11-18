@@ -46,11 +46,14 @@
 <span id="46">46</span>
 <span id="47">47</span>
 <span id="48">48</span>
+<span id="49">49</span>
+<span id="50">50</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{
     server::{Context, Operation},
     LockKeeperServerError,
 };
 
+<span class="kw">use </span><span class="kw">crate</span>::database::DataStore;
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>lock_keeper::{
     crypto::{KeyId, SigningKeyPair},
@@ -62,11 +65,11 @@
 </span><span class="kw">pub struct </span>RemoteGenerate;
 
 <span class="attribute">#[async_trait]
-</span><span class="kw">impl </span>Operation <span class="kw">for </span>RemoteGenerate {
+</span><span class="kw">impl</span>&lt;DB: DataStore&gt; Operation&lt;DB&gt; <span class="kw">for </span>RemoteGenerate {
     <span class="kw">async fn </span>operation(
         <span class="self">self</span>,
         channel: <span class="kw-2">&amp;mut </span>ServerChannel,
-        context: <span class="kw-2">&amp;mut </span>Context,
+        context: <span class="kw-2">&amp;mut </span>Context&lt;DB&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
         <span class="kw">let </span>request: client::RequestRemoteGenerate = channel.receive().<span class="kw">await</span><span class="question-mark">?</span>;
 
@@ -85,7 +88,8 @@
         </span>context
             .db
             .add_remote_secret(<span class="kw-2">&amp;</span>request.user_id, key_pair, key_id.clone())
-            .<span class="kw">await</span><span class="question-mark">?</span>;
+            .<span class="kw">await
+            </span>.map_err(LockKeeperServerError::database)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>response = server::ReturnKeyId { key_id, public_key };
 

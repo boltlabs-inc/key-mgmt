@@ -111,11 +111,17 @@
 <span id="111">111</span>
 <span id="112">112</span>
 <span id="113">113</span>
+<span id="114">114</span>
+<span id="115">115</span>
+<span id="116">116</span>
+<span id="117">117</span>
+<span id="118">118</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{
     error::LockKeeperServerError,
     server::{Context, Operation},
 };
 
+<span class="kw">use </span><span class="kw">crate</span>::database::DataStore;
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>lock_keeper::{
     config::opaque::OpaqueCipherSuite,
@@ -137,11 +143,11 @@
 </span><span class="kw">pub struct </span>Authenticate;
 
 <span class="attribute">#[async_trait]
-</span><span class="kw">impl </span>Operation <span class="kw">for </span>Authenticate {
+</span><span class="kw">impl</span>&lt;DB: DataStore&gt; Operation&lt;DB&gt; <span class="kw">for </span>Authenticate {
     <span class="kw">async fn </span>operation(
         <span class="self">self</span>,
         channel: <span class="kw-2">&amp;mut </span>ServerChannel,
-        context: <span class="kw-2">&amp;mut </span>Context,
+        context: <span class="kw-2">&amp;mut </span>Context&lt;DB&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
         <span class="kw">let </span>result = authenticate_start(channel, context).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">let </span>session_key = authenticate_finish(channel, result.login_start_result).<span class="kw">await</span><span class="question-mark">?</span>;
@@ -156,20 +162,24 @@
 
 <span class="doccomment">/// Returns the server-side start message along with a login result that will be
 /// used in the finish step.
-</span><span class="kw">async fn </span>authenticate_start(
+</span><span class="kw">async fn </span>authenticate_start&lt;DB: DataStore&gt;(
     channel: <span class="kw-2">&amp;mut </span>ServerChannel,
-    context: <span class="kw-2">&amp;</span>Context,
+    context: <span class="kw-2">&amp;</span>Context&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;AuthenticateStartResult, LockKeeperServerError&gt; {
     <span class="comment">// Receive start message from client
     </span><span class="kw">let </span>start_message: client::AuthenticateStart = channel.receive().<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="comment">// Check that user with corresponding UserId exists and get their
     // server_registration
-    </span><span class="kw">let </span>(server_registration, user_id) =
-        <span class="kw">match </span>context.db.find_user(<span class="kw-2">&amp;</span>start_message.account_name).<span class="kw">await</span><span class="question-mark">? </span>{
-            <span class="prelude-val">Some</span>(user) =&gt; user.into_parts(),
-            <span class="prelude-val">None </span>=&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(LockKeeperServerError::InvalidAccount),
-        };
+    </span><span class="kw">let </span>(server_registration, user_id) = <span class="kw">match </span>context
+        .db
+        .find_user(<span class="kw-2">&amp;</span>start_message.account_name)
+        .<span class="kw">await
+        </span>.map_err(LockKeeperServerError::database)<span class="question-mark">?
+    </span>{
+        <span class="prelude-val">Some</span>(user) =&gt; user.into_parts(),
+        <span class="prelude-val">None </span>=&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(LockKeeperServerError::InvalidAccount),
+    };
 
     <span class="kw">let </span>server_login_start_result = {
         <span class="kw">let </span><span class="kw-2">mut </span>local_rng = context.rng.lock().<span class="kw">await</span>;

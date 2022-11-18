@@ -186,6 +186,7 @@
 <span id="186">186</span>
 <span id="187">187</span>
 <span id="188">188</span>
+<span id="189">189</span>
 </pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::test_suites::end_to_end::test_cases::TestState;
 <span class="kw">use </span>lock_keeper::{
     crypto::{Export, KeyId, Secret, Signable, Signature},
@@ -201,6 +202,7 @@
     Config, LockKeeperClient, LockKeeperClientError,
 };
 <span class="kw">use </span>rand::{prelude::StdRng, Rng, SeedableRng};
+<span class="kw">use </span>std::fmt::Display;
 
 <span class="doccomment">/// Generate a fake key ID to test retrieve/export failure cases.
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>generate_fake_key_id(
@@ -216,10 +218,10 @@
 }
 
 <span class="doccomment">/// Helper to compare result errors.
-</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>compare_errors&lt;T&gt;(
-    result: <span class="prelude-ty">Result</span>&lt;T, LockKeeperClientError&gt;,
-    expected_error: LockKeeperClientError,
-) {
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>compare_errors&lt;T, E&gt;(result: <span class="prelude-ty">Result</span>&lt;T, LockKeeperClientError&gt;, expected_error: E)
+<span class="kw">where
+    </span>E: Into&lt;LockKeeperClientError&gt; + Display,
+{
     <span class="macro">assert!</span>(result.is_err());
 
     <span class="kw">let </span>actual_error = result.err().unwrap();
