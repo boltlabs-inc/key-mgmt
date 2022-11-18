@@ -1,6 +1,6 @@
 use crate::test_suites::end_to_end::test_cases::TestState;
 use lock_keeper::{
-    crypto::{Export, KeyId, Secret, Signable, Signature},
+    crypto::{Export, Import, KeyId, Secret, Signable, Signature},
     types::{
         audit_event::{AuditEventOptions, EventStatus, EventType},
         database::user::AccountName,
@@ -90,7 +90,7 @@ pub(crate) async fn authenticate(
 pub(crate) async fn export(
     state: &TestState,
     key_id: &KeyId,
-) -> Result<LockKeeperResponse<Vec<u8>>, LockKeeperClientError> {
+) -> Result<LockKeeperResponse<Export>, LockKeeperClientError> {
     // Authenticate
     let lock_keeper_client =
         LockKeeperClient::authenticated_client(&state.account_name, &state.password, &state.config)
@@ -136,12 +136,11 @@ pub(crate) async fn import_signing_key(
             .await?
             .into_inner();
     let random_bytes = rand::thread_rng().gen::<[u8; 32]>().to_vec();
+    let import = Import::new(random_bytes.clone())?;
     let LockKeeperResponse {
         data: key_id,
         metadata,
-    } = lock_keeper_client
-        .import_signing_key(random_bytes.clone())
-        .await?;
+    } = lock_keeper_client.import_signing_key(import).await?;
 
     let result = LockKeeperResponse {
         data: (key_id, random_bytes),

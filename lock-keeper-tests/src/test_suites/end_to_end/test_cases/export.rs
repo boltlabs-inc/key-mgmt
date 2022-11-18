@@ -1,5 +1,8 @@
 use colored::Colorize;
-use lock_keeper::types::{audit_event::EventStatus, operations::ClientAction};
+use lock_keeper::{
+    crypto::Secret,
+    types::{audit_event::EventStatus, operations::ClientAction},
+};
 use lock_keeper_client::{api::GenerateResult, Config};
 use tonic::Status;
 
@@ -43,9 +46,9 @@ async fn export_works(config: Config) -> Result<()> {
     let bytes_res = export(&state, &key_id).await;
     assert!(bytes_res.is_ok());
 
-    let bytes_new = bytes_res?.into_inner();
-    let bytes_original: Vec<u8> = local_storage.material.into();
-    assert_eq!(bytes_new, bytes_original);
+    // Turn the export back into a Secret and compare directly
+    let exported_secret: Secret = bytes_res?.into_inner().try_into()?;
+    assert_eq!(exported_secret, local_storage.material);
     check_audit_events(&state, EventStatus::Successful, ClientAction::Export).await?;
 
     Ok(())

@@ -9,9 +9,8 @@ impl LockKeeperClient {
     pub(crate) async fn handle_import_signing_key(
         &self,
         mut channel: ClientChannel,
-        key_material: Vec<u8>,
+        key_material: Import,
     ) -> Result<LockKeeperResponse<KeyId>, LockKeeperClientError> {
-        let key_material = Import { key_material };
         // Send UserId and key material to server
         let request = client::Request {
             user_id: self.user_id().clone(),

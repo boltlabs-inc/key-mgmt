@@ -19,7 +19,7 @@ use crate::{
     client::Password, config::Config, LockKeeperClient, LockKeeperClientError, LockKeeperResponse,
 };
 use lock_keeper::{
-    crypto::{Export, KeyId, Secret, Signable, Signature},
+    crypto::{Export, Import, KeyId, Secret, Signable, Signature},
     types::{
         audit_event::{AuditEvent, AuditEventOptions, EventType},
         database::user::AccountName,
@@ -122,7 +122,7 @@ impl LockKeeperClient {
     pub async fn export_key(
         &self,
         key_id: &KeyId,
-    ) -> Result<LockKeeperResponse<Vec<u8>>, LockKeeperClientError> {
+    ) -> Result<LockKeeperResponse<Export>, LockKeeperClientError> {
         // Create channel: this will internally be a `retrieve` channel
         let metadata = self.create_metadata(ClientAction::Export);
         let client_channel = Self::create_channel(&mut self.tonic_client(), &metadata).await?;
@@ -132,11 +132,10 @@ impl LockKeeperClient {
             .await?;
 
         let local_storage = data.ok_or(LockKeeperClientError::ExportFailed)?;
-
-        let response: Vec<u8> = local_storage.material.into();
+        let exported_secret = Export::from(local_storage.material);
 
         Ok(LockKeeperResponse {
-            data: response,
+            data: exported_secret,
             metadata,
         })
     }
@@ -181,7 +180,7 @@ impl LockKeeperClient {
     /// Import signing key material to the key server
     pub async fn import_signing_key(
         &self,
-        key_material: Vec<u8>,
+        key_material: Import,
     ) -> Result<LockKeeperResponse<KeyId>, LockKeeperClientError> {
         let metadata = self.create_metadata(ClientAction::ImportSigningKey);
         let client_channel = Self::create_channel(&mut self.tonic_client(), &metadata).await?;

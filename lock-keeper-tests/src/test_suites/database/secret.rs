@@ -100,9 +100,8 @@ async fn add_arbitrary_secret(
 
 async fn import_signing_key(db: &Database, rng: &mut StdRng, user_id: &UserId) -> Result<KeyId> {
     let key_id = KeyId::generate(rng, user_id)?;
-    let import = Import {
-        key_material: rand::thread_rng().gen::<[u8; 32]>().to_vec(),
-    };
+    let random_bytes = rand::thread_rng().gen::<[u8; 32]>().to_vec();
+    let import = Import::new(random_bytes)?;
     let signing_key = import.into_signing_key(user_id, &key_id)?;
 
     db.add_remote_secret(user_id, signing_key.clone(), key_id.clone())

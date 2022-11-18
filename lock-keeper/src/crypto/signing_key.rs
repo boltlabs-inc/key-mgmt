@@ -1,3 +1,4 @@
+use super::Export;
 use crate::{types::database::user::UserId, LockKeeperError};
 use k256::ecdsa::{
     self,
@@ -241,7 +242,7 @@ impl Encrypted<SigningKeyPair> {
 /// Raw material for an imported signing key.
 #[derive(Debug, Clone, Serialize, Deserialize, ZeroizeOnDrop)]
 pub struct Import {
-    pub key_material: Vec<u8>,
+    key_material: Vec<u8>,
 }
 
 impl TryFrom<&[u8]> for Import {
@@ -259,6 +260,13 @@ impl TryFrom<&[u8]> for Import {
 }
 
 impl Import {
+    /// Create a new [`Import`] around the bytes representing signing key
+    /// material. Bytes are validated for appropriate format.
+    pub fn new(bytes: Vec<u8>) -> Result<Self, LockKeeperError> {
+        let import = Self::try_from(bytes.as_slice())?;
+        Ok(import)
+    }
+
     /// Convert an [`Import`] into a [`SigningKeyPair`] with appropriate
     /// context.
     ///
@@ -286,14 +294,6 @@ impl Import {
             context,
         })
     }
-}
-
-/// Raw material for an exported signing key.
-#[derive(Debug, Clone, Serialize, Deserialize, ZeroizeOnDrop)]
-pub struct Export {
-    pub key_material: Vec<u8>,
-    #[zeroize(skip)]
-    pub context: Vec<u8>,
 }
 
 impl From<SigningKeyPair> for Export {

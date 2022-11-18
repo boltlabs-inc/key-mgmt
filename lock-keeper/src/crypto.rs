@@ -25,8 +25,8 @@ pub use arbitrary_secret::Secret;
 use generic::{AssociatedData, EncryptionKey};
 pub use generic::{CryptoError, Encrypted};
 pub use signing_key::{
-    Export, Import, PlaceholderEncryptedSigningKeyPair, Signable, SignableBytes, Signature,
-    SigningKeyPair, SigningPublicKey,
+    Import, PlaceholderEncryptedSigningKeyPair, Signable, SignableBytes, Signature, SigningKeyPair,
+    SigningPublicKey,
 };
 
 /// A session key is produced as shared output for client and server from
@@ -282,6 +282,14 @@ impl KeyId {
     pub fn as_bytes(&self) -> &[u8] {
         &*self.0
     }
+}
+
+/// Raw material for an exported signing key.
+#[derive(Debug, Clone, Serialize, Deserialize, ZeroizeOnDrop)]
+pub struct Export {
+    pub key_material: Vec<u8>,
+    #[zeroize(skip)]
+    pub context: Vec<u8>,
 }
 
 #[cfg(test)]
