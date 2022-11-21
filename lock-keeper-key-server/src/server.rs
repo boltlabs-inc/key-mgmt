@@ -110,7 +110,7 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::CreateStorageKeyStream>, Status> {
         Ok(operations::CreateStorageKey
-            .handle_request(self.context(), request)
+            .handle_authenticated_request(self.context(), request)
             .await?)
     }
 
@@ -119,7 +119,7 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::GenerateStream>, Status> {
         Ok(operations::Generate
-            .handle_request(self.context(), request)
+            .handle_authenticated_request(self.context(), request)
             .await?)
     }
 
@@ -128,7 +128,7 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::ImportSigningKeyStream>, Status> {
         Ok(operations::ImportSigningKey
-            .handle_request(self.context(), request)
+            .handle_authenticated_request(self.context(), request)
             .await?)
     }
 
@@ -137,7 +137,7 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::RemoteGenerateStream>, Status> {
         Ok(operations::RemoteGenerate
-            .handle_request(self.context(), request)
+            .handle_authenticated_request(self.context(), request)
             .await?)
     }
 
@@ -146,7 +146,7 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::RemoteSignBytesStream>, Status> {
         Ok(operations::RemoteSignBytes
-            .handle_request(self.context(), request)
+            .handle_authenticated_request(self.context(), request)
             .await?)
     }
 
@@ -155,7 +155,7 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::RetrieveStream>, Status> {
         Ok(operations::Retrieve
-            .handle_request(self.context(), request)
+            .handle_authenticated_request(self.context(), request)
             .await?)
     }
 
@@ -164,7 +164,7 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::RetrieveAuditEventsStream>, Status> {
         Ok(operations::RetrieveAuditEvents
-            .handle_request(self.context(), request)
+            .handle_authenticated_request(self.context(), request)
             .await?)
     }
 
@@ -173,7 +173,7 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::RetrieveStorageKeyStream>, Status> {
         Ok(operations::RetrieveStorageKey
-            .handle_request(self.context(), request)
+            .handle_authenticated_request(self.context(), request)
             .await?)
     }
 
@@ -182,7 +182,7 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::RetrieveSigningKeyStream>, Status> {
         Ok(operations::RetrieveSigningKey
-            .handle_request(self.context(), request)
+            .handle_authenticated_request(self.context(), request)
             .await?)
     }
 }

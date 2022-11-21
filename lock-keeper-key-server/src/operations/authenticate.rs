@@ -103,7 +103,7 @@ async fn authenticate_finish(
 
     // Send response to client
     channel.send(reply).await?;
-    Ok(server_login_finish_result.session_key.into())
+    Ok(server_login_finish_result.session_key.try_into()?)
 }
 
 /// Returns the server-side start message along with a login result that will be

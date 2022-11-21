@@ -4,7 +4,7 @@
 //! transformations between them. Public functions here are mostly wrappers
 //! around multiple low-level cryptographic steps.
 
-use crate::LockKeeperError;
+use crate::{impl_message_conversion, LockKeeperError};
 use generic_array::{typenum::U64, GenericArray};
 use hkdf::{hmac::digest::Output, Hkdf};
 use k256::sha2::Sha512;
@@ -21,6 +21,7 @@ mod arbitrary_secret;
 mod generic;
 mod signing_key;
 
+use crate::rpc::Message;
 pub use arbitrary_secret::Secret;
 use generic::{AssociatedData, EncryptionKey};
 pub use generic::{CryptoError, Encrypted};
@@ -36,11 +37,36 @@ pub use signing_key::{
 /// authentication session. It should not be passed out to the local calling
 /// application.
 #[derive(Debug, Clone, Zeroize, ZeroizeOnDrop)]
-pub struct OpaqueSessionKey(Box<[u8; 64]>);
+pub struct OpaqueSessionKey(EncryptionKey);
 
-impl From<GenericArray<u8, U64>> for OpaqueSessionKey {
-    fn from(arr: GenericArray<u8, U64>) -> Self {
-        Self(Box::new(arr.into()))
+impl TryFrom<GenericArray<u8, U64>> for OpaqueSessionKey {
+    type Error = LockKeeperError;
+
+    fn try_from(arr: GenericArray<u8, U64>) -> Result<Self, Self::Error> {
+        let context = AssociatedData::new().with_str("OPAQUE-derived Lock Keeper master key");
+        Ok(Self(EncryptionKey::from_bytes(
+            arr[..32]
+                .try_into()
+                .map_err(|_| LockKeeperError::Crypto(CryptoError::ConversionError))?,
+            context,
+        )))
+    }
+}
+
+impl OpaqueSessionKey {
+    /// Encrypt the given [`StorageKey`] under the [`MasterKey`] using an
+    /// AEAD scheme.
+    pub(crate) fn encrypt<T>(
+        self,
+        rng: &mut (impl CryptoRng + RngCore),
+        message: T,
+    ) -> Result<Encrypted<T>, CryptoError>
+    where
+        T: TryFrom<Vec<u8>>,
+        CryptoError: From<<T as TryFrom<Vec<u8>>>::Error>,
+        Vec<u8>: From<T>,
+    {
+        Encrypted::encrypt(rng, &self.0, message, &AssociatedData::new())
     }
 }
 
@@ -227,6 +253,30 @@ impl Encrypted<StorageKey> {
         Ok(decrypted)
     }
 }
+
+impl Encrypted<Message> {
+    pub fn decrypt_message(
+        self,
+        session_key: OpaqueSessionKey,
+    ) -> Result<Message, LockKeeperError> {
+        let decrypted = self.decrypt(&session_key.0)?;
+        Ok(decrypted)
+    }
+}
+
+impl From<Vec<u8>> for Message {
+    fn from(value: Vec<u8>) -> Self {
+        Message { content: value }
+    }
+}
+
+impl From<Message> for Vec<u8> {
+    fn from(message: Message) -> Self {
+        message.content
+    }
+}
+
+impl_message_conversion!(Encrypted<Message>);
 
 /// Universally unique identifier for a stored secret or signing key.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]

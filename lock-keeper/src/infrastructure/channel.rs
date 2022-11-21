@@ -1,7 +1,9 @@
+use rand::thread_rng;
 use tokio::sync::mpsc::{self, Receiver, Sender};
 use tokio_stream::StreamExt;
 use tonic::{Request, Response, Status, Streaming};
 
+use crate::crypto::{Encrypted, OpaqueSessionKey};
 use crate::{
     constants::METADATA,
     rpc::Message,
@@ -26,9 +28,13 @@ pub struct Channel<T, M> {
     sender: Sender<T>,
     receiver: Streaming<Message>,
     metadata: M,
+    session_key: Option<OpaqueSessionKey>,
 }
 
-impl<T, M> Channel<T, M> {
+impl<T, M> Channel<T, M>
+where
+    Vec<u8>: From<T>,
+{
     /// Receive the next message on the channel and convert it to the type `R`.
     /// If the message cannot be converted to `R`, it is assumed to be an
     /// invalid message and an error is returned.
@@ -36,7 +42,16 @@ impl<T, M> Channel<T, M> {
         match self.receiver.next().await {
             Some(message) => {
                 let message = message?;
-                let result = R::try_from(message).map_err(|_| LockKeeperError::InvalidMessage)?;
+                let result = match self.session_key.clone() {
+                    None => R::try_from(message).map_err(|_| LockKeeperError::InvalidMessage)?,
+                    Some(session_key) => {
+                        let encrypted_message: Encrypted<Message> =
+                            Encrypted::<Message>::try_from(message)
+                                .map_err(|_| LockKeeperError::InvalidMessage)?;
+                        let message = encrypted_message.decrypt_message(session_key)?;
+                        R::try_from(message).map_err(|_| LockKeeperError::InvalidMessage)?
+                    }
+                };
                 Ok(result)
             }
             None => Err(LockKeeperError::NoMessageReceived),
@@ -46,7 +61,19 @@ impl<T, M> Channel<T, M> {
     /// Generic `send` function used by the client and server versions of
     /// `Channel`.
     async fn handle_send(&mut self, message: T) -> Result<(), LockKeeperError> {
-        Ok(self.sender.send(message).await?)
+        let result = match self.session_key.clone() {
+            None => self.sender.send(message).await?,
+            Some(session_key) => {
+                let message = session_key
+                    .encrypt(&mut thread_rng(), message)
+                    .map_err(|e| LockKeeperError::Crypto(e))?;
+                let message = message
+                    .try_into()
+                    .map_err(|_| Status::internal("Invalid message"))?;
+                self.sender.send(message).await?
+            }
+        };
+        Ok(result)
     }
 
     /// Returns the metadata associated with this channel.
@@ -67,6 +94,7 @@ impl ServerChannel {
     /// `Message` objects.
     pub fn create(
         request: Request<Streaming<Message>>,
+        session_key: Option<OpaqueSessionKey>,
     ) -> Result<(Self, Receiver<Result<Message, Status>>), LockKeeperError> {
         let (sender, remote_receiver) = mpsc::channel(BUFFER_SIZE);
 
@@ -81,6 +109,7 @@ impl ServerChannel {
                 sender,
                 receiver: request.into_inner(),
                 metadata,
+                session_key,
             },
             remote_receiver,
         ))
@@ -106,6 +135,7 @@ impl ClientChannel {
     pub fn create(
         sender: Sender<Message>,
         response: Response<Streaming<Message>>,
+        session_key: Option<OpaqueSessionKey>,
     ) -> Result<Self, LockKeeperError> {
         let metadata = response
             .metadata()
@@ -117,6 +147,7 @@ impl ClientChannel {
             sender,
             receiver: response.into_inner(),
             metadata,
+            session_key,
         })
     }
 

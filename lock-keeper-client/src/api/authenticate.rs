@@ -39,7 +39,7 @@ impl LockKeeperClient {
         )
         .await?;
 
-        let session_key = client_login_finish_result.session_key.into();
+        let session_key = client_login_finish_result.session_key.try_into()?;
 
         // Get user id
         let user_id = retrieve_user_id(channel, &session_key).await?;

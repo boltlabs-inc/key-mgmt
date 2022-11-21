@@ -10,6 +10,7 @@ use lock_keeper::{
     },
 };
 
+use lock_keeper::crypto::OpaqueSessionKey;
 use std::{ops::DerefMut, time::Duration};
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status, Streaming};
@@ -43,16 +44,43 @@ pub(crate) trait Operation<DB: DataStore>: Sized + Send + 'static {
         request: Request<Streaming<Message>>,
     ) -> Result<Response<MessageStream>, Status> {
         info!("Handling new client request.");
-        let (mut channel, rx) = ServerChannel::create(request)?;
+        let (mut channel, rx) = ServerChannel::create(request, None)?;
 
-        {
+        let _ = tokio::spawn(async move {
+            audit_event(&mut channel, &context, EventStatus::Started).await;
+
+            let result = self.operation(&mut channel, &mut context).await;
+            if let Err(e) = result {
+                handle_error(&mut channel, e).await;
+                audit_event(&mut channel, &context, EventStatus::Failed).await;
+
+                // Give the client a moment to receive the error before dropping the channel
+                thread::sleep(Duration::from_millis(100));
+            } else {
+                audit_event(&mut channel, &context, EventStatus::Successful).await;
+            }
+        });
+
+        Ok(Response::new(ReceiverStream::new(rx)))
+    }
+
+    async fn handle_authenticated_request(
+        self,
+        mut context: Context<DB>,
+        request: Request<Streaming<Message>>,
+    ) -> Result<Response<MessageStream>, Status> {
+        info!("Handling new client request.");
+        let (mut channel, rx) = ServerChannel::create(request, None)?;
+        let session_key = {
             let session_cache = context.session_key_cache.lock().await;
             check_authentication(
                 &channel.metadata().action(),
                 channel.metadata().user_id().as_ref(),
                 session_cache,
-            )?;
-        }
+            )?
+        };
+        //TODO: upgrade channel
+        tracing::info!("Handling action: {:?}", context.metadata.action());
 
         let _ = tokio::spawn(
             async move {
@@ -95,25 +123,25 @@ fn check_authentication(
     action: &ClientAction,
     user_id: Option<&UserId>,
     mut session_cache: impl DerefMut<Target = SessionKeyCache>,
-) -> Result<(), LockKeeperServerError> {
+) -> Result<OpaqueSessionKey, LockKeeperServerError> {
     info!("Checking client's authentication...");
     match action {
         // These actions are unauthenticated.
         ClientAction::Authenticate | ClientAction::Register => {
-            info!("Protocol does not require client to be authenticated.");
+            error!("Protocol does not require client to be authenticated.");
+            Err(LockKeeperServerError::UnauthenticatedChannelNeeded)
         }
         // The rest of the actions must be authenticated
         _ => {
             let user_id = user_id.ok_or(LockKeeperServerError::InvalidAccount)?;
-            let _ = session_cache
+            let session_key = session_cache
                 .get_key(user_id.clone())
                 .map_err(LockKeeperServerError::SessionKeyCache)?;
 
             info!("User is already authenticated.");
+            Ok(session_key)
         }
     }
-
-    Ok(())
 }
 
 async fn handle_error(channel: &mut ServerChannel, e: LockKeeperServerError) {

@@ -56,7 +56,7 @@ impl Password {
 #[derive(Debug, ZeroizeOnDrop)]
 #[allow(unused)]
 pub struct LockKeeperClient {
-    session_key: OpaqueSessionKey,
+    pub(crate) session_key: OpaqueSessionKey,
     #[zeroize(skip)]
     config: Config,
     #[zeroize(skip)]
@@ -178,22 +178,51 @@ impl LockKeeperClient {
         // Server returns its own channel that is uses to send responses
         let server_response = match metadata.action() {
             ClientAction::Authenticate => client.authenticate(stream).await,
+            ClientAction::Register => client.register(stream).await,
+            _ => return Err(LockKeeperClientError::AuthenticatedChannelNeeded),
+        }?
+        .into_inner();
+
+        let mut channel = ClientChannel::create(tx, server_response, None);
+        Ok(channel)
+    }
+
+    /// Helper to create the appropriate [`AuthenticatedClientChannel`] to send to tonic
+    /// handler functions based on the client's action.
+    pub(crate) async fn create_authenticated_channel(
+        &self,
+        client: &mut LockKeeperRpcClient<LockKeeperRpcClientInner>,
+        metadata: &RequestMetadata,
+    ) -> Result<ClientChannel, LockKeeperClientError> {
+        // Create channel to send messages to server after connection is established via
+        // RPC
+        let (tx, rx) = mpsc::channel(2);
+        let mut stream = Request::new(ReceiverStream::new(rx));
+
+        // Serialize metadata and set as tonic request metadata
+        let metadata_bytes = metadata.to_vec()?;
+        let metadata_val = MetadataValue::try_from(metadata_bytes)?;
+        let _ = stream.metadata_mut().insert(METADATA, metadata_val);
+
+        // Server returns its own channel that is uses to send responses
+        let server_response = match metadata.action() {
             ClientAction::CreateStorageKey => client.create_storage_key(stream).await,
             ClientAction::Export => client.retrieve(stream).await,
             ClientAction::ExportSigningKey => client.retrieve_signing_key(stream).await,
             ClientAction::Generate => client.generate(stream).await,
             ClientAction::ImportSigningKey => client.import_signing_key(stream).await,
             ClientAction::Logout => client.logout(stream).await,
-            ClientAction::Register => client.register(stream).await,
             ClientAction::RemoteGenerate => client.remote_generate(stream).await,
             ClientAction::RemoteSignBytes => client.remote_sign_bytes(stream).await,
             ClientAction::Retrieve => client.retrieve(stream).await,
             ClientAction::RetrieveAuditEvents => client.retrieve_audit_events(stream).await,
             ClientAction::RetrieveSigningKey => client.retrieve_signing_key(stream).await,
             ClientAction::RetrieveStorageKey => client.retrieve_storage_key(stream).await,
+            _ => return Err(LockKeeperClientError::UnauthenticatedChannelNeeded),
         }?;
 
-        let mut channel = ClientChannel::create(tx, server_response)?;
+        let mut channel =
+            ClientChannel::create(tx, server_response, Some(self.session_key.clone()))?;
         Ok(channel)
     }
 
@@ -224,7 +253,9 @@ impl LockKeeperClient {
     pub(crate) async fn retrieve_storage_key(&self) -> Result<StorageKey> {
         // Create channel to send messages to server
         let metadata = self.create_metadata(ClientAction::RetrieveStorageKey);
-        let mut channel = Self::create_channel(&mut self.tonic_client(), &metadata).await?;
+        let mut channel = self
+            .create_authenticated_channel(&mut self.tonic_client(), &metadata)
+            .await?;
 
         // Send UserId to server
         let request = client::Request {

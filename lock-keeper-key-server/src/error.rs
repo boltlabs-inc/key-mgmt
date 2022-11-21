@@ -27,6 +27,8 @@ pub enum LockKeeperServerError {
     StorageKeyNotSet,
     #[error("Key ID does not match any stored arbitrary key")]
     KeyNotFound,
+    #[error("An unauthenticated channel is needed for this action")]
+    UnauthenticatedChannelNeeded,
 
     // Wrapped errors
     #[error(transparent)]
@@ -81,6 +83,7 @@ impl From<LockKeeperServerError> for Status {
             // Errors that are safe to return to the client
             LockKeeperServerError::AccountAlreadyRegistered
             | LockKeeperServerError::InvalidAccount
+            | LockKeeperServerError::UnauthenticatedChannelNeeded
             | LockKeeperServerError::KeyNotFound => Status::invalid_argument(error.to_string()),
 
             LockKeeperServerError::StorageKeyAlreadySet
