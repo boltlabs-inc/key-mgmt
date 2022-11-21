@@ -56,6 +56,30 @@ impl<T, M> Channel<T, M> {
     }
 
     /// Generic `send` function used by the client and server versions of
+    /// `Channel` which also handles encryption.
+    fn optional_authenticated_channel(
+        &mut self,
+        message: impl TryInto<Message>,
+    ) -> Result<Message, LockKeeperError> {
+        match self.session_key.clone() {
+            None => Ok(message
+                .try_into()
+                .map_err(|_| Status::internal("Invalid message"))?),
+            Some(session_key) => {
+                let message = message
+                    .try_into()
+                    .map_err(|_| Status::internal("Invalid message"))?;
+                let message = session_key
+                    .encrypt(&mut thread_rng(), message)
+                    .map_err(|e| LockKeeperError::Crypto(e))?;
+                Ok(message
+                    .try_into()
+                    .map_err(|_| Status::internal("Invalid message"))?)
+            }
+        }
+    }
+
+    /// Generic `send` function used by the client and server versions of
     /// `Channel`.
     async fn handle_send(&mut self, message: T) -> Result<(), LockKeeperError> {
         Ok(self.sender.send(message).await?)
@@ -117,28 +141,8 @@ impl ServerChannel {
     /// Send a message across the channel. This function accepts any type that
     /// can be converted to a `Message.
     pub async fn send(&mut self, message: impl TryInto<Message>) -> Result<(), LockKeeperError> {
-        match self.session_key.clone() {
-            None => {
-                let message = message
-                    .try_into()
-                    .map_err(|_| Status::internal("Invalid message"))?;
-
-                self.handle_send(Ok(message)).await
-            }
-            Some(session_key) => {
-                let message = message
-                    .try_into()
-                    .map_err(|_| Status::internal("Invalid message"))?;
-                let message = session_key
-                    .encrypt(&mut thread_rng(), message)
-                    .map_err(|e| LockKeeperError::Crypto(e))?;
-                let message = message
-                    .try_into()
-                    .map_err(|_| Status::internal("Invalid message"))?;
-
-                self.handle_send(Ok(message)).await
-            }
-        }
+        let message_to_send = self.optional_authenticated_channel(message)?;
+        self.handle_send(Ok(message_to_send)).await
     }
 
     pub async fn send_error(&mut self, status: impl Into<Status>) -> Result<(), LockKeeperError> {
@@ -170,27 +174,7 @@ impl ClientChannel {
     /// Send a message across the channel. This function accepts any type that
     /// can be converted to a `Message.
     pub async fn send(&mut self, message: impl TryInto<Message>) -> Result<(), LockKeeperError> {
-        match self.session_key.clone() {
-            None => {
-                let message = message
-                    .try_into()
-                    .map_err(|_| Status::internal("Invalid message"))?;
-
-                self.handle_send(message).await
-            }
-            Some(session_key) => {
-                let message = message
-                    .try_into()
-                    .map_err(|_| Status::internal("Invalid message"))?;
-                let message = session_key
-                    .encrypt(&mut thread_rng(), message)
-                    .map_err(|e| LockKeeperError::Crypto(e))?;
-                let message = message
-                    .try_into()
-                    .map_err(|_| Status::internal("Invalid message"))?;
-
-                self.handle_send(message).await
-            }
-        }
+        let message_to_send = self.optional_authenticated_channel(message)?;
+        self.handle_send(message_to_send).await
     }
 }

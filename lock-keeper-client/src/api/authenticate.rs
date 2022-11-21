@@ -41,8 +41,8 @@ impl LockKeeperClient {
 
         let session_key: OpaqueSessionKey = client_login_finish_result.session_key.try_into()?;
 
-        // channel.try_upgrade_to_authenticated(session_key.clone())?;
         // Get user id
+        channel.try_upgrade_to_authenticated(session_key.clone())?;
         let user_id = retrieve_user_id(channel, &session_key).await?;
 
         let master_key = MasterKey::derive_master_key(client_login_finish_result.export_key)?;

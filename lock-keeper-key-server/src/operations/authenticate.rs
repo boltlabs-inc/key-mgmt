@@ -36,7 +36,7 @@ impl<DB: DataStore> Operation<DB> for Authenticate {
         let mut session_key_cache = context.session_key_cache.lock().await;
         session_key_cache.insert(result.user_id.clone(), session_key.clone());
 
-        // channel.try_upgrade_to_authenticated(session_key)?;
+        channel.try_upgrade_to_authenticated(session_key)?;
         send_user_id(channel, result.user_id).await?;
 
         Ok(())
