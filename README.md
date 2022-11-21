@@ -68,7 +68,7 @@ Integration tests are separated into two categories, end-to-end tests and genera
 
 Start the server running in the background. This will compile the project from scratch the first time you run it so it will take a while. It should be faster for future runs.
 ```bash
-cargo make start-all
+cargo make start
 ```
 
 To run the end-to-end tests:
@@ -93,7 +93,7 @@ cargo make stop
 
 If you want to watch server output in real-time, you can run the server in the foreground with:
 ```bash
-cargo make start-server
+cargo make run
 ```
 
 Running the test binary directly offers some extra command line options.
@@ -109,25 +109,13 @@ To run the server locally, first make sure MongoDB is running. You can run Mongo
 
 Then run:
 ```bash
-cargo make start-server-local
-```
-
-Tests can be run against a local server with:
-```bash
-cargo make e2e
+cargo run --bin key-server-cli ./dev/local/Server.toml
 ```
 
 ## TLS mutual authentication
 
 Mutual authentication can be enabled in server and client configs. See `ServerMutualAuth.toml` and `ClientMutualAuth.toml` 
 for examples.
-
-To run a server with mutual auth enabled, use your preferred `cargo make` task and append `-mutual-auth` to the end. For example, 
-to run a server in the foreground with mutual auth use `cargo make start-server-mutual-auth`.
-
-To run both servers at the same time, append `-all` to the end. For example, `cargo make start-server-all`.
-
-In order to run the mutual authentication integration tests, you must have both servers running.
 
 # Private key security
 The key server always requires a private key. 

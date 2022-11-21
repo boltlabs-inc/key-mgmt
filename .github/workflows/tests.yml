@@ -40,7 +40,7 @@ jobs:
           args: --debug cargo-make
 
       - name: Start Server
-        run: cargo make start-server-detached-all
+        run: cargo make start
           
       - name: Run all tests
         run: cargo make all-tests

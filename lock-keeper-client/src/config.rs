@@ -13,7 +13,6 @@ use crate::LockKeeperClientError;
 #[derive(Clone)]
 pub struct Config {
     pub server_uri: Uri,
-    pub client_auth_enabled: bool,
     pub tls_config: ClientConfig,
 }
 
@@ -33,7 +32,6 @@ impl Config {
     ) -> Result<Self, LockKeeperClientError> {
         Ok(Self {
             server_uri: Uri::from_str(&config.server_uri)?,
-            client_auth_enabled: config.client_auth.is_some(),
             tls_config: config.tls_config(private_key_bytes)?,
         })
     }
