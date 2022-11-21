@@ -56,6 +56,11 @@ pub struct MasterKey(EncryptionKey);
 impl MasterKey {
     /// Derive a uniformly distributed secret [`MasterKey`] using the export key
     /// as input key material.
+    ///
+    /// # Arguments
+    ///
+    /// * `export_key` - the export_key as returned by opaque-ke library,
+    /// which has type [`Output<Sha512>`]
     pub fn derive_master_key(export_key: Output<Sha512>) -> Result<Self, CryptoError> {
         let context = AssociatedData::new().with_str("OPAQUE-derived Lock Keeper master key");
         let mut master_key_material = [0u8; 32];
@@ -116,8 +121,10 @@ impl MasterKey {
         Encrypted::encrypt(rng, &key, storage_key, &associated_data)
     }
 
-    /// Derive a new key from [`MasterKey`] using the domain separator in
-    /// [`AssociatedData`]
+    /// Derive a new key from [`MasterKey`] using [`AssociatedData`] as the
+    /// domain separator. [`MasterKey`] should not be used directly to
+    /// encrypt something, instead use this method to derive a key for
+    /// a specific use-case using a domain separator.
     fn derive_key(self, context: AssociatedData) -> Result<EncryptionKey, CryptoError> {
         let mut key_material = [0u8; 32];
 
