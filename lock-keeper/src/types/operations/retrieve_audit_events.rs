@@ -1,6 +1,6 @@
 pub mod client {
     use crate::{
-        impl_message_conversion,
+        impl_authenticated_message_conversion,
         types::audit_event::{AuditEventOptions, EventType},
     };
     use serde::{Deserialize, Serialize};
@@ -13,11 +13,11 @@ pub mod client {
         pub options: AuditEventOptions,
     }
 
-    impl_message_conversion!(Request);
+    impl_authenticated_message_conversion!(Request);
 }
 
 pub mod server {
-    use crate::{impl_message_conversion, types::audit_event::AuditEvent};
+    use crate::{impl_authenticated_message_conversion, types::audit_event::AuditEvent};
     use serde::{Deserialize, Serialize};
 
     #[derive(Debug, Deserialize, Serialize)]
@@ -26,5 +26,5 @@ pub mod server {
         pub summary_record: Vec<AuditEvent>,
     }
 
-    impl_message_conversion!(Response);
+    impl_authenticated_message_conversion!(Response);
 }

@@ -1,7 +1,7 @@
 pub mod client {
     use crate::{
         crypto::{KeyId, SignableBytes},
-        impl_message_conversion,
+        impl_authenticated_message_conversion,
         types::database::user::UserId,
     };
     use serde::{Deserialize, Serialize};
@@ -13,11 +13,11 @@ pub mod client {
         pub data: SignableBytes,
     }
 
-    impl_message_conversion!(RequestRemoteSign);
+    impl_authenticated_message_conversion!(RequestRemoteSign);
 }
 
 pub mod server {
-    use crate::{crypto::Signature, impl_message_conversion};
+    use crate::{crypto::Signature, impl_authenticated_message_conversion};
     use serde::{Deserialize, Serialize};
 
     #[derive(Debug, Deserialize, Serialize)]
@@ -25,5 +25,5 @@ pub mod server {
         pub signature: Signature,
     }
 
-    impl_message_conversion!(ReturnSignature);
+    impl_authenticated_message_conversion!(ReturnSignature);
 }

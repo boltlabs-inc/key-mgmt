@@ -24,6 +24,8 @@ pub enum LockKeeperError {
     NoMessageReceived,
     #[error("Already authenticated")]
     AlreadyAuthenticated,
+    #[error("This message should be send over an authenticated channel")]
+    ShouldBeAuthenticated,
 
     // TLS errors
     #[error("Invalid private key")]
@@ -67,6 +69,7 @@ impl From<LockKeeperError> for Status {
             // Errors that the client should not see
             LockKeeperError::InvalidClientAction
             | LockKeeperError::AlreadyAuthenticated
+            | LockKeeperError::ShouldBeAuthenticated
             | LockKeeperError::Crypto(_)
             | LockKeeperError::Io(_)
             | LockKeeperError::InvalidPrivateKey

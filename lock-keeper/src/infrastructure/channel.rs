@@ -37,6 +37,10 @@ pub struct Channel<T, M> {
     rng: Arc<Mutex<StdRng>>,
 }
 
+pub trait ShouldBeAuthenticated {
+    fn should_be_authenticated(&self) -> bool;
+}
+
 impl<T, M> Channel<T, M> {
     /// Receive the next message on the channel and convert it to the type `R`.
     /// If the message cannot be converted to `R`, it is assumed to be an
@@ -64,12 +68,17 @@ impl<T, M> Channel<T, M> {
     /// `Channel` which also handles encryption.
     async fn optional_encryption_with_session_key(
         &mut self,
-        message: impl TryInto<Message>,
+        message: impl TryInto<Message> + ShouldBeAuthenticated,
     ) -> Result<Message, LockKeeperError> {
         match self.session_key.clone() {
-            None => Ok(message
-                .try_into()
-                .map_err(|_| Status::internal("Invalid message"))?),
+            None => {
+                if message.should_be_authenticated() {
+                    return Err(LockKeeperError::ShouldBeAuthenticated);
+                }
+                Ok(message
+                    .try_into()
+                    .map_err(|_| Status::internal("Invalid message"))?)
+            }
             Some(session_key) => {
                 let message = message
                     .try_into()
@@ -151,7 +160,10 @@ impl ServerChannel {
 
     /// Send a message across the channel. This function accepts any type that
     /// can be converted to a `Message.
-    pub async fn send(&mut self, message: impl TryInto<Message>) -> Result<(), LockKeeperError> {
+    pub async fn send(
+        &mut self,
+        message: impl TryInto<Message> + ShouldBeAuthenticated,
+    ) -> Result<(), LockKeeperError> {
         let message_to_send = self.optional_encryption_with_session_key(message).await?;
         self.handle_send(Ok(message_to_send)).await
     }
@@ -186,7 +198,10 @@ impl ClientChannel {
 
     /// Send a message across the channel. This function accepts any type that
     /// can be converted to a `Message.
-    pub async fn send(&mut self, message: impl TryInto<Message>) -> Result<(), LockKeeperError> {
+    pub async fn send(
+        &mut self,
+        message: impl TryInto<Message> + ShouldBeAuthenticated,
+    ) -> Result<(), LockKeeperError> {
         let message_to_send = self.optional_encryption_with_session_key(message).await?;
         self.handle_send(message_to_send).await
     }

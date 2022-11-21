@@ -50,9 +50,5 @@ pub mod server {
     }
 
     impl_message_conversion!(AuthenticateStart, AuthenticateFinish);
-
-    // TODO #186: This struct should be authenticated! Update message conversion to
-    // authenticate on serialization and check authentication on
-    // deserialization.
     impl_authenticated_message_conversion!(SendUserId);
 }

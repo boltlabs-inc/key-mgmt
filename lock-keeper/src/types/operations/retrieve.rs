@@ -8,7 +8,9 @@ pub enum RetrieveContext {
 }
 
 pub mod client {
-    use crate::{crypto::KeyId, impl_message_conversion, types::database::user::UserId};
+    use crate::{
+        crypto::KeyId, impl_authenticated_message_conversion, types::database::user::UserId,
+    };
     use serde::{Deserialize, Serialize};
 
     use super::RetrieveContext;
@@ -28,12 +30,12 @@ pub mod client {
         pub context: RetrieveContext,
     }
 
-    impl_message_conversion!(Request, RequestSigningKey);
+    impl_authenticated_message_conversion!(Request, RequestSigningKey);
 }
 
 pub mod server {
     use crate::{
-        impl_message_conversion,
+        impl_authenticated_message_conversion,
         types::database::secrets::{StoredEncryptedSecret, StoredSigningKeyPair},
     };
     use serde::{Deserialize, Serialize};
@@ -50,5 +52,5 @@ pub mod server {
         pub stored_signing_key: StoredSigningKeyPair,
     }
 
-    impl_message_conversion!(Response, ResponseSigningKey);
+    impl_authenticated_message_conversion!(Response, ResponseSigningKey);
 }
