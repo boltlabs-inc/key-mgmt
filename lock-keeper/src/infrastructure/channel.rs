@@ -1,5 +1,9 @@
-use rand::thread_rng;
-use tokio::sync::mpsc::{self, Receiver, Sender};
+use rand::rngs::StdRng;
+use std::sync::Arc;
+use tokio::sync::{
+    mpsc::{self, Receiver, Sender},
+    Mutex,
+};
 use tokio_stream::StreamExt;
 use tonic::{Request, Response, Status, Streaming};
 
@@ -30,6 +34,7 @@ pub struct Channel<T, M> {
     receiver: Streaming<Message>,
     metadata: M,
     session_key: Option<OpaqueSessionKey>,
+    rng: Arc<Mutex<StdRng>>,
 }
 
 impl<T, M> Channel<T, M> {
@@ -57,7 +62,7 @@ impl<T, M> Channel<T, M> {
 
     /// Generic `send` function used by the client and server versions of
     /// `Channel` which also handles encryption.
-    fn optional_authenticated_channel(
+    async fn optional_encryption_with_session_key(
         &mut self,
         message: impl TryInto<Message>,
     ) -> Result<Message, LockKeeperError> {
@@ -69,9 +74,13 @@ impl<T, M> Channel<T, M> {
                 let message = message
                     .try_into()
                     .map_err(|_| Status::internal("Invalid message"))?;
-                let message = session_key
-                    .encrypt(&mut thread_rng(), message)
-                    .map_err(|e| LockKeeperError::Crypto(e))?;
+                let message = {
+                    let mut rng = self.rng.lock().await;
+                    session_key
+                        .encrypt(&mut *rng, message)
+                        .map_err(LockKeeperError::Crypto)?
+                };
+
                 Ok(message
                     .try_into()
                     .map_err(|_| Status::internal("Invalid message"))?)
@@ -96,7 +105,7 @@ impl<T, M> Channel<T, M> {
             return Err(AlreadyAuthenticated);
         }
         self.session_key = Some(session_key);
-        return Ok(());
+        Ok(())
     }
 
     /// Returns the metadata associated with this channel.
@@ -116,6 +125,7 @@ impl ServerChannel {
     /// Create a server-side `Channel` that sends error codes in addition to
     /// `Message` objects.
     pub fn create(
+        rng: Arc<Mutex<StdRng>>,
         request: Request<Streaming<Message>>,
         session_key: Option<OpaqueSessionKey>,
     ) -> Result<(Self, Receiver<Result<Message, Status>>), LockKeeperError> {
@@ -133,6 +143,7 @@ impl ServerChannel {
                 receiver: request.into_inner(),
                 metadata,
                 session_key,
+                rng,
             },
             remote_receiver,
         ))
@@ -141,7 +152,7 @@ impl ServerChannel {
     /// Send a message across the channel. This function accepts any type that
     /// can be converted to a `Message.
     pub async fn send(&mut self, message: impl TryInto<Message>) -> Result<(), LockKeeperError> {
-        let message_to_send = self.optional_authenticated_channel(message)?;
+        let message_to_send = self.optional_encryption_with_session_key(message).await?;
         self.handle_send(Ok(message_to_send)).await
     }
 
@@ -153,6 +164,7 @@ impl ServerChannel {
 impl ClientChannel {
     /// Create a client-side `Channel` that sends raw `Message` objects.
     pub fn create(
+        rng: Arc<Mutex<StdRng>>,
         sender: Sender<Message>,
         response: Response<Streaming<Message>>,
         session_key: Option<OpaqueSessionKey>,
@@ -168,13 +180,14 @@ impl ClientChannel {
             receiver: response.into_inner(),
             metadata,
             session_key,
+            rng,
         })
     }
 
     /// Send a message across the channel. This function accepts any type that
     /// can be converted to a `Message.
     pub async fn send(&mut self, message: impl TryInto<Message>) -> Result<(), LockKeeperError> {
-        let message_to_send = self.optional_authenticated_channel(message)?;
+        let message_to_send = self.optional_encryption_with_session_key(message).await?;
         self.handle_send(message_to_send).await
     }
 }

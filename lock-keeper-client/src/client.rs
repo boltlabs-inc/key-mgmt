@@ -133,10 +133,14 @@ impl LockKeeperClient {
     ) -> Result<LockKeeperResponse<Self>> {
         let mut rng = StdRng::from_entropy();
         let metadata = RequestMetadata::new(account_name, ClientAction::Authenticate, None);
-        let mut client_channel = Self::create_channel(&mut client, &metadata).await?;
-        let result =
-            Self::handle_authentication(&mut client_channel, &mut rng, account_name, password)
-                .await;
+        let rng_arc_mutex = Arc::new(Mutex::new(rng));
+        let mut client_channel =
+            Self::create_channel(rng_arc_mutex.clone(), &mut client, &metadata).await?;
+        let result = {
+            let mut rng = rng_arc_mutex.lock().await;
+            Self::handle_authentication(&mut client_channel, &mut *rng, account_name, password)
+                .await
+        };
         match result {
             Ok(mut auth_result) => {
                 // TODO #186: receive User ID over authenticated channel (under session_key)
@@ -144,7 +148,7 @@ impl LockKeeperClient {
                     session_key: auth_result.session_key.clone(),
                     config: config.clone(),
                     tonic_client: client,
-                    rng: Arc::new(Mutex::new(rng)),
+                    rng: rng_arc_mutex,
                     account_name: account_name.clone(),
                     user_id: auth_result.user_id.clone(),
                     master_key: auth_result.master_key.clone(),
@@ -166,6 +170,7 @@ impl LockKeeperClient {
     /// Helper to create the appropriate [`ClientChannel`] to send to tonic
     /// handler functions based on the client's action.
     pub(crate) async fn create_channel(
+        rng: Arc<Mutex<StdRng>>,
         client: &mut LockKeeperRpcClient<LockKeeperRpcClientInner>,
         metadata: &RequestMetadata,
     ) -> Result<ClientChannel> {
@@ -183,7 +188,7 @@ impl LockKeeperClient {
         }?
         .into_inner();
 
-        let mut channel = ClientChannel::create(tx, server_response, None);
+        let mut channel = ClientChannel::create(rng, tx, server_response, None);
         Ok(channel)
     }
 
@@ -221,8 +226,13 @@ impl LockKeeperClient {
             _ => return Err(LockKeeperClientError::UnauthenticatedChannelNeeded),
         }?;
 
-        let mut channel =
-            ClientChannel::create(tx, server_response, Some(self.session_key.clone()))?;
+        let mut channel_rng = StdRng::from_entropy();
+        let mut channel = ClientChannel::create(
+            Arc::new(Mutex::new(channel_rng)),
+            tx,
+            server_response,
+            Some(self.session_key.clone()),
+        )?;
         Ok(channel)
     }
 
