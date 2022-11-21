@@ -66,7 +66,7 @@ pub(crate) trait Operation<DB: DataStore>: Sized + Send + 'static {
 
     async fn handle_authenticated_request(
         self,
-        mut context: Context<DB>,
+        context: Context<DB>,
         request: Request<Streaming<Message>>,
     ) -> Result<Response<MessageStream>, Status> {
         info!("Handling new client request.");

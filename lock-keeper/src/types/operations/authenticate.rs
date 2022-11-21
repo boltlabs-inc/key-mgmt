@@ -25,7 +25,8 @@ pub mod client {
 
 pub mod server {
     use crate::{
-        config::opaque::OpaqueCipherSuite, impl_message_conversion, types::database::user::UserId,
+        config::opaque::OpaqueCipherSuite, impl_authenticated_message_conversion,
+        impl_message_conversion, types::database::user::UserId,
     };
     use opaque_ke::CredentialResponse;
     use serde::{Deserialize, Serialize};
@@ -53,5 +54,5 @@ pub mod server {
     // TODO #186: This struct should be authenticated! Update message conversion to
     // authenticate on serialization and check authentication on
     // deserialization.
-    impl_message_conversion!(SendUserId);
+    impl_authenticated_message_conversion!(SendUserId);
 }

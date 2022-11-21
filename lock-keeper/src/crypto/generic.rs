@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::{iter, marker::PhantomData};
 use thiserror::Error;
 
-#[cfg(test)]
+// #[cfg(test)]
 use std::convert::Infallible;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
@@ -27,7 +27,7 @@ pub enum CryptoError {
     #[error("Signature did not verify")]
     VerificationFailed,
 
-    #[cfg(test)]
+    // #[cfg(test)]
     #[error(transparent)]
     Infallible(#[from] Infallible),
 }

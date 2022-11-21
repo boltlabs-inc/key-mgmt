@@ -187,8 +187,8 @@ impl LockKeeperClient {
         Ok(channel)
     }
 
-    /// Helper to create the appropriate [`AuthenticatedClientChannel`] to send to tonic
-    /// handler functions based on the client's action.
+    /// Helper to create the appropriate [`AuthenticatedClientChannel`] to send
+    /// to tonic handler functions based on the client's action.
     pub(crate) async fn create_authenticated_channel(
         &self,
         client: &mut LockKeeperRpcClient<LockKeeperRpcClientInner>,

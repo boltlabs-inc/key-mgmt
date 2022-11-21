@@ -49,3 +49,30 @@ macro_rules! impl_message_conversion {
         )+
     };
 }
+
+/// Generates `TryFrom` implementations to and from the `Message` type for a
+/// given list of types that should only be sent authenticated.
+#[macro_export]
+macro_rules! impl_authenticated_message_conversion {
+    ($($message_type:ty),+) => {
+        $(
+            impl TryFrom<$crate::types::Message> for $message_type {
+                type Error = $crate::LockKeeperError;
+
+                fn try_from(value: $crate::types::Message) -> Result<Self, Self::Error> {
+                    Ok(serde_json::from_slice(&value.content)?)
+                }
+            }
+
+            impl TryFrom<$message_type> for $crate::types::Message {
+                type Error = $crate::LockKeeperError;
+
+                fn try_from(value: $message_type) -> Result<Self, Self::Error> {
+                    let content = serde_json::to_vec(&value)?;
+
+                    Ok($crate::types::Message { content })
+                }
+            }
+        )+
+    };
+}

@@ -39,8 +39,9 @@ impl LockKeeperClient {
         )
         .await?;
 
-        let session_key = client_login_finish_result.session_key.try_into()?;
+        let session_key: OpaqueSessionKey = client_login_finish_result.session_key.try_into()?;
 
+        // channel.try_upgrade_to_authenticated(session_key.clone())?;
         // Get user id
         let user_id = retrieve_user_id(channel, &session_key).await?;
 
