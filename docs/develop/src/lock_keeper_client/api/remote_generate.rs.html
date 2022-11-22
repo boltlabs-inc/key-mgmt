@@ -31,7 +31,8 @@
 <span id="31">31</span>
 <span id="32">32</span>
 <span id="33">33</span>
-</pre><pre class="rust"><code><span class="kw">use crate</span>::{LockKeeperClient, LockKeeperClientError};
+<span id="34">34</span>
+</pre><pre class="rust"><code><span class="kw">use crate</span>::{LockKeeperClient, LockKeeperClientError, LockKeeperResponse};
 <span class="kw">use </span>lock_keeper::{
     crypto::{KeyId, SigningPublicKey},
     infrastructure::channel::ClientChannel,
@@ -42,8 +43,8 @@
 <span class="kw">impl </span>LockKeeperClient {
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>handle_remote_generate(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        channel: <span class="kw-2">&amp;mut </span>ClientChannel,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;RemoteGenerateResult, LockKeeperClientError&gt; {
+        <span class="kw-2">mut </span>channel: ClientChannel,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperResponse&lt;RemoteGenerateResult&gt;, LockKeeperClientError&gt; {
         <span class="kw">let </span>request = client::RequestRemoteGenerate {
             user_id: <span class="self">self</span>.user_id().clone(),
         };
@@ -51,11 +52,12 @@
         channel.send(request).<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="kw">let </span>response: server::ReturnKeyId = channel.receive().<span class="kw">await</span><span class="question-mark">?</span>;
-
-        <span class="prelude-val">Ok</span>(RemoteGenerateResult {
+        <span class="kw">let </span>result = RemoteGenerateResult {
             key_id: response.key_id,
             public_key: response.public_key,
-        })
+        };
+
+        <span class="prelude-val">Ok</span>(LockKeeperResponse::from_channel(channel, result))
     }
 }
 

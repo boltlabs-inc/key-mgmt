@@ -104,11 +104,11 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         actor: <span class="kw-2">&amp;</span>AccountName,
         secret_id: <span class="kw-2">&amp;</span><span class="prelude-ty">Option</span>&lt;KeyId&gt;,
-        action: <span class="kw-2">&amp;</span>ClientAction,
+        action: ClientAction,
         status: EventStatus,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
         <span class="kw">let </span>collection = <span class="self">self</span>.handle.collection::&lt;AuditEvent&gt;(AUDIT_EVENTS);
-        <span class="kw">let </span>new_event = AuditEvent::new(actor.clone(), secret_id.clone(), <span class="kw-2">*</span>action, status);
+        <span class="kw">let </span>new_event = AuditEvent::new(actor.clone(), secret_id.clone(), action, status);
         <span class="kw">let _ </span>= collection.insert_one(new_event, <span class="prelude-val">None</span>).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
     }

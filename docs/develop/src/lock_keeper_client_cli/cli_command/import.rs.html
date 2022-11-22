@@ -58,6 +58,8 @@
 <span id="58">58</span>
 <span id="59">59</span>
 <span id="60">60</span>
+<span id="61">61</span>
+<span id="62">62</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{cli_command::CliCommand, state::State};
 <span class="kw">use </span>anyhow::Error;
 <span class="kw">use </span>async_trait::async_trait;
@@ -80,13 +82,15 @@
             <span class="kw-2">&amp;</span>credentials.password,
             <span class="kw-2">&amp;</span>state.config,
         )
-        .<span class="kw">await</span><span class="question-mark">?</span>;
+        .<span class="kw">await</span><span class="question-mark">?
+        </span>.into_inner();
 
         <span class="kw">let </span>random_bytes = rand::thread_rng().gen::&lt;[u8; <span class="number">32</span>]&gt;().to_vec();
         <span class="kw">let </span>key_id = lock_keeper_client
             .import_signing_key(random_bytes)
             .<span class="kw">await
-            </span>.map_err(|e| <span class="macro">anyhow::anyhow!</span>(<span class="string">&quot;Failed to import signing key. Error: {:?}&quot;</span>, e))<span class="question-mark">?</span>;
+            </span>.map_err(|e| <span class="macro">anyhow::anyhow!</span>(<span class="string">&quot;Failed to import signing key. Error: {:?}&quot;</span>, e))<span class="question-mark">?
+            </span>.into_inner();
 
         <span class="kw">let </span>stored = state.store_entry(<span class="self">self</span>.name, key_id)<span class="question-mark">?</span>;
         <span class="macro">println!</span>(<span class="string">&quot;Stored: {stored}&quot;</span>);

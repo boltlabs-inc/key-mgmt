@@ -176,39 +176,6 @@
 <span id="176">176</span>
 <span id="177">177</span>
 <span id="178">178</span>
-<span id="179">179</span>
-<span id="180">180</span>
-<span id="181">181</span>
-<span id="182">182</span>
-<span id="183">183</span>
-<span id="184">184</span>
-<span id="185">185</span>
-<span id="186">186</span>
-<span id="187">187</span>
-<span id="188">188</span>
-<span id="189">189</span>
-<span id="190">190</span>
-<span id="191">191</span>
-<span id="192">192</span>
-<span id="193">193</span>
-<span id="194">194</span>
-<span id="195">195</span>
-<span id="196">196</span>
-<span id="197">197</span>
-<span id="198">198</span>
-<span id="199">199</span>
-<span id="200">200</span>
-<span id="201">201</span>
-<span id="202">202</span>
-<span id="203">203</span>
-<span id="204">204</span>
-<span id="205">205</span>
-<span id="206">206</span>
-<span id="207">207</span>
-<span id="208">208</span>
-<span id="209">209</span>
-<span id="210">210</span>
-<span id="211">211</span>
 </pre><pre class="rust"><code><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>opaque_storage;
 <span class="kw">mod </span>operation;
 <span class="kw">mod </span>service;
@@ -220,14 +187,12 @@
 <span class="kw">use crate</span>::{config::Config, error::LockKeeperServerError, operations};
 
 <span class="kw">use </span>lock_keeper::{
-    constants::METADATA,
     crypto::KeyId,
     rpc::{lock_keeper_rpc_server::LockKeeperRpc, HealthCheck},
     types::{Message, MessageStream},
 };
 
 <span class="kw">use crate</span>::{database::DataStore, server::session_key_cache::SessionKeyCache};
-<span class="kw">use </span>lock_keeper::types::operations::RequestMetadata;
 <span class="kw">use </span>rand::{rngs::StdRng, SeedableRng};
 <span class="kw">use </span>std::sync::Arc;
 <span class="kw">use </span>tokio::sync::Mutex;
@@ -252,33 +217,14 @@
         })
     }
 
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>context(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
-        request: <span class="kw-2">&amp;</span>Request&lt;tonic::Streaming&lt;Message&gt;&gt;,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;Context&lt;DB&gt;, LockKeeperServerError&gt; {
-        <span class="comment">// Parse RequestMetadata
-        </span><span class="kw">let </span>metadata = <span class="self">Self</span>::parse_metadata(request)<span class="question-mark">?</span>;
-
-        <span class="prelude-val">Ok</span>(Context {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>context(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Context&lt;DB&gt; {
+        Context {
             config: <span class="self">self</span>.config.clone(),
             db: <span class="self">self</span>.db.clone(),
             rng: <span class="self">self</span>.rng.clone(),
-            metadata,
             key_id: <span class="prelude-val">None</span>,
             session_key_cache: <span class="self">self</span>.session_key_cache.clone(),
-        })
-    }
-
-    <span class="kw">fn </span>parse_metadata(
-        request: <span class="kw-2">&amp;</span>Request&lt;tonic::Streaming&lt;Message&gt;&gt;,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;RequestMetadata, Status&gt; {
-        <span class="kw">let </span>val_bytes = request
-            .metadata()
-            .get(METADATA)
-            .ok_or_else(|| Status::invalid_argument(<span class="string">&quot;No metadata found&quot;</span>))<span class="question-mark">?
-            </span>.as_bytes();
-        <span class="kw">let </span>metadata = RequestMetadata::from_slice(val_bytes)<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(metadata)
+        }
     }
 }
 
@@ -286,7 +232,6 @@
     <span class="kw">pub </span>db: Arc&lt;DB&gt;,
     <span class="kw">pub </span>config: Arc&lt;Config&gt;,
     <span class="kw">pub </span>rng: Arc&lt;Mutex&lt;StdRng&gt;&gt;,
-    <span class="kw">pub </span>metadata: RequestMetadata,
     <span class="kw">pub </span>key_id: <span class="prelude-ty">Option</span>&lt;KeyId&gt;,
     <span class="doccomment">/// Our user session keys are held in this cache after authentication.
     </span><span class="kw">pub </span>session_key_cache: Arc&lt;Mutex&lt;SessionKeyCache&gt;&gt;,
@@ -314,9 +259,8 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         request: Request&lt;tonic::Streaming&lt;Message&gt;&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;<span class="self">Self</span>::RegisterStream&gt;, Status&gt; {
-        <span class="kw">let </span>context = <span class="self">self</span>.context(<span class="kw-2">&amp;</span>request)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(operations::Register
-            .handle_request(context, request)
+            .handle_request(<span class="self">self</span>.context(), request)
             .<span class="kw">await</span><span class="question-mark">?</span>)
     }
 
@@ -324,9 +268,8 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         request: Request&lt;tonic::Streaming&lt;Message&gt;&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;<span class="self">Self</span>::AuthenticateStream&gt;, Status&gt; {
-        <span class="kw">let </span>context = <span class="self">self</span>.context(<span class="kw-2">&amp;</span>request)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(operations::Authenticate
-            .handle_request(context, request)
+            .handle_request(<span class="self">self</span>.context(), request)
             .<span class="kw">await</span><span class="question-mark">?</span>)
     }
 
@@ -334,9 +277,8 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         request: Request&lt;tonic::Streaming&lt;Message&gt;&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;<span class="self">Self</span>::CreateStorageKeyStream&gt;, Status&gt; {
-        <span class="kw">let </span>context = <span class="self">self</span>.context(<span class="kw-2">&amp;</span>request)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(operations::CreateStorageKey
-            .handle_request(context, request)
+            .handle_request(<span class="self">self</span>.context(), request)
             .<span class="kw">await</span><span class="question-mark">?</span>)
     }
 
@@ -344,9 +286,8 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         request: Request&lt;tonic::Streaming&lt;Message&gt;&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;<span class="self">Self</span>::GenerateStream&gt;, Status&gt; {
-        <span class="kw">let </span>context = <span class="self">self</span>.context(<span class="kw-2">&amp;</span>request)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(operations::Generate
-            .handle_request(context, request)
+            .handle_request(<span class="self">self</span>.context(), request)
             .<span class="kw">await</span><span class="question-mark">?</span>)
     }
 
@@ -354,9 +295,8 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         request: Request&lt;tonic::Streaming&lt;Message&gt;&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;<span class="self">Self</span>::ImportSigningKeyStream&gt;, Status&gt; {
-        <span class="kw">let </span>context = <span class="self">self</span>.context(<span class="kw-2">&amp;</span>request)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(operations::ImportSigningKey
-            .handle_request(context, request)
+            .handle_request(<span class="self">self</span>.context(), request)
             .<span class="kw">await</span><span class="question-mark">?</span>)
     }
 
@@ -364,9 +304,8 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         request: Request&lt;tonic::Streaming&lt;Message&gt;&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;<span class="self">Self</span>::RemoteGenerateStream&gt;, Status&gt; {
-        <span class="kw">let </span>context = <span class="self">self</span>.context(<span class="kw-2">&amp;</span>request)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(operations::RemoteGenerate
-            .handle_request(context, request)
+            .handle_request(<span class="self">self</span>.context(), request)
             .<span class="kw">await</span><span class="question-mark">?</span>)
     }
 
@@ -374,9 +313,8 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         request: Request&lt;tonic::Streaming&lt;Message&gt;&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;<span class="self">Self</span>::RemoteSignBytesStream&gt;, Status&gt; {
-        <span class="kw">let </span>context = <span class="self">self</span>.context(<span class="kw-2">&amp;</span>request)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(operations::RemoteSignBytes
-            .handle_request(context, request)
+            .handle_request(<span class="self">self</span>.context(), request)
             .<span class="kw">await</span><span class="question-mark">?</span>)
     }
 
@@ -384,9 +322,8 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         request: Request&lt;tonic::Streaming&lt;Message&gt;&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;<span class="self">Self</span>::RetrieveStream&gt;, Status&gt; {
-        <span class="kw">let </span>context = <span class="self">self</span>.context(<span class="kw-2">&amp;</span>request)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(operations::Retrieve
-            .handle_request(context, request)
+            .handle_request(<span class="self">self</span>.context(), request)
             .<span class="kw">await</span><span class="question-mark">?</span>)
     }
 
@@ -394,9 +331,8 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         request: Request&lt;tonic::Streaming&lt;Message&gt;&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;<span class="self">Self</span>::RetrieveAuditEventsStream&gt;, Status&gt; {
-        <span class="kw">let </span>context = <span class="self">self</span>.context(<span class="kw-2">&amp;</span>request)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(operations::RetrieveAuditEvents
-            .handle_request(context, request)
+            .handle_request(<span class="self">self</span>.context(), request)
             .<span class="kw">await</span><span class="question-mark">?</span>)
     }
 
@@ -404,9 +340,8 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         request: Request&lt;tonic::Streaming&lt;Message&gt;&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;<span class="self">Self</span>::RetrieveStorageKeyStream&gt;, Status&gt; {
-        <span class="kw">let </span>context = <span class="self">self</span>.context(<span class="kw-2">&amp;</span>request)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(operations::RetrieveStorageKey
-            .handle_request(context, request)
+            .handle_request(<span class="self">self</span>.context(), request)
             .<span class="kw">await</span><span class="question-mark">?</span>)
     }
 
@@ -414,9 +349,8 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         request: Request&lt;tonic::Streaming&lt;Message&gt;&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;<span class="self">Self</span>::RetrieveSigningKeyStream&gt;, Status&gt; {
-        <span class="kw">let </span>context = <span class="self">self</span>.context(<span class="kw-2">&amp;</span>request)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(operations::RetrieveSigningKey
-            .handle_request(context, request)
+            .handle_request(<span class="self">self</span>.context(), request)
             .<span class="kw">await</span><span class="question-mark">?</span>)
     }
 }

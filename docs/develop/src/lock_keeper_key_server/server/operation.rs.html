@@ -83,14 +83,25 @@
 <span id="83">83</span>
 <span id="84">84</span>
 <span id="85">85</span>
+<span id="86">86</span>
+<span id="87">87</span>
+<span id="88">88</span>
+<span id="89">89</span>
+<span id="90">90</span>
+<span id="91">91</span>
+<span id="92">92</span>
+<span id="93">93</span>
+<span id="94">94</span>
 </pre><pre class="rust"><code><span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>lock_keeper::{
+    constants::METADATA,
     infrastructure::channel::ServerChannel,
-    types::{audit_event::EventStatus, Message, MessageStream},
+    types::{audit_event::EventStatus, operations::ResponseMetadata, Message, MessageStream},
 };
 <span class="kw">use </span>std::{thread, time::Duration};
 <span class="kw">use </span>tokio_stream::wrappers::ReceiverStream;
 <span class="kw">use </span>tonic::{Request, Response, Status, Streaming};
+<span class="kw">use </span>uuid::Uuid;
 
 <span class="kw">use crate</span>::{database::DataStore, server::Context, LockKeeperServerError};
 
@@ -111,17 +122,17 @@
     /// message is sent to the client.
     </span><span class="kw">async fn </span>handle_request(
         <span class="self">self</span>,
-        context: Context&lt;DB&gt;,
+        <span class="kw-2">mut </span>context: Context&lt;DB&gt;,
         request: Request&lt;Streaming&lt;Message&gt;&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;MessageStream&gt;, Status&gt; {
+        <span class="kw">let </span>(<span class="kw-2">mut </span>channel, rx) = ServerChannel::create(request)<span class="question-mark">?</span>;
+
         {
             <span class="kw">let </span><span class="kw-2">mut </span>session_key_cache = context.session_key_cache.lock().<span class="kw">await</span>;
-            session_key_cache.check_key(<span class="kw-2">&amp;</span>context)<span class="question-mark">?</span>;
+            session_key_cache.check_key::&lt;DB&gt;(channel.metadata())<span class="question-mark">?</span>;
         }
-        <span class="macro">tracing::info!</span>(<span class="string">&quot;Handling action: {:?}&quot;</span>, context.metadata.action());
 
-        <span class="kw">let </span>(<span class="kw-2">mut </span>channel, rx) = ServerChannel::create(request.into_inner());
-        <span class="kw">let </span><span class="kw-2">mut </span>context = context;
+        <span class="macro">tracing::info!</span>(<span class="string">&quot;Handling action: {:?}&quot;</span>, channel.metadata().action());
 
         <span class="kw">let _ </span>= tokio::spawn(<span class="kw">async move </span>{
             audit_event(<span class="kw-2">&amp;mut </span>channel, <span class="kw-2">&amp;</span>context, EventStatus::Started).<span class="kw">await</span>;
@@ -138,7 +149,16 @@
             }
         });
 
-        <span class="prelude-val">Ok</span>(Response::new(ReceiverStream::new(rx)))
+        <span class="kw">let </span>metadata = ResponseMetadata {
+            request_id: Uuid::new_v4(),
+        };
+
+        <span class="kw">let </span><span class="kw-2">mut </span>response = Response::new(ReceiverStream::new(rx));
+        <span class="kw">let _ </span>= response
+            .metadata_mut()
+            .insert(METADATA, metadata.try_into()<span class="question-mark">?</span>);
+
+        <span class="prelude-val">Ok</span>(response)
     }
 }
 
@@ -154,14 +174,12 @@
     context: <span class="kw-2">&amp;</span>Context&lt;DB&gt;,
     status: EventStatus,
 ) {
+    <span class="kw">let </span>account_name = channel.metadata().account_name();
+    <span class="kw">let </span>action = channel.metadata().action();
+
     <span class="kw">let </span>audit_event = context
         .db
-        .create_audit_event(
-            context.metadata.account_name(),
-            <span class="kw-2">&amp;</span>context.key_id,
-            <span class="kw-2">&amp;</span>context.metadata.action(),
-            status,
-        )
+        .create_audit_event(account_name, <span class="kw-2">&amp;</span>context.key_id, action, status)
         .<span class="kw">await
         </span>.map_err(|e| LockKeeperServerError::Database(Box::new(e)));
     <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = audit_event {

@@ -73,12 +73,15 @@
 <span id="73">73</span>
 <span id="74">74</span>
 <span id="75">75</span>
+<span id="76">76</span>
+<span id="77">77</span>
+<span id="78">78</span>
 </pre><pre class="rust"><code><span class="kw">use </span>colored::Colorize;
 <span class="kw">use </span>lock_keeper::types::{
     audit_event::EventStatus,
     operations::{retrieve::RetrieveContext, ClientAction},
 };
-<span class="kw">use </span>lock_keeper_client::Config;
+<span class="kw">use </span>lock_keeper_client::{api::GenerateResult, Config};
 <span class="kw">use </span>tonic::Status;
 
 <span class="kw">use crate</span>::{
@@ -110,11 +113,14 @@
 <span class="kw">async fn </span>retrieve_local_only_works(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">let </span>state = init_test_state(config).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let </span>(key_id, local_storage) = generate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>GenerateResult {
+        key_id,
+        local_storage,
+    } = generate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>.into_inner();
     <span class="kw">let </span>local_storage_res = retrieve(<span class="kw-2">&amp;</span>state, <span class="kw-2">&amp;</span>key_id, RetrieveContext::LocalOnly).<span class="kw">await</span>;
     <span class="macro">assert!</span>(local_storage_res.is_ok());
 
-    <span class="kw">let </span>local_storage_opt = local_storage_res<span class="question-mark">?</span>;
+    <span class="kw">let </span>local_storage_opt = local_storage_res<span class="question-mark">?</span>.into_inner();
     <span class="macro">assert!</span>(local_storage_opt.is_some());
 
     <span class="kw">let </span>local_storage_new = local_storage_opt.unwrap();
@@ -127,11 +133,11 @@
 <span class="kw">async fn </span>retrieve_null_works(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">let </span>state = init_test_state(config).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let </span>(key_id, <span class="kw">_</span>) = generate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>GenerateResult { key_id, .. } = generate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>.into_inner();
     <span class="kw">let </span>local_storage_res = retrieve(<span class="kw-2">&amp;</span>state, <span class="kw-2">&amp;</span>key_id, RetrieveContext::Null).<span class="kw">await</span>;
     <span class="macro">assert!</span>(local_storage_res.is_ok());
 
-    <span class="kw">let </span>local_storage_opt = local_storage_res<span class="question-mark">?</span>;
+    <span class="kw">let </span>local_storage_opt = local_storage_res<span class="question-mark">?</span>.into_inner();
     <span class="macro">assert!</span>(local_storage_opt.is_none());
     check_audit_events(<span class="kw-2">&amp;</span>state, EventStatus::Successful, ClientAction::Retrieve).<span class="kw">await</span><span class="question-mark">?</span>;
 

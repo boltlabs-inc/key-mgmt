@@ -25,7 +25,10 @@
 <span id="25">25</span>
 <span id="26">26</span>
 <span id="27">27</span>
-</pre><pre class="rust"><code><span class="kw">use crate</span>::{LockKeeperClient, LockKeeperClientError};
+<span id="28">28</span>
+<span id="29">29</span>
+<span id="30">30</span>
+</pre><pre class="rust"><code><span class="kw">use crate</span>::{LockKeeperClient, LockKeeperClientError, LockKeeperResponse};
 <span class="kw">use </span>lock_keeper::{
     crypto::{KeyId, Signable, SignableBytes, Signature},
     infrastructure::channel::ClientChannel,
@@ -35,10 +38,10 @@
 <span class="kw">impl </span>LockKeeperClient {
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>handle_remote_sign_bytes(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        channel: <span class="kw-2">&amp;mut </span>ClientChannel,
+        <span class="kw-2">mut </span>channel: ClientChannel,
         key_id: KeyId,
         bytes: <span class="kw">impl </span>Signable,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;Signature, LockKeeperClientError&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperResponse&lt;Signature&gt;, LockKeeperClientError&gt; {
         <span class="kw">let </span>request = client::RequestRemoteSign {
             user_id: <span class="self">self</span>.user_id().clone(),
             key_id,
@@ -49,7 +52,10 @@
 
         <span class="kw">let </span>response: server::ReturnSignature = channel.receive().<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="prelude-val">Ok</span>(response.signature)
+        <span class="prelude-val">Ok</span>(LockKeeperResponse::from_channel(
+            channel,
+            response.signature,
+        ))
     }
 }
 </code></pre></div>

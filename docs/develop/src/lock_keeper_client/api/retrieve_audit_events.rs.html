@@ -27,7 +27,10 @@
 <span id="27">27</span>
 <span id="28">28</span>
 <span id="29">29</span>
-</pre><pre class="rust"><code><span class="kw">use crate</span>::{LockKeeperClient, LockKeeperClientError};
+<span id="30">30</span>
+<span id="31">31</span>
+<span id="32">32</span>
+</pre><pre class="rust"><code><span class="kw">use crate</span>::{LockKeeperClient, LockKeeperClientError, LockKeeperResponse};
 <span class="kw">use </span>lock_keeper::{
     infrastructure::channel::ClientChannel,
     types::{
@@ -39,10 +42,10 @@
 <span class="kw">impl </span>LockKeeperClient {
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>handle_retrieve_audit_events(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        channel: <span class="kw-2">&amp;mut </span>ClientChannel,
+        <span class="kw-2">mut </span>channel: ClientChannel,
         event_type: EventType,
         options: AuditEventOptions,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;AuditEvent&gt;, LockKeeperClientError&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperResponse&lt;Vec&lt;AuditEvent&gt;&gt;, LockKeeperClientError&gt; {
         <span class="comment">// Send audit event request and filters
         </span><span class="kw">let </span>client_request = client::Request {
             event_type,
@@ -53,7 +56,10 @@
         <span class="comment">// Receive audit event log and return
         </span><span class="kw">let </span>server_response: server::Response = channel.receive().<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="prelude-val">Ok</span>(server_response.summary_record)
+        <span class="prelude-val">Ok</span>(LockKeeperResponse::from_channel(
+            channel,
+            server_response.summary_record,
+        ))
     }
 }
 </code></pre></div>

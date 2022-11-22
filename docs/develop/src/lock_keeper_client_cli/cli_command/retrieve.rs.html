@@ -60,6 +60,8 @@
 <span id="60">60</span>
 <span id="61">61</span>
 <span id="62">62</span>
+<span id="63">63</span>
+<span id="64">64</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{cli_command::CliCommand, state::State};
 <span class="kw">use </span>anyhow::Error;
 <span class="kw">use </span>async_trait::async_trait;
@@ -82,13 +84,15 @@
             <span class="kw-2">&amp;</span>credentials.password,
             <span class="kw-2">&amp;</span>state.config,
         )
-        .<span class="kw">await</span><span class="question-mark">?</span>;
+        .<span class="kw">await</span><span class="question-mark">?
+        </span>.into_inner();
 
         <span class="kw">let </span>entry = state.get_key_id(<span class="kw-2">&amp;</span><span class="self">self</span>.name)<span class="question-mark">?</span>;
         <span class="comment">// Retrieve results for specified key.
         </span><span class="kw">let </span>retrieve_result = lock_keeper_client
             .retrieve(<span class="kw-2">&amp;</span>entry.key_id, RetrieveContext::LocalOnly)
-            .<span class="kw">await</span><span class="question-mark">?</span>;
+            .<span class="kw">await</span><span class="question-mark">?
+            </span>.into_inner();
 
         <span class="macro">println!</span>(<span class="string">&quot;Retrieved: {}&quot;</span>, <span class="self">self</span>.name);
         <span class="macro">println!</span>(<span class="string">&quot;{retrieve_result:?}&quot;</span>);

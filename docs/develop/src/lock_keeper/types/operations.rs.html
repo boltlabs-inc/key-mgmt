@@ -76,6 +76,41 @@
 <span id="76">76</span>
 <span id="77">77</span>
 <span id="78">78</span>
+<span id="79">79</span>
+<span id="80">80</span>
+<span id="81">81</span>
+<span id="82">82</span>
+<span id="83">83</span>
+<span id="84">84</span>
+<span id="85">85</span>
+<span id="86">86</span>
+<span id="87">87</span>
+<span id="88">88</span>
+<span id="89">89</span>
+<span id="90">90</span>
+<span id="91">91</span>
+<span id="92">92</span>
+<span id="93">93</span>
+<span id="94">94</span>
+<span id="95">95</span>
+<span id="96">96</span>
+<span id="97">97</span>
+<span id="98">98</span>
+<span id="99">99</span>
+<span id="100">100</span>
+<span id="101">101</span>
+<span id="102">102</span>
+<span id="103">103</span>
+<span id="104">104</span>
+<span id="105">105</span>
+<span id="106">106</span>
+<span id="107">107</span>
+<span id="108">108</span>
+<span id="109">109</span>
+<span id="110">110</span>
+<span id="111">111</span>
+<span id="112">112</span>
+<span id="113">113</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Types related to server operations and the protocols they execute.
 
 </span><span class="kw">pub mod </span>authenticate;
@@ -95,6 +130,8 @@
 };
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>strum::{Display, EnumIter, EnumString};
+<span class="kw">use </span>tonic::metadata::{Ascii, MetadataValue};
+<span class="kw">use </span>uuid::Uuid;
 
 <span class="doccomment">/// Options for actions the Lock Keeper client can take.
 </span><span class="attribute">#[derive(
@@ -116,7 +153,7 @@
     RetrieveStorageKey,
 }
 
-<span class="attribute">#[derive(Debug, Deserialize, Serialize)]
+<span class="attribute">#[derive(Clone, Debug, Deserialize, Serialize)]
 </span><span class="kw">pub struct </span>RequestMetadata {
     account_name: AccountName,
     action: ClientAction,
@@ -132,16 +169,6 @@
         }
     }
 
-    <span class="kw">pub fn </span>to_vec(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;, LockKeeperError&gt; {
-        <span class="kw">let </span>vec = serde_json::to_vec(<span class="self">self</span>)<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(vec)
-    }
-
-    <span class="kw">pub fn </span>from_slice(slice: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, LockKeeperError&gt; {
-        <span class="kw">let </span>metadata: <span class="self">Self </span>= serde_json::from_slice(slice)<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(metadata)
-    }
-
     <span class="kw">pub fn </span>account_name(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>AccountName {
         <span class="kw-2">&amp;</span><span class="self">self</span>.account_name
     }
@@ -152,6 +179,49 @@
 
     <span class="kw">pub fn </span>user_id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="prelude-ty">Option</span>&lt;UserId&gt; {
         <span class="kw-2">&amp;</span><span class="self">self</span>.user_id
+    }
+}
+
+<span class="kw">impl </span>TryFrom&lt;<span class="kw-2">&amp;</span>RequestMetadata&gt; <span class="kw">for </span>MetadataValue&lt;Ascii&gt; {
+    <span class="kw">type </span>Error = LockKeeperError;
+
+    <span class="kw">fn </span>try_from(value: <span class="kw-2">&amp;</span>RequestMetadata) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
+        <span class="kw">let </span>bytes = serde_json::to_vec(value)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(MetadataValue::try_from(bytes)<span class="question-mark">?</span>)
+    }
+}
+
+<span class="kw">impl </span>TryFrom&lt;<span class="kw-2">&amp;</span>MetadataValue&lt;Ascii&gt;&gt; <span class="kw">for </span>RequestMetadata {
+    <span class="kw">type </span>Error = LockKeeperError;
+
+    <span class="kw">fn </span>try_from(value: <span class="kw-2">&amp;</span>MetadataValue&lt;Ascii&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
+        <span class="kw">let </span>bytes = value.as_bytes();
+        <span class="kw">let </span>metadata = serde_json::from_slice(bytes)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(metadata)
+    }
+}
+
+<span class="attribute">#[derive(Clone, Debug, Deserialize, Serialize)]
+</span><span class="kw">pub struct </span>ResponseMetadata {
+    <span class="kw">pub </span>request_id: Uuid,
+}
+
+<span class="kw">impl </span>TryFrom&lt;ResponseMetadata&gt; <span class="kw">for </span>MetadataValue&lt;Ascii&gt; {
+    <span class="kw">type </span>Error = LockKeeperError;
+
+    <span class="kw">fn </span>try_from(value: ResponseMetadata) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
+        <span class="kw">let </span>bytes = serde_json::to_vec(<span class="kw-2">&amp;</span>value)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(MetadataValue::try_from(bytes)<span class="question-mark">?</span>)
+    }
+}
+
+<span class="kw">impl </span>TryFrom&lt;<span class="kw-2">&amp;</span>MetadataValue&lt;Ascii&gt;&gt; <span class="kw">for </span>ResponseMetadata {
+    <span class="kw">type </span>Error = LockKeeperError;
+
+    <span class="kw">fn </span>try_from(value: <span class="kw-2">&amp;</span>MetadataValue&lt;Ascii&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
+        <span class="kw">let </span>bytes = value.as_bytes();
+        <span class="kw">let </span>metadata = serde_json::from_slice(bytes)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(metadata)
     }
 }
 </code></pre></div>

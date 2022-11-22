@@ -227,12 +227,9 @@
 <span id="227">227</span>
 <span id="228">228</span>
 <span id="229">229</span>
-<span id="230">230</span>
-<span id="231">231</span>
-<span id="232">232</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Client object to interact with the key server.
 
-</span><span class="kw">use crate</span>::{config::Config, LockKeeperClientError};
+</span><span class="kw">use crate</span>::{config::Config, LockKeeperClientError, LockKeeperResponse, <span class="prelude-ty">Result</span>};
 <span class="kw">use </span>http::uri::Scheme;
 <span class="kw">use </span>http_body::combinators::UnsyncBoxBody;
 <span class="kw">use </span>hyper::client::HttpConnector;
@@ -254,7 +251,7 @@
 <span class="kw">use </span>std::{str::FromStr, sync::Arc};
 <span class="kw">use </span>tokio::sync::{mpsc, Mutex};
 <span class="kw">use </span>tokio_stream::wrappers::ReceiverStream;
-<span class="kw">use </span>tonic::{metadata::MetadataValue, Request};
+<span class="kw">use </span>tonic::Request;
 <span class="kw">use </span>tracing::error;
 
 <span class="comment">// TODO: password security, e.g. memory management, etc... #54
@@ -270,7 +267,7 @@
 <span class="kw">impl </span>FromStr <span class="kw">for </span>Password {
     <span class="kw">type </span><span class="prelude-val">Err </span>= LockKeeperClientError;
 
-    <span class="kw">fn </span>from_str(s: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Err&gt; {
+    <span class="kw">fn </span>from_str(s: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         <span class="prelude-val">Ok</span>(Password(s.to_string()))
     }
 }
@@ -337,7 +334,7 @@
     /// state.
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>connect(
         config: <span class="kw-2">&amp;</span>Config,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperRpcClient&lt;LockKeeperRpcClientInner&gt;, LockKeeperClientError&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperRpcClient&lt;LockKeeperRpcClientInner&gt;&gt; {
         <span class="kw">if </span>config.server_uri.scheme() != <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>Scheme::HTTPS) {
             <span class="kw">return </span><span class="prelude-val">Err</span>(LockKeeperClientError::HttpNotAllowed);
         }
@@ -359,12 +356,13 @@
         account_name: <span class="kw-2">&amp;</span>AccountName,
         password: <span class="kw-2">&amp;</span>Password,
         config: <span class="kw-2">&amp;</span>Config,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, LockKeeperClientError&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperResponse&lt;<span class="self">Self</span>&gt;&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>rng = StdRng::from_entropy();
         <span class="kw">let </span>metadata = RequestMetadata::new(account_name, ClientAction::Authenticate, <span class="prelude-val">None</span>);
         <span class="kw">let </span><span class="kw-2">mut </span>client_channel = <span class="self">Self</span>::create_channel(<span class="kw-2">&amp;mut </span>client, <span class="kw-2">&amp;</span>metadata).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">let </span>result =
-            <span class="self">Self</span>::handle_authentication(client_channel, <span class="kw-2">&amp;mut </span>rng, account_name, password).<span class="kw">await</span>;
+            <span class="self">Self</span>::handle_authentication(<span class="kw-2">&amp;mut </span>client_channel, <span class="kw-2">&amp;mut </span>rng, account_name, password)
+                .<span class="kw">await</span>;
         <span class="kw">match </span>result {
             <span class="prelude-val">Ok</span>(AuthenticateResult {
                 session_key,
@@ -381,7 +379,8 @@
                     user_id,
                     master_key,
                 };
-                <span class="prelude-val">Ok</span>(client)
+
+                <span class="prelude-val">Ok</span>(LockKeeperResponse::from_channel(client_channel, client))
             }
             <span class="prelude-val">Err</span>(e) =&gt; {
                 <span class="macro">error!</span>(<span class="string">&quot;{:?}&quot;</span>, e);
@@ -399,16 +398,12 @@
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>create_channel(
         client: <span class="kw-2">&amp;mut </span>LockKeeperRpcClient&lt;LockKeeperRpcClientInner&gt;,
         metadata: <span class="kw-2">&amp;</span>RequestMetadata,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;ClientChannel, LockKeeperClientError&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;ClientChannel&gt; {
         <span class="comment">// Create channel to send messages to server after connection is established via
         // RPC
         </span><span class="kw">let </span>(tx, rx) = mpsc::channel(<span class="number">2</span>);
         <span class="kw">let </span><span class="kw-2">mut </span>stream = Request::new(ReceiverStream::new(rx));
-
-        <span class="comment">// Serialize metadata and set as tonic request metadata
-        </span><span class="kw">let </span>metadata_bytes = metadata.to_vec()<span class="question-mark">?</span>;
-        <span class="kw">let </span>metadata_val = MetadataValue::try_from(metadata_bytes)<span class="question-mark">?</span>;
-        <span class="kw">let _ </span>= stream.metadata_mut().insert(METADATA, metadata_val);
+        <span class="kw">let _ </span>= stream.metadata_mut().insert(METADATA, metadata.try_into()<span class="question-mark">?</span>);
 
         <span class="comment">// Server returns its own channel that is uses to send responses
         </span><span class="kw">let </span>server_response = <span class="kw">match </span>metadata.action() {
@@ -425,23 +420,22 @@
             ClientAction::RetrieveAuditEvents =&gt; client.retrieve_audit_events(stream).<span class="kw">await</span>,
             ClientAction::RetrieveSigningKey =&gt; client.retrieve_signing_key(stream).<span class="kw">await</span>,
             ClientAction::RetrieveStorageKey =&gt; client.retrieve_storage_key(stream).<span class="kw">await</span>,
-        }<span class="question-mark">?
-        </span>.into_inner();
+        }<span class="question-mark">?</span>;
 
-        <span class="kw">let </span><span class="kw-2">mut </span>channel = ClientChannel::create(tx, server_response);
+        <span class="kw">let </span><span class="kw-2">mut </span>channel = ClientChannel::create(tx, server_response)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(channel)
     }
 
     <span class="doccomment">/// Close a session.
     ///
     /// Outputs: None, if successful.
-    </span><span class="kw">pub fn </span>close(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperClientError&gt; {
+    </span><span class="kw">pub fn </span>close(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperResponse&lt;()&gt;&gt; {
         <span class="macro">todo!</span>()
     }
 
     <span class="doccomment">/// Retrieve the [`lock_keeper::crypto::Encrypted&lt;StorageKey&gt;`] that belongs
     /// to the user specified by `user_id`
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>retrieve_storage_key(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;StorageKey, LockKeeperClientError&gt; {
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>retrieve_storage_key(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;StorageKey&gt; {
         <span class="comment">// Create channel to send messages to server
         </span><span class="kw">let </span>metadata = <span class="self">self</span>.create_metadata(ClientAction::RetrieveStorageKey);
         <span class="kw">let </span><span class="kw-2">mut </span>channel = <span class="self">Self</span>::create_channel(<span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(), <span class="kw-2">&amp;</span>metadata).<span class="kw">await</span><span class="question-mark">?</span>;

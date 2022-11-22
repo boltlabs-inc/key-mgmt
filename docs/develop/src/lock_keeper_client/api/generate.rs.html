@@ -72,7 +72,18 @@
 <span id="72">72</span>
 <span id="73">73</span>
 <span id="74">74</span>
-</pre><pre class="rust"><code><span class="kw">use crate</span>::{api::LocalStorage, LockKeeperClient, LockKeeperClientError};
+<span id="75">75</span>
+<span id="76">76</span>
+<span id="77">77</span>
+<span id="78">78</span>
+<span id="79">79</span>
+<span id="80">80</span>
+<span id="81">81</span>
+<span id="82">82</span>
+<span id="83">83</span>
+<span id="84">84</span>
+<span id="85">85</span>
+</pre><pre class="rust"><code><span class="kw">use crate</span>::{api::LocalStorage, LockKeeperClient, LockKeeperClientError, LockKeeperResponse};
 <span class="kw">use </span>lock_keeper::{
     crypto::{KeyId, Secret, StorageKey},
     infrastructure::channel::ClientChannel,
@@ -83,23 +94,34 @@
 };
 <span class="kw">use </span>rand::rngs::StdRng;
 
+<span class="attribute">#[derive(Debug)]
+</span><span class="kw">pub struct </span>GenerateResult {
+    <span class="kw">pub </span>key_id: KeyId,
+    <span class="kw">pub </span>local_storage: LocalStorage&lt;Secret&gt;,
+}
+
 <span class="kw">impl </span>LockKeeperClient {
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>handle_generate(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        channel: <span class="kw-2">&amp;mut </span>ClientChannel,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;(KeyId, LocalStorage&lt;Secret&gt;), LockKeeperClientError&gt; {
+        <span class="kw-2">mut </span>channel: ClientChannel,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperResponse&lt;GenerateResult&gt;, LockKeeperClientError&gt; {
         <span class="comment">// Retrieve the storage key
         </span><span class="kw">let </span>storage_key = <span class="self">self</span>.retrieve_storage_key().<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="comment">// Generate step: get new KeyId from server
-        </span><span class="kw">let </span>key_id = get_key_id(channel, <span class="self">self</span>.user_id()).<span class="kw">await</span><span class="question-mark">?</span>;
+        </span><span class="kw">let </span>key_id = get_key_id(<span class="kw-2">&amp;mut </span>channel, <span class="self">self</span>.user_id()).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="comment">// Store step: encrypt secret and send to server to store
         </span><span class="kw">let </span>wrapped_secret = {
             <span class="kw">let </span><span class="kw-2">mut </span>rng = <span class="self">self</span>.rng.lock().<span class="kw">await</span>;
-            generate_and_store(channel, <span class="self">self</span>.user_id(), storage_key, <span class="kw-2">&amp;mut </span>rng, <span class="kw-2">&amp;</span>key_id).<span class="kw">await</span><span class="question-mark">?
+            generate_and_store(<span class="kw-2">&amp;mut </span>channel, <span class="self">self</span>.user_id(), storage_key, <span class="kw-2">&amp;mut </span>rng, <span class="kw-2">&amp;</span>key_id).<span class="kw">await</span><span class="question-mark">?
         </span>};
 
-        <span class="prelude-val">Ok</span>((key_id, wrapped_secret))
+        <span class="kw">let </span>result = GenerateResult {
+            key_id,
+            local_storage: wrapped_secret,
+        };
+
+        <span class="prelude-val">Ok</span>(LockKeeperResponse::from_channel(channel, result))
     }
 }
 

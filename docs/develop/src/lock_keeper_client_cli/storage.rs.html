@@ -267,6 +267,12 @@
 <span id="267">267</span>
 <span id="268">268</span>
 <span id="269">269</span>
+<span id="270">270</span>
+<span id="271">271</span>
+<span id="272">272</span>
+<span id="273">273</span>
+<span id="274">274</span>
+<span id="275">275</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Local storage types for in-memory and on-disk storage of key information.
 
 </span><span class="kw">use </span>std::{
@@ -278,7 +284,7 @@
 
 <span class="kw">use </span>anyhow::anyhow;
 <span class="kw">use </span>lock_keeper::crypto::{Export, KeyId, Secret};
-<span class="kw">use </span>lock_keeper_client::api::LocalStorage;
+<span class="kw">use </span>lock_keeper_client::api::{GenerateResult, LocalStorage};
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 
 <span class="doccomment">/// Container for all locally stored key data.
@@ -534,6 +540,12 @@
 <span class="kw">impl </span>From&lt;KeyId&gt; <span class="kw">for </span>Entry {
     <span class="kw">fn </span>from(key_id: KeyId) -&gt; <span class="self">Self </span>{
         Entry::new(key_id, DataType::None)
+    }
+}
+
+<span class="kw">impl </span>From&lt;GenerateResult&gt; <span class="kw">for </span>Entry {
+    <span class="kw">fn </span>from(result: GenerateResult) -&gt; <span class="self">Self </span>{
+        (result.key_id, result.local_storage).into()
     }
 }
 </code></pre></div>

@@ -240,7 +240,7 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         actor: <span class="kw-2">&amp;</span>AccountName,
         secret_id: <span class="kw-2">&amp;</span><span class="prelude-ty">Option</span>&lt;KeyId&gt;,
-        action: <span class="kw-2">&amp;</span>ClientAction,
+        action: ClientAction,
         status: EventStatus,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt; {
         <span class="self">self</span>.create_audit_event(actor, secret_id, action, status)

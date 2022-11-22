@@ -54,6 +54,8 @@
 <span id="54">54</span>
 <span id="55">55</span>
 <span id="56">56</span>
+<span id="57">57</span>
+<span id="58">58</span>
 </pre><pre class="rust"><code><span class="kw">use </span>colored::Colorize;
 <span class="kw">use </span>lock_keeper::{
     crypto::{Signable, SignableBytes},
@@ -87,13 +89,15 @@
 <span class="kw">async fn </span>remote_sign_works(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">let </span>state = init_test_state(config).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let </span>RemoteGenerateResult { key_id, public_key } = remote_generate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>RemoteGenerateResult { key_id, public_key } = remote_generate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>.into_inner();
 
     <span class="kw">let </span><span class="kw-2">mut </span>rng = StdRng::from_seed(<span class="kw-2">*</span>RNG_SEED);
 
     <span class="kw">for _ in </span><span class="number">0</span>..<span class="number">10 </span>{
         <span class="kw">let </span>data = SignableBytes(utils::random_bytes(<span class="kw-2">&amp;mut </span>rng, <span class="number">100</span>));
-        <span class="kw">let </span>signature = remote_sign_bytes(<span class="kw-2">&amp;</span>state, <span class="kw-2">&amp;</span>key_id, data.clone()).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>signature = remote_sign_bytes(<span class="kw-2">&amp;</span>state, <span class="kw-2">&amp;</span>key_id, data.clone())
+            .<span class="kw">await</span><span class="question-mark">?
+            </span>.into_inner();
         <span class="comment">// Verify that the data was signed with the generated key
         </span><span class="macro">assert!</span>(
             data.verify(<span class="kw-2">&amp;</span>public_key, <span class="kw-2">&amp;</span>signature).is_ok(),

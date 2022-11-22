@@ -227,6 +227,37 @@
 <span id="227">227</span>
 <span id="228">228</span>
 <span id="229">229</span>
+<span id="230">230</span>
+<span id="231">231</span>
+<span id="232">232</span>
+<span id="233">233</span>
+<span id="234">234</span>
+<span id="235">235</span>
+<span id="236">236</span>
+<span id="237">237</span>
+<span id="238">238</span>
+<span id="239">239</span>
+<span id="240">240</span>
+<span id="241">241</span>
+<span id="242">242</span>
+<span id="243">243</span>
+<span id="244">244</span>
+<span id="245">245</span>
+<span id="246">246</span>
+<span id="247">247</span>
+<span id="248">248</span>
+<span id="249">249</span>
+<span id="250">250</span>
+<span id="251">251</span>
+<span id="252">252</span>
+<span id="253">253</span>
+<span id="254">254</span>
+<span id="255">255</span>
+<span id="256">256</span>
+<span id="257">257</span>
+<span id="258">258</span>
+<span id="259">259</span>
+<span id="260">260</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Full implementation of the public API for the Lock Keeper client library.
 //!
 //! This API is designed for use with a local client application - that is, an
@@ -244,7 +275,9 @@
 <span class="kw">mod </span>retrieve;
 <span class="kw">mod </span>retrieve_audit_events;
 
-<span class="kw">use crate</span>::{client::Password, config::Config, LockKeeperClient, LockKeeperClientError};
+<span class="kw">use crate</span>::{
+    client::Password, config::Config, LockKeeperClient, LockKeeperClientError, LockKeeperResponse,
+};
 <span class="kw">use </span>lock_keeper::{
     crypto::{Export, KeyId, Secret, Signable, Signature},
     types::{
@@ -257,7 +290,7 @@
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>tracing::error;
 
-<span class="kw">pub use </span><span class="self">self</span>::remote_generate::RemoteGenerateResult;
+<span class="kw">pub use </span><span class="self">self</span>::{generate::GenerateResult, remote_generate::RemoteGenerateResult};
 
 <span class="doccomment">/// Wrapper for secrets prepared for local storage
 </span><span class="attribute">#[derive(Debug, Deserialize, Serialize)]
@@ -293,9 +326,9 @@
         account_name: <span class="kw-2">&amp;</span>AccountName,
         password: <span class="kw-2">&amp;</span>Password,
         config: <span class="kw-2">&amp;</span>Config,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, LockKeeperClientError&gt; {
-        <span class="kw">let </span>client = <span class="self">Self</span>::connect(config).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="self">Self</span>::authenticate(client, account_name, password, config).<span class="kw">await
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperResponse&lt;<span class="self">Self</span>&gt;, LockKeeperClientError&gt; {
+        <span class="kw">let </span>rpc_client = <span class="self">Self</span>::connect(config).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="self">Self</span>::authenticate(rpc_client, account_name, password, config).<span class="kw">await
     </span>}
 
     <span class="doccomment">/// Register a new user who has not yet interacted with the service.
@@ -309,7 +342,7 @@
         account_name: <span class="kw-2">&amp;</span>AccountName,
         password: <span class="kw-2">&amp;</span>Password,
         config: <span class="kw-2">&amp;</span>Config,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperClientError&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperResponse&lt;()&gt;, LockKeeperClientError&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>rng = StdRng::from_entropy();
         <span class="kw">let </span><span class="kw-2">mut </span>client = <span class="self">Self</span>::connect(config).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">let </span>metadata = RequestMetadata::new(account_name, ClientAction::Register, <span class="prelude-val">None</span>);
@@ -318,16 +351,22 @@
             <span class="self">Self</span>::handle_registration(client_channel, <span class="kw-2">&amp;mut </span>rng, account_name, password).<span class="kw">await</span>;
         <span class="kw">match </span>result {
             <span class="prelude-val">Ok</span>(master_key) =&gt; {
-                <span class="kw">let </span>client = <span class="self">Self</span>::authenticate(client, account_name, password, config).<span class="kw">await</span><span class="question-mark">?</span>;
+                <span class="kw">let </span>LockKeeperResponse {
+                    data: client,
+                    metadata: response_metadata,
+                } = <span class="self">Self</span>::authenticate(client, account_name, password, config).<span class="kw">await</span><span class="question-mark">?</span>;
 
                 <span class="comment">// After authenticating we can create the storage key
-                </span><span class="kw">let </span>metadata = client.create_metadata(ClientAction::CreateStorageKey);
+                </span><span class="kw">let </span>request_metadata = client.create_metadata(ClientAction::CreateStorageKey);
                 <span class="kw">let </span>client_channel =
-                    <span class="self">Self</span>::create_channel(<span class="kw-2">&amp;mut </span>client.tonic_client(), <span class="kw-2">&amp;</span>metadata).<span class="kw">await</span><span class="question-mark">?</span>;
+                    <span class="self">Self</span>::create_channel(<span class="kw-2">&amp;mut </span>client.tonic_client(), <span class="kw-2">&amp;</span>request_metadata).<span class="kw">await</span><span class="question-mark">?</span>;
                 <span class="self">Self</span>::handle_create_storage_key(client_channel, <span class="kw-2">&amp;mut </span>rng, account_name, master_key)
                     .<span class="kw">await</span><span class="question-mark">?</span>;
 
-                <span class="prelude-val">Ok</span>(())
+                <span class="prelude-val">Ok</span>(LockKeeperResponse {
+                    data: (),
+                    metadata: response_metadata,
+                })
             }
             <span class="prelude-val">Err</span>(e) =&gt; {
                 <span class="macro">error!</span>(<span class="string">&quot;{:?}&quot;</span>, e);
@@ -340,16 +379,26 @@
     ///
     /// Calling this function on a signing key will generate an error.
     /// Output: If successful, returns the requested key material in byte form.
-    </span><span class="kw">pub async fn </span>export_key(<span class="kw-2">&amp;</span><span class="self">self</span>, key_id: <span class="kw-2">&amp;</span>KeyId) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;, LockKeeperClientError&gt; {
+    </span><span class="kw">pub async fn </span>export_key(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        key_id: <span class="kw-2">&amp;</span>KeyId,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperResponse&lt;Vec&lt;u8&gt;&gt;, LockKeeperClientError&gt; {
         <span class="comment">// Create channel: this will internally be a `retrieve` channel
         </span><span class="kw">let </span>metadata = <span class="self">self</span>.create_metadata(ClientAction::Export);
-        <span class="kw">let </span><span class="kw-2">mut </span>client_channel = <span class="self">Self</span>::create_channel(<span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(), <span class="kw-2">&amp;</span>metadata).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>client_channel = <span class="self">Self</span>::create_channel(<span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(), <span class="kw-2">&amp;</span>metadata).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="comment">// Get local-only secret
-        </span><span class="kw">let </span>local_storage = <span class="self">self
-            </span>.handle_retrieve(<span class="kw-2">&amp;mut </span>client_channel, key_id, RetrieveContext::LocalOnly)
-            .<span class="kw">await</span><span class="question-mark">?
-            </span>.ok_or(LockKeeperClientError::ExportFailed)<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(local_storage.material.into())
+        </span><span class="kw">let </span>LockKeeperResponse { data, metadata } = <span class="self">self
+            </span>.handle_retrieve(client_channel, key_id, RetrieveContext::LocalOnly)
+            .<span class="kw">await</span><span class="question-mark">?</span>;
+
+        <span class="kw">let </span>local_storage = data.ok_or(LockKeeperClientError::ExportFailed)<span class="question-mark">?</span>;
+
+        <span class="kw">let </span>response: Vec&lt;u8&gt; = local_storage.material.into();
+
+        <span class="prelude-val">Ok</span>(LockKeeperResponse {
+            data: response,
+            metadata,
+        })
     }
 
     <span class="doccomment">/// Export signing key pair material from the key servers.
@@ -359,37 +408,45 @@
     </span><span class="kw">pub async fn </span>export_signing_key(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         key_id: <span class="kw-2">&amp;</span>KeyId,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;Export, LockKeeperClientError&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperResponse&lt;Export&gt;, LockKeeperClientError&gt; {
         <span class="comment">// Create channel: this will internally be a `retrieve` channel
         </span><span class="kw">let </span>metadata = <span class="self">self</span>.create_metadata(ClientAction::ExportSigningKey);
-        <span class="kw">let </span><span class="kw-2">mut </span>client_channel = <span class="self">Self</span>::create_channel(<span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(), <span class="kw-2">&amp;</span>metadata).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>client_channel = <span class="self">Self</span>::create_channel(<span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(), <span class="kw-2">&amp;</span>metadata).<span class="kw">await</span><span class="question-mark">?</span>;
+
         <span class="comment">// Get local-only secret
-        </span><span class="kw">let </span>local_storage = <span class="self">self
-            </span>.handle_retrieve_signing_key(<span class="kw-2">&amp;mut </span>client_channel, key_id, RetrieveContext::LocalOnly)
-            .<span class="kw">await</span><span class="question-mark">?
-            </span>.ok_or(LockKeeperClientError::ExportFailed)<span class="question-mark">?</span>;
+        </span><span class="kw">let </span>LockKeeperResponse { data, metadata } = <span class="self">self
+            </span>.handle_retrieve_signing_key(client_channel, key_id, RetrieveContext::LocalOnly)
+            .<span class="kw">await</span><span class="question-mark">?</span>;
+
+        <span class="kw">let </span>local_storage = data.ok_or(LockKeeperClientError::ExportFailed)<span class="question-mark">?</span>;
         <span class="kw">let </span>exported_signing_key = Export::from(local_storage.material);
-        <span class="prelude-val">Ok</span>(exported_signing_key)
+
+        <span class="prelude-val">Ok</span>(LockKeeperResponse {
+            data: exported_signing_key,
+            metadata,
+        })
     }
 
     <span class="doccomment">/// Generate an arbitrary secret client-side, store this secret in the key
     /// server.
     </span><span class="kw">pub async fn </span>generate_and_store(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;(KeyId, LocalStorage&lt;Secret&gt;), LockKeeperClientError&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperResponse&lt;GenerateResult&gt;, LockKeeperClientError&gt; {
         <span class="kw">let </span>metadata = <span class="self">self</span>.create_metadata(ClientAction::Generate);
-        <span class="kw">let </span><span class="kw-2">mut </span>client_channel = <span class="self">Self</span>::create_channel(<span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(), <span class="kw-2">&amp;</span>metadata).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="self">self</span>.handle_generate(<span class="kw-2">&amp;mut </span>client_channel).<span class="kw">await
+        <span class="kw">let </span>client_channel = <span class="self">Self</span>::create_channel(<span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(), <span class="kw-2">&amp;</span>metadata).<span class="kw">await</span><span class="question-mark">?</span>;
+
+        <span class="self">self</span>.handle_generate(client_channel).<span class="kw">await
     </span>}
 
     <span class="doccomment">/// Import signing key material to the key server
     </span><span class="kw">pub async fn </span>import_signing_key(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         key_material: Vec&lt;u8&gt;,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;KeyId, LockKeeperClientError&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperResponse&lt;KeyId&gt;, LockKeeperClientError&gt; {
         <span class="kw">let </span>metadata = <span class="self">self</span>.create_metadata(ClientAction::ImportSigningKey);
-        <span class="kw">let </span><span class="kw-2">mut </span>client_channel = <span class="self">Self</span>::create_channel(<span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(), <span class="kw-2">&amp;</span>metadata).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="self">self</span>.handle_import_signing_key(<span class="kw-2">&amp;mut </span>client_channel, key_material)
+        <span class="kw">let </span>client_channel = <span class="self">Self</span>::create_channel(<span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(), <span class="kw-2">&amp;</span>metadata).<span class="kw">await</span><span class="question-mark">?</span>;
+
+        <span class="self">self</span>.handle_import_signing_key(client_channel, key_material)
             .<span class="kw">await
     </span>}
 
@@ -400,18 +457,21 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         key_id: <span class="kw-2">&amp;</span>KeyId,
         context: RetrieveContext,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;LocalStorage&lt;Secret&gt;&gt;, LockKeeperClientError&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperResponse&lt;<span class="prelude-ty">Option</span>&lt;LocalStorage&lt;Secret&gt;&gt;&gt;, LockKeeperClientError&gt; {
         <span class="kw">let </span>metadata = <span class="self">self</span>.create_metadata(ClientAction::Retrieve);
-        <span class="kw">let </span><span class="kw-2">mut </span>client_channel = <span class="self">Self</span>::create_channel(<span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(), <span class="kw-2">&amp;</span>metadata).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="self">self</span>.handle_retrieve(<span class="kw-2">&amp;mut </span>client_channel, key_id, context)
-            .<span class="kw">await
+        <span class="kw">let </span>client_channel = <span class="self">Self</span>::create_channel(<span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(), <span class="kw-2">&amp;</span>metadata).<span class="kw">await</span><span class="question-mark">?</span>;
+
+        <span class="self">self</span>.handle_retrieve(client_channel, key_id, context).<span class="kw">await
     </span>}
 
     <span class="doccomment">/// Request that the server generate a new signing key.
-    </span><span class="kw">pub async fn </span>remote_generate(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;RemoteGenerateResult, LockKeeperClientError&gt; {
+    </span><span class="kw">pub async fn </span>remote_generate(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperResponse&lt;RemoteGenerateResult&gt;, LockKeeperClientError&gt; {
         <span class="kw">let </span>metadata = <span class="self">self</span>.create_metadata(ClientAction::RemoteGenerate);
-        <span class="kw">let </span><span class="kw-2">mut </span>client_channel = <span class="self">Self</span>::create_channel(<span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(), <span class="kw-2">&amp;</span>metadata).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="self">self</span>.handle_remote_generate(<span class="kw-2">&amp;mut </span>client_channel).<span class="kw">await
+        <span class="kw">let </span>client_channel = <span class="self">Self</span>::create_channel(<span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(), <span class="kw-2">&amp;</span>metadata).<span class="kw">await</span><span class="question-mark">?</span>;
+
+        <span class="self">self</span>.handle_remote_generate(client_channel).<span class="kw">await
     </span>}
 
     <span class="doccomment">/// Sign an arbitrary blob of bytes with a remotely generated
@@ -421,10 +481,11 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         key_id: KeyId,
         bytes: <span class="kw">impl </span>Signable,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;Signature, LockKeeperClientError&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperResponse&lt;Signature&gt;, LockKeeperClientError&gt; {
         <span class="kw">let </span>metadata = <span class="self">self</span>.create_metadata(ClientAction::RemoteSignBytes);
-        <span class="kw">let </span><span class="kw-2">mut </span>client_channel = <span class="self">Self</span>::create_channel(<span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(), <span class="kw-2">&amp;</span>metadata).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="self">self</span>.handle_remote_sign_bytes(<span class="kw-2">&amp;mut </span>client_channel, key_id, bytes)
+        <span class="kw">let </span>client_channel = <span class="self">Self</span>::create_channel(<span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(), <span class="kw-2">&amp;</span>metadata).<span class="kw">await</span><span class="question-mark">?</span>;
+
+        <span class="self">self</span>.handle_remote_sign_bytes(client_channel, key_id, bytes)
             .<span class="kw">await
     </span>}
 
@@ -449,10 +510,11 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         event_type: EventType,
         options: AuditEventOptions,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;AuditEvent&gt;, LockKeeperClientError&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperResponse&lt;Vec&lt;AuditEvent&gt;&gt;, LockKeeperClientError&gt; {
         <span class="kw">let </span>metadata = <span class="self">self</span>.create_metadata(ClientAction::RetrieveAuditEvents);
-        <span class="kw">let </span><span class="kw-2">mut </span>client_channel = <span class="self">Self</span>::create_channel(<span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(), <span class="kw-2">&amp;</span>metadata).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="self">self</span>.handle_retrieve_audit_events(<span class="kw-2">&amp;mut </span>client_channel, event_type, options)
+        <span class="kw">let </span>client_channel = <span class="self">Self</span>::create_channel(<span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(), <span class="kw-2">&amp;</span>metadata).<span class="kw">await</span><span class="question-mark">?</span>;
+
+        <span class="self">self</span>.handle_retrieve_audit_events(client_channel, event_type, options)
             .<span class="kw">await
     </span>}
 }

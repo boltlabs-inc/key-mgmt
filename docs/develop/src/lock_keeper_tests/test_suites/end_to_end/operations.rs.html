@@ -187,6 +187,22 @@
 <span id="187">187</span>
 <span id="188">188</span>
 <span id="189">189</span>
+<span id="190">190</span>
+<span id="191">191</span>
+<span id="192">192</span>
+<span id="193">193</span>
+<span id="194">194</span>
+<span id="195">195</span>
+<span id="196">196</span>
+<span id="197">197</span>
+<span id="198">198</span>
+<span id="199">199</span>
+<span id="200">200</span>
+<span id="201">201</span>
+<span id="202">202</span>
+<span id="203">203</span>
+<span id="204">204</span>
+<span id="205">205</span>
 </pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::test_suites::end_to_end::test_cases::TestState;
 <span class="kw">use </span>lock_keeper::{
     crypto::{Export, KeyId, Secret, Signable, Signature},
@@ -197,9 +213,9 @@
     },
 };
 <span class="kw">use </span>lock_keeper_client::{
-    api::{LocalStorage, RemoteGenerateResult},
+    api::{GenerateResult, LocalStorage, RemoteGenerateResult},
     client::Password,
-    Config, LockKeeperClient, LockKeeperClientError,
+    Config, LockKeeperClient, LockKeeperClientError, LockKeeperResponse,
 };
 <span class="kw">use </span>rand::{prelude::StdRng, Rng, SeedableRng};
 <span class="kw">use </span>std::fmt::Display;
@@ -210,7 +226,8 @@
 ) -&gt; <span class="prelude-ty">Result</span>&lt;KeyId, LockKeeperClientError&gt; {
     <span class="kw">let </span>client =
         LockKeeperClient::authenticated_client(<span class="kw-2">&amp;</span>state.account_name, <span class="kw-2">&amp;</span>state.password, <span class="kw-2">&amp;</span>state.config)
-            .<span class="kw">await</span><span class="question-mark">?</span>;
+            .<span class="kw">await</span><span class="question-mark">?
+            </span>.into_inner();
     <span class="kw">let </span><span class="kw-2">mut </span>rng = StdRng::from_entropy();
     <span class="kw">let </span>fake_key_id = KeyId::generate(<span class="kw-2">&amp;mut </span>rng, client.user_id())<span class="question-mark">?</span>;
 
@@ -238,12 +255,14 @@
     <span class="comment">// Authenticate to LockKeeperClient
     </span><span class="kw">let </span>lock_keeper_client =
         LockKeeperClient::authenticated_client(<span class="kw-2">&amp;</span>state.account_name, <span class="kw-2">&amp;</span>state.password, <span class="kw-2">&amp;</span>state.config)
-            .<span class="kw">await</span><span class="question-mark">?</span>;
+            .<span class="kw">await</span><span class="question-mark">?
+            </span>.into_inner();
 
     <span class="comment">// Get audit event log
     </span><span class="kw">let </span>audit_event_log = lock_keeper_client
         .retrieve_audit_event_log(EventType::All, AuditEventOptions::default())
-        .<span class="kw">await</span><span class="question-mark">?</span>;
+        .<span class="kw">await</span><span class="question-mark">?
+        </span>.data;
 
     <span class="comment">// Get the fourth last event, the last 3 are for retrieving audit logs and
     // authenticating
@@ -266,19 +285,22 @@
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>authenticate(
     state: <span class="kw-2">&amp;</span>TestState,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperClient, LockKeeperClientError&gt; {
-    LockKeeperClient::authenticated_client(<span class="kw-2">&amp;</span>state.account_name, <span class="kw-2">&amp;</span>state.password, <span class="kw-2">&amp;</span>state.config)
-        .<span class="kw">await
-</span>}
+    <span class="kw">let </span>client =
+        LockKeeperClient::authenticated_client(<span class="kw-2">&amp;</span>state.account_name, <span class="kw-2">&amp;</span>state.password, <span class="kw-2">&amp;</span>state.config)
+            .<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="prelude-val">Ok</span>(client.into_inner())
+}
 
 <span class="doccomment">/// Authenticate and export an arbitrary secret by KeyId.
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>export(
     state: <span class="kw-2">&amp;</span>TestState,
     key_id: <span class="kw-2">&amp;</span>KeyId,
-) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;, LockKeeperClientError&gt; {
+) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperResponse&lt;Vec&lt;u8&gt;&gt;, LockKeeperClientError&gt; {
     <span class="comment">// Authenticate
     </span><span class="kw">let </span>lock_keeper_client =
         LockKeeperClient::authenticated_client(<span class="kw-2">&amp;</span>state.account_name, <span class="kw-2">&amp;</span>state.password, <span class="kw-2">&amp;</span>state.config)
-            .<span class="kw">await</span><span class="question-mark">?</span>;
+            .<span class="kw">await</span><span class="question-mark">?
+            </span>.into_inner();
 
     lock_keeper_client.export_key(key_id).<span class="kw">await
 </span>}
@@ -287,11 +309,12 @@
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>export_signing_key(
     state: <span class="kw-2">&amp;</span>TestState,
     key_id: <span class="kw-2">&amp;</span>KeyId,
-) -&gt; <span class="prelude-ty">Result</span>&lt;Export, LockKeeperClientError&gt; {
+) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperResponse&lt;Export&gt;, LockKeeperClientError&gt; {
     <span class="comment">// Authenticate
     </span><span class="kw">let </span>lock_keeper_client =
         LockKeeperClient::authenticated_client(<span class="kw-2">&amp;</span>state.account_name, <span class="kw-2">&amp;</span>state.password, <span class="kw-2">&amp;</span>state.config)
-            .<span class="kw">await</span><span class="question-mark">?</span>;
+            .<span class="kw">await</span><span class="question-mark">?
+            </span>.into_inner();
 
     lock_keeper_client.export_signing_key(key_id).<span class="kw">await
 </span>}
@@ -299,30 +322,38 @@
 <span class="doccomment">/// Authenticate and generate an arbitrary key.
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>generate(
     state: <span class="kw-2">&amp;</span>TestState,
-) -&gt; <span class="prelude-ty">Result</span>&lt;(KeyId, LocalStorage&lt;Secret&gt;), LockKeeperClientError&gt; {
+) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperResponse&lt;GenerateResult&gt;, LockKeeperClientError&gt; {
     <span class="comment">// Authenticate and run generate
     </span><span class="kw">let </span>lock_keeper_client =
         LockKeeperClient::authenticated_client(<span class="kw-2">&amp;</span>state.account_name, <span class="kw-2">&amp;</span>state.password, <span class="kw-2">&amp;</span>state.config)
-            .<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let </span>(key_id, local_storage) = lock_keeper_client.generate_and_store().<span class="kw">await</span><span class="question-mark">?</span>;
-
-    <span class="prelude-val">Ok</span>((key_id, local_storage))
-}
+            .<span class="kw">await</span><span class="question-mark">?
+            </span>.into_inner();
+    lock_keeper_client.generate_and_store().<span class="kw">await
+</span>}
 
 <span class="doccomment">/// Authenticate and import a signing key.
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>import_signing_key(
     state: <span class="kw-2">&amp;</span>TestState,
-) -&gt; <span class="prelude-ty">Result</span>&lt;(KeyId, Vec&lt;u8&gt;), LockKeeperClientError&gt; {
+) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperResponse&lt;(KeyId, Vec&lt;u8&gt;)&gt;, LockKeeperClientError&gt; {
     <span class="comment">// Authenticate and run generate
     </span><span class="kw">let </span>lock_keeper_client =
         LockKeeperClient::authenticated_client(<span class="kw-2">&amp;</span>state.account_name, <span class="kw-2">&amp;</span>state.password, <span class="kw-2">&amp;</span>state.config)
-            .<span class="kw">await</span><span class="question-mark">?</span>;
+            .<span class="kw">await</span><span class="question-mark">?
+            </span>.into_inner();
     <span class="kw">let </span>random_bytes = rand::thread_rng().gen::&lt;[u8; <span class="number">32</span>]&gt;().to_vec();
-    <span class="kw">let </span>key_id = lock_keeper_client
+    <span class="kw">let </span>LockKeeperResponse {
+        data: key_id,
+        metadata,
+    } = lock_keeper_client
         .import_signing_key(random_bytes.clone())
         .<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="prelude-val">Ok</span>((key_id, random_bytes))
+    <span class="kw">let </span>result = LockKeeperResponse {
+        data: (key_id, random_bytes),
+        metadata,
+    };
+
+    <span class="prelude-val">Ok</span>(result)
 }
 
 <span class="doccomment">/// Register to the LockKeeper key server.
@@ -330,20 +361,19 @@
     account_name: <span class="kw-2">&amp;</span>AccountName,
     password: <span class="kw-2">&amp;</span>Password,
     config: <span class="kw-2">&amp;</span>Config,
-) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperClientError&gt; {
-    LockKeeperClient::register(account_name, password, config).<span class="kw">await</span><span class="question-mark">?</span>;
-
-    <span class="prelude-val">Ok</span>(())
-}
+) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperResponse&lt;()&gt;, LockKeeperClientError&gt; {
+    LockKeeperClient::register(account_name, password, config).<span class="kw">await
+</span>}
 
 <span class="doccomment">/// Authenticate and generate a signing key server-side
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>remote_generate(
     state: <span class="kw-2">&amp;</span>TestState,
-) -&gt; <span class="prelude-ty">Result</span>&lt;RemoteGenerateResult, LockKeeperClientError&gt; {
+) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperResponse&lt;RemoteGenerateResult&gt;, LockKeeperClientError&gt; {
     <span class="comment">// Authenticate and run remote generate
     </span><span class="kw">let </span>lock_keeper_client =
         LockKeeperClient::authenticated_client(<span class="kw-2">&amp;</span>state.account_name, <span class="kw-2">&amp;</span>state.password, <span class="kw-2">&amp;</span>state.config)
-            .<span class="kw">await</span><span class="question-mark">?</span>;
+            .<span class="kw">await</span><span class="question-mark">?
+            </span>.into_inner();
     lock_keeper_client.remote_generate().<span class="kw">await
 </span>}
 
@@ -352,11 +382,12 @@
     state: <span class="kw-2">&amp;</span>TestState,
     key_id: <span class="kw-2">&amp;</span>KeyId,
     bytes: <span class="kw">impl </span>Signable,
-) -&gt; <span class="prelude-ty">Result</span>&lt;Signature, LockKeeperClientError&gt; {
+) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperResponse&lt;Signature&gt;, LockKeeperClientError&gt; {
     <span class="comment">// Authenticate and run remote generate
     </span><span class="kw">let </span>lock_keeper_client =
         LockKeeperClient::authenticated_client(<span class="kw-2">&amp;</span>state.account_name, <span class="kw-2">&amp;</span>state.password, <span class="kw-2">&amp;</span>state.config)
-            .<span class="kw">await</span><span class="question-mark">?</span>;
+            .<span class="kw">await</span><span class="question-mark">?
+            </span>.into_inner();
     lock_keeper_client
         .remote_sign_bytes(key_id.clone(), bytes)
         .<span class="kw">await
@@ -367,11 +398,12 @@
     state: <span class="kw-2">&amp;</span>TestState,
     key_id: <span class="kw-2">&amp;</span>KeyId,
     context: RetrieveContext,
-) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;LocalStorage&lt;Secret&gt;&gt;, LockKeeperClientError&gt; {
+) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperResponse&lt;<span class="prelude-ty">Option</span>&lt;LocalStorage&lt;Secret&gt;&gt;&gt;, LockKeeperClientError&gt; {
     <span class="comment">// Authenticate
     </span><span class="kw">let </span>lock_keeper_client =
         LockKeeperClient::authenticated_client(<span class="kw-2">&amp;</span>state.account_name, <span class="kw-2">&amp;</span>state.password, <span class="kw-2">&amp;</span>state.config)
-            .<span class="kw">await</span><span class="question-mark">?</span>;
+            .<span class="kw">await</span><span class="question-mark">?
+            </span>.into_inner();
 
     <span class="comment">// Ensure result matches what was stored in generate
     </span>lock_keeper_client.retrieve(key_id, context).<span class="kw">await

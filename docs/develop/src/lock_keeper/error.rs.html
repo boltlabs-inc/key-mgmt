@@ -68,6 +68,13 @@
 <span id="68">68</span>
 <span id="69">69</span>
 <span id="70">70</span>
+<span id="71">71</span>
+<span id="72">72</span>
+<span id="73">73</span>
+<span id="74">74</span>
+<span id="75">75</span>
+<span id="76">76</span>
+<span id="77">77</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Error type for all errors returned to code outside of this crate.
 
 </span><span class="kw">use </span>thiserror::Error;
@@ -84,6 +91,8 @@
     <span class="comment">// Request errors
     </span><span class="attribute">#[error(<span class="string">&quot;Invalid client action&quot;</span>)]
     </span>InvalidClientAction,
+    <span class="attribute">#[error(<span class="string">&quot;Network message missing required metadata&quot;</span>)]
+    </span>MetadataNotFound,
 
     <span class="comment">// Channel errors
     </span><span class="attribute">#[error(<span class="string">&quot;Invalid message&quot;</span>)]
@@ -105,6 +114,8 @@
     <span class="attribute">#[error(<span class="string">&quot;tokio Sender error: {}&quot;</span>, .<span class="number">0</span>)]
     </span>TokioSender(String),
     <span class="attribute">#[error(transparent)]
+    </span>TonicMetadata(<span class="attribute">#[from] </span>tonic::metadata::errors::InvalidMetadataValueBytes),
+    <span class="attribute">#[error(transparent)]
     </span>TonicStatus(<span class="attribute">#[from] </span>tonic::Status),
 }
 
@@ -124,7 +135,9 @@
     <span class="kw">fn </span>from(error: LockKeeperError) -&gt; <span class="self">Self </span>{
         <span class="kw">match </span>error {
             <span class="comment">// Errors that are safe to return to the client
-            </span>LockKeeperError::InvalidMessage =&gt; Status::invalid_argument(error.to_string()),
+            </span>LockKeeperError::InvalidMessage | LockKeeperError::MetadataNotFound =&gt; {
+                Status::invalid_argument(error.to_string())
+            }
             LockKeeperError::NoMessageReceived =&gt; Status::deadline_exceeded(error.to_string()),
             <span class="comment">// Errors that the client should not see
             </span>LockKeeperError::InvalidClientAction
@@ -134,6 +147,7 @@
             | LockKeeperError::OpaqueProtocol(<span class="kw">_</span>)
             | LockKeeperError::SerdeJson(<span class="kw">_</span>)
             | LockKeeperError::TokioSender(<span class="kw">_</span>)
+            | LockKeeperError::TonicMetadata(<span class="kw">_</span>)
             | LockKeeperError::TonicStatus(<span class="kw">_</span>) =&gt; Status::internal(<span class="string">&quot;Internal server error&quot;</span>),
         }
     }

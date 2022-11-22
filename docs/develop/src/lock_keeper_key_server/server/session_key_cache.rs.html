@@ -224,12 +224,17 @@
 <span id="224">224</span>
 <span id="225">225</span>
 <span id="226">226</span>
-</pre><pre class="rust"><code><span class="kw">use </span>lock_keeper::{crypto::OpaqueSessionKey, types::database::user::UserId};
+<span id="227">227</span>
+<span id="228">228</span>
+</pre><pre class="rust"><code><span class="kw">use </span>lock_keeper::{
+    crypto::OpaqueSessionKey,
+    types::{database::user::UserId, operations::RequestMetadata},
+};
 <span class="kw">use </span>std::collections::hash_map::Entry;
 
 <span class="kw">use </span>std::collections::HashMap;
 
-<span class="kw">use crate</span>::{database::DataStore, server::Context, LockKeeperServerError};
+<span class="kw">use crate</span>::{database::DataStore, LockKeeperServerError};
 <span class="kw">use </span>lock_keeper::types::operations::ClientAction;
 <span class="kw">use </span>std::time::{Duration, Instant};
 <span class="kw">use </span>thiserror::Error;
@@ -304,9 +309,8 @@
 
     <span class="kw">pub fn </span>check_key&lt;DB: DataStore&gt;(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        context: <span class="kw-2">&amp;</span>Context&lt;DB&gt;,
+        metadata: <span class="kw-2">&amp;</span>RequestMetadata,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
-        <span class="kw">let </span>metadata = <span class="kw-2">&amp;</span>context.metadata;
         <span class="kw">match </span>metadata.action() {
             <span class="comment">// These actions are unauthenticated
             </span>ClientAction::Authenticate | ClientAction::Register =&gt; <span class="prelude-val">Ok</span>(()),

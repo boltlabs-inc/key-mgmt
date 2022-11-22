@@ -256,7 +256,7 @@
         <span class="kw">let </span>key_id = KeyId::generate(<span class="kw-2">&amp;mut </span>rng, user_id)<span class="question-mark">?</span>;
         <span class="kw">let </span>key_id_copy = key_id.clone();
         <span class="kw">let </span>action = action_list.choose(<span class="kw-2">&amp;mut </span>rng).unwrap();
-        db.create_audit_event(account_name, <span class="kw-2">&amp;</span><span class="prelude-val">Some</span>(key_id), action, EventStatus::Started)
+        db.create_audit_event(account_name, <span class="kw-2">&amp;</span><span class="prelude-val">Some</span>(key_id), <span class="kw-2">*</span>action, EventStatus::Started)
             .<span class="kw">await</span><span class="question-mark">?</span>;
         key_ids.push(key_id_copy);
     }

@@ -87,6 +87,8 @@
 <span class="kw">use </span>thiserror::Error;
 <span class="kw">use </span>tonic::{Code, Status};
 
+<span class="kw">pub type </span><span class="prelude-ty">Result</span>&lt;T&gt; = std::result::Result&lt;T, LockKeeperClientError&gt;;
+
 <span class="attribute">#[derive(Debug, Error)]
 </span><span class="kw">pub enum </span>LockKeeperClientError {
     <span class="attribute">#[error(<span class="string">&quot;Health check failed: {0}&quot;</span>)]
@@ -126,8 +128,6 @@
     </span>Rustls(<span class="attribute">#[from] </span>rustls::Error),
     <span class="attribute">#[error(transparent)]
     </span>Toml(<span class="attribute">#[from] </span>toml::de::Error),
-    <span class="attribute">#[error(transparent)]
-    </span>TonicMetadata(<span class="attribute">#[from] </span>tonic::metadata::errors::InvalidMetadataValueBytes),
     <span class="attribute">#[error(transparent)]
     </span>TonicStatus(Status),
     <span class="attribute">#[error(transparent)]
