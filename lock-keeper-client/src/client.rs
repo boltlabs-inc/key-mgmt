@@ -77,7 +77,7 @@ type LockKeeperRpcClientInner = hyper::Client<
     UnsyncBoxBody<tonic::codegen::Bytes, tonic::Status>,
 >;
 
-#[derive(ZeroizeOnDrop)]
+#[derive(Zeroize, ZeroizeOnDrop)]
 pub(crate) struct AuthenticateResult {
     pub(crate) session_key: OpaqueSessionKey,
     pub(crate) master_key: MasterKey,
