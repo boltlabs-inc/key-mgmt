@@ -137,7 +137,7 @@ impl LockKeeperClient {
             Self::handle_authentication(&mut client_channel, &mut rng, account_name, password)
                 .await;
         match result {
-            Ok(auth_result) => {
+            Ok(mut auth_result) => {
                 // TODO #186: receive User ID over authenticated channel (under session_key)
                 let client = LockKeeperClient {
                     session_key: auth_result.session_key.clone(),
@@ -148,7 +148,7 @@ impl LockKeeperClient {
                     user_id: auth_result.user_id.clone(),
                     master_key: auth_result.master_key.clone(),
                 };
-                drop(auth_result);
+                auth_result.zeroize();
                 Ok(LockKeeperResponse::from_channel(client_channel, client))
             }
             Err(e) => {
