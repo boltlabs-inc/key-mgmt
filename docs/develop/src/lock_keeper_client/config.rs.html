@@ -140,8 +140,6 @@
 <span id="140">140</span>
 <span id="141">141</span>
 <span id="142">142</span>
-<span id="143">143</span>
-<span id="144">144</span>
 </pre><pre class="rust"><code><span class="kw">use </span>lock_keeper::infrastructure::pem_utils;
 <span class="kw">use </span>rustls::{ClientConfig, RootCertStore};
 <span class="kw">use </span>serde::{Deserialize, Serialize};
@@ -157,7 +155,6 @@
 </span><span class="attribute">#[derive(Clone)]
 </span><span class="kw">pub struct </span>Config {
     <span class="kw">pub </span>server_uri: Uri,
-    <span class="kw">pub </span>client_auth_enabled: bool,
     <span class="kw">pub </span>tls_config: ClientConfig,
 }
 
@@ -177,7 +174,6 @@
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, LockKeeperClientError&gt; {
         <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
             server_uri: Uri::from_str(<span class="kw-2">&amp;</span>config.server_uri)<span class="question-mark">?</span>,
-            client_auth_enabled: config.client_auth.is_some(),
             tls_config: config.tls_config(private_key_bytes)<span class="question-mark">?</span>,
         })
     }

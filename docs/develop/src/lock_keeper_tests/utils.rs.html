@@ -251,12 +251,6 @@
 <span id="251">251</span>
 <span id="252">252</span>
 <span id="253">253</span>
-<span id="254">254</span>
-<span id="255">255</span>
-<span id="256">256</span>
-<span id="257">257</span>
-<span id="258">258</span>
-<span id="259">259</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Various testing utilities
 
 </span><span class="kw">use </span>std::{
@@ -494,12 +488,6 @@
     <span class="kw">const </span>NUM_RETRIES: u32 = <span class="number">10</span>;
     <span class="kw">const </span>RETRY_DELAY: Duration = Duration::from_secs(<span class="number">10</span>);
 
-    <span class="kw">let </span>server_start_command = <span class="kw">if </span>config.client_auth_enabled {
-        <span class="string">&quot;cargo make start-all&quot;
-    </span>} <span class="kw">else </span>{
-        <span class="string">&quot;cargo make start&quot;
-    </span>};
-
     <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..NUM_RETRIES {
         <span class="macro">println!</span>(<span class="string">&quot;Attempting to connect to server...&quot;</span>);
         <span class="kw">match </span>LockKeeperClient::health(config).<span class="kw">await </span>{
@@ -507,7 +495,7 @@
             <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
                 <span class="macro">println!</span>(<span class="string">&quot;Server connection failed. Retrying in {:?}&quot;</span>, RETRY_DELAY);
                 <span class="kw">if </span>i == <span class="number">0 </span>{
-                    <span class="macro">println!</span>(<span class="string">&quot;Did you remember to run `{}`?&quot;</span>, server_start_command);
+                    <span class="macro">println!</span>(<span class="string">&quot;Did you remember to run `cargo make start`?&quot;</span>);
                 }
                 std::thread::sleep(RETRY_DELAY);
             }
