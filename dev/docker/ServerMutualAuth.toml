@@ -1,5 +1,6 @@
 address = "0.0.0.0"
 port = 1114
+session_timeout = "60s"
 private_key = "dev/test-pki/gen/certs/server.key"
 certificate_chain = "dev/test-pki/gen/certs/server.chain"
 client_auth = true

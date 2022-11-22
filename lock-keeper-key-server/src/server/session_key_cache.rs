@@ -45,10 +45,6 @@ impl Drop for SessionKeyCache {
 
 #[allow(unused)]
 impl SessionKeyCache {
-    /// Amount of time a key is considered valid for. Sixty seconds for now. May
-    /// change later.
-    pub(crate) const DEFAULT_EXPIRATION_TIME: Duration = Duration::from_secs(60);
-
     /// Create a new [`SessionKeyCache`] with the given `expiration` interval.
     pub fn new(expiration: Duration) -> Self {
         Self {
@@ -106,11 +102,12 @@ impl SessionKeyCache {
             }
         }
     }
-}
 
-impl Default for SessionKeyCache {
-    fn default() -> Self {
-        SessionKeyCache::new(SessionKeyCache::DEFAULT_EXPIRATION_TIME)
+    pub fn expire(&mut self, user_id: UserId) -> Result<(), LockKeeperServerError> {
+        if let Entry::Occupied(entry) = self.cache.entry(user_id) {
+            let _ = entry.remove();
+        }
+        Ok(())
     }
 }
 
@@ -127,9 +124,11 @@ mod tests {
 
     type Result<T> = std::result::Result<T, LockKeeperServerError>;
 
+    const TEST_EXPIRATION_TIME: Duration = Duration::from_secs(60);
+
     #[test]
     fn key_does_not_exist() -> Result<()> {
-        let mut cache = SessionKeyCache::default();
+        let mut cache = SessionKeyCache::new(TEST_EXPIRATION_TIME);
         let id = get_temp_user_id()?;
 
         match cache.get_key(id) {
@@ -147,7 +146,7 @@ mod tests {
     /// Ensure we can get the key back without encountering expiration error.
     #[test]
     fn get_key_back() -> Result<()> {
-        let mut cache = SessionKeyCache::default();
+        let mut cache = SessionKeyCache::new(TEST_EXPIRATION_TIME);
         let id = get_temp_user_id()?;
         let key = get_temp_session_key();
 
@@ -161,7 +160,7 @@ mod tests {
     /// Insert key twice and ensure code runs all the way.
     #[test]
     fn overwrite_existing_key() -> Result<()> {
-        let mut cache = SessionKeyCache::default();
+        let mut cache = SessionKeyCache::new(TEST_EXPIRATION_TIME);
         let id = get_temp_user_id()?;
         let key = get_temp_session_key();
 

@@ -32,10 +32,10 @@ impl<DB: DataStore> LockKeeperKeyServer<DB> {
         let rng = StdRng::from_entropy();
 
         Ok(Self {
-            config: Arc::new(config),
+            config: Arc::new(config.clone()),
             db,
             rng: Arc::new(Mutex::new(rng)),
-            session_key_cache: Arc::new(Mutex::new(SessionKeyCache::default())),
+            session_key_cache: Arc::new(Mutex::new(SessionKeyCache::new(config.session_timeout))),
         })
     }
 
@@ -65,6 +65,7 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
     type CreateStorageKeyStream = MessageStream;
     type GenerateStream = MessageStream;
     type ImportSigningKeyStream = MessageStream;
+    type LogoutStream = MessageStream;
     type RegisterStream = MessageStream;
     type RemoteGenerateStream = MessageStream;
     type RemoteSignBytesStream = MessageStream;
@@ -91,6 +92,15 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::AuthenticateStream>, Status> {
         Ok(operations::Authenticate
+            .handle_request(self.context(), request)
+            .await?)
+    }
+
+    async fn logout(
+        &self,
+        request: Request<tonic::Streaming<Message>>,
+    ) -> Result<Response<Self::LogoutStream>, Status> {
+        Ok(operations::Logout
             .handle_request(self.context(), request)
             .await?)
     }

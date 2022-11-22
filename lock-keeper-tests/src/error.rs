@@ -8,6 +8,8 @@ pub enum LockKeeperTestError {
     InvalidTestType(String),
     #[error("Failed to contact key server after maximum number of retries.")]
     WaitForServerTimedOut,
+    #[error("Wrong error returned")]
+    WrongErrorReturned,
 
     // Wrapped Errors
     #[error(transparent)]

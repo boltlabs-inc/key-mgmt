@@ -13,6 +13,7 @@ use lock_keeper::{
     types::{
         database::user::{AccountName, UserId},
         operations::{
+            logout::{client as logout_client, server as logout_server},
             retrieve_storage_key::{client, server},
             ClientAction, RequestMetadata,
         },
@@ -182,6 +183,7 @@ impl LockKeeperClient {
             ClientAction::ExportSigningKey => client.retrieve_signing_key(stream).await,
             ClientAction::Generate => client.generate(stream).await,
             ClientAction::ImportSigningKey => client.import_signing_key(stream).await,
+            ClientAction::Logout => client.logout(stream).await,
             ClientAction::Register => client.register(stream).await,
             ClientAction::RemoteGenerate => client.remote_generate(stream).await,
             ClientAction::RemoteSignBytes => client.remote_sign_bytes(stream).await,
@@ -198,8 +200,23 @@ impl LockKeeperClient {
     /// Close a session.
     ///
     /// Outputs: None, if successful.
-    pub fn close(self) -> Result<LockKeeperResponse<()>> {
-        todo!()
+    pub(crate) async fn handle_logout(
+        &self,
+        mut channel: ClientChannel,
+    ) -> Result<LockKeeperResponse<()>> {
+        // Send UserId to server
+        let request = logout_client::Request {
+            user_id: self.user_id().clone(),
+        };
+        channel.send(request).await?;
+
+        // Get encrypted storage key from server
+        let response: logout_server::Response = channel.receive().await?;
+        if response.success {
+            Ok(LockKeeperResponse::from_channel(channel, ()))
+        } else {
+            Err(LockKeeperClientError::LogoutFailed)
+        }
     }
 
     /// Retrieve the [`lock_keeper::crypto::Encrypted<StorageKey>`] that belongs
