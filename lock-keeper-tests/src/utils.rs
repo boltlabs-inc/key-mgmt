@@ -235,12 +235,6 @@ pub async fn wait_for_server(config: &ClientConfig) -> Result<()> {
     const NUM_RETRIES: u32 = 10;
     const RETRY_DELAY: Duration = Duration::from_secs(10);
 
-    let server_start_command = if config.client_auth_enabled {
-        "cargo make start-all"
-    } else {
-        "cargo make start"
-    };
-
     for i in 0..NUM_RETRIES {
         println!("Attempting to connect to server...");
         match LockKeeperClient::health(config).await {
@@ -248,7 +242,7 @@ pub async fn wait_for_server(config: &ClientConfig) -> Result<()> {
             Err(_) => {
                 println!("Server connection failed. Retrying in {:?}", RETRY_DELAY);
                 if i == 0 {
-                    println!("Did you remember to run `{}`?", server_start_command);
+                    println!("Did you remember to run `cargo make start`?");
                 }
                 std::thread::sleep(RETRY_DELAY);
             }
