@@ -31,13 +31,15 @@ pub async fn run_tests(config: TestConfig) -> Result<Vec<TestResult>> {
 async fn remote_sign_works(config: Config) -> Result<()> {
     let state = init_test_state(config).await?;
 
-    let RemoteGenerateResult { key_id, public_key } = remote_generate(&state).await?;
+    let RemoteGenerateResult { key_id, public_key } = remote_generate(&state).await?.into_inner();
 
     let mut rng = StdRng::from_seed(*RNG_SEED);
 
     for _ in 0..10 {
         let data = SignableBytes(utils::random_bytes(&mut rng, 100));
-        let signature = remote_sign_bytes(&state, &key_id, data.clone()).await?;
+        let signature = remote_sign_bytes(&state, &key_id, data.clone())
+            .await?
+            .into_inner();
         // Verify that the data was signed with the generated key
         assert!(
             data.verify(&public_key, &signature).is_ok(),

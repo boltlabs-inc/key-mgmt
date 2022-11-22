@@ -23,14 +23,16 @@ impl CliCommand for RemoteSign {
             &credentials.password,
             &state.config,
         )
-        .await?;
+        .await?
+        .into_inner();
 
         let bytes = SignableBytes(self.data.into_bytes());
 
         // If successful, proceed to generate a secret with the established session
         let signature = lock_keeper_client
             .remote_sign_bytes(entry.key_id.clone(), bytes)
-            .await?;
+            .await?
+            .into_inner();
 
         println!("Signature: {}", hex::encode(signature));
         Ok(())

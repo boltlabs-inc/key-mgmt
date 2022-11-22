@@ -22,13 +22,10 @@ impl<DB: DataStore> Operation<DB> for RetrieveAuditEvents {
         // Receive event type and options for audit events to return
         let request: client::Request = channel.receive().await?;
 
+        let account_name = channel.metadata().account_name();
         let audit_events = context
             .db
-            .find_audit_events(
-                context.metadata.account_name(),
-                request.event_type,
-                request.options,
-            )
+            .find_audit_events(account_name, request.event_type, request.options)
             .await
             .map_err(LockKeeperServerError::database)?;
 

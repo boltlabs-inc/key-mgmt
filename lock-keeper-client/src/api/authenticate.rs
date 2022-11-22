@@ -17,7 +17,7 @@ use rand::{CryptoRng, RngCore};
 
 impl LockKeeperClient {
     pub(crate) async fn handle_authentication<T: CryptoRng + RngCore>(
-        mut channel: ClientChannel,
+        channel: &mut ClientChannel,
         rng: &mut T,
         account_name: &AccountName,
         password: &Password,
@@ -27,11 +27,11 @@ impl LockKeeperClient {
 
         // Handle start step
         let server_start_result =
-            authenticate_start(&mut channel, &client_login_start_result, account_name).await?;
+            authenticate_start(channel, &client_login_start_result, account_name).await?;
 
         // Handle finish step
         let client_login_finish_result = authenticate_finish(
-            &mut channel,
+            channel,
             account_name,
             password,
             client_login_start_result,
@@ -42,7 +42,7 @@ impl LockKeeperClient {
         let session_key = client_login_finish_result.session_key.into();
 
         // Get user id
-        let user_id = retrieve_user_id(&mut channel, &session_key).await?;
+        let user_id = retrieve_user_id(channel, &session_key).await?;
 
         let master_key = MasterKey::derive_master_key(client_login_finish_result.export_key)?;
         Ok(AuthenticateResult {

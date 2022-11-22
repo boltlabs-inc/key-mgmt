@@ -19,10 +19,15 @@ impl CliCommand for RemoteGenerate {
             &credentials.password,
             &state.config,
         )
-        .await?;
+        .await?
+        .into_inner();
 
         // If successful, proceed to generate a secret with the established session
-        let key_id = lock_keeper_client.remote_generate().await?.key_id;
+        let key_id = lock_keeper_client
+            .remote_generate()
+            .await?
+            .into_inner()
+            .key_id;
 
         // Store Key Id
         let stored = state.store_entry(self.name, key_id)?;

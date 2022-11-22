@@ -1,6 +1,6 @@
 //! Client object to interact with the key server.
 
-use crate::{config::Config, LockKeeperClientError};
+use crate::{config::Config, LockKeeperClientError, LockKeeperResponse, Result};
 use http::uri::Scheme;
 use http_body::combinators::UnsyncBoxBody;
 use hyper::client::HttpConnector;
@@ -22,7 +22,7 @@ use rand::{rngs::StdRng, SeedableRng};
 use std::{str::FromStr, sync::Arc};
 use tokio::sync::{mpsc, Mutex};
 use tokio_stream::wrappers::ReceiverStream;
-use tonic::{metadata::MetadataValue, Request};
+use tonic::Request;
 use tracing::error;
 
 // TODO: password security, e.g. memory management, etc... #54
@@ -38,7 +38,7 @@ impl ToString for Password {
 impl FromStr for Password {
     type Err = LockKeeperClientError;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> Result<Self> {
         Ok(Password(s.to_string()))
     }
 }
@@ -105,7 +105,7 @@ impl LockKeeperClient {
     /// state.
     pub(crate) async fn connect(
         config: &Config,
-    ) -> Result<LockKeeperRpcClient<LockKeeperRpcClientInner>, LockKeeperClientError> {
+    ) -> Result<LockKeeperRpcClient<LockKeeperRpcClientInner>> {
         if config.server_uri.scheme() != Some(&Scheme::HTTPS) {
             return Err(LockKeeperClientError::HttpNotAllowed);
         }
@@ -127,12 +127,13 @@ impl LockKeeperClient {
         account_name: &AccountName,
         password: &Password,
         config: &Config,
-    ) -> Result<Self, LockKeeperClientError> {
+    ) -> Result<LockKeeperResponse<Self>> {
         let mut rng = StdRng::from_entropy();
         let metadata = RequestMetadata::new(account_name, ClientAction::Authenticate, None);
         let mut client_channel = Self::create_channel(&mut client, &metadata).await?;
         let result =
-            Self::handle_authentication(client_channel, &mut rng, account_name, password).await;
+            Self::handle_authentication(&mut client_channel, &mut rng, account_name, password)
+                .await;
         match result {
             Ok(AuthenticateResult {
                 session_key,
@@ -149,7 +150,8 @@ impl LockKeeperClient {
                     user_id,
                     master_key,
                 };
-                Ok(client)
+
+                Ok(LockKeeperResponse::from_channel(client_channel, client))
             }
             Err(e) => {
                 error!("{:?}", e);
@@ -167,16 +169,12 @@ impl LockKeeperClient {
     pub(crate) async fn create_channel(
         client: &mut LockKeeperRpcClient<LockKeeperRpcClientInner>,
         metadata: &RequestMetadata,
-    ) -> Result<ClientChannel, LockKeeperClientError> {
+    ) -> Result<ClientChannel> {
         // Create channel to send messages to server after connection is established via
         // RPC
         let (tx, rx) = mpsc::channel(2);
         let mut stream = Request::new(ReceiverStream::new(rx));
-
-        // Serialize metadata and set as tonic request metadata
-        let metadata_bytes = metadata.to_vec()?;
-        let metadata_val = MetadataValue::try_from(metadata_bytes)?;
-        let _ = stream.metadata_mut().insert(METADATA, metadata_val);
+        let _ = stream.metadata_mut().insert(METADATA, metadata.try_into()?);
 
         // Server returns its own channel that is uses to send responses
         let server_response = match metadata.action() {
@@ -193,23 +191,22 @@ impl LockKeeperClient {
             ClientAction::RetrieveAuditEvents => client.retrieve_audit_events(stream).await,
             ClientAction::RetrieveSigningKey => client.retrieve_signing_key(stream).await,
             ClientAction::RetrieveStorageKey => client.retrieve_storage_key(stream).await,
-        }?
-        .into_inner();
+        }?;
 
-        let mut channel = ClientChannel::create(tx, server_response);
+        let mut channel = ClientChannel::create(tx, server_response)?;
         Ok(channel)
     }
 
     /// Close a session.
     ///
     /// Outputs: None, if successful.
-    pub fn close(self) -> Result<(), LockKeeperClientError> {
+    pub fn close(self) -> Result<LockKeeperResponse<()>> {
         todo!()
     }
 
     /// Retrieve the [`lock_keeper::crypto::Encrypted<StorageKey>`] that belongs
     /// to the user specified by `user_id`
-    pub(crate) async fn retrieve_storage_key(&self) -> Result<StorageKey, LockKeeperClientError> {
+    pub(crate) async fn retrieve_storage_key(&self) -> Result<StorageKey> {
         // Create channel to send messages to server
         let metadata = self.create_metadata(ClientAction::RetrieveStorageKey);
         let mut channel = Self::create_channel(&mut self.tonic_client(), &metadata).await?;

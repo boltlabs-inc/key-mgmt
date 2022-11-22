@@ -1,4 +1,4 @@
-use crate::{api::LocalStorage, LockKeeperClient, LockKeeperClientError};
+use crate::{api::LocalStorage, LockKeeperClient, LockKeeperClientError, LockKeeperResponse};
 use lock_keeper::{
     crypto::{KeyId, Secret, StorageKey},
     infrastructure::channel::ClientChannel,
@@ -9,23 +9,34 @@ use lock_keeper::{
 };
 use rand::rngs::StdRng;
 
+#[derive(Debug)]
+pub struct GenerateResult {
+    pub key_id: KeyId,
+    pub local_storage: LocalStorage<Secret>,
+}
+
 impl LockKeeperClient {
     pub(crate) async fn handle_generate(
         &self,
-        channel: &mut ClientChannel,
-    ) -> Result<(KeyId, LocalStorage<Secret>), LockKeeperClientError> {
+        mut channel: ClientChannel,
+    ) -> Result<LockKeeperResponse<GenerateResult>, LockKeeperClientError> {
         // Retrieve the storage key
         let storage_key = self.retrieve_storage_key().await?;
 
         // Generate step: get new KeyId from server
-        let key_id = get_key_id(channel, self.user_id()).await?;
+        let key_id = get_key_id(&mut channel, self.user_id()).await?;
         // Store step: encrypt secret and send to server to store
         let wrapped_secret = {
             let mut rng = self.rng.lock().await;
-            generate_and_store(channel, self.user_id(), storage_key, &mut rng, &key_id).await?
+            generate_and_store(&mut channel, self.user_id(), storage_key, &mut rng, &key_id).await?
         };
 
-        Ok((key_id, wrapped_secret))
+        let result = GenerateResult {
+            key_id,
+            local_storage: wrapped_secret,
+        };
+
+        Ok(LockKeeperResponse::from_channel(channel, result))
     }
 }
 

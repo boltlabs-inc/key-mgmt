@@ -29,11 +29,11 @@ impl Database {
         &self,
         actor: &AccountName,
         secret_id: &Option<KeyId>,
-        action: &ClientAction,
+        action: ClientAction,
         status: EventStatus,
     ) -> Result<(), Error> {
         let collection = self.handle.collection::<AuditEvent>(AUDIT_EVENTS);
-        let new_event = AuditEvent::new(actor.clone(), secret_id.clone(), *action, status);
+        let new_event = AuditEvent::new(actor.clone(), secret_id.clone(), action, status);
         let _ = collection.insert_one(new_event, None).await?;
         Ok(())
     }

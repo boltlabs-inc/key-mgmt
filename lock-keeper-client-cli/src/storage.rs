@@ -9,7 +9,7 @@ use std::{
 
 use anyhow::anyhow;
 use lock_keeper::crypto::{Export, KeyId, Secret};
-use lock_keeper_client::api::LocalStorage;
+use lock_keeper_client::api::{GenerateResult, LocalStorage};
 use serde::{Deserialize, Serialize};
 
 /// Container for all locally stored key data.
@@ -265,5 +265,11 @@ impl From<(KeyId, Option<LocalStorage<Secret>>)> for Entry {
 impl From<KeyId> for Entry {
     fn from(key_id: KeyId) -> Self {
         Entry::new(key_id, DataType::None)
+    }
+}
+
+impl From<GenerateResult> for Entry {
+    fn from(result: GenerateResult) -> Self {
+        (result.key_id, result.local_storage).into()
     }
 }
