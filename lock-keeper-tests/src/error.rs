@@ -20,8 +20,6 @@ pub enum LockKeeperTestError {
     LockKeeperServer(#[from] lock_keeper_key_server::LockKeeperServerError),
     #[error("LockKeeperMongoDb error: {0:?}")]
     LockKeeperMongoDb(#[from] lock_keeper_mongodb::error::Error),
-    #[error("CryptoError: {0:?}")]
-    Crypto(#[from] lock_keeper::crypto::CryptoError),
     #[error("MongoDB error: {0:?}")]
     MongoDb(#[from] mongodb::error::Error),
     #[error("RandError: {0:?}")]

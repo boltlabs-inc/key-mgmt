@@ -61,7 +61,7 @@ impl MasterKey {
     ///
     /// * `export_key` - the export_key as returned by opaque-ke library,
     /// which has type [`Output<Sha512>`]
-    pub fn derive_master_key(export_key: Output<Sha512>) -> Result<Self, CryptoError> {
+    pub fn derive_master_key(export_key: Output<Sha512>) -> Result<Self, LockKeeperError> {
         let context = AssociatedData::new().with_str("OPAQUE-derived Lock Keeper master key");
         let mut master_key_material = [0u8; 32];
 
@@ -93,9 +93,9 @@ impl MasterKey {
     /// 1. Generate a new [`StorageKey`] to encrypt stored data with
     /// 2. Derive the decryption key from the master key,
     ///    using the associated data
-    /// 2. Encrypt the storage key under the encryption key,
+    /// 3. Encrypt the storage key under the encryption key,
     ///    using an AEAD scheme
-    /// 3. Return the encrypted storage key
+    /// 4. Return the encrypted storage key
     pub fn create_and_encrypt_storage_key(
         self,
         rng: &mut (impl CryptoRng + RngCore),

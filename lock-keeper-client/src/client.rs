@@ -95,11 +95,6 @@ impl LockKeeperClient {
         &self.account_name
     }
 
-    /// Get [`MasterKey`] for the authenticated client.
-    pub fn master_key(&self) -> &MasterKey {
-        &self.master_key
-    }
-
     pub(crate) fn tonic_client(&self) -> LockKeeperRpcClient<LockKeeperRpcClientInner> {
         self.tonic_client.clone()
     }
@@ -231,7 +226,7 @@ impl LockKeeperClient {
         // Decrypt storage_key
         let storage_key = response
             .ciphertext
-            .decrypt_storage_key(self.master_key().clone(), self.user_id())?;
+            .decrypt_storage_key(self.master_key.clone(), self.user_id())?;
         Ok(storage_key)
     }
 }
