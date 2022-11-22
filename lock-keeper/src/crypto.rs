@@ -580,15 +580,13 @@ mod test {
         let message = SendUserId {
             user_id: user_id.clone(),
         };
-        let expected_message = SendUserId {
-            user_id: user_id.clone(),
-        };
+        let expected_message = SendUserId { user_id };
         let encrypted_message = session_key
             .clone()
             .encrypt::<Message>(&mut rng, Message::try_from(message)?)?;
 
         // Decrypt the message and check that it worked
-        let decrypted_message = encrypted_message.decrypt_message(session_key.clone())?;
+        let decrypted_message = encrypted_message.decrypt_message(session_key)?;
         assert_eq!(
             expected_message.user_id,
             SendUserId::try_from(decrypted_message)?.user_id
@@ -608,12 +606,9 @@ mod test {
         let mut rng = StdRng::from_seed(*seed);
 
         // Encrypt a message
-        let message = SendUserId {
-            user_id: user_id.clone(),
-        };
-        let encrypted_message = session_key
-            .clone()
-            .encrypt::<Message>(&mut rng, Message::try_from(message)?)?;
+        let message = SendUserId { user_id };
+        let encrypted_message =
+            session_key.encrypt::<Message>(&mut rng, Message::try_from(message)?)?;
 
         let result_to_message = Message::try_from(encrypted_message.clone());
         assert!(result_to_message.is_ok());
