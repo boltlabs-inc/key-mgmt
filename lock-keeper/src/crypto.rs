@@ -349,6 +349,7 @@ mod test {
     use crate::LockKeeperError;
 
     use super::*;
+    use crate::types::operations::authenticate::server::SendUserId;
     use rand::{rngs::StdRng, Rng, SeedableRng};
 
     #[test]
@@ -374,6 +375,16 @@ mod test {
             .expect("Failed to generate random key");
 
         key
+    }
+
+    // In practice, a session key will be a pseudorandom output from OPAQUE.
+    // We'll use random bytes for the test key.
+    fn create_test_session_key(rng: &mut (impl CryptoRng + RngCore)) -> OpaqueSessionKey {
+        let mut key = [0_u8; 64];
+        rng.try_fill(&mut key)
+            .expect("Failed to generate random key");
+
+        OpaqueSessionKey::try_from(GenericArray::from(key)).expect("Failed to create Session Key")
     }
 
     #[test]
@@ -551,6 +562,66 @@ mod test {
         assert!(fake_storage_key
             .decrypt_storage_key(MasterKey::derive_master_key(export_key.into())?, &user_id)
             .is_err());
+
+        Ok(())
+    }
+
+    #[test]
+    fn message_encryption_works() -> Result<(), LockKeeperError> {
+        let mut rng = rand::thread_rng();
+        let session_key = create_test_session_key(&mut rng);
+        let user_id = UserId::new(&mut rng)?;
+
+        // Set up matching RNGs to check behavior of the utility function.
+        let seed = b"not-random seed for convenience!";
+        let mut rng = StdRng::from_seed(*seed);
+
+        // Encrypt a message
+        let message = SendUserId {
+            user_id: user_id.clone(),
+        };
+        let expected_message = SendUserId {
+            user_id: user_id.clone(),
+        };
+        let encrypted_message = session_key
+            .clone()
+            .encrypt::<Message>(&mut rng, Message::try_from(message)?)?;
+
+        // Decrypt the message and check that it worked
+        let decrypted_message = encrypted_message.decrypt_message(session_key.clone())?;
+        assert_eq!(
+            expected_message.user_id,
+            SendUserId::try_from(decrypted_message)?.user_id
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn encrypted_message_to_message_and_back_conversion_works() -> Result<(), LockKeeperError> {
+        let mut rng = rand::thread_rng();
+        let session_key = create_test_session_key(&mut rng);
+        let user_id = UserId::new(&mut rng)?;
+
+        // Set up matching RNGs to check behavior of the utility function.
+        let seed = b"not-random seed for convenience!";
+        let mut rng = StdRng::from_seed(*seed);
+
+        // Encrypt a message
+        let message = SendUserId {
+            user_id: user_id.clone(),
+        };
+        let encrypted_message = session_key
+            .clone()
+            .encrypt::<Message>(&mut rng, Message::try_from(message)?)?;
+
+        let result_to_message = Message::try_from(encrypted_message.clone());
+        assert!(result_to_message.is_ok());
+
+        let result_from_message = Encrypted::<Message>::try_from(result_to_message.unwrap());
+        assert!(result_from_message.is_ok());
+
+        assert_eq!(encrypted_message, result_from_message.unwrap());
 
         Ok(())
     }
