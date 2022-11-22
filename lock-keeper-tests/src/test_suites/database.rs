@@ -13,7 +13,7 @@ use crate::{
     Config,
 };
 use lock_keeper::{
-    crypto::{Encrypted, OpaqueExportKey, StorageKey},
+    crypto::{Encrypted, MasterKey, StorageKey},
     types::database::user::{AccountName, UserId},
 };
 use lock_keeper_key_server::{config::DatabaseSpec, database::DataStore};
@@ -106,32 +106,33 @@ impl TestDatabase {
         Ok(())
     }
 
-    /// Create an export key for testing using random bytes.
-    fn create_test_export_key(rng: &mut StdRng) -> Result<OpaqueExportKey> {
+    /// Create a master key for testing using random bytes.
+    fn create_test_master_key(rng: &mut StdRng) -> Result<MasterKey> {
         let mut key = [0_u8; 64];
         rng.try_fill(&mut key)?;
 
-        // We can't create an export key directly from bytes so we convert it to a
+        // We can't create a master key directly from bytes so we convert it to a
         // GenericArray first.
         let key: GenericArray<u8, U64> = key.into();
 
-        Ok(key.into())
+        let master_key = MasterKey::derive_master_key(key)?;
+        Ok(master_key)
     }
 
     /// Create a storage key for a test user.
     pub fn create_test_storage_key(
         &self,
         user_id: &UserId,
-    ) -> Result<(Encrypted<StorageKey>, OpaqueExportKey)> {
+    ) -> Result<(Encrypted<StorageKey>, MasterKey)> {
         let mut rng = StdRng::from_entropy();
 
         // Create a storage key
-        let export_key = Self::create_test_export_key(&mut rng)?;
-        let storage_key = export_key
+        let master_key = Self::create_test_master_key(&mut rng)?;
+        let storage_key = master_key
             .clone()
             .create_and_encrypt_storage_key(&mut rng, user_id)?;
 
-        Ok((storage_key, export_key))
+        Ok((storage_key, master_key))
     }
 
     /// Creates a test user with a randomized name and returns the id and

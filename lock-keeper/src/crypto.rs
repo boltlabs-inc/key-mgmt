@@ -6,7 +6,8 @@
 
 use crate::LockKeeperError;
 use generic_array::{typenum::U64, GenericArray};
-use hkdf::Hkdf;
+use hkdf::{hmac::digest::Output, Hkdf};
+use k256::sha2::Sha512;
 use rand::{CryptoRng, Rng, RngCore};
 use serde::{Deserialize, Serialize};
 use sha3::{Digest, Sha3_256};
@@ -42,29 +43,32 @@ impl From<GenericArray<u8, U64>> for OpaqueSessionKey {
     }
 }
 
-/// An export key is secure key material produced as client output from OPAQUE.
+/// The master key is a default-length symmetric encryption key for an
+/// AEAD scheme.
 ///
-/// This uses standardized naming, but is _not_ directly used as an encryption
-/// key in this system. Instead, the client uses it to derive a master key.
-///
-/// This key should not be stored or saved beyond the lifetime of a single
-/// authentication session.
-/// It should never be sent to the server or passed out to the local calling
-/// application.
+/// The master key is used by the client to securely encrypt their
+/// [`StorageKey`]. It should not be stored or saved beyond the lifetime of a
+/// single authentication session. It should never be sent to the server or
+/// passed out to the local calling application.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct OpaqueExportKey(Box<[u8; 64]>);
+pub struct MasterKey(EncryptionKey);
 
-impl OpaqueExportKey {
+impl MasterKey {
     /// Derive a uniformly distributed secret [`MasterKey`] using the export key
     /// as input key material.
-    fn derive_master_key(&self) -> Result<MasterKey, CryptoError> {
+    ///
+    /// # Arguments
+    ///
+    /// * `export_key` - the export_key as returned by opaque-ke library,
+    /// which has type [`Output<Sha512>`]
+    pub fn derive_master_key(export_key: Output<Sha512>) -> Result<Self, LockKeeperError> {
         let context = AssociatedData::new().with_str("OPAQUE-derived Lock Keeper master key");
         let mut master_key_material = [0u8; 32];
 
         // Derive `master_key_material` from HKDF with no salt, the
-        // `OpaqueExportKey` as input key material, and the associated data as
+        // export_key as input key material, and the associated data as
         // extra info.
-        Hkdf::<Sha3_256>::new(None, self.0.as_ref())
+        Hkdf::<Sha3_256>::new(None, export_key.as_ref())
             .expand((&context).into(), &mut master_key_material)
             // This should never cause an error because we've hardcoded the length of the master key
             // material and the export key length to both be 32, and length mismatch is the only
@@ -74,7 +78,7 @@ impl OpaqueExportKey {
                 CryptoError::KeyDerivationFailed(e)
             })?;
 
-        Ok(MasterKey(EncryptionKey::from_bytes(
+        Ok(Self(EncryptionKey::from_bytes(
             master_key_material,
             context,
         )))
@@ -86,40 +90,23 @@ impl OpaqueExportKey {
     ///
     /// This must be run by the client.
     /// It takes the following steps:
-    /// 1. Derive a master key from the [`OpaqueExportKey`]
-    /// 2. Generate a new [`StorageKey`] to encrypt stored data with
-    /// 3. Encrypt the storage key under the master key, using an AEAD scheme
+    /// 1. Generate a new [`StorageKey`] to encrypt stored data with
+    /// 2. Derive the decryption key from the master key,
+    ///    using the associated data
+    /// 3. Encrypt the storage key under the encryption key,
+    ///    using an AEAD scheme
     /// 4. Return the encrypted storage key
     pub fn create_and_encrypt_storage_key(
         self,
         rng: &mut (impl CryptoRng + RngCore),
         user_id: &UserId,
     ) -> Result<Encrypted<StorageKey>, LockKeeperError> {
-        let master_key = self.derive_master_key()?;
         let storage_key = StorageKey::generate(rng);
-        Ok(master_key.encrypt_storage_key(rng, storage_key, user_id)?)
+        Ok(self.encrypt_storage_key(rng, storage_key, user_id)?)
     }
-}
 
-impl From<GenericArray<u8, U64>> for OpaqueExportKey {
-    fn from(arr: GenericArray<u8, U64>) -> Self {
-        Self(Box::new(arr.into()))
-    }
-}
-
-/// The master key is a default-length symmetric encryption key for an
-/// AEAD scheme.
-///
-/// The master key is used by the client to securely encrypt their
-/// [`StorageKey`]. It should not be stored or saved beyond the lifetime of a
-/// single authentication session. It should never be sent to the server or
-/// passed out to the local calling application.
-#[derive(Debug, PartialEq, Eq)]
-struct MasterKey(EncryptionKey);
-
-impl MasterKey {
-    /// Encrypt the given [`StorageKey`] under the [`MasterKey`] using an
-    /// AEAD scheme.
+    /// Encrypt the given [`StorageKey`] under a derivation from the
+    /// [`MasterKey`] using an AEAD scheme.
     fn encrypt_storage_key(
         self,
         rng: &mut (impl CryptoRng + RngCore),
@@ -130,7 +117,31 @@ impl MasterKey {
             .with_bytes(user_id.clone())
             .with_str(StorageKey::domain_separator());
 
-        Encrypted::encrypt(rng, &self.0, storage_key, &associated_data)
+        let key = self.derive_key(associated_data.clone())?;
+        Encrypted::encrypt(rng, &key, storage_key, &associated_data)
+    }
+
+    /// Derive a new key from [`MasterKey`] using [`AssociatedData`] as the
+    /// domain separator. [`MasterKey`] should not be used directly to
+    /// encrypt something, instead use this method to derive a key for
+    /// a specific use-case using a domain separator.
+    fn derive_key(self, context: AssociatedData) -> Result<EncryptionKey, CryptoError> {
+        let mut key_material = [0u8; 32];
+
+        // Derive `key_material` from HKDF with no salt, the
+        // `MasterKey` as input key material, and the associated data as
+        // extra info.
+        Hkdf::<Sha3_256>::new(None, self.0.into_bytes().as_ref())
+            .expand((&context).into(), &mut key_material)
+            // This should never cause an error because we've hardcoded the length of the key
+            // material and the master key length to both be 32, and length mismatch is the only
+            // documented cause of an `expand` failure.
+            .map_err(|e| {
+                error!("HKDF failed unexpectedly. {:?}", e);
+                CryptoError::KeyDerivationFailed(e)
+            })?;
+
+        Ok(EncryptionKey::from_bytes(key_material, context))
     }
 }
 
@@ -193,12 +204,13 @@ impl Encrypted<StorageKey> {
     /// retrieve a storage key from the server.
     ///
     /// This must be run by the client. It takes the following steps:
-    /// 1. Derive a master key from the [`OpaqueExportKey`]
-    /// 2. Decrypt the encrypted storage key using the master key
+    /// 1. Derive the decryption key from the master key using
+    ///    the associated data
+    /// 2. Decrypt the encrypted storage key using the decryption key
     /// 3. Return the decrypted [`StorageKey`]
     pub fn decrypt_storage_key(
         self,
-        export_key: OpaqueExportKey,
+        master_key: MasterKey,
         user_id: &UserId,
     ) -> Result<StorageKey, LockKeeperError> {
         // Check that the associated data is correct.
@@ -209,8 +221,8 @@ impl Encrypted<StorageKey> {
             return Err(CryptoError::DecryptionFailed.into());
         }
 
-        let master_key = export_key.derive_master_key()?;
-        let decrypted = self.decrypt(&master_key.0)?;
+        let decryption_key = master_key.derive_key(self.associated_data.clone())?;
+        let decrypted = self.decrypt(&decryption_key)?;
         Ok(decrypted)
     }
 }
@@ -297,19 +309,19 @@ mod test {
 
     // In practice, an export key will be a pseudorandom output from OPAQUE.
     // We'll use random bytes for the test key.
-    fn create_test_export_key(rng: &mut (impl CryptoRng + RngCore)) -> OpaqueExportKey {
+    fn create_test_export_key(rng: &mut (impl CryptoRng + RngCore)) -> [u8; 64] {
         let mut key = [0_u8; 64];
         rng.try_fill(&mut key)
             .expect("Failed to generate random key");
 
-        OpaqueExportKey(key.into())
+        key
     }
 
     #[test]
     fn derive_master_key_not_obviously_broken() {
         let mut rng = rand::thread_rng();
         let export_key = create_test_export_key(&mut rng);
-        let master_key = export_key.derive_master_key().unwrap();
+        let master_key = MasterKey::derive_master_key(export_key.into()).unwrap();
 
         // Make sure the master key isn't all 0s.
         let zero_key = EncryptionKey::from_bytes([0; 32], master_key.0.context().clone());
@@ -318,7 +330,7 @@ mod test {
         // Make sure that using different context doesn't give the same key.
         let mut bad_mk = [0; 32];
         let bad_ad = AssociatedData::new().with_str("here is my testing context");
-        Hkdf::<Sha3_256>::new(None, export_key.0.as_ref())
+        Hkdf::<Sha3_256>::new(None, export_key.as_ref())
             .expand((&bad_ad).into(), &mut bad_mk)
             .unwrap();
         let wrong_context_key = EncryptionKey::from_bytes(bad_mk, master_key.0.context().clone());
@@ -336,8 +348,8 @@ mod test {
         assert_ne!(export1, export2);
         // ...implies different master keys.
         assert_ne!(
-            export1.derive_master_key().unwrap(),
-            export2.derive_master_key().unwrap()
+            MasterKey::derive_master_key(export1.into()).unwrap(),
+            MasterKey::derive_master_key(export2.into()).unwrap()
         );
     }
 
@@ -403,21 +415,23 @@ mod test {
         let mut rng_copy = StdRng::from_seed(*seed);
 
         // Encrypt the storage key
-        let master_key = export_key.derive_master_key()?;
+        let master_key = MasterKey::derive_master_key(export_key.into())?;
         let storage_key = StorageKey::generate(&mut rng);
 
         let encrypted_key =
-            master_key.encrypt_storage_key(&mut rng, storage_key.clone(), &user_id)?;
+            master_key
+                .clone()
+                .encrypt_storage_key(&mut rng, storage_key.clone(), &user_id)?;
 
         // Make sure the utility function gives the same result when encrypting the
         // storage key
-        let utility_encrypted_key = export_key
+        let utility_encrypted_key = master_key
             .clone()
             .create_and_encrypt_storage_key(&mut rng_copy, &user_id)?;
         assert_eq!(utility_encrypted_key, encrypted_key);
 
         // Decrypt the storage key and check that it worked
-        let decrypted_key = encrypted_key.decrypt_storage_key(export_key, &user_id)?;
+        let decrypted_key = encrypted_key.decrypt_storage_key(master_key, &user_id)?;
         assert_eq!(storage_key, decrypted_key);
 
         Ok(())
@@ -429,7 +443,7 @@ mod test {
         let export_key = create_test_export_key(&mut rng);
         let user_id = UserId::new(&mut rng)?;
 
-        let master_key = export_key.derive_master_key()?;
+        let master_key = MasterKey::derive_master_key(export_key.into())?;
         let storage_key = StorageKey::generate(&mut rng);
 
         let bad_aad = AssociatedData::new()
@@ -440,7 +454,7 @@ mod test {
         let encrypted_storage_key =
             Encrypted::encrypt(&mut rng, &master_key.0, storage_key, &bad_aad)?;
         assert!(encrypted_storage_key
-            .decrypt_storage_key(export_key, &user_id)
+            .decrypt_storage_key(master_key, &user_id)
             .is_err());
 
         Ok(())
@@ -459,11 +473,15 @@ mod test {
 
         // Encrypt any old key (and make sure it's decryptable in general)
         let fake_key = EncryptionKey::new(&mut rng);
-        let encrypted_fake_key =
-            Encrypted::encrypt(&mut rng, &export_key.derive_master_key()?.0, fake_key, &aad)?;
+        let encrypted_fake_key = Encrypted::encrypt(
+            &mut rng,
+            &MasterKey::derive_master_key(export_key.into())?.0,
+            fake_key,
+            &aad,
+        )?;
         assert!(encrypted_fake_key
             .clone()
-            .decrypt(&export_key.derive_master_key()?.0)
+            .decrypt(&MasterKey::derive_master_key(export_key.into())?.0)
             .is_ok());
 
         // Serialize the fake key, and pretend it's a storage key when you deserialize.
@@ -472,7 +490,7 @@ mod test {
 
         // Decryption must fail.
         assert!(fake_storage_key
-            .decrypt_storage_key(export_key, &user_id)
+            .decrypt_storage_key(MasterKey::derive_master_key(export_key.into())?, &user_id)
             .is_err());
 
         Ok(())

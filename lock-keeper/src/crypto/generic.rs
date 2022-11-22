@@ -115,6 +115,13 @@ impl EncryptionKey {
             context,
         }
     }
+
+    // WARNING: this generates a copy from the key,
+    // and should only be used to derive another key from this key using a KDF.
+    // This should explicitly stay pub(super) to avoid abuse.
+    pub(super) fn into_bytes(self) -> [u8; 32] {
+        self.key.into()
+    }
 }
 
 #[cfg(test)]

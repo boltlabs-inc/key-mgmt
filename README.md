@@ -24,6 +24,9 @@ The client also includes the cryptographic functionality for:
 
 Refer to the [current design specification](https://github.com/boltlabs-inc/key-mgmt-spec) for Lock Keeper.
 
+## Breaking Changes
+- LockKeeperClient v0.3 introduces a breaking change with respect to v0.2. Storage keys are encrypted inside the database using a different key, therefore, old storage keys in the database cannot be used anymore.
+
 ## Install & Setup
 
 ### Dependencies:
