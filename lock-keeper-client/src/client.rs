@@ -33,7 +33,7 @@ pub struct Password(Vec<u8>);
 impl FromStr for Password {
     type Err = LockKeeperClientError;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> Result<Self> {
         Ok(Password(s.as_bytes().to_vec()))
     }
 }
@@ -229,10 +229,9 @@ impl LockKeeperClient {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use lock_keeper::LockKeeperError;
 
     #[test]
-    fn password_gets_zeroized() -> Result<(), LockKeeperError> {
+    fn password_gets_zeroized() -> Result<()> {
         let password_bytes = b"test";
         let password = Password(password_bytes.to_vec());
         let ptr = password.0.as_ptr();
