@@ -9,7 +9,7 @@ use thiserror::Error;
 
 #[cfg(test)]
 use std::convert::Infallible;
-use zeroize::ZeroizeOnDrop;
+use zeroize::{Zeroize, ZeroizeOnDrop};
 
 /// Errors that arise in the cryptography module.
 #[derive(Debug, Clone, Copy, Error)]
@@ -92,7 +92,7 @@ pub struct Encrypted<T> {
 }
 
 /// A well-formed symmetric encryption key for an AEAD scheme.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, ZeroizeOnDrop)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Zeroize, ZeroizeOnDrop)]
 pub(super) struct EncryptionKey {
     key: Box<chacha20poly1305::Key>,
 
@@ -122,7 +122,7 @@ impl EncryptionKey {
     // and should only be used to derive another key from this key using a KDF.
     // This should explicitly stay pub(super) to avoid abuse.
     pub(super) fn into_bytes(self) -> [u8; 32] {
-        self.key.into()
+        (*self.key).into()
     }
 }
 
