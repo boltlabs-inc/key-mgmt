@@ -43,6 +43,7 @@ pub trait ShouldBeAuthenticated {
 
 impl<T, M> Channel<T, M> {
     /// Receive the next message on the channel and convert it to the type `R`.
+    /// If this is an authenticated channel the message gets decrypted first.
     /// If the message cannot be converted to `R`, it is assumed to be an
     /// invalid message and an error is returned.
     pub async fn receive<R: TryFrom<Message>>(&mut self) -> Result<R, LockKeeperError> {
@@ -64,8 +65,10 @@ impl<T, M> Channel<T, M> {
         }
     }
 
-    /// Generic `send` function used by the client and server versions of
-    /// `Channel` which also handles encryption.
+    /// This function encrypts the message using the session_key if this is an
+    /// authenticated channel. The object that is send needs to implement
+    /// the ShouldBeAuthenticated trait as an extra verification that the object
+    /// needs to be sent over an (un)authenticated channel.
     async fn optional_encryption_with_session_key(
         &mut self,
         message: impl TryInto<Message> + ShouldBeAuthenticated,
@@ -104,8 +107,8 @@ impl<T, M> Channel<T, M> {
     }
 
     /// During authentication a channel can be upgraded to become an
-    /// authenticated channel. Such that future messages are send using
-    /// encryption by the session_key.
+    /// authenticated channel. Such that future messages are sent while
+    /// being encrypted by the session_key.
     pub fn try_upgrade_to_authenticated(
         &mut self,
         session_key: OpaqueSessionKey,
@@ -133,6 +136,13 @@ impl<T, M> Channel<T, M> {
 impl ServerChannel {
     /// Create a server-side `Channel` that sends error codes in addition to
     /// `Message` objects.
+    ///
+    /// # Arguments
+    ///
+    /// * rng - a reference to a secure random number generated.
+    /// * receiver - a receiver of the messages sent over the channel.
+    /// * session_key - an optional session key in case this should be an
+    /// authenticated channel.
     pub fn create(
         rng: Arc<Mutex<StdRng>>,
         request: Request<Streaming<Message>>,
@@ -159,7 +169,8 @@ impl ServerChannel {
     }
 
     /// Send a message across the channel. This function accepts any type that
-    /// can be converted to a `Message.
+    /// can be converted to a `Message. In case a session_key is provided to the
+    /// channel, the message will be encrypted using the session_key.
     pub async fn send(
         &mut self,
         message: impl TryInto<Message> + ShouldBeAuthenticated,
@@ -175,6 +186,15 @@ impl ServerChannel {
 
 impl ClientChannel {
     /// Create a client-side `Channel` that sends raw `Message` objects.
+    ///
+    /// # Arguments
+    ///
+    /// * rng - a reference to a secure random number generated.
+    /// * sender - a sender for the messages that need to be sent over the
+    /// channel.
+    /// * receiver - a receiver of the messages sent over the channel.
+    /// * session_key - an optional session key in case this should be an
+    /// authenticated channel.
     pub fn create(
         rng: Arc<Mutex<StdRng>>,
         sender: Sender<Message>,
@@ -197,7 +217,8 @@ impl ClientChannel {
     }
 
     /// Send a message across the channel. This function accepts any type that
-    /// can be converted to a `Message.
+    /// can be converted to a `Message. In case a session_key is provided to the
+    /// channel, the message will be encrypted using the session_key.
     pub async fn send(
         &mut self,
         message: impl TryInto<Message> + ShouldBeAuthenticated,
