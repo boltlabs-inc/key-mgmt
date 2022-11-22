@@ -143,7 +143,6 @@ impl LockKeeperClient {
         };
         match result {
             Ok(mut auth_result) => {
-                // TODO #186: receive User ID over authenticated channel (under session_key)
                 let client = LockKeeperClient {
                     session_key: auth_result.session_key.clone(),
                     config: config.clone(),

@@ -17,7 +17,6 @@ pub mod client {
         pub storage_key: Encrypted<StorageKey>,
     }
 
-    // TODO #186: These messages need to be authenticated
     impl_authenticated_message_conversion!(RequestUserId, SendStorageKey);
 }
 
@@ -36,6 +35,5 @@ pub mod server {
         pub success: bool,
     }
 
-    // TODO #186: These messages need to be authenticated
     impl_authenticated_message_conversion!(SendUserId, CreateStorageKeyResult);
 }
