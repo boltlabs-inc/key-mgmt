@@ -555,6 +555,13 @@
 <span id="555">555</span>
 <span id="556">556</span>
 <span id="557">557</span>
+<span id="558">558</span>
+<span id="559">559</span>
+<span id="560">560</span>
+<span id="561">561</span>
+<span id="562">562</span>
+<span id="563">563</span>
+<span id="564">564</span>
 </pre><pre class="rust"><code><span class="kw">use </span>chacha20poly1305::{
     aead::{Aead, Payload},
     AeadCore, ChaCha20Poly1305, KeyInit,
@@ -671,6 +678,13 @@
             key: key_material.into(),
             context,
         }
+    }
+
+    <span class="comment">// WARNING: this generates a copy from the key,
+    // and should only be used to derive another key from this key using a KDF.
+    // This should explicitly stay pub(super) to avoid abuse.
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>into_bytes(<span class="self">self</span>) -&gt; [u8; <span class="number">32</span>] {
+        <span class="self">self</span>.key.into()
     }
 }
 

@@ -161,6 +161,7 @@
 <span id="161">161</span>
 <span id="162">162</span>
 <span id="163">163</span>
+<span id="164">164</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Database integration tests
 
 </span><span class="kw">pub mod </span>audit_event;
@@ -176,7 +177,7 @@
     Config,
 };
 <span class="kw">use </span>lock_keeper::{
-    crypto::{Encrypted, OpaqueExportKey, StorageKey},
+    crypto::{Encrypted, MasterKey, StorageKey},
     types::database::user::{AccountName, UserId},
 };
 <span class="kw">use </span>lock_keeper_key_server::{config::DatabaseSpec, database::DataStore};
@@ -269,32 +270,33 @@
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="doccomment">/// Create an export key for testing using random bytes.
-    </span><span class="kw">fn </span>create_test_export_key(rng: <span class="kw-2">&amp;mut </span>StdRng) -&gt; <span class="prelude-ty">Result</span>&lt;OpaqueExportKey&gt; {
+    <span class="doccomment">/// Create a master key for testing using random bytes.
+    </span><span class="kw">fn </span>create_test_master_key(rng: <span class="kw-2">&amp;mut </span>StdRng) -&gt; <span class="prelude-ty">Result</span>&lt;MasterKey&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>key = [<span class="number">0_u8</span>; <span class="number">64</span>];
         rng.try_fill(<span class="kw-2">&amp;mut </span>key)<span class="question-mark">?</span>;
 
-        <span class="comment">// We can&#39;t create an export key directly from bytes so we convert it to a
+        <span class="comment">// We can&#39;t create a master key directly from bytes so we convert it to a
         // GenericArray first.
         </span><span class="kw">let </span>key: GenericArray&lt;u8, U64&gt; = key.into();
 
-        <span class="prelude-val">Ok</span>(key.into())
+        <span class="kw">let </span>master_key = MasterKey::derive_master_key(key)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(master_key)
     }
 
     <span class="doccomment">/// Create a storage key for a test user.
     </span><span class="kw">pub fn </span>create_test_storage_key(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         user_id: <span class="kw-2">&amp;</span>UserId,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;(Encrypted&lt;StorageKey&gt;, OpaqueExportKey)&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(Encrypted&lt;StorageKey&gt;, MasterKey)&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>rng = StdRng::from_entropy();
 
         <span class="comment">// Create a storage key
-        </span><span class="kw">let </span>export_key = <span class="self">Self</span>::create_test_export_key(<span class="kw-2">&amp;mut </span>rng)<span class="question-mark">?</span>;
-        <span class="kw">let </span>storage_key = export_key
+        </span><span class="kw">let </span>master_key = <span class="self">Self</span>::create_test_master_key(<span class="kw-2">&amp;mut </span>rng)<span class="question-mark">?</span>;
+        <span class="kw">let </span>storage_key = master_key
             .clone()
             .create_and_encrypt_storage_key(<span class="kw-2">&amp;mut </span>rng, user_id)<span class="question-mark">?</span>;
 
-        <span class="prelude-val">Ok</span>((storage_key, export_key))
+        <span class="prelude-val">Ok</span>((storage_key, master_key))
     }
 
     <span class="doccomment">/// Creates a test user with a randomized name and returns the id and

@@ -80,13 +80,15 @@
 <span id="80">80</span>
 <span id="81">81</span>
 <span id="82">82</span>
+<span id="83">83</span>
+<span id="84">84</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{
     client::{LockKeeperClient, Password},
     LockKeeperClientError,
 };
 <span class="kw">use </span>lock_keeper::{
     config::opaque::OpaqueCipherSuite,
-    crypto::OpaqueExportKey,
+    crypto::MasterKey,
     infrastructure::channel::ClientChannel,
     types::{
         database::user::AccountName,
@@ -104,14 +106,14 @@
         rng: <span class="kw-2">&amp;mut </span>T,
         account_name: <span class="kw-2">&amp;</span>AccountName,
         password: <span class="kw-2">&amp;</span>Password,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;OpaqueExportKey, LockKeeperClientError&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;MasterKey, LockKeeperClientError&gt; {
         <span class="comment">// Handle start step
         </span><span class="kw">let </span>client_start_result = register_start(<span class="kw-2">&amp;mut </span>channel, rng, account_name, password).<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="comment">// Handle finish step
-        </span><span class="kw">let </span>export_key = register_finish(<span class="kw-2">&amp;mut </span>channel, rng, password, client_start_result).<span class="kw">await</span><span class="question-mark">?</span>;
+        </span><span class="kw">let </span>master_key = register_finish(<span class="kw-2">&amp;mut </span>channel, rng, password, client_start_result).<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="prelude-val">Ok</span>(export_key)
+        <span class="prelude-val">Ok</span>(master_key)
     }
 }
 
@@ -139,7 +141,7 @@
     rng: <span class="kw-2">&amp;mut </span>T,
     password: <span class="kw-2">&amp;</span>Password,
     client_start_result: ClientRegistrationStartResult&lt;OpaqueCipherSuite&gt;,
-) -&gt; <span class="prelude-ty">Result</span>&lt;OpaqueExportKey, LockKeeperClientError&gt; {
+) -&gt; <span class="prelude-ty">Result</span>&lt;MasterKey, LockKeeperClientError&gt; {
     <span class="kw">let </span>server_start_result: server::RegisterStart = channel.receive().<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="kw">let </span>client_finish_registration_result = client_start_result.state.finish(
@@ -157,7 +159,9 @@
     <span class="kw">let </span>result: server::RegisterFinish = channel.receive().<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="kw">if </span>result.success {
-        <span class="prelude-val">Ok</span>(client_finish_registration_result.export_key.into())
+        <span class="kw">let </span>master_key =
+            MasterKey::derive_master_key(client_finish_registration_result.export_key)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(master_key)
     } <span class="kw">else </span>{
         <span class="prelude-val">Err</span>(LockKeeperClientError::ServerReturnedFailure)
     }

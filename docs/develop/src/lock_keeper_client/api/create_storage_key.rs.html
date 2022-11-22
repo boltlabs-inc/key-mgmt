@@ -62,7 +62,7 @@
 <span id="62">62</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{client::LockKeeperClient, LockKeeperClientError};
 <span class="kw">use </span>lock_keeper::{
-    crypto::OpaqueExportKey,
+    crypto::MasterKey,
     infrastructure::channel::ClientChannel,
     types::{
         database::user::{AccountName, UserId},
@@ -77,10 +77,10 @@
         <span class="kw-2">mut </span>channel: ClientChannel,
         rng: <span class="kw-2">&amp;mut </span>T,
         account_name: <span class="kw-2">&amp;</span>AccountName,
-        export_key: OpaqueExportKey,
+        master_key: MasterKey,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperClientError&gt; {
         <span class="kw">let </span>user_id = request_user_id(<span class="kw-2">&amp;mut </span>channel, account_name).<span class="kw">await</span><span class="question-mark">?</span>;
-        create_and_send_storage_key(<span class="kw-2">&amp;mut </span>channel, rng, user_id, export_key).<span class="kw">await</span><span class="question-mark">?</span>;
+        create_and_send_storage_key(<span class="kw-2">&amp;mut </span>channel, rng, user_id, master_key).<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(())
     }
@@ -104,9 +104,9 @@
     channel: <span class="kw-2">&amp;mut </span>ClientChannel,
     rng: <span class="kw-2">&amp;mut </span>T,
     user_id: UserId,
-    export_key: OpaqueExportKey,
+    master_key: MasterKey,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperClientError&gt; {
-    <span class="kw">let </span>storage_key = export_key.create_and_encrypt_storage_key(rng, <span class="kw-2">&amp;</span>user_id)<span class="question-mark">?</span>;
+    <span class="kw">let </span>storage_key = master_key.create_and_encrypt_storage_key(rng, <span class="kw-2">&amp;</span>user_id)<span class="question-mark">?</span>;
 
     <span class="kw">let </span>response = client::SendStorageKey {
         user_id,

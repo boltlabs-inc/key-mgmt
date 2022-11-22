@@ -113,7 +113,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::LockKeeperClientError;
 <span class="kw">use </span>lock_keeper::{
     config::opaque::OpaqueCipherSuite,
-    crypto::OpaqueSessionKey,
+    crypto::{MasterKey, OpaqueSessionKey},
     infrastructure::channel::ClientChannel,
     types::{
         database::user::{AccountName, UserId},
@@ -150,14 +150,14 @@
         .<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="kw">let </span>session_key = client_login_finish_result.session_key.into();
-        <span class="kw">let </span>export_key = client_login_finish_result.export_key.into();
 
         <span class="comment">// Get user id
         </span><span class="kw">let </span>user_id = retrieve_user_id(<span class="kw-2">&amp;mut </span>channel, <span class="kw-2">&amp;</span>session_key).<span class="kw">await</span><span class="question-mark">?</span>;
 
+        <span class="kw">let </span>master_key = MasterKey::derive_master_key(client_login_finish_result.export_key)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(AuthenticateResult {
             session_key,
-            export_key,
+            master_key,
             user_id,
         })
     }

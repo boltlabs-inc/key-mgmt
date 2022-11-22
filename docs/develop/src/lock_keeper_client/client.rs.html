@@ -239,7 +239,7 @@
 <span class="kw">use </span>hyper_rustls::HttpsConnector;
 <span class="kw">use </span>lock_keeper::{
     constants::METADATA,
-    crypto::{OpaqueExportKey, OpaqueSessionKey, StorageKey},
+    crypto::{MasterKey, OpaqueSessionKey, StorageKey},
     infrastructure::channel::ClientChannel,
     rpc::lock_keeper_rpc_client::LockKeeperRpcClient,
     types::{
@@ -296,9 +296,9 @@
     config: Config,
     account_name: AccountName,
     user_id: UserId,
+    master_key: MasterKey,
     tonic_client: LockKeeperRpcClient&lt;LockKeeperRpcClientInner&gt;,
     <span class="kw">pub</span>(<span class="kw">crate</span>) rng: Arc&lt;Mutex&lt;StdRng&gt;&gt;,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) export_key: OpaqueExportKey,
 }
 
 <span class="doccomment">/// Connection type used by `LockKeeperRpcClient`.
@@ -311,7 +311,7 @@
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>AuthenticateResult {
     <span class="kw">pub</span>(<span class="kw">crate</span>) session_key: OpaqueSessionKey,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) export_key: OpaqueExportKey,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) master_key: MasterKey,
     <span class="kw">pub</span>(<span class="kw">crate</span>) user_id: UserId,
 }
 
@@ -368,7 +368,7 @@
         <span class="kw">match </span>result {
             <span class="prelude-val">Ok</span>(AuthenticateResult {
                 session_key,
-                export_key,
+                master_key,
                 user_id,
             }) =&gt; {
                 <span class="comment">// TODO #186: receive User ID over authenticated channel (under session_key)
@@ -379,7 +379,7 @@
                     rng: Arc::new(Mutex::new(rng)),
                     account_name: account_name.clone(),
                     user_id,
-                    export_key,
+                    master_key,
                 };
                 <span class="prelude-val">Ok</span>(client)
             }
@@ -458,7 +458,7 @@
         <span class="comment">// Decrypt storage_key
         </span><span class="kw">let </span>storage_key = response
             .ciphertext
-            .decrypt_storage_key(<span class="self">self</span>.export_key.clone(), <span class="self">self</span>.user_id())<span class="question-mark">?</span>;
+            .decrypt_storage_key(<span class="self">self</span>.master_key.clone(), <span class="self">self</span>.user_id())<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(storage_key)
     }
 }
