@@ -28,6 +28,7 @@ impl<DB: DataStore> Operation<DB> for RemoteSignBytes {
             .await
             .map_err(LockKeeperServerError::database)?
             .signing_key
+            .to_owned()
             .try_into()?;
 
         let signature = request.data.sign(&key);

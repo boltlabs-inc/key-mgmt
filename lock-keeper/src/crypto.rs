@@ -13,6 +13,7 @@ use serde::{Deserialize, Serialize};
 use sha3::{Digest, Sha3_256};
 use std::{array::IntoIter, convert::TryFrom};
 use tracing::error;
+use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use crate::types::database::user::UserId;
 
@@ -34,7 +35,7 @@ pub use signing_key::{
 /// This key should not be stored or saved beyond the lifetime of a single
 /// authentication session. It should not be passed out to the local calling
 /// application.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Zeroize, ZeroizeOnDrop)]
 pub struct OpaqueSessionKey(Box<[u8; 64]>);
 
 impl From<GenericArray<u8, U64>> for OpaqueSessionKey {
@@ -50,7 +51,7 @@ impl From<GenericArray<u8, U64>> for OpaqueSessionKey {
 /// [`StorageKey`]. It should not be stored or saved beyond the lifetime of a
 /// single authentication session. It should never be sent to the server or
 /// passed out to the local calling application.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Zeroize, ZeroizeOnDrop)]
 pub struct MasterKey(EncryptionKey);
 
 impl MasterKey {
@@ -131,7 +132,7 @@ impl MasterKey {
         // Derive `key_material` from HKDF with no salt, the
         // `MasterKey` as input key material, and the associated data as
         // extra info.
-        Hkdf::<Sha3_256>::new(None, self.0.into_bytes().as_ref())
+        Hkdf::<Sha3_256>::new(None, self.0.clone().into_bytes().as_ref())
             .expand((&context).into(), &mut key_material)
             // This should never cause an error because we've hardcoded the length of the key
             // material and the master key length to both be 32, and length mismatch is the only
@@ -153,7 +154,7 @@ impl MasterKey {
 /// the calling application.
 /// It should not be stored or saved beyond the lifetime of a single
 /// authentication session.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, ZeroizeOnDrop)]
 pub struct StorageKey(EncryptionKey);
 
 impl StorageKey {
@@ -173,7 +174,7 @@ impl From<StorageKey> for Vec<u8> {
             .as_bytes()
             .iter()
             .copied()
-            .chain::<Vec<u8>>(key.0.into())
+            .chain::<Vec<u8>>(key.0.to_owned().into())
             .collect()
     }
 }
@@ -360,7 +361,7 @@ mod test {
 
         assert!((0..1000)
             .map(|_| StorageKey::generate(&mut rng))
-            .all(|storage_key| uniq.insert(storage_key.0)));
+            .all(|storage_key| uniq.insert(storage_key.0.to_owned())));
     }
 
     #[test]
@@ -493,6 +494,19 @@ mod test {
             .decrypt_storage_key(MasterKey::derive_master_key(export_key.into())?, &user_id)
             .is_err());
 
+        Ok(())
+    }
+
+    #[test]
+    fn opaque_session_key_gets_zeroized() -> Result<(), LockKeeperError> {
+        let key = [1_u8; 64];
+        let opaque_session_key = OpaqueSessionKey(key.into());
+        let ptr = opaque_session_key.0.as_ptr();
+
+        drop(opaque_session_key);
+
+        let after_drop = unsafe { core::slice::from_raw_parts(ptr, 64) };
+        assert_ne!(key, after_drop);
         Ok(())
     }
 }

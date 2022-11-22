@@ -24,28 +24,23 @@ use tokio::sync::{mpsc, Mutex};
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::Request;
 use tracing::error;
+use zeroize::{Zeroize, ZeroizeOnDrop};
 
 // TODO: password security, e.g. memory management, etc... #54
-#[derive(Debug, Default)]
-pub struct Password(String);
-
-impl ToString for Password {
-    fn to_string(&self) -> String {
-        self.0.to_string()
-    }
-}
+#[derive(Debug, Default, Zeroize, ZeroizeOnDrop)]
+pub struct Password(Vec<u8>);
 
 impl FromStr for Password {
     type Err = LockKeeperClientError;
 
     fn from_str(s: &str) -> Result<Self> {
-        Ok(Password(s.to_string()))
+        Ok(Password(s.as_bytes().to_vec()))
     }
 }
 
 impl Password {
     pub fn as_bytes(&self) -> &[u8] {
-        self.0.as_bytes()
+        &self.0[..]
     }
 }
 
@@ -57,15 +52,20 @@ impl Password {
 /// during which multiple requests can be made to the server.
 ///
 /// TODO #30: This abstraction needs a lot of design attention.
-#[derive(Debug)]
+#[derive(Debug, ZeroizeOnDrop)]
 #[allow(unused)]
 pub struct LockKeeperClient {
     session_key: OpaqueSessionKey,
+    #[zeroize(skip)]
     config: Config,
+    #[zeroize(skip)]
     account_name: AccountName,
+    #[zeroize(skip)]
     user_id: UserId,
     master_key: MasterKey,
+    #[zeroize(skip)]
     tonic_client: LockKeeperRpcClient<LockKeeperRpcClientInner>,
+    #[zeroize(skip)]
     pub(crate) rng: Arc<Mutex<StdRng>>,
 }
 
@@ -77,9 +77,11 @@ type LockKeeperRpcClientInner = hyper::Client<
     UnsyncBoxBody<tonic::codegen::Bytes, tonic::Status>,
 >;
 
+#[derive(Zeroize, ZeroizeOnDrop)]
 pub(crate) struct AuthenticateResult {
     pub(crate) session_key: OpaqueSessionKey,
     pub(crate) master_key: MasterKey,
+    #[zeroize(skip)]
     pub(crate) user_id: UserId,
 }
 
@@ -135,22 +137,18 @@ impl LockKeeperClient {
             Self::handle_authentication(&mut client_channel, &mut rng, account_name, password)
                 .await;
         match result {
-            Ok(AuthenticateResult {
-                session_key,
-                master_key,
-                user_id,
-            }) => {
+            Ok(mut auth_result) => {
                 // TODO #186: receive User ID over authenticated channel (under session_key)
                 let client = LockKeeperClient {
-                    session_key,
+                    session_key: auth_result.session_key.clone(),
                     config: config.clone(),
                     tonic_client: client,
                     rng: Arc::new(Mutex::new(rng)),
                     account_name: account_name.clone(),
-                    user_id,
-                    master_key,
+                    user_id: auth_result.user_id.clone(),
+                    master_key: auth_result.master_key.clone(),
                 };
-
+                auth_result.zeroize();
                 Ok(LockKeeperResponse::from_channel(client_channel, client))
             }
             Err(e) => {
@@ -225,5 +223,23 @@ impl LockKeeperClient {
             .ciphertext
             .decrypt_storage_key(self.master_key.clone(), self.user_id())?;
         Ok(storage_key)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn password_gets_zeroized() -> Result<()> {
+        let password_bytes = b"test";
+        let password = Password(password_bytes.to_vec());
+        let ptr = password.0.as_ptr();
+
+        drop(password);
+
+        let after_drop = unsafe { core::slice::from_raw_parts(ptr, 4) };
+        assert_ne!(password_bytes, after_drop);
+        Ok(())
     }
 }

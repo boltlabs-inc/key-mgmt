@@ -18,6 +18,7 @@ tracing.workspace = true
 tracing-futures.workspace = true
 tracing-subscriber.workspace = true
 rand.workspace = true
+zeroize.workspace = true
 async-trait.workspace = true
 
 # Other dependencies

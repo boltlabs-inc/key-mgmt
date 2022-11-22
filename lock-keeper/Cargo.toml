@@ -30,6 +30,7 @@ tokio-stream.workspace = true
 tonic.workspace = true
 tracing.workspace = true
 uuid.workspace = true
+zeroize.workspace = true
 
 # Other dependencies
 chacha20poly1305 = "0.10"

@@ -10,6 +10,7 @@ use crate::{database::DataStore, LockKeeperServerError};
 use lock_keeper::types::operations::ClientAction;
 use std::time::{Duration, Instant};
 use thiserror::Error;
+use zeroize::Zeroize;
 
 #[derive(Debug, Error, PartialOrd, PartialEq, Eq)]
 pub enum SessionKeyCacheError {
@@ -32,6 +33,14 @@ pub(crate) struct SessionKeyCache {
     cache: HashMap<UserId, (Instant, OpaqueSessionKey)>,
     /// Time a key is considered valid for.
     expiration: Duration,
+}
+
+impl Drop for SessionKeyCache {
+    fn drop(&mut self) {
+        for value in self.cache.values_mut() {
+            value.1.zeroize();
+        }
+    }
 }
 
 #[allow(unused)]
