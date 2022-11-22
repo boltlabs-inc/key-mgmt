@@ -227,6 +227,22 @@
 <span id="227">227</span>
 <span id="228">228</span>
 <span id="229">229</span>
+<span id="230">230</span>
+<span id="231">231</span>
+<span id="232">232</span>
+<span id="233">233</span>
+<span id="234">234</span>
+<span id="235">235</span>
+<span id="236">236</span>
+<span id="237">237</span>
+<span id="238">238</span>
+<span id="239">239</span>
+<span id="240">240</span>
+<span id="241">241</span>
+<span id="242">242</span>
+<span id="243">243</span>
+<span id="244">244</span>
+<span id="245">245</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Client object to interact with the key server.
 
 </span><span class="kw">use crate</span>::{config::Config, LockKeeperClientError, LockKeeperResponse, <span class="prelude-ty">Result</span>};
@@ -253,28 +269,23 @@
 <span class="kw">use </span>tokio_stream::wrappers::ReceiverStream;
 <span class="kw">use </span>tonic::Request;
 <span class="kw">use </span>tracing::error;
+<span class="kw">use </span>zeroize::{Zeroize, ZeroizeOnDrop};
 
 <span class="comment">// TODO: password security, e.g. memory management, etc... #54
-</span><span class="attribute">#[derive(Debug, Default)]
-</span><span class="kw">pub struct </span>Password(String);
-
-<span class="kw">impl </span>ToString <span class="kw">for </span>Password {
-    <span class="kw">fn </span>to_string(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
-        <span class="self">self</span>.<span class="number">0</span>.to_string()
-    }
-}
+</span><span class="attribute">#[derive(Debug, Default, Zeroize, ZeroizeOnDrop)]
+</span><span class="kw">pub struct </span>Password(Vec&lt;u8&gt;);
 
 <span class="kw">impl </span>FromStr <span class="kw">for </span>Password {
     <span class="kw">type </span><span class="prelude-val">Err </span>= LockKeeperClientError;
 
     <span class="kw">fn </span>from_str(s: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
-        <span class="prelude-val">Ok</span>(Password(s.to_string()))
+        <span class="prelude-val">Ok</span>(Password(s.as_bytes().to_vec()))
     }
 }
 
 <span class="kw">impl </span>Password {
     <span class="kw">pub fn </span>as_bytes(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[u8] {
-        <span class="self">self</span>.<span class="number">0</span>.as_bytes()
+        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>[..]
     }
 }
 
@@ -286,16 +297,21 @@
 /// during which multiple requests can be made to the server.
 ///
 /// TODO #30: This abstraction needs a lot of design attention.
-</span><span class="attribute">#[derive(Debug)]
+</span><span class="attribute">#[derive(Debug, ZeroizeOnDrop)]
 #[allow(unused)]
 </span><span class="kw">pub struct </span>LockKeeperClient {
     session_key: OpaqueSessionKey,
-    config: Config,
-    account_name: AccountName,
-    user_id: UserId,
+    <span class="attribute">#[zeroize(skip)]
+    </span>config: Config,
+    <span class="attribute">#[zeroize(skip)]
+    </span>account_name: AccountName,
+    <span class="attribute">#[zeroize(skip)]
+    </span>user_id: UserId,
     master_key: MasterKey,
-    tonic_client: LockKeeperRpcClient&lt;LockKeeperRpcClientInner&gt;,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) rng: Arc&lt;Mutex&lt;StdRng&gt;&gt;,
+    <span class="attribute">#[zeroize(skip)]
+    </span>tonic_client: LockKeeperRpcClient&lt;LockKeeperRpcClientInner&gt;,
+    <span class="attribute">#[zeroize(skip)]
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) rng: Arc&lt;Mutex&lt;StdRng&gt;&gt;,
 }
 
 <span class="doccomment">/// Connection type used by `LockKeeperRpcClient`.
@@ -306,10 +322,12 @@
     UnsyncBoxBody&lt;tonic::codegen::Bytes, tonic::Status&gt;,
 &gt;;
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>AuthenticateResult {
+<span class="attribute">#[derive(Zeroize, ZeroizeOnDrop)]
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>AuthenticateResult {
     <span class="kw">pub</span>(<span class="kw">crate</span>) session_key: OpaqueSessionKey,
     <span class="kw">pub</span>(<span class="kw">crate</span>) master_key: MasterKey,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) user_id: UserId,
+    <span class="attribute">#[zeroize(skip)]
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) user_id: UserId,
 }
 
 <span class="attribute">#[allow(unused)]
@@ -364,22 +382,18 @@
             <span class="self">Self</span>::handle_authentication(<span class="kw-2">&amp;mut </span>client_channel, <span class="kw-2">&amp;mut </span>rng, account_name, password)
                 .<span class="kw">await</span>;
         <span class="kw">match </span>result {
-            <span class="prelude-val">Ok</span>(AuthenticateResult {
-                session_key,
-                master_key,
-                user_id,
-            }) =&gt; {
+            <span class="prelude-val">Ok</span>(<span class="kw-2">mut </span>auth_result) =&gt; {
                 <span class="comment">// TODO #186: receive User ID over authenticated channel (under session_key)
                 </span><span class="kw">let </span>client = LockKeeperClient {
-                    session_key,
+                    session_key: auth_result.session_key.clone(),
                     config: config.clone(),
                     tonic_client: client,
                     rng: Arc::new(Mutex::new(rng)),
                     account_name: account_name.clone(),
-                    user_id,
-                    master_key,
+                    user_id: auth_result.user_id.clone(),
+                    master_key: auth_result.master_key.clone(),
                 };
-
+                auth_result.zeroize();
                 <span class="prelude-val">Ok</span>(LockKeeperResponse::from_channel(client_channel, client))
             }
             <span class="prelude-val">Err</span>(e) =&gt; {
@@ -454,6 +468,24 @@
             .ciphertext
             .decrypt_storage_key(<span class="self">self</span>.master_key.clone(), <span class="self">self</span>.user_id())<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(storage_key)
+    }
+}
+
+<span class="attribute">#[cfg(test)]
+</span><span class="kw">mod </span>tests {
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
+
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>password_gets_zeroized() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="kw">let </span>password_bytes = <span class="string">b&quot;test&quot;</span>;
+        <span class="kw">let </span>password = Password(password_bytes.to_vec());
+        <span class="kw">let </span>ptr = password.<span class="number">0</span>.as_ptr();
+
+        drop(password);
+
+        <span class="kw">let </span>after_drop = <span class="kw">unsafe </span>{ core::slice::from_raw_parts(ptr, <span class="number">4</span>) };
+        <span class="macro">assert_ne!</span>(password_bytes, after_drop);
+        <span class="prelude-val">Ok</span>(())
     }
 }
 </code></pre></div>

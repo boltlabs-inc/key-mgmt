@@ -226,6 +226,15 @@
 <span id="226">226</span>
 <span id="227">227</span>
 <span id="228">228</span>
+<span id="229">229</span>
+<span id="230">230</span>
+<span id="231">231</span>
+<span id="232">232</span>
+<span id="233">233</span>
+<span id="234">234</span>
+<span id="235">235</span>
+<span id="236">236</span>
+<span id="237">237</span>
 </pre><pre class="rust"><code><span class="kw">use </span>lock_keeper::{
     crypto::OpaqueSessionKey,
     types::{database::user::UserId, operations::RequestMetadata},
@@ -238,6 +247,7 @@
 <span class="kw">use </span>lock_keeper::types::operations::ClientAction;
 <span class="kw">use </span>std::time::{Duration, Instant};
 <span class="kw">use </span>thiserror::Error;
+<span class="kw">use </span>zeroize::Zeroize;
 
 <span class="attribute">#[derive(Debug, Error, PartialOrd, PartialEq, Eq)]
 </span><span class="kw">pub enum </span>SessionKeyCacheError {
@@ -260,6 +270,14 @@
     </span>cache: HashMap&lt;UserId, (Instant, OpaqueSessionKey)&gt;,
     <span class="doccomment">/// Time a key is considered valid for.
     </span>expiration: Duration,
+}
+
+<span class="kw">impl </span>Drop <span class="kw">for </span>SessionKeyCache {
+    <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="kw">for </span>value <span class="kw">in </span><span class="self">self</span>.cache.values_mut() {
+            value.<span class="number">1</span>.zeroize();
+        }
+    }
 }
 
 <span class="attribute">#[allow(unused)]
