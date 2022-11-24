@@ -1,5 +1,5 @@
 use rand::rngs::StdRng;
-use std::sync::Arc;
+use std::{fmt::Debug, sync::Arc};
 use tokio::sync::{
     mpsc::{self, Receiver, Sender},
     Mutex,
@@ -50,7 +50,7 @@ impl<T, M> Channel<T, M> {
         match self.receiver.next().await {
             Some(message) => {
                 let message = message?;
-                let result = match self.session_key.clone() {
+                let result = match &self.session_key {
                     None => R::try_from(message).map_err(|_| LockKeeperError::InvalidMessage)?,
                     Some(session_key) => {
                         let encrypted_message: Encrypted<Message> =
@@ -73,7 +73,7 @@ impl<T, M> Channel<T, M> {
         &mut self,
         message: impl TryInto<Message> + ShouldBeAuthenticated,
     ) -> Result<Message, LockKeeperError> {
-        match self.session_key.clone() {
+        match &self.session_key {
             None => {
                 if message.should_be_authenticated() {
                     return Err(LockKeeperError::ShouldBeAuthenticated);
@@ -169,8 +169,9 @@ impl ServerChannel {
     }
 
     /// Send a message across the channel. This function accepts any type that
-    /// can be converted to a `Message. In case a session_key is provided to the
-    /// channel, the message will be encrypted using the session_key.
+    /// can be converted to a `Message`. If there is an [`OpaqueSessionKey`]
+    /// associated to the channel, the message will be encrypted using the
+    /// session_key.
     pub async fn send(
         &mut self,
         message: impl TryInto<Message> + ShouldBeAuthenticated,
@@ -189,7 +190,7 @@ impl ClientChannel {
     ///
     /// # Arguments
     ///
-    /// * rng - a reference to a secure random number generated.
+    /// * rng - a reference to a secure random number generator.
     /// * sender - a sender for the messages that need to be sent over the
     /// channel.
     /// * receiver - a receiver of the messages sent over the channel.
@@ -217,8 +218,9 @@ impl ClientChannel {
     }
 
     /// Send a message across the channel. This function accepts any type that
-    /// can be converted to a `Message. In case a session_key is provided to the
-    /// channel, the message will be encrypted using the session_key.
+    /// can be converted to a `Message`. If there is an [`OpaqueSessionKey`]
+    /// associated to the channel, the message will be encrypted using the
+    /// session_key.
     pub async fn send(
         &mut self,
         message: impl TryInto<Message> + ShouldBeAuthenticated,

@@ -56,7 +56,7 @@ impl Password {
 #[derive(Debug, ZeroizeOnDrop)]
 #[allow(unused)]
 pub struct LockKeeperClient {
-    pub(crate) session_key: OpaqueSessionKey,
+    session_key: OpaqueSessionKey,
     #[zeroize(skip)]
     config: Config,
     #[zeroize(skip)]
@@ -263,9 +263,8 @@ impl LockKeeperClient {
             }
         }?;
 
-        let mut channel_rng = StdRng::from_entropy();
         let mut channel = ClientChannel::create(
-            Arc::new(Mutex::new(channel_rng)),
+            self.rng.clone(),
             tx,
             server_response,
             Some(self.session_key.clone()),

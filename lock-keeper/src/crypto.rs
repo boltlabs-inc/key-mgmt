@@ -43,7 +43,7 @@ impl TryFrom<GenericArray<u8, U64>> for OpaqueSessionKey {
     type Error = LockKeeperError;
 
     fn try_from(arr: GenericArray<u8, U64>) -> Result<Self, Self::Error> {
-        let context = AssociatedData::new().with_str("OPAQUE-derived Lock Keeper master key");
+        let context = AssociatedData::new().with_str("OPAQUE-derived Lock Keeper session key");
         Ok(Self(EncryptionKey::from_bytes(
             arr[..32]
                 .try_into()
@@ -54,18 +54,13 @@ impl TryFrom<GenericArray<u8, U64>> for OpaqueSessionKey {
 }
 
 impl OpaqueSessionKey {
-    /// Encrypt the given [`StorageKey`] under the [`MasterKey`] using an
+    /// Encrypt the given [`Message`] under the [`OpaqueSessionKey`] using an
     /// AEAD scheme.
-    pub(crate) fn encrypt<T>(
-        self,
+    pub(crate) fn encrypt(
+        &self,
         rng: &mut (impl CryptoRng + RngCore),
-        message: T,
-    ) -> Result<Encrypted<T>, CryptoError>
-    where
-        T: TryFrom<Vec<u8>>,
-        CryptoError: From<<T as TryFrom<Vec<u8>>>::Error>,
-        Vec<u8>: From<T>,
-    {
+        message: Message,
+    ) -> Result<Encrypted<Message>, CryptoError> {
         Encrypted::encrypt(rng, &self.0, message, &AssociatedData::new())
     }
 }
@@ -257,7 +252,7 @@ impl Encrypted<StorageKey> {
 impl Encrypted<Message> {
     pub fn decrypt_message(
         self,
-        session_key: OpaqueSessionKey,
+        session_key: &OpaqueSessionKey,
     ) -> Result<Message, LockKeeperError> {
         let decrypted = self.decrypt(&session_key.0)?;
         Ok(decrypted)
@@ -581,12 +576,10 @@ mod test {
             user_id: user_id.clone(),
         };
         let expected_message = SendUserId { user_id };
-        let encrypted_message = session_key
-            .clone()
-            .encrypt::<Message>(&mut rng, Message::try_from(message)?)?;
+        let encrypted_message = session_key.encrypt(&mut rng, Message::try_from(message)?)?;
 
         // Decrypt the message and check that it worked
-        let decrypted_message = encrypted_message.decrypt_message(session_key)?;
+        let decrypted_message = encrypted_message.decrypt_message(&session_key)?;
         assert_eq!(
             expected_message.user_id,
             SendUserId::try_from(decrypted_message)?.user_id
@@ -607,8 +600,7 @@ mod test {
 
         // Encrypt a message
         let message = SendUserId { user_id };
-        let encrypted_message =
-            session_key.encrypt::<Message>(&mut rng, Message::try_from(message)?)?;
+        let encrypted_message = session_key.encrypt(&mut rng, Message::try_from(message)?)?;
 
         let result_to_message = Message::try_from(encrypted_message.clone());
         assert!(result_to_message.is_ok());
