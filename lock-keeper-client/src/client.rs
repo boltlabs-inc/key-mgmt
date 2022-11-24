@@ -185,7 +185,39 @@ impl LockKeeperClient {
         let server_response = match metadata.action() {
             ClientAction::Authenticate => client.authenticate(stream).await,
             ClientAction::Register => client.register(stream).await,
-            _ => return Err(LockKeeperClientError::AuthenticatedChannelNeeded),
+
+            // These actions generate an error because they should be on an authenticated channel
+            ClientAction::CreateStorageKey => {
+                return Err(LockKeeperClientError::AuthenticatedChannelNeeded)
+            }
+            ClientAction::Export => return Err(LockKeeperClientError::AuthenticatedChannelNeeded),
+            ClientAction::ExportSigningKey => {
+                return Err(LockKeeperClientError::AuthenticatedChannelNeeded)
+            }
+            ClientAction::Generate => {
+                return Err(LockKeeperClientError::AuthenticatedChannelNeeded)
+            }
+            ClientAction::ImportSigningKey => {
+                return Err(LockKeeperClientError::AuthenticatedChannelNeeded)
+            }
+            ClientAction::RemoteGenerate => {
+                return Err(LockKeeperClientError::AuthenticatedChannelNeeded)
+            }
+            ClientAction::RemoteSignBytes => {
+                return Err(LockKeeperClientError::AuthenticatedChannelNeeded)
+            }
+            ClientAction::Retrieve => {
+                return Err(LockKeeperClientError::AuthenticatedChannelNeeded)
+            }
+            ClientAction::RetrieveAuditEvents => {
+                return Err(LockKeeperClientError::AuthenticatedChannelNeeded)
+            }
+            ClientAction::RetrieveSigningKey => {
+                return Err(LockKeeperClientError::AuthenticatedChannelNeeded)
+            }
+            ClientAction::RetrieveStorageKey => {
+                return Err(LockKeeperClientError::AuthenticatedChannelNeeded)
+            }
         }?;
 
         let mut channel = ClientChannel::create(rng, tx, server_response, None)?;
@@ -221,7 +253,14 @@ impl LockKeeperClient {
             ClientAction::RetrieveAuditEvents => client.retrieve_audit_events(stream).await,
             ClientAction::RetrieveSigningKey => client.retrieve_signing_key(stream).await,
             ClientAction::RetrieveStorageKey => client.retrieve_storage_key(stream).await,
-            _ => return Err(LockKeeperClientError::UnauthenticatedChannelNeeded),
+
+            // These actions generate an error because they should be on an unauthenticated channel
+            ClientAction::Authenticate => {
+                return Err(LockKeeperClientError::UnauthenticatedChannelNeeded)
+            }
+            ClientAction::Register => {
+                return Err(LockKeeperClientError::UnauthenticatedChannelNeeded)
+            }
         }?;
 
         let mut channel_rng = StdRng::from_entropy();

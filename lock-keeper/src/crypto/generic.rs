@@ -26,8 +26,6 @@ pub enum CryptoError {
     ConversionError,
     #[error("Signature did not verify")]
     VerificationFailed,
-
-    // #[cfg(test)]
     #[error(transparent)]
     Infallible(#[from] Infallible),
 }

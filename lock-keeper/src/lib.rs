@@ -23,29 +23,37 @@ pub mod rpc {
     tonic::include_proto!("lock_keeper_rpc");
 }
 
+/// Common implementation for `impl_message_conversion` variants.
+#[macro_export]
+macro_rules! impl_message_conversion_internal {
+    ($message_type:ty) => {
+        impl TryFrom<$crate::types::Message> for $message_type {
+            type Error = $crate::LockKeeperError;
+
+            fn try_from(value: $crate::types::Message) -> Result<Self, Self::Error> {
+                Ok(serde_json::from_slice(&value.content)?)
+            }
+        }
+
+        impl TryFrom<$message_type> for $crate::types::Message {
+            type Error = $crate::LockKeeperError;
+
+            fn try_from(value: $message_type) -> Result<Self, Self::Error> {
+                let content = serde_json::to_vec(&value)?;
+
+                Ok($crate::types::Message { content })
+            }
+        }
+    };
+}
+
 /// Generates `TryFrom` implementations to and from the `Message` type for a
 /// given list of types.
 #[macro_export]
 macro_rules! impl_message_conversion {
     ($($message_type:ty),+) => {
         $(
-            impl TryFrom<$crate::types::Message> for $message_type {
-                type Error = $crate::LockKeeperError;
-
-                fn try_from(value: $crate::types::Message) -> Result<Self, Self::Error> {
-                    Ok(serde_json::from_slice(&value.content)?)
-                }
-            }
-
-            impl TryFrom<$message_type> for $crate::types::Message {
-                type Error = $crate::LockKeeperError;
-
-                fn try_from(value: $message_type) -> Result<Self, Self::Error> {
-                    let content = serde_json::to_vec(&value)?;
-
-                    Ok($crate::types::Message { content })
-                }
-            }
+            $crate::impl_message_conversion_internal!{$message_type}
 
             impl $crate::infrastructure::channel::ShouldBeAuthenticated for $message_type {
                 fn should_be_authenticated(&self) -> bool {
@@ -62,23 +70,7 @@ macro_rules! impl_message_conversion {
 macro_rules! impl_authenticated_message_conversion {
     ($($message_type:ty),+) => {
         $(
-            impl TryFrom<$crate::types::Message> for $message_type {
-                type Error = $crate::LockKeeperError;
-
-                fn try_from(value: $crate::types::Message) -> Result<Self, Self::Error> {
-                    Ok(serde_json::from_slice(&value.content)?)
-                }
-            }
-
-            impl TryFrom<$message_type> for $crate::types::Message {
-                type Error = $crate::LockKeeperError;
-
-                fn try_from(value: $message_type) -> Result<Self, Self::Error> {
-                    let content = serde_json::to_vec(&value)?;
-
-                    Ok($crate::types::Message { content })
-                }
-            }
+            $crate::impl_message_conversion_internal!{$message_type}
 
             impl $crate::infrastructure::channel::ShouldBeAuthenticated for $message_type {
                 fn should_be_authenticated(&self) -> bool {

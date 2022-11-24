@@ -45,33 +45,7 @@ pub(crate) trait Operation<DB: DataStore>: Sized + Send + 'static {
     ) -> Result<Response<MessageStream>, Status> {
         info!("Handling new client request.");
         let (mut channel, rx) = ServerChannel::create(context.rng.clone(), request, None)?;
-
-        let _ = tokio::spawn(async move {
-            audit_event(&mut channel, &context, EventStatus::Started).await;
-
-            let result = self.operation(&mut channel, &mut context).await;
-            if let Err(e) = result {
-                handle_error(&mut channel, e).await;
-                audit_event(&mut channel, &context, EventStatus::Failed).await;
-
-                // Give the client a moment to receive the error before dropping the channel
-                thread::sleep(Duration::from_millis(100));
-            } else {
-                audit_event(&mut channel, &context, EventStatus::Successful).await;
-            }
-        });
-
-        Ok(Response::new(ReceiverStream::new(rx)))
-    }
-
-    async fn handle_authenticated_request(
-        self,
-        mut context: Context<DB>,
-        request: Request<Streaming<Message>>,
-    ) -> Result<Response<MessageStream>, Status> {
-        info!("Handling new client request.");
-        let (mut channel, rx) = ServerChannel::create(context.rng.clone(), request, None)?;
-        let session_key = {
+        let session_key_option = {
             let session_cache = context.session_key_cache.lock().await;
             check_authentication(
                 &channel.metadata().action(),
@@ -79,7 +53,9 @@ pub(crate) trait Operation<DB: DataStore>: Sized + Send + 'static {
                 session_cache,
             )?
         };
-        channel.try_upgrade_to_authenticated(session_key)?;
+        if let Some(session_key) = session_key_option {
+            channel.try_upgrade_to_authenticated(session_key)?;
+        }
         tracing::info!("Handling action: {:?}", channel.metadata().action());
 
         let _ = tokio::spawn(
@@ -123,13 +99,13 @@ fn check_authentication(
     action: &ClientAction,
     user_id: Option<&UserId>,
     mut session_cache: impl DerefMut<Target = SessionKeyCache>,
-) -> Result<OpaqueSessionKey, LockKeeperServerError> {
+) -> Result<Option<OpaqueSessionKey>, LockKeeperServerError> {
     info!("Checking client's authentication...");
     match action {
         // These actions are unauthenticated.
         ClientAction::Authenticate | ClientAction::Register => {
-            error!("Protocol does not require client to be authenticated.");
-            Err(LockKeeperServerError::UnauthenticatedChannelNeeded)
+            info!("Protocol does not require client to be authenticated.");
+            Ok(None)
         }
         // The rest of the actions must be authenticated
         _ => {
@@ -139,7 +115,7 @@ fn check_authentication(
                 .map_err(LockKeeperServerError::SessionKeyCache)?;
 
             info!("User is already authenticated.");
-            Ok(session_key)
+            Ok(Some(session_key))
         }
     }
 }
