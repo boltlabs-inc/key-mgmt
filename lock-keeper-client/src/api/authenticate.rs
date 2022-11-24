@@ -13,11 +13,11 @@ use lock_keeper::{
 use opaque_ke::{
     ClientLogin, ClientLoginFinishParameters, ClientLoginFinishResult, ClientLoginStartResult,
 };
-use rand::{CryptoRng, RngCore};
+use rand::{rngs::StdRng, CryptoRng, RngCore};
 
 impl LockKeeperClient {
     pub(crate) async fn handle_authentication<T: CryptoRng + RngCore>(
-        channel: &mut ClientChannel,
+        channel: &mut ClientChannel<StdRng>,
         rng: &mut T,
         account_name: &AccountName,
         password: &Password,
@@ -55,7 +55,7 @@ impl LockKeeperClient {
 }
 
 async fn authenticate_start(
-    channel: &mut ClientChannel,
+    channel: &mut ClientChannel<StdRng>,
     client_login_start_result: &ClientLoginStartResult<OpaqueCipherSuite>,
     account_name: &AccountName,
 ) -> Result<server::AuthenticateStart, LockKeeperClientError> {
@@ -70,7 +70,7 @@ async fn authenticate_start(
 }
 
 async fn authenticate_finish(
-    channel: &mut ClientChannel,
+    channel: &mut ClientChannel<StdRng>,
     account_name: &AccountName,
     password: &Password,
     client_start_result: ClientLoginStartResult<OpaqueCipherSuite>,
@@ -103,7 +103,7 @@ async fn authenticate_finish(
 /// NB: The unused `_session_key` will have to be passed to receive in order to
 /// check authentication.
 async fn retrieve_user_id(
-    channel: &mut ClientChannel,
+    channel: &mut ClientChannel<StdRng>,
     _session_key: &OpaqueSessionKey,
 ) -> Result<UserId, LockKeeperClientError> {
     let received_id: server::SendUserId = channel.receive().await?;

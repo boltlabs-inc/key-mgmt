@@ -10,6 +10,7 @@ use lock_keeper::{
     infrastructure::channel::ServerChannel,
     types::operations::generate::{client, server},
 };
+use rand::rngs::StdRng;
 
 #[derive(Debug)]
 pub struct Generate;
@@ -18,7 +19,7 @@ pub struct Generate;
 impl<DB: DataStore> Operation<DB> for Generate {
     async fn operation(
         self,
-        channel: &mut ServerChannel,
+        channel: &mut ServerChannel<StdRng>,
         context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
         // Generate step: receive UserId and reply with new KeyId
@@ -32,7 +33,7 @@ impl<DB: DataStore> Operation<DB> for Generate {
 }
 
 async fn generate_key<DB: DataStore>(
-    channel: &mut ServerChannel,
+    channel: &mut ServerChannel<StdRng>,
     context: &Context<DB>,
 ) -> Result<KeyId, LockKeeperServerError> {
     // Receive UserId from client
@@ -51,7 +52,7 @@ async fn generate_key<DB: DataStore>(
 }
 
 async fn store_key<DB: DataStore>(
-    channel: &mut ServerChannel,
+    channel: &mut ServerChannel<StdRng>,
     context: &Context<DB>,
     key_id: &KeyId,
 ) -> Result<(), LockKeeperServerError> {

@@ -9,6 +9,7 @@ use lock_keeper::{
     infrastructure::channel::ServerChannel,
     types::operations::retrieve::{client, server},
 };
+use rand::rngs::StdRng;
 
 #[derive(Debug)]
 pub struct RetrieveSigningKey;
@@ -17,7 +18,7 @@ pub struct RetrieveSigningKey;
 impl<DB: DataStore> Operation<DB> for RetrieveSigningKey {
     async fn operation(
         self,
-        channel: &mut ServerChannel,
+        channel: &mut ServerChannel<StdRng>,
         context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
         // Receive UserId from client

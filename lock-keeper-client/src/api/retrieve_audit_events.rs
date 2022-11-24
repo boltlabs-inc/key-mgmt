@@ -6,11 +6,12 @@ use lock_keeper::{
         operations::retrieve_audit_events::{client, server},
     },
 };
+use rand::rngs::StdRng;
 
 impl LockKeeperClient {
     pub(crate) async fn handle_retrieve_audit_events(
         &self,
-        mut channel: ClientChannel,
+        mut channel: ClientChannel<StdRng>,
         event_type: EventType,
         options: AuditEventOptions,
     ) -> Result<LockKeeperResponse<Vec<AuditEvent>>, LockKeeperClientError> {

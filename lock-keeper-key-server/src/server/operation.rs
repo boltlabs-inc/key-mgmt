@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use lock_keeper::crypto::OpaqueSessionKey;
 use lock_keeper::{
     constants::METADATA,
     infrastructure::channel::ServerChannel,
@@ -9,9 +10,8 @@ use lock_keeper::{
         Message, MessageStream,
     },
 };
-
-use lock_keeper::crypto::OpaqueSessionKey;
-use std::{ops::DerefMut, time::Duration};
+use rand::rngs::StdRng;
+use std::{ops::DerefMut, thread, time::Duration};
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status, Streaming};
 use tracing::{error, info, Instrument};
@@ -30,7 +30,7 @@ pub(crate) trait Operation<DB: DataStore>: Sized + Send + 'static {
     /// Core logic for a given operation.
     async fn operation(
         self,
-        channel: &mut ServerChannel,
+        channel: &mut ServerChannel<StdRng>,
         context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError>;
 
@@ -120,7 +120,7 @@ fn check_authentication(
     }
 }
 
-async fn handle_error(channel: &mut ServerChannel, e: LockKeeperServerError) {
+async fn handle_error(channel: &mut ServerChannel<StdRng>, e: LockKeeperServerError) {
     error!("{}", e);
     if let Err(e) = channel.send_error(e).await {
         error!("Problem while sending error over channel: {}", e);
@@ -129,7 +129,7 @@ async fn handle_error(channel: &mut ServerChannel, e: LockKeeperServerError) {
 
 /// Log the given action as an audit event.
 async fn audit_event<DB: DataStore>(
-    channel: &mut ServerChannel,
+    channel: &mut ServerChannel<StdRng>,
     context: &Context<DB>,
     status: EventStatus,
 ) {

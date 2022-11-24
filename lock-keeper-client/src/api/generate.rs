@@ -18,7 +18,7 @@ pub struct GenerateResult {
 impl LockKeeperClient {
     pub(crate) async fn handle_generate(
         &self,
-        mut channel: ClientChannel,
+        mut channel: ClientChannel<StdRng>,
     ) -> Result<LockKeeperResponse<GenerateResult>, LockKeeperClientError> {
         // Retrieve the storage key
         let storage_key = self.retrieve_storage_key().await?;
@@ -41,7 +41,7 @@ impl LockKeeperClient {
 }
 
 async fn get_key_id(
-    channel: &mut ClientChannel,
+    channel: &mut ClientChannel<StdRng>,
     user_id: &UserId,
 ) -> Result<KeyId, LockKeeperClientError> {
     // Send UserId to server
@@ -57,7 +57,7 @@ async fn get_key_id(
 }
 
 async fn generate_and_store(
-    channel: &mut ClientChannel,
+    channel: &mut ClientChannel<StdRng>,
     user_id: &UserId,
     storage_key: StorageKey,
     rng: &mut StdRng,

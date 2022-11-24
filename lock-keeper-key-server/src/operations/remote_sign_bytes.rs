@@ -10,6 +10,7 @@ use lock_keeper::{
     infrastructure::channel::ServerChannel,
     types::operations::remote_sign_bytes::{client, server},
 };
+use rand::rngs::StdRng;
 
 #[derive(Debug)]
 pub struct RemoteSignBytes;
@@ -18,7 +19,7 @@ pub struct RemoteSignBytes;
 impl<DB: DataStore> Operation<DB> for RemoteSignBytes {
     async fn operation(
         self,
-        channel: &mut ServerChannel,
+        channel: &mut ServerChannel<StdRng>,
         context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
         let request: client::RequestRemoteSign = channel.receive().await?;

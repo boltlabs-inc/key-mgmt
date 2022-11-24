@@ -4,13 +4,14 @@ use lock_keeper::{
     infrastructure::channel::ClientChannel,
     types::operations::retrieve::{client, server, RetrieveContext},
 };
+use rand::rngs::StdRng;
 
 impl LockKeeperClient {
     /// Handles the retrieval of arbitrary secrets
     /// ([`lock_keeper::crypto::Secret`]) only.
     pub(crate) async fn handle_retrieve(
         &self,
-        mut channel: ClientChannel,
+        mut channel: ClientChannel<StdRng>,
         key_id: &KeyId,
         context: RetrieveContext,
     ) -> Result<LockKeeperResponse<Option<LocalStorage<Secret>>>, LockKeeperClientError> {
@@ -51,7 +52,7 @@ impl LockKeeperClient {
     /// ([`lock_keeper::crypto::SigningKeyPair`]) only.
     pub(crate) async fn handle_retrieve_signing_key(
         &self,
-        mut channel: ClientChannel,
+        mut channel: ClientChannel<StdRng>,
         key_id: &KeyId,
         context: RetrieveContext,
     ) -> Result<LockKeeperResponse<Option<LocalStorage<SigningKeyPair>>>, LockKeeperClientError>

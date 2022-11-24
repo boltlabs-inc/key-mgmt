@@ -7,12 +7,12 @@ use lock_keeper::{
         operations::create_storage_key::{client, server},
     },
 };
-use rand::{CryptoRng, RngCore};
+use rand::{rngs::StdRng, CryptoRng, RngCore};
 
 impl LockKeeperClient {
     /// Creates a storage key and sends it to the key server
     pub(crate) async fn handle_create_storage_key<T: CryptoRng + RngCore>(
-        mut channel: ClientChannel,
+        mut channel: ClientChannel<StdRng>,
         rng: &mut T,
         account_name: &AccountName,
         master_key: MasterKey,
@@ -25,7 +25,7 @@ impl LockKeeperClient {
 }
 
 async fn request_user_id(
-    channel: &mut ClientChannel,
+    channel: &mut ClientChannel<StdRng>,
     account_name: &AccountName,
 ) -> Result<UserId, LockKeeperClientError> {
     let response = client::RequestUserId {
@@ -39,7 +39,7 @@ async fn request_user_id(
 }
 
 async fn create_and_send_storage_key<T: CryptoRng + RngCore>(
-    channel: &mut ClientChannel,
+    channel: &mut ClientChannel<StdRng>,
     rng: &mut T,
     user_id: UserId,
     master_key: MasterKey,

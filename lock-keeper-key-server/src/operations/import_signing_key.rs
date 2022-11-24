@@ -10,6 +10,7 @@ use lock_keeper::{
     infrastructure::channel::ServerChannel,
     types::operations::import::{client, server},
 };
+use rand::rngs::StdRng;
 
 #[derive(Debug)]
 pub struct ImportSigningKey;
@@ -18,7 +19,7 @@ pub struct ImportSigningKey;
 impl<DB: DataStore> Operation<DB> for ImportSigningKey {
     async fn operation(
         self,
-        channel: &mut ServerChannel,
+        channel: &mut ServerChannel<StdRng>,
         context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
         // Receive UserId and key material from client

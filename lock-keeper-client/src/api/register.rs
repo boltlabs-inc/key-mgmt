@@ -18,7 +18,7 @@ use rand::{CryptoRng, RngCore};
 
 impl LockKeeperClient {
     pub(crate) async fn handle_registration<T: CryptoRng + RngCore>(
-        mut channel: ClientChannel,
+        mut channel: ClientChannel<T>,
         rng: &mut T,
         account_name: &AccountName,
         password: &Password,
@@ -34,7 +34,7 @@ impl LockKeeperClient {
 }
 
 async fn register_start<T: CryptoRng + RngCore>(
-    channel: &mut ClientChannel,
+    channel: &mut ClientChannel<T>,
     rng: &mut T,
     account_name: &AccountName,
     password: &Password,
@@ -53,7 +53,7 @@ async fn register_start<T: CryptoRng + RngCore>(
 }
 
 async fn register_finish<T: CryptoRng + RngCore>(
-    channel: &mut ClientChannel,
+    channel: &mut ClientChannel<T>,
     rng: &mut T,
     password: &Password,
     client_start_result: ClientRegistrationStartResult<OpaqueCipherSuite>,

@@ -172,7 +172,7 @@ impl LockKeeperClient {
         rng: Arc<Mutex<StdRng>>,
         client: &mut LockKeeperRpcClient<LockKeeperRpcClientInner>,
         metadata: &RequestMetadata,
-    ) -> Result<ClientChannel> {
+    ) -> Result<ClientChannel<StdRng>> {
         // Create channel to send messages to server after connection is established via
         // RPC
         let (tx, rx) = mpsc::channel(2);
@@ -230,7 +230,7 @@ impl LockKeeperClient {
         &self,
         client: &mut LockKeeperRpcClient<LockKeeperRpcClientInner>,
         metadata: &RequestMetadata,
-    ) -> Result<ClientChannel> {
+    ) -> Result<ClientChannel<StdRng>> {
         // Create channel to send messages to server after connection is established via
         // RPC
         let (tx, rx) = mpsc::channel(2);

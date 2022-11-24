@@ -4,11 +4,12 @@ use lock_keeper::{
     infrastructure::channel::ClientChannel,
     types::operations::import::{client, server},
 };
+use rand::rngs::StdRng;
 
 impl LockKeeperClient {
     pub(crate) async fn handle_import_signing_key(
         &self,
-        mut channel: ClientChannel,
+        mut channel: ClientChannel<StdRng>,
         key_material: Import,
     ) -> Result<LockKeeperResponse<KeyId>, LockKeeperClientError> {
         // Send UserId and key material to server
