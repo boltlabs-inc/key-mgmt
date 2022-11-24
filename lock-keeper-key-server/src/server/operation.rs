@@ -44,7 +44,7 @@ pub(crate) trait Operation<DB: DataStore>: Sized + Send + 'static {
         request: Request<Streaming<Message>>,
     ) -> Result<Response<MessageStream>, Status> {
         info!("Handling new client request.");
-        let (mut channel, rx) = ServerChannel::create(context.rng.clone(), request, None);
+        let (mut channel, rx) = ServerChannel::create(context.rng.clone(), request, None)?;
 
         let _ = tokio::spawn(async move {
             audit_event(&mut channel, &context, EventStatus::Started).await;
@@ -66,7 +66,7 @@ pub(crate) trait Operation<DB: DataStore>: Sized + Send + 'static {
 
     async fn handle_authenticated_request(
         self,
-        context: Context<DB>,
+        mut context: Context<DB>,
         request: Request<Streaming<Message>>,
     ) -> Result<Response<MessageStream>, Status> {
         info!("Handling new client request.");
@@ -79,9 +79,8 @@ pub(crate) trait Operation<DB: DataStore>: Sized + Send + 'static {
                 session_cache,
             )?
         };
-        //TODO: upgrade channel
-        tracing::info!("Handling action: {:?}", context.metadata.action());
-        let mut context = context;
+        channel.try_upgrade_to_authenticated(session_key)?;
+        tracing::info!("Handling action: {:?}", channel.metadata().action());
 
         let _ = tokio::spawn(
             async move {

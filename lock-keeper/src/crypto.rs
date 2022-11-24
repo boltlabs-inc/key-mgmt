@@ -620,17 +620,4 @@ mod test {
 
         Ok(())
     }
-
-    #[test]
-    fn opaque_session_key_gets_zeroized() -> Result<(), LockKeeperError> {
-        let key = [1_u8; 64];
-        let opaque_session_key = OpaqueSessionKey(key.into());
-        let ptr = opaque_session_key.0.as_ptr();
-
-        drop(opaque_session_key);
-
-        let after_drop = unsafe { core::slice::from_raw_parts(ptr, 64) };
-        assert_ne!(key, after_drop);
-        Ok(())
-    }
 }

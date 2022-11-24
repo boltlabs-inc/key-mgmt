@@ -177,6 +177,8 @@ impl LockKeeperClient {
         // RPC
         let (tx, rx) = mpsc::channel(2);
         let mut stream = Request::new(ReceiverStream::new(rx));
+
+        // Serialize metadata and set as tonic request metadata
         let _ = stream.metadata_mut().insert(METADATA, metadata.try_into()?);
 
         // Server returns its own channel that is uses to send responses
@@ -184,10 +186,9 @@ impl LockKeeperClient {
             ClientAction::Authenticate => client.authenticate(stream).await,
             ClientAction::Register => client.register(stream).await,
             _ => return Err(LockKeeperClientError::AuthenticatedChannelNeeded),
-        }?
-        .into_inner();
+        }?;
 
-        let mut channel = ClientChannel::create(rng, tx, server_response, None);
+        let mut channel = ClientChannel::create(rng, tx, server_response, None)?;
         Ok(channel)
     }
 
@@ -197,16 +198,14 @@ impl LockKeeperClient {
         &self,
         client: &mut LockKeeperRpcClient<LockKeeperRpcClientInner>,
         metadata: &RequestMetadata,
-    ) -> Result<ClientChannel, LockKeeperClientError> {
+    ) -> Result<ClientChannel> {
         // Create channel to send messages to server after connection is established via
         // RPC
         let (tx, rx) = mpsc::channel(2);
         let mut stream = Request::new(ReceiverStream::new(rx));
 
         // Serialize metadata and set as tonic request metadata
-        let metadata_bytes = metadata.to_vec()?;
-        let metadata_val = MetadataValue::try_from(metadata_bytes)?;
-        let _ = stream.metadata_mut().insert(METADATA, metadata_val);
+        let _ = stream.metadata_mut().insert(METADATA, metadata.try_into()?);
 
         // Server returns its own channel that is uses to send responses
         let server_response = match metadata.action() {

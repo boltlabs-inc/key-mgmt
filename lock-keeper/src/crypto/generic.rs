@@ -191,10 +191,7 @@ where
         enc_key: &EncryptionKey,
         object: T,
         associated_data: &AssociatedData,
-    ) -> Result<Encrypted<T>, CryptoError>
-    where
-        T: ZeroizeOnDrop,
-    {
+    ) -> Result<Encrypted<T>, CryptoError> {
         // Set up cipher with key
         let cipher = ChaCha20Poly1305::new(&enc_key.key);
 
