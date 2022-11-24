@@ -1,4 +1,5 @@
 use crate::client::{AuthenticateResult, LockKeeperClient, Password};
+use std::sync::Arc;
 
 use crate::LockKeeperClientError;
 use lock_keeper::{
@@ -14,16 +15,19 @@ use opaque_ke::{
     ClientLogin, ClientLoginFinishParameters, ClientLoginFinishResult, ClientLoginStartResult,
 };
 use rand::{rngs::StdRng, CryptoRng, RngCore};
+use tokio::sync::Mutex;
 
 impl LockKeeperClient {
     pub(crate) async fn handle_authentication<T: CryptoRng + RngCore>(
         channel: &mut ClientChannel<StdRng>,
-        rng: &mut T,
+        rng: Arc<Mutex<T>>,
         account_name: &AccountName,
         password: &Password,
     ) -> Result<AuthenticateResult, LockKeeperClientError> {
-        let client_login_start_result =
-            ClientLogin::<OpaqueCipherSuite>::start(rng, password.as_bytes())?;
+        let client_login_start_result = {
+            let mut rng = rng.lock().await;
+            ClientLogin::<OpaqueCipherSuite>::start(&mut *rng, password.as_bytes())?
+        };
 
         // Handle start step
         let server_start_result =

@@ -100,10 +100,13 @@ impl LockKeeperClient {
         let rng_arc_mutex = Arc::new(Mutex::new(rng));
         let client_channel =
             Self::create_channel(rng_arc_mutex.clone(), &mut client, &metadata).await?;
-        let result = {
-            let mut rng = rng_arc_mutex.lock().await;
-            Self::handle_registration(client_channel, &mut *rng, account_name, password).await
-        };
+        let result = Self::handle_registration(
+            client_channel,
+            rng_arc_mutex.clone(),
+            account_name,
+            password,
+        )
+        .await;
         match result {
             Ok(master_key) => {
                 let LockKeeperResponse {
@@ -116,16 +119,13 @@ impl LockKeeperClient {
                 let client_channel = client
                     .create_authenticated_channel(&mut client.tonic_client(), &request_metadata)
                     .await?;
-                {
-                    let mut rng = rng_arc_mutex.lock().await;
-                    Self::handle_create_storage_key(
-                        client_channel,
-                        &mut *rng,
-                        account_name,
-                        master_key,
-                    )
-                    .await?;
-                }
+                Self::handle_create_storage_key(
+                    client_channel,
+                    rng_arc_mutex,
+                    account_name,
+                    master_key,
+                )
+                .await?;
 
                 Ok(LockKeeperResponse {
                     data: (),
