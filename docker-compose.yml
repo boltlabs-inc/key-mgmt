@@ -12,6 +12,8 @@ services:
 
   key_server:
     build: .
+    environment:
+      CONFIG: "./dev/docker/Server.toml"
     ports:
       - 1113:1113
     depends_on:
@@ -24,7 +26,8 @@ services:
     # The main difference for this service is the config file.
     # We'll override the entrypoint and pass a different config instead of
     # dealing with multiple Dockerfiles.
-    entrypoint: ["key-server-cli", "./dev/docker/ServerMutualAuth.toml"]
+    environment:
+      CONFIG: "./dev/docker/ServerMutualAuth.toml"
     ports:
       - 1114:1114
     depends_on:
