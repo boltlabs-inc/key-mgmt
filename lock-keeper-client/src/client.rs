@@ -189,35 +189,17 @@ impl LockKeeperClient {
             ClientAction::Register => client.register(stream).await,
 
             // These actions generate an error because they should be on an authenticated channel
-            ClientAction::CreateStorageKey => {
-                return Err(LockKeeperClientError::AuthenticatedChannelNeeded)
-            }
-            ClientAction::Export => return Err(LockKeeperClientError::AuthenticatedChannelNeeded),
-            ClientAction::ExportSigningKey => {
-                return Err(LockKeeperClientError::AuthenticatedChannelNeeded)
-            }
-            ClientAction::Generate => {
-                return Err(LockKeeperClientError::AuthenticatedChannelNeeded)
-            }
-            ClientAction::ImportSigningKey => {
-                return Err(LockKeeperClientError::AuthenticatedChannelNeeded)
-            }
-            ClientAction::RemoteGenerate => {
-                return Err(LockKeeperClientError::AuthenticatedChannelNeeded)
-            }
-            ClientAction::RemoteSignBytes => {
-                return Err(LockKeeperClientError::AuthenticatedChannelNeeded)
-            }
-            ClientAction::Retrieve => {
-                return Err(LockKeeperClientError::AuthenticatedChannelNeeded)
-            }
-            ClientAction::RetrieveAuditEvents => {
-                return Err(LockKeeperClientError::AuthenticatedChannelNeeded)
-            }
-            ClientAction::RetrieveSigningKey => {
-                return Err(LockKeeperClientError::AuthenticatedChannelNeeded)
-            }
-            ClientAction::RetrieveStorageKey => {
+            ClientAction::CreateStorageKey
+            | ClientAction::Export
+            | ClientAction::ExportSigningKey
+            | ClientAction::Generate
+            | ClientAction::ImportSigningKey
+            | ClientAction::RemoteGenerate
+            | ClientAction::RemoteSignBytes
+            | ClientAction::Retrieve
+            | ClientAction::RetrieveAuditEvents
+            | ClientAction::RetrieveSigningKey
+            | ClientAction::RetrieveStorageKey => {
                 return Err(LockKeeperClientError::AuthenticatedChannelNeeded)
             }
         }?;
@@ -257,10 +239,7 @@ impl LockKeeperClient {
             ClientAction::RetrieveStorageKey => client.retrieve_storage_key(stream).await,
 
             // These actions generate an error because they should be on an unauthenticated channel
-            ClientAction::Authenticate => {
-                return Err(LockKeeperClientError::UnauthenticatedChannelNeeded)
-            }
-            ClientAction::Register => {
+            ClientAction::Authenticate | ClientAction::Register => {
                 return Err(LockKeeperClientError::UnauthenticatedChannelNeeded)
             }
         }?;

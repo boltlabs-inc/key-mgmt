@@ -7,7 +7,6 @@ use serde::{Deserialize, Serialize};
 use std::{iter, marker::PhantomData};
 use thiserror::Error;
 
-// #[cfg(test)]
 use std::convert::Infallible;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 

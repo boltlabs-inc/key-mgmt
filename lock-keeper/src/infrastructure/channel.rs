@@ -83,6 +83,8 @@ impl<T, M, G: CryptoRng + RngCore> Channel<T, M, G> {
                     .map_err(|_| Status::internal("Invalid message"))?)
             }
             Some(session_key) => {
+                // If the channel has a session key, _always_ encrypt a message sent over it!
+                // Therefore, no check for !message.should_be_authenticated()
                 let message = message
                     .try_into()
                     .map_err(|_| Status::internal("Invalid message"))?;
