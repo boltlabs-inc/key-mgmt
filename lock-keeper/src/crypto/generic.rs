@@ -82,10 +82,10 @@ impl AssociatedData {
 /// [ChaCha20Poly1305 crate](https://docs.rs/chacha20poly1305/latest/chacha20poly1305/index.html).
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Encrypted<T> {
-    ciphertext: Vec<u8>,
+    pub(super) ciphertext: Vec<u8>,
     pub(super) associated_data: AssociatedData,
-    nonce: chacha20poly1305::Nonce,
-    original_type: PhantomData<T>,
+    pub(super) nonce: chacha20poly1305::Nonce,
+    pub(super) original_type: PhantomData<T>,
 }
 
 /// A well-formed symmetric encryption key for an AEAD scheme.

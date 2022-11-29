@@ -4,14 +4,14 @@
 //! transformations between them. Public functions here are mostly wrappers
 //! around multiple low-level cryptographic steps.
 
-use crate::{impl_message_conversion, LockKeeperError};
+use crate::LockKeeperError;
 use generic_array::{typenum::U64, GenericArray};
 use hkdf::{hmac::digest::Output, Hkdf};
 use k256::sha2::Sha512;
 use rand::{CryptoRng, Rng, RngCore};
 use serde::{Deserialize, Serialize};
 use sha3::{Digest, Sha3_256};
-use std::{array::IntoIter, convert::TryFrom};
+use std::{array::IntoIter, convert::TryFrom, iter, marker::PhantomData};
 use tracing::error;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
@@ -257,6 +257,61 @@ impl Encrypted<Message> {
         let decrypted = self.decrypt(&session_key.0)?;
         Ok(decrypted)
     }
+
+    /// Translates an [`Encrypted<Message>`] to a [`Message`] in order to be
+    /// sent through an authenticated channel.
+    pub(crate) fn try_into_message(self) -> Result<Message, LockKeeperError> {
+        // ciphertext len || ciphertext || associated_data len || associated_data ||
+        // nonce len || nonce
+        let content = iter::once(self.ciphertext.len() as u8)
+            .chain(self.ciphertext.to_owned())
+            .chain(iter::once(
+                Vec::<u8>::from(self.associated_data.clone()).len() as u8,
+            ))
+            .chain::<Vec<u8>>(self.associated_data.to_owned().into())
+            .chain(iter::once(self.nonce.len() as u8))
+            .chain(self.nonce.to_owned())
+            .collect();
+
+        Ok(Message { content })
+    }
+
+    /// Translates a [`Message`] received through an authenticated channel to an
+    /// [`Encrypted<Message>`].
+    pub(crate) fn try_from_message(message: Message) -> Result<Self, LockKeeperError> {
+        let bytes = message.content;
+        let len = *bytes.first().ok_or(CryptoError::ConversionError)? as usize;
+
+        let ciphertext_offset = len + 1;
+        let ciphertext = bytes
+            .get(1..ciphertext_offset)
+            .ok_or(CryptoError::ConversionError)?
+            .into();
+        let associated_data_len = *bytes
+            .get(ciphertext_offset)
+            .ok_or(CryptoError::ConversionError)? as usize;
+        let associated_data_offset = ciphertext_offset + associated_data_len + 1;
+        let associated_data: AssociatedData = bytes
+            .get(ciphertext_offset + 1..associated_data_offset)
+            .ok_or(CryptoError::ConversionError)?
+            .to_vec()
+            .try_into()?;
+        let nonce_len = *bytes
+            .get(associated_data_offset)
+            .ok_or(CryptoError::ConversionError)? as usize;
+        let nonce_offset = associated_data_offset + nonce_len + 1;
+        let nonce = *chacha20poly1305::Nonce::from_slice(
+            bytes
+                .get(associated_data_offset + 1..nonce_offset)
+                .ok_or(CryptoError::ConversionError)?,
+        );
+        Ok(Self {
+            ciphertext,
+            associated_data,
+            nonce,
+            original_type: PhantomData,
+        })
+    }
 }
 
 impl From<Vec<u8>> for Message {
@@ -270,8 +325,6 @@ impl From<Message> for Vec<u8> {
         message.content
     }
 }
-
-impl_message_conversion!(Encrypted<Message>);
 
 /// Universally unique identifier for a stored secret or signing key.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
@@ -602,10 +655,11 @@ mod test {
         let message = SendUserId { user_id };
         let encrypted_message = session_key.encrypt(&mut rng, Message::try_from(message)?)?;
 
-        let result_to_message = Message::try_from(encrypted_message.clone());
+        let result_to_message = encrypted_message.clone().try_into_message();
         assert!(result_to_message.is_ok());
 
-        let result_from_message = Encrypted::<Message>::try_from(result_to_message.unwrap());
+        let result_from_message =
+            Encrypted::<Message>::try_from_message(result_to_message.unwrap());
         assert!(result_from_message.is_ok());
 
         assert_eq!(encrypted_message, result_from_message.unwrap());

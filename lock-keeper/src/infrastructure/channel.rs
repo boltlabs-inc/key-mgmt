@@ -54,7 +54,7 @@ impl<T, M, G: CryptoRng + RngCore> Channel<T, M, G> {
                     None => R::try_from(message).map_err(|_| LockKeeperError::InvalidMessage)?,
                     Some(session_key) => {
                         let encrypted_message: Encrypted<Message> =
-                            Encrypted::<Message>::try_from(message)?;
+                            Encrypted::<Message>::try_from_message(message)?;
                         let message = encrypted_message.decrypt_message(session_key)?;
                         R::try_from(message).map_err(|_| LockKeeperError::InvalidMessage)?
                     }
@@ -88,16 +88,16 @@ impl<T, M, G: CryptoRng + RngCore> Channel<T, M, G> {
                 let message = message
                     .try_into()
                     .map_err(|_| Status::internal("Invalid message"))?;
-                let message = {
+                let encrypted_message = {
                     let mut rng = self.rng.lock().await;
                     session_key
                         .encrypt(&mut *rng, message)
                         .map_err(LockKeeperError::Crypto)?
                 };
 
-                Ok(message
-                    .try_into()
-                    .map_err(|_| Status::internal("Invalid message"))?)
+                Ok(encrypted_message
+                    .try_into_message()
+                    .map_err(|_| Status::internal("Invalid encrypted message"))?)
             }
         }
     }
