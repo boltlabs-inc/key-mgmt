@@ -1,6 +1,7 @@
 use crate::{cli_command::CliCommand, state::State};
 use anyhow::Error;
 use async_trait::async_trait;
+use lock_keeper::crypto::Import as LkImport;
 use lock_keeper_client::LockKeeperClient;
 use rand::Rng;
 
@@ -24,8 +25,9 @@ impl CliCommand for Import {
         .into_inner();
 
         let random_bytes = rand::thread_rng().gen::<[u8; 32]>().to_vec();
+        let import = LkImport::new(random_bytes)?;
         let key_id = lock_keeper_client
-            .import_signing_key(random_bytes)
+            .import_signing_key(import)
             .await
             .map_err(|e| anyhow::anyhow!("Failed to import signing key. Error: {:?}", e))?
             .into_inner();

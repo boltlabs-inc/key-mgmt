@@ -9,7 +9,7 @@ use zeroize::ZeroizeOnDrop;
 
 use crate::crypto::{
     generic::{self, AssociatedData, CryptoError},
-    Encrypted, KeyId, StorageKey,
+    Encrypted, Export, KeyId, StorageKey,
 };
 
 /// An arbitrary secret.
@@ -104,9 +104,27 @@ impl Secret {
     ///
     /// This is only used in testing right now, but it would be fine to make it
     /// public.
-    #[cfg(test)]
     fn context(&self) -> &AssociatedData {
         self.0.context()
+    }
+}
+
+impl From<Secret> for Export {
+    fn from(secret: Secret) -> Self {
+        Self {
+            key_material: secret.0.get_material().into(),
+            context: secret.context().clone().into(),
+        }
+    }
+}
+
+impl TryFrom<Export> for Secret {
+    type Error = LockKeeperError;
+
+    fn try_from(export: Export) -> Result<Self, Self::Error> {
+        let context = export.context.clone().try_into()?;
+        let inner = generic::Secret::from_parts(&export.key_material, &context);
+        Ok(Secret(inner))
     }
 }
 
