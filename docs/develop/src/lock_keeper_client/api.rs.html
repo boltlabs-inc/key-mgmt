@@ -257,6 +257,15 @@
 <span id="257">257</span>
 <span id="258">258</span>
 <span id="259">259</span>
+<span id="260">260</span>
+<span id="261">261</span>
+<span id="262">262</span>
+<span id="263">263</span>
+<span id="264">264</span>
+<span id="265">265</span>
+<span id="266">266</span>
+<span id="267">267</span>
+<span id="268">268</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Full implementation of the public API for the Lock Keeper client library.
 //!
 //! This API is designed for use with a local client application - that is, an
@@ -316,6 +325,15 @@
             <span class="prelude-val">Err</span>(e) =&gt; <span class="prelude-val">Err</span>(e.into()),
         }
     }
+
+    <span class="doccomment">/// Expire the current session and session key for this user.
+    </span><span class="kw">pub async fn </span>logout(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperResponse&lt;()&gt;, LockKeeperClientError&gt; {
+        <span class="comment">// Create channel to send messages to server
+        </span><span class="kw">let </span>metadata = <span class="self">self</span>.create_metadata(ClientAction::Logout);
+        <span class="kw">let </span>client_channel = <span class="self">Self</span>::create_channel(<span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(), <span class="kw-2">&amp;</span>metadata).<span class="kw">await</span><span class="question-mark">?</span>;
+
+        <span class="self">self</span>.handle_logout(client_channel).<span class="kw">await
+    </span>}
 
     <span class="doccomment">/// Authenticate to the Lock Keeper key server as a previously registered
     /// user.

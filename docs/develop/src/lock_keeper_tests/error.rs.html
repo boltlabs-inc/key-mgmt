@@ -25,6 +25,8 @@
 <span id="25">25</span>
 <span id="26">26</span>
 <span id="27">27</span>
+<span id="28">28</span>
+<span id="29">29</span>
 </pre><pre class="rust"><code><span class="kw">use </span>thiserror::Error;
 
 <span class="kw">pub type </span><span class="prelude-ty">Result</span>&lt;T&gt; = std::result::Result&lt;T, LockKeeperTestError&gt;;
@@ -35,6 +37,8 @@
     </span>InvalidTestType(String),
     <span class="attribute">#[error(<span class="string">&quot;Failed to contact key server after maximum number of retries.&quot;</span>)]
     </span>WaitForServerTimedOut,
+    <span class="attribute">#[error(<span class="string">&quot;Wrong error returned&quot;</span>)]
+    </span>WrongErrorReturned,
 
     <span class="comment">// Wrapped Errors
     </span><span class="attribute">#[error(transparent)]

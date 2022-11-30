@@ -243,6 +243,23 @@
 <span id="243">243</span>
 <span id="244">244</span>
 <span id="245">245</span>
+<span id="246">246</span>
+<span id="247">247</span>
+<span id="248">248</span>
+<span id="249">249</span>
+<span id="250">250</span>
+<span id="251">251</span>
+<span id="252">252</span>
+<span id="253">253</span>
+<span id="254">254</span>
+<span id="255">255</span>
+<span id="256">256</span>
+<span id="257">257</span>
+<span id="258">258</span>
+<span id="259">259</span>
+<span id="260">260</span>
+<span id="261">261</span>
+<span id="262">262</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Client object to interact with the key server.
 
 </span><span class="kw">use crate</span>::{config::Config, LockKeeperClientError, LockKeeperResponse, <span class="prelude-ty">Result</span>};
@@ -258,6 +275,7 @@
     types::{
         database::user::{AccountName, UserId},
         operations::{
+            logout::{client <span class="kw">as </span>logout_client, server <span class="kw">as </span>logout_server},
             retrieve_storage_key::{client, server},
             ClientAction, RequestMetadata,
         },
@@ -427,6 +445,7 @@
             ClientAction::ExportSigningKey =&gt; client.retrieve_signing_key(stream).<span class="kw">await</span>,
             ClientAction::Generate =&gt; client.generate(stream).<span class="kw">await</span>,
             ClientAction::ImportSigningKey =&gt; client.import_signing_key(stream).<span class="kw">await</span>,
+            ClientAction::Logout =&gt; client.logout(stream).<span class="kw">await</span>,
             ClientAction::Register =&gt; client.register(stream).<span class="kw">await</span>,
             ClientAction::RemoteGenerate =&gt; client.remote_generate(stream).<span class="kw">await</span>,
             ClientAction::RemoteSignBytes =&gt; client.remote_sign_bytes(stream).<span class="kw">await</span>,
@@ -443,8 +462,23 @@
     <span class="doccomment">/// Close a session.
     ///
     /// Outputs: None, if successful.
-    </span><span class="kw">pub fn </span>close(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperResponse&lt;()&gt;&gt; {
-        <span class="macro">todo!</span>()
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>handle_logout(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        <span class="kw-2">mut </span>channel: ClientChannel,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperResponse&lt;()&gt;&gt; {
+        <span class="comment">// Send UserId to server
+        </span><span class="kw">let </span>request = logout_client::Request {
+            user_id: <span class="self">self</span>.user_id().clone(),
+        };
+        channel.send(request).<span class="kw">await</span><span class="question-mark">?</span>;
+
+        <span class="comment">// Get encrypted storage key from server
+        </span><span class="kw">let </span>response: logout_server::Response = channel.receive().<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">if </span>response.success {
+            <span class="prelude-val">Ok</span>(LockKeeperResponse::from_channel(channel, ()))
+        } <span class="kw">else </span>{
+            <span class="prelude-val">Err</span>(LockKeeperClientError::LogoutFailed)
+        }
     }
 
     <span class="doccomment">/// Retrieve the [`lock_keeper::crypto::Encrypted&lt;StorageKey&gt;`] that belongs

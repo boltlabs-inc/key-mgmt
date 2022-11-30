@@ -50,14 +50,14 @@
 <span class="kw">use </span>lock_keeper::types::{
     audit_event::EventStatus, database::user::AccountName, operations::ClientAction,
 };
-<span class="kw">use </span>lock_keeper_client::{client::Password, Config, LockKeeperClientError};
+<span class="kw">use </span>lock_keeper_client::{client::Password, Config, LockKeeperClient, LockKeeperClientError};
 <span class="kw">use </span>std::str::FromStr;
 
 <span class="kw">use crate</span>::{
     error::Result,
     run_parallel,
     test_suites::end_to_end::{
-        operations::{check_audit_events, compare_errors, register},
+        operations::{check_audit_events, compare_errors},
         test_cases::TestState,
     },
     utils::{tagged, TestResult},
@@ -69,18 +69,18 @@
 
     <span class="kw">let </span>result = <span class="macro">run_parallel!</span>(
         config.clone(),
-        register_same_user_twice(config.client_config.clone()),
+        register_same_user_twice_fails(config.client_config.clone()),
     )<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(result)
 }
 
-<span class="kw">async fn </span>register_same_user_twice(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+<span class="kw">async fn </span>register_same_user_twice_fails(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">let </span>account_name = AccountName::from_str(tagged(<span class="string">&quot;user&quot;</span>).as_str())<span class="question-mark">?</span>;
     <span class="kw">let </span>password = Password::from_str(tagged(<span class="string">&quot;password&quot;</span>).as_str())<span class="question-mark">?</span>;
-    register(<span class="kw-2">&amp;</span>account_name, <span class="kw-2">&amp;</span>password, <span class="kw-2">&amp;</span>config).<span class="kw">await</span><span class="question-mark">?</span>;
+    LockKeeperClient::register(<span class="kw-2">&amp;</span>account_name, <span class="kw-2">&amp;</span>password, <span class="kw-2">&amp;</span>config).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let </span>second_register = register(<span class="kw-2">&amp;</span>account_name, <span class="kw-2">&amp;</span>password, <span class="kw-2">&amp;</span>config).<span class="kw">await</span>;
+    <span class="kw">let </span>second_register = LockKeeperClient::register(<span class="kw-2">&amp;</span>account_name, <span class="kw-2">&amp;</span>password, <span class="kw-2">&amp;</span>config).<span class="kw">await</span>;
     compare_errors(
         second_register,
         LockKeeperClientError::AccountAlreadyRegistered,

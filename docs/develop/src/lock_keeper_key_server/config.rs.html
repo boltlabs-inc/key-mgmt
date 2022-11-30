@@ -185,6 +185,15 @@
 <span id="185">185</span>
 <span id="186">186</span>
 <span id="187">187</span>
+<span id="188">188</span>
+<span id="189">189</span>
+<span id="190">190</span>
+<span id="191">191</span>
+<span id="192">192</span>
+<span id="193">193</span>
+<span id="194">194</span>
+<span id="195">195</span>
+<span id="196">196</span>
 </pre><pre class="rust"><code><span class="kw">use </span>lock_keeper::{config::opaque::OpaqueCipherSuite, infrastructure::pem_utils};
 <span class="kw">use </span>opaque_ke::{keypair::PrivateKey, Ristretto255, ServerSetup};
 <span class="kw">use </span>rand::{rngs::StdRng, SeedableRng};
@@ -197,6 +206,7 @@
     net::IpAddr,
     path::{Path, PathBuf},
     str::FromStr,
+    time::Duration,
 };
 
 <span class="kw">use crate</span>::{server::opaque_storage::create_or_retrieve_server_key_opaque, LockKeeperServerError};
@@ -206,6 +216,7 @@
 </span><span class="kw">pub struct </span>Config {
     <span class="kw">pub </span>address: IpAddr,
     <span class="kw">pub </span>port: u16,
+    <span class="kw">pub </span>session_timeout: Duration,
     <span class="kw">pub </span>tls_config: ServerConfig,
     <span class="kw">pub </span>opaque_server_setup: ServerSetup&lt;OpaqueCipherSuite, PrivateKey&lt;Ristretto255&gt;&gt;,
     <span class="kw">pub </span>database: DatabaseSpec,
@@ -230,6 +241,7 @@
         <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
             address: config.address,
             port: config.port,
+            session_timeout: config.session_timeout,
             tls_config: config.tls_config(private_key_bytes)<span class="question-mark">?</span>,
             opaque_server_setup: create_or_retrieve_server_key_opaque(
                 <span class="kw-2">&amp;mut </span>rng,
@@ -259,6 +271,9 @@
 </span><span class="kw">pub struct </span>ConfigFile {
     <span class="kw">pub </span>address: IpAddr,
     <span class="kw">pub </span>port: u16,
+    <span class="attribute">#[serde(default)]
+    #[serde(with = <span class="string">&quot;humantime_serde&quot;</span>)]
+    </span><span class="kw">pub </span>session_timeout: Duration,
     <span class="doccomment">/// The private key can be provided as a file or passed to the
     /// [`Config`] constructors.
     </span><span class="kw">pub </span>private_key: <span class="prelude-ty">Option</span>&lt;PathBuf&gt;,
@@ -331,6 +346,7 @@
         <span class="kw">let </span>config_str = <span class="string">r#&quot;
             address = &quot;127.0.0.2&quot;
             port = 1114
+            session_timeout = &quot;60s&quot;
             private_key = &quot;test.key&quot;
             certificate_chain = &quot;test.crt&quot;
             client_auth = false
@@ -346,6 +362,7 @@
         </span><span class="kw">let </span>ConfigFile {
             address,
             port,
+            session_timeout,
             private_key,
             certificate_chain,
             client_auth,
@@ -362,6 +379,7 @@
         <span class="macro">assert_eq!</span>(db_name, <span class="string">&quot;lock-keeper-test-db&quot;</span>);
         <span class="macro">assert_eq!</span>(address, IpAddr::from_str(<span class="string">&quot;127.0.0.2&quot;</span>).unwrap());
         <span class="macro">assert_eq!</span>(port, <span class="number">1114</span>);
+        <span class="macro">assert_eq!</span>(session_timeout, Duration::from_secs(<span class="number">60</span>));
         <span class="macro">assert_eq!</span>(private_key, <span class="prelude-val">Some</span>(PathBuf::from(<span class="string">&quot;test.key&quot;</span>)));
         <span class="macro">assert_eq!</span>(certificate_chain, PathBuf::from(<span class="string">&quot;test.crt&quot;</span>));
         <span class="macro">assert!</span>(!client_auth);

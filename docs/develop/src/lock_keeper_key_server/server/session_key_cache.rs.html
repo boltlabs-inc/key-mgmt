@@ -234,7 +234,6 @@
 <span id="234">234</span>
 <span id="235">235</span>
 <span id="236">236</span>
-<span id="237">237</span>
 </pre><pre class="rust"><code><span class="kw">use </span>lock_keeper::{
     crypto::OpaqueSessionKey,
     types::{database::user::UserId, operations::RequestMetadata},
@@ -282,10 +281,6 @@
 
 <span class="attribute">#[allow(unused)]
 </span><span class="kw">impl </span>SessionKeyCache {
-    <span class="doccomment">/// Amount of time a key is considered valid for. Sixty seconds for now. May
-    /// change later.
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const </span>DEFAULT_EXPIRATION_TIME: Duration = Duration::from_secs(<span class="number">60</span>);
-
     <span class="doccomment">/// Create a new [`SessionKeyCache`] with the given `expiration` interval.
     </span><span class="kw">pub fn </span>new(expiration: Duration) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
@@ -343,11 +338,12 @@
             }
         }
     }
-}
 
-<span class="kw">impl </span>Default <span class="kw">for </span>SessionKeyCache {
-    <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
-        SessionKeyCache::new(SessionKeyCache::DEFAULT_EXPIRATION_TIME)
+    <span class="kw">pub fn </span>expire(<span class="kw-2">&amp;mut </span><span class="self">self</span>, user_id: UserId) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
+        <span class="kw">if let </span>Entry::Occupied(entry) = <span class="self">self</span>.cache.entry(user_id) {
+            <span class="kw">let _ </span>= entry.remove();
+        }
+        <span class="prelude-val">Ok</span>(())
     }
 }
 
@@ -364,9 +360,11 @@
 
     <span class="kw">type </span><span class="prelude-ty">Result</span>&lt;T&gt; = std::result::Result&lt;T, LockKeeperServerError&gt;;
 
+    <span class="kw">const </span>TEST_EXPIRATION_TIME: Duration = Duration::from_secs(<span class="number">60</span>);
+
     <span class="attribute">#[test]
     </span><span class="kw">fn </span>key_does_not_exist() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="kw">let </span><span class="kw-2">mut </span>cache = SessionKeyCache::default();
+        <span class="kw">let </span><span class="kw-2">mut </span>cache = SessionKeyCache::new(TEST_EXPIRATION_TIME);
         <span class="kw">let </span>id = get_temp_user_id()<span class="question-mark">?</span>;
 
         <span class="kw">match </span>cache.get_key(id) {
@@ -384,7 +382,7 @@
     <span class="doccomment">/// Ensure we can get the key back without encountering expiration error.
     </span><span class="attribute">#[test]
     </span><span class="kw">fn </span>get_key_back() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="kw">let </span><span class="kw-2">mut </span>cache = SessionKeyCache::default();
+        <span class="kw">let </span><span class="kw-2">mut </span>cache = SessionKeyCache::new(TEST_EXPIRATION_TIME);
         <span class="kw">let </span>id = get_temp_user_id()<span class="question-mark">?</span>;
         <span class="kw">let </span>key = get_temp_session_key();
 
@@ -398,7 +396,7 @@
     <span class="doccomment">/// Insert key twice and ensure code runs all the way.
     </span><span class="attribute">#[test]
     </span><span class="kw">fn </span>overwrite_existing_key() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="kw">let </span><span class="kw-2">mut </span>cache = SessionKeyCache::default();
+        <span class="kw">let </span><span class="kw-2">mut </span>cache = SessionKeyCache::new(TEST_EXPIRATION_TIME);
         <span class="kw">let </span>id = get_temp_user_id()<span class="question-mark">?</span>;
         <span class="kw">let </span>key = get_temp_session_key();
 

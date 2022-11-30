@@ -35,15 +35,34 @@
 <span id="35">35</span>
 <span id="36">36</span>
 <span id="37">37</span>
+<span id="38">38</span>
+<span id="39">39</span>
+<span id="40">40</span>
+<span id="41">41</span>
+<span id="42">42</span>
+<span id="43">43</span>
+<span id="44">44</span>
+<span id="45">45</span>
+<span id="46">46</span>
+<span id="47">47</span>
+<span id="48">48</span>
+<span id="49">49</span>
+<span id="50">50</span>
+<span id="51">51</span>
+<span id="52">52</span>
+<span id="53">53</span>
+<span id="54">54</span>
+<span id="55">55</span>
 </pre><pre class="rust"><code><span class="kw">use </span>colored::Colorize;
 <span class="kw">use </span>lock_keeper::types::{audit_event::EventStatus, operations::ClientAction};
 <span class="kw">use </span>lock_keeper_client::Config;
+<span class="kw">use </span>tonic::Status;
 
 <span class="kw">use crate</span>::{
     error::Result,
     run_parallel,
     test_suites::end_to_end::{
-        operations::{check_audit_events, import_signing_key},
+        operations::{authenticate, check_audit_events, compare_status_errors, import_signing_key},
         test_cases::init_test_state,
     },
     utils::TestResult,
@@ -53,15 +72,20 @@
 <span class="kw">pub async fn </span>run_tests(config: TestConfig) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;TestResult&gt;&gt; {
     <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, <span class="string">&quot;Running import tests&quot;</span>.cyan());
 
-    <span class="kw">let </span>result = <span class="macro">run_parallel!</span>(config.clone(), import_works(config.client_config.clone()),)<span class="question-mark">?</span>;
+    <span class="kw">let </span>result = <span class="macro">run_parallel!</span>(
+        config.clone(),
+        import_works(config.client_config.clone()),
+        cannot_import_after_logout(config.client_config.clone())
+    )<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(result)
 }
 
 <span class="kw">async fn </span>import_works(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">let </span>state = init_test_state(config).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>client = authenticate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let </span>import_res = import_signing_key(<span class="kw-2">&amp;</span>state).<span class="kw">await</span>;
+    <span class="kw">let </span>import_res = import_signing_key(<span class="kw-2">&amp;</span>client).<span class="kw">await</span>;
     <span class="macro">assert!</span>(import_res.is_ok());
     check_audit_events(
         <span class="kw-2">&amp;</span>state,
@@ -69,6 +93,18 @@
         ClientAction::ImportSigningKey,
     )
     .<span class="kw">await</span><span class="question-mark">?</span>;
+
+    <span class="prelude-val">Ok</span>(())
+}
+
+<span class="kw">async fn </span>cannot_import_after_logout(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    <span class="kw">let </span>state = init_test_state(config).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>client = authenticate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>;
+
+    client.logout().<span class="kw">await</span><span class="question-mark">?</span>;
+
+    <span class="kw">let </span>res = import_signing_key(<span class="kw-2">&amp;</span>client).<span class="kw">await</span>;
+    compare_status_errors(res, Status::unauthenticated(<span class="string">&quot;No session key for this user&quot;</span>))<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
 }

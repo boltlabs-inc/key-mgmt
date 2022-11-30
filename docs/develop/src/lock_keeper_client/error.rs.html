@@ -83,6 +83,8 @@
 <span id="83">83</span>
 <span id="84">84</span>
 <span id="85">85</span>
+<span id="86">86</span>
+<span id="87">87</span>
 </pre><pre class="rust"><code><span class="kw">use </span>lock_keeper::LockKeeperError;
 <span class="kw">use </span>thiserror::Error;
 <span class="kw">use </span>tonic::{Code, Status};
@@ -106,6 +108,8 @@
     </span>AccountAlreadyRegistered,
     <span class="attribute">#[error(<span class="string">&quot;Export failed&quot;</span>)]
     </span>ExportFailed,
+    <span class="attribute">#[error(<span class="string">&quot;Logout failed&quot;</span>)]
+    </span>LogoutFailed,
     <span class="attribute">#[error(<span class="string">&quot;Invalid account&quot;</span>)]
     </span>InvalidAccount,
     <span class="attribute">#[error(<span class="string">&quot;Invalid login&quot;</span>)]

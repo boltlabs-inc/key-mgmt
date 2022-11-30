@@ -76,6 +76,33 @@
 <span id="76">76</span>
 <span id="77">77</span>
 <span id="78">78</span>
+<span id="79">79</span>
+<span id="80">80</span>
+<span id="81">81</span>
+<span id="82">82</span>
+<span id="83">83</span>
+<span id="84">84</span>
+<span id="85">85</span>
+<span id="86">86</span>
+<span id="87">87</span>
+<span id="88">88</span>
+<span id="89">89</span>
+<span id="90">90</span>
+<span id="91">91</span>
+<span id="92">92</span>
+<span id="93">93</span>
+<span id="94">94</span>
+<span id="95">95</span>
+<span id="96">96</span>
+<span id="97">97</span>
+<span id="98">98</span>
+<span id="99">99</span>
+<span id="100">100</span>
+<span id="101">101</span>
+<span id="102">102</span>
+<span id="103">103</span>
+<span id="104">104</span>
+<span id="105">105</span>
 </pre><pre class="rust"><code><span class="kw">use </span>colored::Colorize;
 <span class="kw">use </span>lock_keeper::types::{
     audit_event::EventStatus,
@@ -89,7 +116,8 @@
     run_parallel,
     test_suites::end_to_end::{
         operations::{
-            check_audit_events, compare_errors, generate, generate_fake_key_id, retrieve,
+            authenticate, check_audit_events, compare_errors, compare_status_errors,
+            generate_fake_key_id,
         },
         test_cases::init_test_state,
     },
@@ -105,6 +133,7 @@
         retrieve_local_only_works(config.client_config.clone()),
         retrieve_null_works(config.client_config.clone()),
         cannot_retrieve_fake_key(config.client_config.clone()),
+        cannot_retrieve_after_logout(config.client_config.clone()),
     )<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(result)
@@ -112,12 +141,13 @@
 
 <span class="kw">async fn </span>retrieve_local_only_works(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">let </span>state = init_test_state(config).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>client = authenticate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="kw">let </span>GenerateResult {
         key_id,
         local_storage,
-    } = generate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>.into_inner();
-    <span class="kw">let </span>local_storage_res = retrieve(<span class="kw-2">&amp;</span>state, <span class="kw-2">&amp;</span>key_id, RetrieveContext::LocalOnly).<span class="kw">await</span>;
+    } = client.generate_and_store().<span class="kw">await</span><span class="question-mark">?</span>.into_inner();
+    <span class="kw">let </span>local_storage_res = client.retrieve(<span class="kw-2">&amp;</span>key_id, RetrieveContext::LocalOnly).<span class="kw">await</span>;
     <span class="macro">assert!</span>(local_storage_res.is_ok());
 
     <span class="kw">let </span>local_storage_opt = local_storage_res<span class="question-mark">?</span>.into_inner();
@@ -132,9 +162,13 @@
 
 <span class="kw">async fn </span>retrieve_null_works(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">let </span>state = init_test_state(config).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>client = authenticate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let </span>GenerateResult { key_id, .. } = generate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>.into_inner();
-    <span class="kw">let </span>local_storage_res = retrieve(<span class="kw-2">&amp;</span>state, <span class="kw-2">&amp;</span>key_id, RetrieveContext::Null).<span class="kw">await</span>;
+    <span class="kw">let </span>GenerateResult {
+        key_id,
+        local_storage: <span class="kw">_</span>,
+    } = client.generate_and_store().<span class="kw">await</span><span class="question-mark">?</span>.into_inner();
+    <span class="kw">let </span>local_storage_res = client.retrieve(<span class="kw-2">&amp;</span>key_id, RetrieveContext::Null).<span class="kw">await</span>;
     <span class="macro">assert!</span>(local_storage_res.is_ok());
 
     <span class="kw">let </span>local_storage_opt = local_storage_res<span class="question-mark">?</span>.into_inner();
@@ -146,11 +180,31 @@
 
 <span class="kw">async fn </span>cannot_retrieve_fake_key(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">let </span>state = init_test_state(config).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>client = authenticate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let </span>fake_key_id = generate_fake_key_id(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let </span>local_storage_res = retrieve(<span class="kw-2">&amp;</span>state, <span class="kw-2">&amp;</span>fake_key_id, RetrieveContext::LocalOnly).<span class="kw">await</span>;
+    <span class="kw">let </span>fake_key_id = generate_fake_key_id(<span class="kw-2">&amp;</span>client).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>local_storage_res = client
+        .retrieve(<span class="kw-2">&amp;</span>fake_key_id, RetrieveContext::LocalOnly)
+        .<span class="kw">await</span>;
     compare_errors(local_storage_res, Status::internal(<span class="string">&quot;Internal server error&quot;</span>));
     check_audit_events(<span class="kw-2">&amp;</span>state, EventStatus::Failed, ClientAction::Retrieve).<span class="kw">await</span><span class="question-mark">?</span>;
+
+    <span class="prelude-val">Ok</span>(())
+}
+
+<span class="kw">async fn </span>cannot_retrieve_after_logout(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    <span class="kw">let </span>state = init_test_state(config).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>client = authenticate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>;
+
+    <span class="comment">// Generate a secret before waiting out the timeout
+    </span><span class="kw">let </span>GenerateResult {
+        key_id,
+        local_storage: <span class="kw">_</span>,
+    } = client.generate_and_store().<span class="kw">await</span><span class="question-mark">?</span>.into_inner();
+    client.logout().<span class="kw">await</span><span class="question-mark">?</span>;
+
+    <span class="kw">let </span>res = client.retrieve(<span class="kw-2">&amp;</span>key_id, RetrieveContext::Null).<span class="kw">await</span>;
+    compare_status_errors(res, Status::unauthenticated(<span class="string">&quot;No session key for this user&quot;</span>))<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
 }

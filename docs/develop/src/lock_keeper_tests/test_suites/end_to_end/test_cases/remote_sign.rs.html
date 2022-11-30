@@ -56,6 +56,25 @@
 <span id="56">56</span>
 <span id="57">57</span>
 <span id="58">58</span>
+<span id="59">59</span>
+<span id="60">60</span>
+<span id="61">61</span>
+<span id="62">62</span>
+<span id="63">63</span>
+<span id="64">64</span>
+<span id="65">65</span>
+<span id="66">66</span>
+<span id="67">67</span>
+<span id="68">68</span>
+<span id="69">69</span>
+<span id="70">70</span>
+<span id="71">71</span>
+<span id="72">72</span>
+<span id="73">73</span>
+<span id="74">74</span>
+<span id="75">75</span>
+<span id="76">76</span>
+<span id="77">77</span>
 </pre><pre class="rust"><code><span class="kw">use </span>colored::Colorize;
 <span class="kw">use </span>lock_keeper::{
     crypto::{Signable, SignableBytes},
@@ -63,12 +82,13 @@
 };
 <span class="kw">use </span>lock_keeper_client::{api::RemoteGenerateResult, Config};
 <span class="kw">use </span>rand::{rngs::StdRng, SeedableRng};
+<span class="kw">use </span>tonic::Status;
 
 <span class="kw">use crate</span>::{
     error::Result,
     run_parallel,
     test_suites::end_to_end::{
-        operations::{check_audit_events, remote_generate, remote_sign_bytes},
+        operations::{authenticate, check_audit_events, compare_status_errors},
         test_cases::init_test_state,
     },
     utils::{<span class="self">self</span>, TestResult, RNG_SEED},
@@ -81,6 +101,7 @@
     <span class="kw">let </span>result = <span class="macro">run_parallel!</span>(
         config.clone(),
         remote_sign_works(config.client_config.clone()),
+        cannot_remote_sign_after_logout(config.client_config.clone()),
     )<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(result)
@@ -88,19 +109,20 @@
 
 <span class="kw">async fn </span>remote_sign_works(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">let </span>state = init_test_state(config).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>client = authenticate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let </span>RemoteGenerateResult { key_id, public_key } = remote_generate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>.into_inner();
+    <span class="kw">let </span>RemoteGenerateResult { key_id, public_key } = client.remote_generate().<span class="kw">await</span><span class="question-mark">?</span>.into_inner();
 
     <span class="kw">let </span><span class="kw-2">mut </span>rng = StdRng::from_seed(<span class="kw-2">*</span>RNG_SEED);
 
     <span class="kw">for _ in </span><span class="number">0</span>..<span class="number">10 </span>{
         <span class="kw">let </span>data = SignableBytes(utils::random_bytes(<span class="kw-2">&amp;mut </span>rng, <span class="number">100</span>));
-        <span class="kw">let </span>signature = remote_sign_bytes(<span class="kw-2">&amp;</span>state, <span class="kw-2">&amp;</span>key_id, data.clone())
-            .<span class="kw">await</span><span class="question-mark">?
-            </span>.into_inner();
+        <span class="kw">let </span>signature = client
+            .remote_sign_bytes(key_id.clone(), data.clone())
+            .<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="comment">// Verify that the data was signed with the generated key
         </span><span class="macro">assert!</span>(
-            data.verify(<span class="kw-2">&amp;</span>public_key, <span class="kw-2">&amp;</span>signature).is_ok(),
+            data.verify(<span class="kw-2">&amp;</span>public_key, <span class="kw-2">&amp;</span>signature.into_inner()).is_ok(),
             <span class="string">&quot;original bytes: {data:?}&quot;
         </span>);
     }
@@ -111,6 +133,22 @@
         ClientAction::RemoteSignBytes,
     )
     .<span class="kw">await</span><span class="question-mark">?</span>;
+
+    <span class="prelude-val">Ok</span>(())
+}
+
+<span class="kw">async fn </span>cannot_remote_sign_after_logout(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    <span class="kw">let </span>state = init_test_state(config).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>client = authenticate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>;
+
+    <span class="comment">// Remote generate before waiting out the timeout
+    </span><span class="kw">let </span>res = client.remote_generate().<span class="kw">await</span><span class="question-mark">?</span>.into_inner();
+    client.logout().<span class="kw">await</span><span class="question-mark">?</span>;
+
+    <span class="kw">let </span><span class="kw-2">mut </span>rng = StdRng::from_seed(<span class="kw-2">*</span>RNG_SEED);
+    <span class="kw">let </span>data = SignableBytes(utils::random_bytes(<span class="kw-2">&amp;mut </span>rng, <span class="number">100</span>));
+    <span class="kw">let </span>res = client.remote_sign_bytes(res.key_id, data).<span class="kw">await</span>;
+    compare_status_errors(res, Status::unauthenticated(<span class="string">&quot;No session key for this user&quot;</span>))<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
 }

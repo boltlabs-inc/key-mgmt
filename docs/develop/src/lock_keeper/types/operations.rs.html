@@ -111,12 +111,15 @@
 <span id="111">111</span>
 <span id="112">112</span>
 <span id="113">113</span>
+<span id="114">114</span>
+<span id="115">115</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Types related to server operations and the protocols they execute.
 
 </span><span class="kw">pub mod </span>authenticate;
 <span class="kw">pub mod </span>create_storage_key;
 <span class="kw">pub mod </span>generate;
 <span class="kw">pub mod </span>import;
+<span class="kw">pub mod </span>logout;
 <span class="kw">pub mod </span>register;
 <span class="kw">pub mod </span>remote_generate;
 <span class="kw">pub mod </span>remote_sign_bytes;
@@ -144,6 +147,7 @@
     ExportSigningKey,
     Generate,
     ImportSigningKey,
+    Logout,
     Register,
     RemoteGenerate,
     RemoteSignBytes,
