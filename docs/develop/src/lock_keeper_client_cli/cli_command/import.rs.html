@@ -60,9 +60,12 @@
 <span id="60">60</span>
 <span id="61">61</span>
 <span id="62">62</span>
+<span id="63">63</span>
+<span id="64">64</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{cli_command::CliCommand, state::State};
 <span class="kw">use </span>anyhow::Error;
 <span class="kw">use </span>async_trait::async_trait;
+<span class="kw">use </span>lock_keeper::crypto::Import <span class="kw">as </span>LkImport;
 <span class="kw">use </span>lock_keeper_client::LockKeeperClient;
 <span class="kw">use </span>rand::Rng;
 
@@ -86,8 +89,9 @@
         </span>.into_inner();
 
         <span class="kw">let </span>random_bytes = rand::thread_rng().gen::&lt;[u8; <span class="number">32</span>]&gt;().to_vec();
+        <span class="kw">let </span>import = LkImport::new(random_bytes)<span class="question-mark">?</span>;
         <span class="kw">let </span>key_id = lock_keeper_client
-            .import_signing_key(random_bytes)
+            .import_signing_key(import)
             .<span class="kw">await
             </span>.map_err(|e| <span class="macro">anyhow::anyhow!</span>(<span class="string">&quot;Failed to import signing key. Error: {:?}&quot;</span>, e))<span class="question-mark">?
             </span>.into_inner();

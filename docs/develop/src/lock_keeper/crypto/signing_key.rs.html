@@ -823,7 +823,8 @@
 <span id="823">823</span>
 <span id="824">824</span>
 <span id="825">825</span>
-</pre><pre class="rust"><code><span class="kw">use crate</span>::{types::database::user::UserId, LockKeeperError};
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::Export;
+<span class="kw">use crate</span>::{types::database::user::UserId, LockKeeperError};
 <span class="kw">use </span>k256::ecdsa::{
     <span class="self">self</span>,
     signature::{Signer, Verifier},
@@ -1066,7 +1067,7 @@
 <span class="doccomment">/// Raw material for an imported signing key.
 </span><span class="attribute">#[derive(Debug, Clone, Serialize, Deserialize, ZeroizeOnDrop)]
 </span><span class="kw">pub struct </span>Import {
-    <span class="kw">pub </span>key_material: Vec&lt;u8&gt;,
+    key_material: Vec&lt;u8&gt;,
 }
 
 <span class="kw">impl </span>TryFrom&lt;<span class="kw-2">&amp;</span>[u8]&gt; <span class="kw">for </span>Import {
@@ -1084,6 +1085,13 @@
 }
 
 <span class="kw">impl </span>Import {
+    <span class="doccomment">/// Create a new [`Import`] around the bytes representing signing key
+    /// material. Bytes are validated for appropriate format.
+    </span><span class="kw">pub fn </span>new(bytes: Vec&lt;u8&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, LockKeeperError&gt; {
+        <span class="kw">let </span>import = <span class="self">Self</span>::try_from(bytes.as_slice())<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(import)
+    }
+
     <span class="doccomment">/// Convert an [`Import`] into a [`SigningKeyPair`] with appropriate
     /// context.
     ///
@@ -1111,14 +1119,6 @@
             context,
         })
     }
-}
-
-<span class="doccomment">/// Raw material for an exported signing key.
-</span><span class="attribute">#[derive(Debug, Clone, Serialize, Deserialize, ZeroizeOnDrop)]
-</span><span class="kw">pub struct </span>Export {
-    <span class="kw">pub </span>key_material: Vec&lt;u8&gt;,
-    <span class="attribute">#[zeroize(skip)]
-    </span><span class="kw">pub </span>context: Vec&lt;u8&gt;,
 }
 
 <span class="kw">impl </span>From&lt;SigningKeyPair&gt; <span class="kw">for </span>Export {

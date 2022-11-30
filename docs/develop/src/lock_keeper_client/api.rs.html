@@ -257,7 +257,6 @@
 <span id="257">257</span>
 <span id="258">258</span>
 <span id="259">259</span>
-<span id="260">260</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Full implementation of the public API for the Lock Keeper client library.
 //!
 //! This API is designed for use with a local client application - that is, an
@@ -279,7 +278,7 @@
     client::Password, config::Config, LockKeeperClient, LockKeeperClientError, LockKeeperResponse,
 };
 <span class="kw">use </span>lock_keeper::{
-    crypto::{Export, KeyId, Secret, Signable, Signature},
+    crypto::{Export, Import, KeyId, Secret, Signable, Signature},
     types::{
         audit_event::{AuditEvent, AuditEventOptions, EventType},
         database::user::AccountName,
@@ -382,7 +381,7 @@
     </span><span class="kw">pub async fn </span>export_key(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         key_id: <span class="kw-2">&amp;</span>KeyId,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperResponse&lt;Vec&lt;u8&gt;&gt;, LockKeeperClientError&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperResponse&lt;Export&gt;, LockKeeperClientError&gt; {
         <span class="comment">// Create channel: this will internally be a `retrieve` channel
         </span><span class="kw">let </span>metadata = <span class="self">self</span>.create_metadata(ClientAction::Export);
         <span class="kw">let </span>client_channel = <span class="self">Self</span>::create_channel(<span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(), <span class="kw-2">&amp;</span>metadata).<span class="kw">await</span><span class="question-mark">?</span>;
@@ -392,11 +391,10 @@
             .<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="kw">let </span>local_storage = data.ok_or(LockKeeperClientError::ExportFailed)<span class="question-mark">?</span>;
-
-        <span class="kw">let </span>response: Vec&lt;u8&gt; = local_storage.material.into();
+        <span class="kw">let </span>exported_secret = Export::from(local_storage.material);
 
         <span class="prelude-val">Ok</span>(LockKeeperResponse {
-            data: response,
+            data: exported_secret,
             metadata,
         })
     }
@@ -441,7 +439,7 @@
     <span class="doccomment">/// Import signing key material to the key server
     </span><span class="kw">pub async fn </span>import_signing_key(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        key_material: Vec&lt;u8&gt;,
+        key_material: Import,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperResponse&lt;KeyId&gt;, LockKeeperClientError&gt; {
         <span class="kw">let </span>metadata = <span class="self">self</span>.create_metadata(ClientAction::ImportSigningKey);
         <span class="kw">let </span>client_channel = <span class="self">Self</span>::create_channel(<span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(), <span class="kw-2">&amp;</span>metadata).<span class="kw">await</span><span class="question-mark">?</span>;

@@ -27,7 +27,6 @@
 <span id="27">27</span>
 <span id="28">28</span>
 <span id="29">29</span>
-<span id="30">30</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{LockKeeperClient, LockKeeperClientError, LockKeeperResponse};
 <span class="kw">use </span>lock_keeper::{
     crypto::{Import, KeyId},
@@ -39,9 +38,8 @@
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>handle_import_signing_key(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         <span class="kw-2">mut </span>channel: ClientChannel,
-        key_material: Vec&lt;u8&gt;,
+        key_material: Import,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperResponse&lt;KeyId&gt;, LockKeeperClientError&gt; {
-        <span class="kw">let </span>key_material = Import { key_material };
         <span class="comment">// Send UserId and key material to server
         </span><span class="kw">let </span>request = client::Request {
             user_id: <span class="self">self</span>.user_id().clone(),

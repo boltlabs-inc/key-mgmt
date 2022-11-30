@@ -510,6 +510,14 @@
 <span id="510">510</span>
 <span id="511">511</span>
 <span id="512">512</span>
+<span id="513">513</span>
+<span id="514">514</span>
+<span id="515">515</span>
+<span id="516">516</span>
+<span id="517">517</span>
+<span id="518">518</span>
+<span id="519">519</span>
+<span id="520">520</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Application-specific cryptographic types and operations.
 //!
 //! Defines and implements keys and secret types, and the appropriate
@@ -537,8 +545,8 @@
 <span class="kw">use </span>generic::{AssociatedData, EncryptionKey};
 <span class="kw">pub use </span>generic::{CryptoError, Encrypted};
 <span class="kw">pub use </span>signing_key::{
-    Export, Import, PlaceholderEncryptedSigningKeyPair, Signable, SignableBytes, Signature,
-    SigningKeyPair, SigningPublicKey,
+    Import, PlaceholderEncryptedSigningKeyPair, Signable, SignableBytes, Signature, SigningKeyPair,
+    SigningPublicKey,
 };
 
 <span class="doccomment">/// A session key is produced as shared output for client and server from
@@ -794,6 +802,14 @@
     </span><span class="kw">pub fn </span>as_bytes(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[u8] {
         <span class="kw-2">&amp;*</span><span class="self">self</span>.<span class="number">0
     </span>}
+}
+
+<span class="doccomment">/// Raw material for an exported signing key.
+</span><span class="attribute">#[derive(Debug, Clone, Serialize, Deserialize, ZeroizeOnDrop)]
+</span><span class="kw">pub struct </span>Export {
+    <span class="kw">pub </span>key_material: Vec&lt;u8&gt;,
+    <span class="attribute">#[zeroize(skip)]
+    </span><span class="kw">pub </span>context: Vec&lt;u8&gt;,
 }
 
 <span class="attribute">#[cfg(test)]

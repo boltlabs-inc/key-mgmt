@@ -113,8 +113,14 @@
 <span id="113">113</span>
 <span id="114">114</span>
 <span id="115">115</span>
+<span id="116">116</span>
+<span id="117">117</span>
+<span id="118">118</span>
 </pre><pre class="rust"><code><span class="kw">use </span>colored::Colorize;
-<span class="kw">use </span>lock_keeper::types::{audit_event::EventStatus, operations::ClientAction};
+<span class="kw">use </span>lock_keeper::{
+    crypto::Secret,
+    types::{audit_event::EventStatus, operations::ClientAction},
+};
 <span class="kw">use </span>lock_keeper_client::{api::GenerateResult, Config};
 <span class="kw">use </span>tonic::Status;
 
@@ -158,9 +164,9 @@
     <span class="kw">let </span>bytes_res = export(<span class="kw-2">&amp;</span>state, <span class="kw-2">&amp;</span>key_id).<span class="kw">await</span>;
     <span class="macro">assert!</span>(bytes_res.is_ok());
 
-    <span class="kw">let </span>bytes_new = bytes_res<span class="question-mark">?</span>.into_inner();
-    <span class="kw">let </span>bytes_original: Vec&lt;u8&gt; = local_storage.material.into();
-    <span class="macro">assert_eq!</span>(bytes_new, bytes_original);
+    <span class="comment">// Turn the export back into a Secret and compare directly
+    </span><span class="kw">let </span>exported_secret: Secret = bytes_res<span class="question-mark">?</span>.into_inner().try_into()<span class="question-mark">?</span>;
+    <span class="macro">assert_eq!</span>(exported_secret, local_storage.material);
     check_audit_events(<span class="kw-2">&amp;</span>state, EventStatus::Successful, ClientAction::Export).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
