@@ -21,6 +21,8 @@ pub enum LockKeeperClientError {
     AccountAlreadyRegistered,
     #[error("Export failed")]
     ExportFailed,
+    #[error("Logout failed")]
+    LogoutFailed,
     #[error("Invalid account")]
     InvalidAccount,
     #[error("Invalid login")]

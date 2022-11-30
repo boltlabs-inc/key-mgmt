@@ -2,14 +2,14 @@ use colored::Colorize;
 use lock_keeper::types::{
     audit_event::EventStatus, database::user::AccountName, operations::ClientAction,
 };
-use lock_keeper_client::{client::Password, Config, LockKeeperClientError};
+use lock_keeper_client::{client::Password, Config, LockKeeperClient, LockKeeperClientError};
 use std::str::FromStr;
 
 use crate::{
     error::Result,
     run_parallel,
     test_suites::end_to_end::{
-        operations::{check_audit_events, compare_errors, register},
+        operations::{check_audit_events, compare_errors},
         test_cases::TestState,
     },
     utils::{tagged, TestResult},
@@ -21,18 +21,18 @@ pub async fn run_tests(config: TestConfig) -> Result<Vec<TestResult>> {
 
     let result = run_parallel!(
         config.clone(),
-        register_same_user_twice(config.client_config.clone()),
+        register_same_user_twice_fails(config.client_config.clone()),
     )?;
 
     Ok(result)
 }
 
-async fn register_same_user_twice(config: Config) -> Result<()> {
+async fn register_same_user_twice_fails(config: Config) -> Result<()> {
     let account_name = AccountName::from_str(tagged("user").as_str())?;
     let password = Password::from_str(tagged("password").as_str())?;
-    register(&account_name, &password, &config).await?;
+    LockKeeperClient::register(&account_name, &password, &config).await?;
 
-    let second_register = register(&account_name, &password, &config).await;
+    let second_register = LockKeeperClient::register(&account_name, &password, &config).await;
     compare_errors(
         second_register,
         LockKeeperClientError::AccountAlreadyRegistered,

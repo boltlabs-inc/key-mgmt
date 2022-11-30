@@ -1,12 +1,13 @@
 use colored::Colorize;
 use lock_keeper::types::{audit_event::EventStatus, operations::ClientAction};
 use lock_keeper_client::Config;
+use tonic::Status;
 
 use crate::{
     error::Result,
     run_parallel,
     test_suites::end_to_end::{
-        operations::{check_audit_events, import_signing_key},
+        operations::{authenticate, check_audit_events, compare_status_errors, import_signing_key},
         test_cases::init_test_state,
     },
     utils::TestResult,
@@ -16,15 +17,20 @@ use crate::{
 pub async fn run_tests(config: TestConfig) -> Result<Vec<TestResult>> {
     println!("{}", "Running import tests".cyan());
 
-    let result = run_parallel!(config.clone(), import_works(config.client_config.clone()),)?;
+    let result = run_parallel!(
+        config.clone(),
+        import_works(config.client_config.clone()),
+        cannot_import_after_logout(config.client_config.clone())
+    )?;
 
     Ok(result)
 }
 
 async fn import_works(config: Config) -> Result<()> {
     let state = init_test_state(config).await?;
+    let client = authenticate(&state).await?;
 
-    let import_res = import_signing_key(&state).await;
+    let import_res = import_signing_key(&client).await;
     assert!(import_res.is_ok());
     check_audit_events(
         &state,
@@ -32,6 +38,18 @@ async fn import_works(config: Config) -> Result<()> {
         ClientAction::ImportSigningKey,
     )
     .await?;
+
+    Ok(())
+}
+
+async fn cannot_import_after_logout(config: Config) -> Result<()> {
+    let state = init_test_state(config).await?;
+    let client = authenticate(&state).await?;
+
+    client.logout().await?;
+
+    let res = import_signing_key(&client).await;
+    compare_status_errors(res, Status::unauthenticated("No session key for this user"))?;
 
     Ok(())
 }

@@ -10,6 +10,7 @@ use std::{
     net::IpAddr,
     path::{Path, PathBuf},
     str::FromStr,
+    time::Duration,
 };
 
 use crate::{server::opaque_storage::create_or_retrieve_server_key_opaque, LockKeeperServerError};
@@ -19,6 +20,7 @@ use crate::{server::opaque_storage::create_or_retrieve_server_key_opaque, LockKe
 pub struct Config {
     pub address: IpAddr,
     pub port: u16,
+    pub session_timeout: Duration,
     pub tls_config: ServerConfig,
     pub opaque_server_setup: ServerSetup<OpaqueCipherSuite, PrivateKey<Ristretto255>>,
     pub database: DatabaseSpec,
@@ -43,6 +45,7 @@ impl Config {
         Ok(Self {
             address: config.address,
             port: config.port,
+            session_timeout: config.session_timeout,
             tls_config: config.tls_config(private_key_bytes)?,
             opaque_server_setup: create_or_retrieve_server_key_opaque(
                 &mut rng,
@@ -72,6 +75,9 @@ impl std::fmt::Debug for Config {
 pub struct ConfigFile {
     pub address: IpAddr,
     pub port: u16,
+    #[serde(default)]
+    #[serde(with = "humantime_serde")]
+    pub session_timeout: Duration,
     /// The private key can be provided as a file or passed to the
     /// [`Config`] constructors.
     pub private_key: Option<PathBuf>,
@@ -144,6 +150,7 @@ mod tests {
         let config_str = r#"
             address = "127.0.0.2"
             port = 1114
+            session_timeout = "60s"
             private_key = "test.key"
             certificate_chain = "test.crt"
             client_auth = false
@@ -159,6 +166,7 @@ mod tests {
         let ConfigFile {
             address,
             port,
+            session_timeout,
             private_key,
             certificate_chain,
             client_auth,
@@ -175,6 +183,7 @@ mod tests {
         assert_eq!(db_name, "lock-keeper-test-db");
         assert_eq!(address, IpAddr::from_str("127.0.0.2").unwrap());
         assert_eq!(port, 1114);
+        assert_eq!(session_timeout, Duration::from_secs(60));
         assert_eq!(private_key, Some(PathBuf::from("test.key")));
         assert_eq!(certificate_chain, PathBuf::from("test.crt"));
         assert!(!client_auth);

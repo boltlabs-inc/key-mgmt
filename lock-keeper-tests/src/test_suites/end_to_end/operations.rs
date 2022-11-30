@@ -1,28 +1,20 @@
-use crate::test_suites::end_to_end::test_cases::TestState;
+use crate::{test_suites::end_to_end::test_cases::TestState, LockKeeperTestError};
 use lock_keeper::{
-    crypto::{Export, Import, KeyId, Secret, Signable, Signature},
+    crypto::{Import, KeyId},
     types::{
         audit_event::{AuditEventOptions, EventStatus, EventType},
-        database::user::AccountName,
-        operations::{retrieve::RetrieveContext, ClientAction},
+        operations::ClientAction,
     },
 };
-use lock_keeper_client::{
-    api::{GenerateResult, LocalStorage, RemoteGenerateResult},
-    client::Password,
-    Config, LockKeeperClient, LockKeeperClientError, LockKeeperResponse,
-};
+use lock_keeper_client::{LockKeeperClient, LockKeeperClientError, LockKeeperResponse};
 use rand::{prelude::StdRng, Rng, SeedableRng};
 use std::fmt::Display;
+use tonic::Status;
 
 /// Generate a fake key ID to test retrieve/export failure cases.
 pub(crate) async fn generate_fake_key_id(
-    state: &TestState,
+    client: &LockKeeperClient,
 ) -> Result<KeyId, LockKeeperClientError> {
-    let client =
-        LockKeeperClient::authenticated_client(&state.account_name, &state.password, &state.config)
-            .await?
-            .into_inner();
     let mut rng = StdRng::from_entropy();
     let fake_key_id = KeyId::generate(&mut rng, client.user_id())?;
 
@@ -37,7 +29,23 @@ where
     assert!(result.is_err());
 
     let actual_error = result.err().unwrap();
-    assert_eq!(actual_error.to_string(), expected_error.to_string())
+    assert_eq!(actual_error.to_string(), expected_error.to_string());
+}
+
+/// Helper to compare status errors.
+pub(crate) fn compare_status_errors<T>(
+    res: Result<T, LockKeeperClientError>,
+    expected: Status,
+) -> Result<(), LockKeeperTestError> {
+    let actual = match res.err().unwrap() {
+        LockKeeperClientError::TonicStatus(status) => Ok(status),
+        _ => Err(LockKeeperTestError::WrongErrorReturned),
+    }?;
+
+    assert_eq!(actual.code(), expected.code());
+    assert_eq!(actual.message(), expected.message());
+
+    Ok(())
 }
 
 /// Make sure the last audit log for the tested operation has the correct status
@@ -86,61 +94,17 @@ pub(crate) async fn authenticate(
     Ok(client.into_inner())
 }
 
-/// Authenticate and export an arbitrary secret by KeyId.
-pub(crate) async fn export(
-    state: &TestState,
-    key_id: &KeyId,
-) -> Result<LockKeeperResponse<Export>, LockKeeperClientError> {
-    // Authenticate
-    let lock_keeper_client =
-        LockKeeperClient::authenticated_client(&state.account_name, &state.password, &state.config)
-            .await?
-            .into_inner();
-
-    lock_keeper_client.export_key(key_id).await
-}
-
-/// Authenticate and export a signing key by KeyId.
-pub(crate) async fn export_signing_key(
-    state: &TestState,
-    key_id: &KeyId,
-) -> Result<LockKeeperResponse<Export>, LockKeeperClientError> {
-    // Authenticate
-    let lock_keeper_client =
-        LockKeeperClient::authenticated_client(&state.account_name, &state.password, &state.config)
-            .await?
-            .into_inner();
-
-    lock_keeper_client.export_signing_key(key_id).await
-}
-
-/// Authenticate and generate an arbitrary key.
-pub(crate) async fn generate(
-    state: &TestState,
-) -> Result<LockKeeperResponse<GenerateResult>, LockKeeperClientError> {
-    // Authenticate and run generate
-    let lock_keeper_client =
-        LockKeeperClient::authenticated_client(&state.account_name, &state.password, &state.config)
-            .await?
-            .into_inner();
-    lock_keeper_client.generate_and_store().await
-}
-
 /// Authenticate and import a signing key.
 pub(crate) async fn import_signing_key(
-    state: &TestState,
+    client: &LockKeeperClient,
 ) -> Result<LockKeeperResponse<(KeyId, Vec<u8>)>, LockKeeperClientError> {
     // Authenticate and run generate
-    let lock_keeper_client =
-        LockKeeperClient::authenticated_client(&state.account_name, &state.password, &state.config)
-            .await?
-            .into_inner();
     let random_bytes = rand::thread_rng().gen::<[u8; 32]>().to_vec();
     let import = Import::new(random_bytes.clone())?;
     let LockKeeperResponse {
         data: key_id,
         metadata,
-    } = lock_keeper_client.import_signing_key(import).await?;
+    } = client.import_signing_key(import).await?;
 
     let result = LockKeeperResponse {
         data: (key_id, random_bytes),
@@ -148,57 +112,4 @@ pub(crate) async fn import_signing_key(
     };
 
     Ok(result)
-}
-
-/// Register to the LockKeeper key server.
-pub(crate) async fn register(
-    account_name: &AccountName,
-    password: &Password,
-    config: &Config,
-) -> Result<LockKeeperResponse<()>, LockKeeperClientError> {
-    LockKeeperClient::register(account_name, password, config).await
-}
-
-/// Authenticate and generate a signing key server-side
-pub(crate) async fn remote_generate(
-    state: &TestState,
-) -> Result<LockKeeperResponse<RemoteGenerateResult>, LockKeeperClientError> {
-    // Authenticate and run remote generate
-    let lock_keeper_client =
-        LockKeeperClient::authenticated_client(&state.account_name, &state.password, &state.config)
-            .await?
-            .into_inner();
-    lock_keeper_client.remote_generate().await
-}
-
-/// Authenticate and sign bytes with a remote generated signing key
-pub(crate) async fn remote_sign_bytes(
-    state: &TestState,
-    key_id: &KeyId,
-    bytes: impl Signable,
-) -> Result<LockKeeperResponse<Signature>, LockKeeperClientError> {
-    // Authenticate and run remote generate
-    let lock_keeper_client =
-        LockKeeperClient::authenticated_client(&state.account_name, &state.password, &state.config)
-            .await?
-            .into_inner();
-    lock_keeper_client
-        .remote_sign_bytes(key_id.clone(), bytes)
-        .await
-}
-
-/// Authenticate and retrieve an arbitrary key by KeyId.
-pub(crate) async fn retrieve(
-    state: &TestState,
-    key_id: &KeyId,
-    context: RetrieveContext,
-) -> Result<LockKeeperResponse<Option<LocalStorage<Secret>>>, LockKeeperClientError> {
-    // Authenticate
-    let lock_keeper_client =
-        LockKeeperClient::authenticated_client(&state.account_name, &state.password, &state.config)
-            .await?
-            .into_inner();
-
-    // Ensure result matches what was stored in generate
-    lock_keeper_client.retrieve(key_id, context).await
 }

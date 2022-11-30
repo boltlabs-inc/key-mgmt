@@ -36,6 +36,7 @@ uuid.workspace = true
 zeroize.workspace = true
 
 # Other dependencies
+humantime-serde = "1.1.1"
 strum = { version = "0.24.1", features = ["derive"] }
 tower = "0.4"
 

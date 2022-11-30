@@ -11,7 +11,7 @@ use crate::{
     run_parallel,
     test_suites::end_to_end::{
         operations::{
-            check_audit_events, compare_errors, export, export_signing_key, generate,
+            authenticate, check_audit_events, compare_errors, compare_status_errors,
             generate_fake_key_id, import_signing_key,
         },
         test_cases::init_test_state,
@@ -28,9 +28,11 @@ pub async fn run_tests(config: TestConfig) -> Result<Vec<TestResult>> {
         export_works(config.client_config.clone()),
         cannot_export_fake_key(config.client_config.clone()),
         cannot_export_signing_key_as_secret(config.client_config.clone()),
+        cannot_export_after_logout(config.client_config.clone()),
         export_signing_key_works(config.client_config.clone()),
         cannot_export_fake_signing_key(config.client_config.clone()),
-        cannot_export_secret_as_signing_key(config.client_config.clone())
+        cannot_export_secret_as_signing_key(config.client_config.clone()),
+        cannot_export_signing_key_after_logout(config.client_config.clone()),
     )?;
 
     Ok(result)
@@ -38,12 +40,13 @@ pub async fn run_tests(config: TestConfig) -> Result<Vec<TestResult>> {
 
 async fn export_works(config: Config) -> Result<()> {
     let state = init_test_state(config).await?;
+    let client = authenticate(&state).await?;
 
     let GenerateResult {
         key_id,
         local_storage,
-    } = generate(&state).await?.into_inner();
-    let bytes_res = export(&state, &key_id).await;
+    } = client.generate_and_store().await?.into_inner();
+    let bytes_res = client.export_key(&key_id).await;
     assert!(bytes_res.is_ok());
 
     // Turn the export back into a Secret and compare directly
@@ -56,9 +59,10 @@ async fn export_works(config: Config) -> Result<()> {
 
 async fn cannot_export_fake_key(config: Config) -> Result<()> {
     let state = init_test_state(config).await?;
+    let client = authenticate(&state).await?;
 
-    let fake_key_id = generate_fake_key_id(&state).await?;
-    let bytes_res = export(&state, &fake_key_id).await;
+    let fake_key_id = generate_fake_key_id(&client).await?;
+    let bytes_res = client.export_key(&fake_key_id).await;
     compare_errors(bytes_res, Status::internal("Internal server error"));
     check_audit_events(&state, EventStatus::Failed, ClientAction::Export).await?;
 
@@ -67,20 +71,38 @@ async fn cannot_export_fake_key(config: Config) -> Result<()> {
 
 async fn cannot_export_signing_key_as_secret(config: Config) -> Result<()> {
     let state = init_test_state(config).await?;
+    let client = authenticate(&state).await?;
 
-    let (key_id, _) = import_signing_key(&state).await?.into_inner();
-    let export_res = export(&state, &key_id).await;
+    let (key_id, _) = import_signing_key(&client).await?.into_inner();
+    let export_res = client.export_key(&key_id).await;
     compare_errors(export_res, Status::internal("Internal server error"));
     check_audit_events(&state, EventStatus::Failed, ClientAction::Export).await?;
 
     Ok(())
 }
 
+async fn cannot_export_after_logout(config: Config) -> Result<()> {
+    let state = init_test_state(config).await?;
+    let client = authenticate(&state).await?;
+
+    let GenerateResult {
+        key_id,
+        local_storage: _,
+    } = client.generate_and_store().await?.into_inner();
+    client.logout().await?;
+
+    let res = client.export_key(&key_id).await;
+    compare_status_errors(res, Status::unauthenticated("No session key for this user"))?;
+
+    Ok(())
+}
+
 async fn export_signing_key_works(config: Config) -> Result<()> {
     let state = init_test_state(config).await?;
+    let client = authenticate(&state).await?;
 
-    let (key_id, bytes_original) = import_signing_key(&state).await?.into_inner();
-    let export_res = export_signing_key(&state, &key_id).await;
+    let (key_id, bytes_original) = import_signing_key(&client).await?.into_inner();
+    let export_res = client.export_signing_key(&key_id).await;
     assert!(export_res.is_ok());
 
     let export = export_res?.into_inner();
@@ -97,9 +119,10 @@ async fn export_signing_key_works(config: Config) -> Result<()> {
 
 async fn cannot_export_fake_signing_key(config: Config) -> Result<()> {
     let state = init_test_state(config).await?;
+    let client = authenticate(&state).await?;
 
-    let fake_key_id = generate_fake_key_id(&state).await?;
-    let export_res = export_signing_key(&state, &fake_key_id).await;
+    let fake_key_id = generate_fake_key_id(&client).await?;
+    let export_res = client.export_signing_key(&fake_key_id).await;
     compare_errors(export_res, Status::internal("Internal server error"));
     check_audit_events(&state, EventStatus::Failed, ClientAction::ExportSigningKey).await?;
 
@@ -108,11 +131,28 @@ async fn cannot_export_fake_signing_key(config: Config) -> Result<()> {
 
 async fn cannot_export_secret_as_signing_key(config: Config) -> Result<()> {
     let state = init_test_state(config).await?;
+    let client = authenticate(&state).await?;
 
-    let GenerateResult { key_id, .. } = generate(&state).await?.into_inner();
-    let export_res = export_signing_key(&state, &key_id).await;
+    let GenerateResult {
+        key_id,
+        local_storage: _,
+    } = client.generate_and_store().await?.into_inner();
+    let export_res = client.export_signing_key(&key_id).await;
     compare_errors(export_res, Status::internal("Internal server error"));
     check_audit_events(&state, EventStatus::Failed, ClientAction::ExportSigningKey).await?;
+
+    Ok(())
+}
+
+async fn cannot_export_signing_key_after_logout(config: Config) -> Result<()> {
+    let state = init_test_state(config).await?;
+    let client = authenticate(&state).await?;
+
+    let (key_id, _) = import_signing_key(&client).await?.into_inner();
+    client.logout().await?;
+
+    let res = client.export_signing_key(&key_id).await;
+    compare_status_errors(res, Status::unauthenticated("No session key for this user"))?;
 
     Ok(())
 }

@@ -74,8 +74,9 @@ impl From<LockKeeperServerError> for Status {
         use crate::server::session_key_cache::SessionKeyCacheError::*;
 
         match error {
-            LockKeeperServerError::SessionKeyCache(ExpiredSessionKey) => {
-                Status::unauthenticated("Session key expired")
+            LockKeeperServerError::SessionKeyCache(ExpiredSessionKey)
+            | LockKeeperServerError::SessionKeyCache(MissingSessionKey) => {
+                Status::unauthenticated("No session key for this user")
             }
             // Errors that are safe to return to the client
             LockKeeperServerError::AccountAlreadyRegistered

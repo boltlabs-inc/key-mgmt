@@ -4,6 +4,7 @@ pub mod authenticate;
 pub mod create_storage_key;
 pub mod generate;
 pub mod import;
+pub mod logout;
 pub mod register;
 pub mod remote_generate;
 pub mod remote_sign_bytes;
@@ -31,6 +32,7 @@ pub enum ClientAction {
     ExportSigningKey,
     Generate,
     ImportSigningKey,
+    Logout,
     Register,
     RemoteGenerate,
     RemoteSignBytes,

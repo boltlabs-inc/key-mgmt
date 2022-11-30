@@ -58,6 +58,15 @@ impl LockKeeperClient {
         }
     }
 
+    /// Expire the current session and session key for this user.
+    pub async fn logout(&self) -> Result<LockKeeperResponse<()>, LockKeeperClientError> {
+        // Create channel to send messages to server
+        let metadata = self.create_metadata(ClientAction::Logout);
+        let client_channel = Self::create_channel(&mut self.tonic_client(), &metadata).await?;
+
+        self.handle_logout(client_channel).await
+    }
+
     /// Authenticate to the Lock Keeper key server as a previously registered
     /// user.
     ///
