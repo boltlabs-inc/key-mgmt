@@ -8,4 +8,6 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/src/lock-keeper-key-server/target \
     cargo install --path ./bin/key-server-cli
 
+VOLUME /app
+
 CMD ["sh", "-c", "key-server-cli ${CONFIG}"]
