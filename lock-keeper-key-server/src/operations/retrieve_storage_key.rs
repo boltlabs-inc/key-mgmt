@@ -9,21 +9,25 @@ use lock_keeper::{
     types::operations::retrieve_storage_key::{client, server},
 };
 use rand::rngs::StdRng;
+use tracing::{info, instrument};
 
 #[derive(Debug)]
 pub struct RetrieveStorageKey;
 
 #[async_trait]
 impl<DB: DataStore> Operation<DB> for RetrieveStorageKey {
+    #[instrument(skip_all, err(Debug))]
     async fn operation(
         self,
         channel: &mut ServerChannel<StdRng>,
         context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
+        info!("Starting retrieve storage key protocol.");
+
         // Receive user ID and retrieve encrypted storage key for that user
         let request: client::Request = channel.receive().await?;
 
-        // Find user by ID
+        // Find user by user ID.
         let user = context
             .db
             .find_user_by_id(&request.user_id)
@@ -40,6 +44,7 @@ impl<DB: DataStore> Operation<DB> for RetrieveStorageKey {
         };
         channel.send(reply).await?;
 
+        info!("Successfully completed retrieve protocol.");
         Ok(())
     }
 }

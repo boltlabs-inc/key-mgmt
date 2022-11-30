@@ -11,17 +11,24 @@ use lock_keeper::{
     types::operations::retrieve_secret::{client, server},
 };
 use rand::rngs::StdRng;
+use tracing::{info, instrument};
 
 #[derive(Debug)]
 pub struct RetrieveSecret;
 
 #[async_trait]
 impl<DB: DataStore> Operation<DB> for RetrieveSecret {
+    /// Retrieve a stored secret from server.
+    /// 1) Receive request from client
+    /// 2) Find stored key in database.
+    /// 3) Reply to client with stored key.
+    #[instrument(skip_all, err(Debug))]
     async fn operation(
         self,
         channel: &mut ServerChannel<StdRng>,
         context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
+        info!("Starting retrieve secret protocol.");
         // Receive UserId from client
         let request: client::Request = channel.receive().await?;
         context.key_id = Some(request.key_id.clone());
@@ -48,6 +55,7 @@ impl<DB: DataStore> Operation<DB> for RetrieveSecret {
             secret: stored_secret,
         };
         channel.send(reply).await?;
+        info!("Successfully completed retrieve secret protocol.");
         Ok(())
     }
 }

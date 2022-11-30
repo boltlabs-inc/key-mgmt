@@ -157,6 +157,18 @@ cargo make cli
 ```
 
 ## Troubleshooting
+### Logging
+The server writes logs to a few locations:
+- **Standard Output**: `INFO` level logs get written out to standard output for any events originating from any lock-keeper crates.
+- **Sever-only logs**: `INFO` level logs written to a file based on user config (see below) for any events originating from any lock-keeper crates.
+- **All logs**: `TRACE` or higher level logs written to a file based on user config (see below) for any event from any crate including dependencies.
+
+The following may be configured via the server configuration file:
+- The log directory may be specified via the `log_directory` field in the server config file.
+- The sever-only log file may be specified via the `lock_keeper_logs_file_name` field.
+- The all log file may be specified via the `all_logs_file_name` field.
+
+### No Space Left
 
 If you get a `no space left on device` error from Docker, try running:
 ```bash

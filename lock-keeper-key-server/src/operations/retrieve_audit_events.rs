@@ -1,3 +1,4 @@
+//! This operation allows client to retrieve the stored audit event logs.
 use crate::{
     database::DataStore,
     server::{Context, Operation},
@@ -9,17 +10,20 @@ use lock_keeper::{
     types::operations::retrieve_audit_events::{client, server},
 };
 use rand::rngs::StdRng;
+use tracing::{info, instrument};
 
 #[derive(Debug)]
 pub struct RetrieveAuditEvents;
 
 #[async_trait]
 impl<DB: DataStore> Operation<DB> for RetrieveAuditEvents {
+    #[instrument(skip_all, err(Debug))]
     async fn operation(
         self,
         channel: &mut ServerChannel<StdRng>,
         context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
+        info!("Starting retrieve audit events protocol");
         // Receive event type and options for audit events to return
         let request: client::Request = channel.receive().await?;
 
@@ -35,7 +39,7 @@ impl<DB: DataStore> Operation<DB> for RetrieveAuditEvents {
         };
 
         channel.send(reply).await?;
-
+        info!("Successfully completed retrieve audit events protocol");
         Ok(())
     }
 }

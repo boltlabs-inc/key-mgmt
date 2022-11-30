@@ -15,6 +15,7 @@ async-trait.workspace = true
 futures.workspace = true
 opaque-ke.workspace = true
 thiserror.workspace = true
+tracing.workspace = true
 
 # Other dependencies
 mongodb = "2.3.0"

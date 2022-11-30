@@ -23,11 +23,14 @@ use mongodb::{
     Client, Database as MongoDB, IndexModel,
 };
 use opaque_ke::ServerRegistration;
+use tracing::instrument;
 
 mod audit_event;
 mod secret;
 mod user;
 
+/// Our wrapper around the [`MongoDB`] type. We implement the trait
+/// [`DataStore`] for this type.
 #[derive(Debug, Clone)]
 pub struct Database {
     handle: MongoDB,
@@ -71,6 +74,7 @@ impl Database {
 impl DataStore for Database {
     type Error = Error;
 
+    #[instrument(skip_all, err(Debug), fields(actor, secret_id, action, status))]
     async fn create_audit_event(
         &self,
         actor: &AccountName,
@@ -83,6 +87,7 @@ impl DataStore for Database {
         Ok(())
     }
 
+    #[instrument(skip_all, err(Debug), fields(account_name, event_type, options))]
     async fn find_audit_events(
         &self,
         account_name: &AccountName,
@@ -95,6 +100,7 @@ impl DataStore for Database {
         Ok(audit_events)
     }
 
+    #[instrument(skip_all, err(Debug), fields(user_id))]
     async fn add_user_secret(
         &self,
         user_id: &UserId,
@@ -104,6 +110,7 @@ impl DataStore for Database {
         Ok(())
     }
 
+    #[instrument(skip_all, err(Debug), fields(user_id, key_id))]
     async fn get_user_secret(
         &self,
         user_id: &UserId,
@@ -126,21 +133,25 @@ impl DataStore for Database {
         Ok(user)
     }
 
+    #[instrument(skip_all, err(Debug), fields(account_name))]
     async fn find_user(&self, account_name: &AccountName) -> Result<Option<User>, Self::Error> {
         let opt_user = self.find_user(account_name).await?;
         Ok(opt_user)
     }
 
+    #[instrument(skip_all, err(Debug), fields(user_id))]
     async fn find_user_by_id(&self, user_id: &UserId) -> Result<Option<User>, Self::Error> {
         let opt_user = self.find_user_by_id(user_id).await?;
         Ok(opt_user)
     }
 
+    #[instrument(skip_all, err(Debug), fields(user_id))]
     async fn delete_user(&self, user_id: &UserId) -> Result<(), Self::Error> {
         self.delete_user(user_id).await?;
         Ok(())
     }
 
+    #[instrument(skip_all, err(Debug), fields(user_id))]
     async fn set_storage_key(
         &self,
         user_id: &UserId,

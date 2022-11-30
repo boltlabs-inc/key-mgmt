@@ -24,6 +24,7 @@ pub struct Config {
     pub tls_config: ServerConfig,
     pub opaque_server_setup: ServerSetup<OpaqueCipherSuite, PrivateKey<Ristretto255>>,
     pub database: DatabaseSpec,
+    pub logging: LoggingConfig,
 }
 
 impl Config {
@@ -52,6 +53,7 @@ impl Config {
                 config.opaque_server_key,
             )?,
             database: config.database,
+            logging: config.logging,
         })
     }
 }
@@ -87,6 +89,7 @@ pub struct ConfigFile {
     pub opaque_path: PathBuf,
     pub opaque_server_key: PathBuf,
     pub database: DatabaseSpec,
+    pub logging: LoggingConfig,
 }
 
 impl FromStr for ConfigFile {
@@ -95,6 +98,13 @@ impl FromStr for ConfigFile {
     fn from_str(config_string: &str) -> Result<Self, Self::Err> {
         Ok(toml::from_str(config_string)?)
     }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
+pub struct LoggingConfig {
+    pub lock_keeper_logs_file_name: PathBuf,
+    pub all_logs_file_name: PathBuf,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -160,6 +170,10 @@ mod tests {
             [database]
             mongodb_uri = "mongodb://localhost:27017"
             db_name = "lock-keeper-test-db"
+
+            [logging]
+            lock_keeper_logs_file_name = "./dev/logs/server.log"
+            all_logs_file_name = "./dev/logs/all.log"
         "#;
 
         // Destructure so the test breaks when fields are added
@@ -177,6 +191,7 @@ mod tests {
                     mongodb_uri,
                     db_name,
                 },
+            logging,
         } = ConfigFile::from_str(config_str).unwrap();
 
         assert_eq!(mongodb_uri, "mongodb://localhost:27017");
@@ -192,5 +207,10 @@ mod tests {
             opaque_server_key,
             PathBuf::from("tests/gen/opaque/server_setup")
         );
+        let expected_log = LoggingConfig {
+            lock_keeper_logs_file_name: "./dev/logs/server.log".parse().unwrap(),
+            all_logs_file_name: "./dev/logs/all.log".parse().unwrap(),
+        };
+        assert_eq!(logging, expected_log);
     }
 }

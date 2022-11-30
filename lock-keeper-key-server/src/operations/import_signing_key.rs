@@ -1,3 +1,5 @@
+//! Import signing key operation. This protocol allows the client to import a
+//! key into the server.
 use crate::{
     server::{Context, Operation},
     LockKeeperServerError,
@@ -14,18 +16,21 @@ use lock_keeper::{
     },
 };
 use rand::rngs::StdRng;
+use tracing::{info, instrument};
 
 #[derive(Debug)]
 pub struct ImportSigningKey;
 
 #[async_trait]
 impl<DB: DataStore> Operation<DB> for ImportSigningKey {
+    #[instrument(skip_all, err(Debug))]
     async fn operation(
         self,
         channel: &mut ServerChannel<StdRng>,
         context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
-        // Receive UserId and key material from client
+        info!("Starting import key operation.");
+        // Receive UserId and key material from client.
         let request: client::Request = channel.receive().await?;
 
         // Generate new KeyId
@@ -53,8 +58,15 @@ impl<DB: DataStore> Operation<DB> for ImportSigningKey {
             .map_err(LockKeeperServerError::database)?;
 
         // Serialize KeyId and send to client
-        let reply = server::Response { key_id };
+        let reply = server::Response {
+            key_id: key_id.clone(),
+        };
         channel.send(reply).await?;
+
+        info!(
+            "Successfully completed import key protocol. For key: {:?}",
+            key_id
+        );
         Ok(())
     }
 }
