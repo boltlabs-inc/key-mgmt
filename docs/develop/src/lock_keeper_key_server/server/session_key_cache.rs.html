@@ -211,39 +211,12 @@
 <span id="211">211</span>
 <span id="212">212</span>
 <span id="213">213</span>
-<span id="214">214</span>
-<span id="215">215</span>
-<span id="216">216</span>
-<span id="217">217</span>
-<span id="218">218</span>
-<span id="219">219</span>
-<span id="220">220</span>
-<span id="221">221</span>
-<span id="222">222</span>
-<span id="223">223</span>
-<span id="224">224</span>
-<span id="225">225</span>
-<span id="226">226</span>
-<span id="227">227</span>
-<span id="228">228</span>
-<span id="229">229</span>
-<span id="230">230</span>
-<span id="231">231</span>
-<span id="232">232</span>
-<span id="233">233</span>
-<span id="234">234</span>
-<span id="235">235</span>
-<span id="236">236</span>
-</pre><pre class="rust"><code><span class="kw">use </span>lock_keeper::{
-    crypto::OpaqueSessionKey,
-    types::{database::user::UserId, operations::RequestMetadata},
-};
+</pre><pre class="rust"><code><span class="kw">use </span>lock_keeper::{crypto::OpaqueSessionKey, types::database::user::UserId};
 <span class="kw">use </span>std::collections::hash_map::Entry;
 
 <span class="kw">use </span>std::collections::HashMap;
 
-<span class="kw">use crate</span>::{database::DataStore, LockKeeperServerError};
-<span class="kw">use </span>lock_keeper::types::operations::ClientAction;
+<span class="kw">use </span><span class="kw">crate</span>::LockKeeperServerError;
 <span class="kw">use </span>std::time::{Duration, Instant};
 <span class="kw">use </span>thiserror::Error;
 <span class="kw">use </span>zeroize::Zeroize;
@@ -317,25 +290,6 @@
                 <span class="prelude-val">Ok</span>(key.clone())
             }
             Entry::Vacant(<span class="kw">_</span>) =&gt; <span class="prelude-val">Err</span>(SessionKeyCacheError::MissingSessionKey),
-        }
-    }
-
-    <span class="kw">pub fn </span>check_key&lt;DB: DataStore&gt;(
-        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        metadata: <span class="kw-2">&amp;</span>RequestMetadata,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
-        <span class="kw">match </span>metadata.action() {
-            <span class="comment">// These actions are unauthenticated
-            </span>ClientAction::Authenticate | ClientAction::Register =&gt; <span class="prelude-val">Ok</span>(()),
-            <span class="comment">// The rest of the actions must be authenticated
-            </span><span class="kw">_ </span>=&gt; {
-                <span class="kw">let </span>user_id = metadata
-                    .user_id()
-                    .as_ref()
-                    .ok_or(LockKeeperServerError::InvalidAccount)<span class="question-mark">?</span>;
-                <span class="kw">let </span>server_session_key = <span class="self">self</span>.get_key(user_id.clone())<span class="question-mark">?</span>;
-                <span class="prelude-val">Ok</span>(())
-            }
         }
     }
 

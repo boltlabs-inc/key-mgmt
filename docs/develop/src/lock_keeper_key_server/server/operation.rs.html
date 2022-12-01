@@ -92,18 +92,78 @@
 <span id="92">92</span>
 <span id="93">93</span>
 <span id="94">94</span>
+<span id="95">95</span>
+<span id="96">96</span>
+<span id="97">97</span>
+<span id="98">98</span>
+<span id="99">99</span>
+<span id="100">100</span>
+<span id="101">101</span>
+<span id="102">102</span>
+<span id="103">103</span>
+<span id="104">104</span>
+<span id="105">105</span>
+<span id="106">106</span>
+<span id="107">107</span>
+<span id="108">108</span>
+<span id="109">109</span>
+<span id="110">110</span>
+<span id="111">111</span>
+<span id="112">112</span>
+<span id="113">113</span>
+<span id="114">114</span>
+<span id="115">115</span>
+<span id="116">116</span>
+<span id="117">117</span>
+<span id="118">118</span>
+<span id="119">119</span>
+<span id="120">120</span>
+<span id="121">121</span>
+<span id="122">122</span>
+<span id="123">123</span>
+<span id="124">124</span>
+<span id="125">125</span>
+<span id="126">126</span>
+<span id="127">127</span>
+<span id="128">128</span>
+<span id="129">129</span>
+<span id="130">130</span>
+<span id="131">131</span>
+<span id="132">132</span>
+<span id="133">133</span>
+<span id="134">134</span>
+<span id="135">135</span>
+<span id="136">136</span>
+<span id="137">137</span>
+<span id="138">138</span>
+<span id="139">139</span>
+<span id="140">140</span>
+<span id="141">141</span>
+<span id="142">142</span>
+<span id="143">143</span>
 </pre><pre class="rust"><code><span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>lock_keeper::{
     constants::METADATA,
     infrastructure::channel::ServerChannel,
-    types::{audit_event::EventStatus, operations::ResponseMetadata, Message, MessageStream},
+    types::{
+        audit_event::EventStatus,
+        database::user::UserId,
+        operations::{ClientAction, ResponseMetadata},
+        Message, MessageStream,
+    },
 };
-<span class="kw">use </span>std::time::Duration;
+
+<span class="kw">use </span>std::{ops::DerefMut, time::Duration};
 <span class="kw">use </span>tokio_stream::wrappers::ReceiverStream;
 <span class="kw">use </span>tonic::{Request, Response, Status, Streaming};
+<span class="kw">use </span>tracing::{error, info, Instrument};
 <span class="kw">use </span>uuid::Uuid;
 
-<span class="kw">use crate</span>::{database::DataStore, server::Context, LockKeeperServerError};
+<span class="kw">use crate</span>::{
+    database::DataStore,
+    server::{session_key_cache::SessionKeyCache, Context},
+    LockKeeperServerError,
+};
 
 <span class="attribute">#[async_trait]
 </span><span class="doccomment">/// A type implementing [`Operation`] can process `tonic` requests using a
@@ -125,29 +185,39 @@
         <span class="kw-2">mut </span>context: Context&lt;DB&gt;,
         request: Request&lt;Streaming&lt;Message&gt;&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;MessageStream&gt;, Status&gt; {
+        <span class="macro">info!</span>(<span class="string">&quot;Handling new client request.&quot;</span>);
         <span class="kw">let </span>(<span class="kw-2">mut </span>channel, rx) = ServerChannel::create(request)<span class="question-mark">?</span>;
 
         {
-            <span class="kw">let </span><span class="kw-2">mut </span>session_key_cache = context.session_key_cache.lock().<span class="kw">await</span>;
-            session_key_cache.check_key::&lt;DB&gt;(channel.metadata())<span class="question-mark">?</span>;
+            <span class="kw">let </span>session_cache = context.session_key_cache.lock().<span class="kw">await</span>;
+            check_authentication(
+                <span class="kw-2">&amp;</span>channel.metadata().action(),
+                channel.metadata().user_id().as_ref(),
+                session_cache,
+            )<span class="question-mark">?</span>;
         }
 
-        <span class="macro">tracing::info!</span>(<span class="string">&quot;Handling action: {:?}&quot;</span>, channel.metadata().action());
+        <span class="kw">let _ </span>= tokio::spawn(
+            <span class="kw">async move </span>{
+                audit_event(<span class="kw-2">&amp;mut </span>channel, <span class="kw-2">&amp;</span>context, EventStatus::Started).<span class="kw">await</span>;
 
-        <span class="kw">let _ </span>= tokio::spawn(<span class="kw">async move </span>{
-            audit_event(<span class="kw-2">&amp;mut </span>channel, <span class="kw-2">&amp;</span>context, EventStatus::Started).<span class="kw">await</span>;
+                <span class="kw">match </span><span class="self">self</span>.operation(<span class="kw-2">&amp;mut </span>channel, <span class="kw-2">&amp;mut </span>context).<span class="kw">await </span>{
+                    <span class="prelude-val">Ok</span>(()) =&gt; {
+                        <span class="macro">info!</span>(<span class="string">&quot;This operation completed successfully!&quot;</span>);
+                        audit_event(<span class="kw-2">&amp;mut </span>channel, <span class="kw-2">&amp;</span>context, EventStatus::Successful).<span class="kw">await</span>;
+                    }
+                    <span class="prelude-val">Err</span>(e) =&gt; {
+                        <span class="macro">info!</span>(<span class="string">&quot;This operation completed with an error!&quot;</span>);
+                        handle_error(<span class="kw-2">&amp;mut </span>channel, e).<span class="kw">await</span>;
+                        audit_event(<span class="kw-2">&amp;mut </span>channel, <span class="kw-2">&amp;</span>context, EventStatus::Failed).<span class="kw">await</span>;
 
-            <span class="kw">let </span>result = <span class="self">self</span>.operation(<span class="kw-2">&amp;mut </span>channel, <span class="kw-2">&amp;mut </span>context).<span class="kw">await</span>;
-            <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = result {
-                handle_error(<span class="kw-2">&amp;mut </span>channel, e).<span class="kw">await</span>;
-                audit_event(<span class="kw-2">&amp;mut </span>channel, <span class="kw-2">&amp;</span>context, EventStatus::Failed).<span class="kw">await</span>;
-
-                <span class="comment">// Give the client a moment to receive the error before dropping the channel
-                </span>tokio::time::sleep(Duration::from_millis(<span class="number">10</span>)).<span class="kw">await</span>;
-            } <span class="kw">else </span>{
-                audit_event(<span class="kw-2">&amp;mut </span>channel, <span class="kw-2">&amp;</span>context, EventStatus::Successful).<span class="kw">await</span>;
+                        <span class="comment">// Give the client a moment to receive the error before dropping the channel
+                        </span>tokio::time::sleep(Duration::from_millis(<span class="number">10</span>)).<span class="kw">await</span>;
+                    }
+                }
             }
-        });
+            .in_current_span(),
+        );
 
         <span class="kw">let </span>metadata = ResponseMetadata {
             request_id: Uuid::new_v4(),
@@ -162,14 +232,42 @@
     }
 }
 
+<span class="doccomment">/// Most operations require an authenticated session. Check if there is a valid
+/// session.
+</span><span class="kw">fn </span>check_authentication(
+    action: <span class="kw-2">&amp;</span>ClientAction,
+    user_id: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>UserId&gt;,
+    <span class="kw-2">mut </span>session_cache: <span class="kw">impl </span>DerefMut&lt;Target = SessionKeyCache&gt;,
+) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
+    <span class="macro">info!</span>(<span class="string">&quot;Checking client&#39;s authentication...&quot;</span>);
+    <span class="kw">match </span>action {
+        <span class="comment">// These actions are unauthenticated.
+        </span>ClientAction::Authenticate | ClientAction::Register =&gt; {
+            <span class="macro">info!</span>(<span class="string">&quot;Protocol does not require client to be authenticated.&quot;</span>);
+        }
+        <span class="comment">// The rest of the actions must be authenticated
+        </span><span class="kw">_ </span>=&gt; {
+            <span class="kw">let </span>user_id = user_id.ok_or(LockKeeperServerError::InvalidAccount)<span class="question-mark">?</span>;
+            <span class="kw">let _ </span>= session_cache
+                .get_key(user_id.clone())
+                .map_err(LockKeeperServerError::SessionKeyCache)<span class="question-mark">?</span>;
+
+            <span class="macro">info!</span>(<span class="string">&quot;User is already authenticated.&quot;</span>);
+        }
+    }
+
+    <span class="prelude-val">Ok</span>(())
+}
+
 <span class="kw">async fn </span>handle_error(channel: <span class="kw-2">&amp;mut </span>ServerChannel, e: LockKeeperServerError) {
-    <span class="macro">tracing::error!</span>(<span class="string">&quot;{}&quot;</span>, e);
+    <span class="macro">error!</span>(<span class="string">&quot;{}&quot;</span>, e);
     <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = channel.send_error(e).<span class="kw">await </span>{
-        <span class="macro">tracing::error!</span>(<span class="string">&quot;{}&quot;</span>, e);
+        <span class="macro">error!</span>(<span class="string">&quot;Problem while sending error over channel: {}&quot;</span>, e);
     }
 }
 
-<span class="kw">async fn </span>audit_event&lt;DB: DataStore&gt;(
+<span class="doccomment">/// Log the given action as an audit event.
+</span><span class="kw">async fn </span>audit_event&lt;DB: DataStore&gt;(
     channel: <span class="kw-2">&amp;mut </span>ServerChannel,
     context: <span class="kw-2">&amp;</span>Context&lt;DB&gt;,
     status: EventStatus,
