@@ -1,13 +1,9 @@
-use lock_keeper::{
-    crypto::OpaqueSessionKey,
-    types::{database::user::UserId, operations::RequestMetadata},
-};
+use lock_keeper::{crypto::OpaqueSessionKey, types::database::user::UserId};
 use std::collections::hash_map::Entry;
 
 use std::collections::HashMap;
 
-use crate::{database::DataStore, LockKeeperServerError};
-use lock_keeper::types::operations::ClientAction;
+use crate::LockKeeperServerError;
 use std::time::{Duration, Instant};
 use thiserror::Error;
 use zeroize::Zeroize;
@@ -81,25 +77,6 @@ impl SessionKeyCache {
                 Ok(key.clone())
             }
             Entry::Vacant(_) => Err(SessionKeyCacheError::MissingSessionKey),
-        }
-    }
-
-    pub fn check_key<DB: DataStore>(
-        &mut self,
-        metadata: &RequestMetadata,
-    ) -> Result<(), LockKeeperServerError> {
-        match metadata.action() {
-            // These actions are unauthenticated
-            ClientAction::Authenticate | ClientAction::Register => Ok(()),
-            // The rest of the actions must be authenticated
-            _ => {
-                let user_id = metadata
-                    .user_id()
-                    .as_ref()
-                    .ok_or(LockKeeperServerError::InvalidAccount)?;
-                let server_session_key = self.get_key(user_id.clone())?;
-                Ok(())
-            }
         }
     }
 

@@ -2,14 +2,25 @@ use async_trait::async_trait;
 use lock_keeper::{
     constants::METADATA,
     infrastructure::channel::ServerChannel,
-    types::{audit_event::EventStatus, operations::ResponseMetadata, Message, MessageStream},
+    types::{
+        audit_event::EventStatus,
+        database::user::UserId,
+        operations::{ClientAction, ResponseMetadata},
+        Message, MessageStream,
+    },
 };
-use std::{thread, time::Duration};
+
+use std::{ops::DerefMut, time::Duration};
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status, Streaming};
+use tracing::{error, info, Instrument};
 use uuid::Uuid;
 
-use crate::{database::DataStore, server::Context, LockKeeperServerError};
+use crate::{
+    database::DataStore,
+    server::{session_key_cache::SessionKeyCache, Context},
+    LockKeeperServerError,
+};
 
 #[async_trait]
 /// A type implementing [`Operation`] can process `tonic` requests using a
@@ -31,29 +42,39 @@ pub(crate) trait Operation<DB: DataStore>: Sized + Send + 'static {
         mut context: Context<DB>,
         request: Request<Streaming<Message>>,
     ) -> Result<Response<MessageStream>, Status> {
+        info!("Handling new client request.");
         let (mut channel, rx) = ServerChannel::create(request)?;
 
         {
-            let mut session_key_cache = context.session_key_cache.lock().await;
-            session_key_cache.check_key::<DB>(channel.metadata())?;
+            let session_cache = context.session_key_cache.lock().await;
+            check_authentication(
+                &channel.metadata().action(),
+                channel.metadata().user_id().as_ref(),
+                session_cache,
+            )?;
         }
 
-        tracing::info!("Handling action: {:?}", channel.metadata().action());
+        let _ = tokio::spawn(
+            async move {
+                audit_event(&mut channel, &context, EventStatus::Started).await;
 
-        let _ = tokio::spawn(async move {
-            audit_event(&mut channel, &context, EventStatus::Started).await;
+                match self.operation(&mut channel, &mut context).await {
+                    Ok(()) => {
+                        info!("This operation completed successfully!");
+                        audit_event(&mut channel, &context, EventStatus::Successful).await;
+                    }
+                    Err(e) => {
+                        info!("This operation completed with an error!");
+                        handle_error(&mut channel, e).await;
+                        audit_event(&mut channel, &context, EventStatus::Failed).await;
 
-            let result = self.operation(&mut channel, &mut context).await;
-            if let Err(e) = result {
-                handle_error(&mut channel, e).await;
-                audit_event(&mut channel, &context, EventStatus::Failed).await;
-
-                // Give the client a moment to receive the error before dropping the channel
-                thread::sleep(Duration::from_millis(100));
-            } else {
-                audit_event(&mut channel, &context, EventStatus::Successful).await;
+                        // Give the client a moment to receive the error before dropping the channel
+                        tokio::time::sleep(Duration::from_millis(10)).await;
+                    }
+                }
             }
-        });
+            .in_current_span(),
+        );
 
         let metadata = ResponseMetadata {
             request_id: Uuid::new_v4(),
@@ -68,13 +89,41 @@ pub(crate) trait Operation<DB: DataStore>: Sized + Send + 'static {
     }
 }
 
+/// Most operations require an authenticated session. Check if there is a valid
+/// session.
+fn check_authentication(
+    action: &ClientAction,
+    user_id: Option<&UserId>,
+    mut session_cache: impl DerefMut<Target = SessionKeyCache>,
+) -> Result<(), LockKeeperServerError> {
+    info!("Checking client's authentication...");
+    match action {
+        // These actions are unauthenticated.
+        ClientAction::Authenticate | ClientAction::Register => {
+            info!("Protocol does not require client to be authenticated.");
+        }
+        // The rest of the actions must be authenticated
+        _ => {
+            let user_id = user_id.ok_or(LockKeeperServerError::InvalidAccount)?;
+            let _ = session_cache
+                .get_key(user_id.clone())
+                .map_err(LockKeeperServerError::SessionKeyCache)?;
+
+            info!("User is already authenticated.");
+        }
+    }
+
+    Ok(())
+}
+
 async fn handle_error(channel: &mut ServerChannel, e: LockKeeperServerError) {
-    tracing::error!("{}", e);
+    error!("{}", e);
     if let Err(e) = channel.send_error(e).await {
-        tracing::error!("{}", e);
+        error!("Problem while sending error over channel: {}", e);
     }
 }
 
+/// Log the given action as an audit event.
 async fn audit_event<DB: DataStore>(
     channel: &mut ServerChannel,
     context: &Context<DB>,
