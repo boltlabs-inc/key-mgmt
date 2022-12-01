@@ -4,7 +4,7 @@ use lock_keeper::{
     infrastructure::channel::ServerChannel,
     types::{audit_event::EventStatus, operations::ResponseMetadata, Message, MessageStream},
 };
-use std::{thread, time::Duration};
+use std::time::Duration;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status, Streaming};
 use uuid::Uuid;
@@ -49,7 +49,7 @@ pub(crate) trait Operation<DB: DataStore>: Sized + Send + 'static {
                 audit_event(&mut channel, &context, EventStatus::Failed).await;
 
                 // Give the client a moment to receive the error before dropping the channel
-                thread::sleep(Duration::from_millis(100));
+                tokio::time::sleep(Duration::from_millis(10)).await;
             } else {
                 audit_event(&mut channel, &context, EventStatus::Successful).await;
             }
