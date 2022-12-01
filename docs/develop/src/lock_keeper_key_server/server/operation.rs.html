@@ -98,7 +98,7 @@
     infrastructure::channel::ServerChannel,
     types::{audit_event::EventStatus, operations::ResponseMetadata, Message, MessageStream},
 };
-<span class="kw">use </span>std::{thread, time::Duration};
+<span class="kw">use </span>std::time::Duration;
 <span class="kw">use </span>tokio_stream::wrappers::ReceiverStream;
 <span class="kw">use </span>tonic::{Request, Response, Status, Streaming};
 <span class="kw">use </span>uuid::Uuid;
@@ -143,7 +143,7 @@
                 audit_event(<span class="kw-2">&amp;mut </span>channel, <span class="kw-2">&amp;</span>context, EventStatus::Failed).<span class="kw">await</span>;
 
                 <span class="comment">// Give the client a moment to receive the error before dropping the channel
-                </span>thread::sleep(Duration::from_millis(<span class="number">100</span>));
+                </span>tokio::time::sleep(Duration::from_millis(<span class="number">10</span>)).<span class="kw">await</span>;
             } <span class="kw">else </span>{
                 audit_event(<span class="kw-2">&amp;mut </span>channel, <span class="kw-2">&amp;</span>context, EventStatus::Successful).<span class="kw">await</span>;
             }
