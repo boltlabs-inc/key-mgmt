@@ -1,7 +1,7 @@
 use crate::{cli_command::CliCommand, state::State};
 use anyhow::Error;
 use async_trait::async_trait;
-use lock_keeper::types::operations::retrieve::RetrieveContext;
+use lock_keeper::types::operations::retrieve_secret::RetrieveContext;
 use lock_keeper_client::LockKeeperClient;
 
 #[derive(Debug)]
@@ -26,7 +26,7 @@ impl CliCommand for Retrieve {
         let entry = state.get_key_id(&self.name)?;
         // Retrieve results for specified key.
         let retrieve_result = lock_keeper_client
-            .retrieve(&entry.key_id, RetrieveContext::LocalOnly)
+            .retrieve_secret(&entry.key_id, RetrieveContext::LocalOnly)
             .await?
             .into_inner();
 

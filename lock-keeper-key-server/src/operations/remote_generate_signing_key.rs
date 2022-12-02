@@ -6,17 +6,20 @@ use crate::{
 use crate::database::DataStore;
 use async_trait::async_trait;
 use lock_keeper::{
-    crypto::{KeyId, SigningKeyPair},
+    crypto::{KeyId, PlaceholderEncryptedSigningKeyPair, SigningKeyPair},
     infrastructure::channel::ServerChannel,
-    types::operations::remote_generate::{client, server},
+    types::{
+        database::secrets::StoredSecret,
+        operations::remote_generate::{client, server},
+    },
 };
 use rand::rngs::StdRng;
 
 #[derive(Debug)]
-pub struct RemoteGenerate;
+pub struct RemoteGenerateSigningKey;
 
 #[async_trait]
-impl<DB: DataStore> Operation<DB> for RemoteGenerate {
+impl<DB: DataStore> Operation<DB> for RemoteGenerateSigningKey {
     async fn operation(
         self,
         channel: &mut ServerChannel<StdRng>,
@@ -35,10 +38,15 @@ impl<DB: DataStore> Operation<DB> for RemoteGenerate {
 
         let public_key = key_pair.public_key();
 
+        let secret = StoredSecret::from_remote_signing_key_pair(
+            key_id.clone(),
+            PlaceholderEncryptedSigningKeyPair::from(key_pair),
+        )?;
+
         // Store key in database
         context
             .db
-            .add_remote_secret(&request.user_id, key_pair, key_id.clone())
+            .add_user_secret(&request.user_id, secret)
             .await
             .map_err(LockKeeperServerError::database)?;
 

@@ -1,75 +1,111 @@
 //! Database models for secrets
 
-use crate::crypto::{Encrypted, KeyId, PlaceholderEncryptedSigningKeyPair, Secret, SigningKeyPair};
+use crate::{
+    crypto::{Encrypted, KeyId, PlaceholderEncryptedSigningKeyPair, Secret, SigningKeyPair},
+    LockKeeperError,
+};
 use serde::{Deserialize, Serialize};
-use zeroize::ZeroizeOnDrop;
 
-/// Holds user's stored secrets of all types
-#[derive(Debug, Default, Deserialize, Serialize)]
-pub struct StoredSecrets {
-    pub arbitrary_secrets: Vec<StoredEncryptedSecret>,
-    pub signing_keys: Vec<StoredEncryptedSigningKeyPair>,
-    pub server_created_signing_keys: Vec<StoredSigningKeyPair>,
-}
-
-/// Wrapper around an [`Encrypted<Secret>`] and its [`KeyId`]
-#[derive(Debug, Deserialize, Serialize)]
-pub struct StoredEncryptedSecret {
-    pub secret: Encrypted<Secret>,
+/// Generic representation of a secret that is stored in a database.
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
+pub struct StoredSecret {
     pub key_id: KeyId,
+    pub secret_type: String,
+    pub bytes: Vec<u8>,
     pub retrieved: bool,
 }
 
-impl StoredEncryptedSecret {
-    pub fn new(secret: Encrypted<Secret>, key_id: KeyId) -> Self {
-        Self {
-            secret,
+impl StoredSecret {
+    pub fn new(
+        key_id: KeyId,
+        secret_type: impl Into<String>,
+        secret: impl Into<Vec<u8>>,
+    ) -> Result<Self, LockKeeperError> {
+        let secret = secret.into();
+
+        Ok(Self {
             key_id,
+            secret_type: secret_type.into(),
+            bytes: serde_json::to_vec(&secret)?,
             retrieved: false,
+        })
+    }
+
+    pub fn from_arbitrary_secret(
+        key_id: KeyId,
+        secret: Encrypted<Secret>,
+    ) -> Result<Self, LockKeeperError> {
+        Ok(Self {
+            key_id,
+            secret_type: secret_types::ARBITRARY_SECRET.to_string(),
+            bytes: serde_json::to_vec(&secret)?,
+            retrieved: false,
+        })
+    }
+
+    pub fn from_signing_key_pair(
+        key_id: KeyId,
+        secret: Encrypted<SigningKeyPair>,
+    ) -> Result<Self, LockKeeperError> {
+        Ok(Self {
+            key_id,
+            secret_type: secret_types::SIGNING_KEY_PAIR.to_string(),
+            bytes: serde_json::to_vec(&secret)?,
+            retrieved: false,
+        })
+    }
+
+    pub fn from_remote_signing_key_pair(
+        key_id: KeyId,
+        secret: PlaceholderEncryptedSigningKeyPair,
+    ) -> Result<Self, LockKeeperError> {
+        Ok(Self {
+            key_id,
+            secret_type: secret_types::REMOTE_SIGNING_KEY.to_string(),
+            bytes: serde_json::to_vec(&secret)?,
+            retrieved: false,
+        })
+    }
+}
+
+pub mod secret_types {
+    pub const ARBITRARY_SECRET: &str = "arbitrary_secret";
+    pub const SIGNING_KEY_PAIR: &str = "signing_key_pair";
+    pub const REMOTE_SIGNING_KEY: &str = "remote_signing_key";
+}
+
+impl TryFrom<StoredSecret> for Encrypted<Secret> {
+    type Error = LockKeeperError;
+
+    fn try_from(secret: StoredSecret) -> Result<Self, Self::Error> {
+        if secret.secret_type == secret_types::ARBITRARY_SECRET {
+            Ok(serde_json::from_slice(&secret.bytes)?)
+        } else {
+            Err(LockKeeperError::InvalidSecretType)
         }
     }
 }
 
-/// Wrapper around an [`Encrypted<SigningKeyPair>`] and its [`KeyId`].
-///
-/// This is used to hold signing key pairs encrypted by the client before being
-/// sent by the server.
-#[derive(Debug, Deserialize, Serialize)]
-pub struct StoredEncryptedSigningKeyPair {
-    pub signing_key: Encrypted<SigningKeyPair>,
-    pub key_id: KeyId,
-    pub retrieved: bool,
-}
+impl TryFrom<StoredSecret> for Encrypted<SigningKeyPair> {
+    type Error = LockKeeperError;
 
-impl StoredEncryptedSigningKeyPair {
-    pub fn new(secret: Encrypted<SigningKeyPair>, key_id: KeyId) -> Self {
-        Self {
-            signing_key: secret,
-            key_id,
-            retrieved: false,
+    fn try_from(secret: StoredSecret) -> Result<Self, Self::Error> {
+        if secret.secret_type == secret_types::SIGNING_KEY_PAIR {
+            Ok(serde_json::from_slice(&secret.bytes)?)
+        } else {
+            Err(LockKeeperError::InvalidSecretType)
         }
     }
 }
 
-/// Wrapper around an [`SigningKeyPair`] and its [`KeyId`]
-///
-/// This is used to hold signing key pairs sent by the client in the clear and
-/// encrypted by the server.
-#[derive(Debug, Deserialize, Serialize, ZeroizeOnDrop)]
-pub struct StoredSigningKeyPair {
-    pub signing_key: PlaceholderEncryptedSigningKeyPair,
-    #[zeroize(skip)]
-    pub key_id: KeyId,
-    #[zeroize(skip)]
-    pub retrieved: bool,
-}
+impl TryFrom<StoredSecret> for PlaceholderEncryptedSigningKeyPair {
+    type Error = LockKeeperError;
 
-impl StoredSigningKeyPair {
-    pub fn new(secret: SigningKeyPair, key_id: KeyId) -> Self {
-        Self {
-            signing_key: secret.into(),
-            key_id,
-            retrieved: false,
+    fn try_from(secret: StoredSecret) -> Result<Self, Self::Error> {
+        if secret.secret_type == secret_types::REMOTE_SIGNING_KEY {
+            Ok(serde_json::from_slice(&secret.bytes)?)
+        } else {
+            Err(LockKeeperError::InvalidSecretType)
         }
     }
 }

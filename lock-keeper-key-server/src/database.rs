@@ -6,11 +6,11 @@
 use async_trait::async_trait;
 use lock_keeper::{
     config::opaque::OpaqueCipherSuite,
-    crypto::{Encrypted, KeyId, Secret, SigningKeyPair, StorageKey},
+    crypto::{Encrypted, KeyId, StorageKey},
     types::{
         audit_event::{AuditEvent, AuditEventOptions, EventStatus, EventType},
         database::{
-            secrets::{StoredEncryptedSecret, StoredSigningKeyPair},
+            secrets::StoredSecret,
             user::{AccountName, User, UserId},
         },
         operations::ClientAction,
@@ -45,38 +45,23 @@ pub trait DataStore: Send + Sync + 'static {
     ) -> Result<Vec<AuditEvent>, Self::Error>;
 
     // Secret
-    /// Add a [`StoredEncryptedSecret`] to a [`User`]'s list of arbitrary
+    /// Add a [`StoredSecret`] to a [`User`]'s list of arbitrary
     /// secrets
     async fn add_user_secret(
         &self,
         user_id: &UserId,
-        secret: Encrypted<Secret>,
-        key_id: KeyId,
+        secret: StoredSecret,
     ) -> Result<(), Self::Error>;
 
-    /// Get a [`User`]'s [`StoredEncryptedSecret`] based on its [`KeyId`]
+    /// Get a [`User`]'s [`StoredSecret`] based on its [`KeyId`].
+    /// A [`StoredSecret`] will only be returned if it matches the given
+    /// [`SecretFilter`].
     async fn get_user_secret(
         &self,
         user_id: &UserId,
         key_id: &KeyId,
-    ) -> Result<StoredEncryptedSecret, Self::Error>;
-
-    /// Add a [`StoredSigningKeyPair`] to a [`User`]'s list of arbitrary secrets
-    /// TODO: This function will temporarily store an unencrypted key pair.
-    /// WARNING: Do not use in production!
-    async fn add_remote_secret(
-        &self,
-        user_id: &UserId,
-        secret: SigningKeyPair,
-        key_id: KeyId,
-    ) -> Result<(), Self::Error>;
-
-    /// Get a [`User`]'s [`StoredSigningKeyPair`] based on its [`KeyId`]
-    async fn get_user_signing_key(
-        &self,
-        user_id: &UserId,
-        key_id: &KeyId,
-    ) -> Result<StoredSigningKeyPair, Self::Error>;
+        filter: SecretFilter,
+    ) -> Result<StoredSecret, Self::Error>;
 
     // User
     /// Create a new [`User`] with their authentication information and insert
@@ -106,4 +91,34 @@ pub trait DataStore: Send + Sync + 'static {
         user_id: &UserId,
         storage_key: Encrypted<StorageKey>,
     ) -> Result<(), Self::Error>;
+}
+
+/// Filters that can be used to influence database queries.
+/// Any new database filters for secrets (e.g. created_time)
+/// should be added to this struct as optional fields.
+/// This will allow us to add new filters with minimal breakage.
+///
+/// If you're constructing this type directly, use `..Default::default()`
+/// to guard against breaking changes.
+///
+/// ## Example:
+/// ```
+/// # use lock_keeper_key_server::database::SecretFilter;
+/// SecretFilter {
+///     secret_type: None,
+///     ..Default::default()
+/// };
+/// ```
+#[derive(Clone, Debug, Default)]
+pub struct SecretFilter {
+    pub secret_type: Option<String>,
+}
+
+impl SecretFilter {
+    /// Convenience function to filter by secret type.
+    pub fn secret_type(secret_type: impl std::fmt::Display) -> Self {
+        Self {
+            secret_type: Some(secret_type.to_string()),
+        }
+    }
 }

@@ -174,6 +174,8 @@ impl TryFrom<Vec<u8>> for EncryptionKey {
 
 impl<T> Encrypted<T>
 where
+    // These bounds cover both the `encrypt` and `decrypt` methods.
+    // This ensures that the user can only encrypt types than can also be decrypted.
     T: TryFrom<Vec<u8>>,
     CryptoError: From<<T as TryFrom<Vec<u8>>>::Error>,
     Vec<u8>: From<T>,

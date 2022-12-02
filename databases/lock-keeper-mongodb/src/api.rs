@@ -3,17 +3,20 @@ use async_trait::async_trait;
 use lock_keeper::{
     config::opaque::OpaqueCipherSuite,
     constants::{ACCOUNT_NAME, USER_ID},
-    crypto::{Encrypted, KeyId, Secret, SigningKeyPair, StorageKey},
+    crypto::{Encrypted, KeyId, StorageKey},
     types::{
         audit_event::{AuditEvent, AuditEventOptions, EventStatus, EventType},
         database::{
-            secrets::{StoredEncryptedSecret, StoredSigningKeyPair},
+            secrets::StoredSecret,
             user::{AccountName, User, UserId},
         },
         operations::ClientAction,
     },
 };
-use lock_keeper_key_server::{config::DatabaseSpec, database::DataStore};
+use lock_keeper_key_server::{
+    config::DatabaseSpec,
+    database::{DataStore, SecretFilter},
+};
 use mongodb::{
     bson::doc,
     options::{ClientOptions, IndexOptions},
@@ -95,10 +98,9 @@ impl DataStore for Database {
     async fn add_user_secret(
         &self,
         user_id: &UserId,
-        secret: Encrypted<Secret>,
-        key_id: KeyId,
+        secret: StoredSecret,
     ) -> Result<(), Self::Error> {
-        self.add_user_secret(user_id, secret, key_id).await?;
+        self.add_user_secret(user_id, secret).await?;
         Ok(())
     }
 
@@ -106,28 +108,10 @@ impl DataStore for Database {
         &self,
         user_id: &UserId,
         key_id: &KeyId,
-    ) -> Result<StoredEncryptedSecret, Self::Error> {
-        let stored_encrypted_secret = self.get_user_secret(user_id, key_id).await?;
+        filter: SecretFilter,
+    ) -> Result<StoredSecret, Self::Error> {
+        let stored_encrypted_secret = self.get_user_secret(user_id, key_id, filter).await?;
         Ok(stored_encrypted_secret)
-    }
-
-    async fn add_remote_secret(
-        &self,
-        user_id: &UserId,
-        secret: SigningKeyPair,
-        key_id: KeyId,
-    ) -> Result<(), Self::Error> {
-        self.add_remote_secret(user_id, secret, key_id).await?;
-        Ok(())
-    }
-
-    async fn get_user_signing_key(
-        &self,
-        user_id: &UserId,
-        key_id: &KeyId,
-    ) -> Result<StoredSigningKeyPair, Self::Error> {
-        let stored_signing_key_pair = self.get_user_signing_key(user_id, key_id).await?;
-        Ok(stored_signing_key_pair)
     }
 
     async fn create_user(

@@ -6,7 +6,7 @@ use crate::{
 use crate::database::DataStore;
 use async_trait::async_trait;
 use lock_keeper::{
-    crypto::{Signable, SigningKeyPair},
+    crypto::{PlaceholderEncryptedSigningKeyPair, Signable, SigningKeyPair},
     infrastructure::channel::ServerChannel,
     types::operations::remote_sign_bytes::{client, server},
 };
@@ -23,14 +23,15 @@ impl<DB: DataStore> Operation<DB> for RemoteSignBytes {
         context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
         let request: client::RequestRemoteSign = channel.receive().await?;
-        let key: SigningKeyPair = context
+        let key_pair: PlaceholderEncryptedSigningKeyPair = context
             .db
-            .get_user_signing_key(&request.user_id, &request.key_id)
+            .get_user_secret(&request.user_id, &request.key_id, Default::default())
             .await
             .map_err(LockKeeperServerError::database)?
-            .signing_key
-            .to_owned()
             .try_into()?;
+
+        // Pretend to decrypt our placeholder type
+        let key: SigningKeyPair = key_pair.try_into()?;
 
         let signature = request.data.sign(&key);
 

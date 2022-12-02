@@ -1,4 +1,3 @@
-use super::Export;
 use crate::{types::database::user::UserId, LockKeeperError};
 use k256::ecdsa::{
     self,
@@ -9,7 +8,7 @@ use rand::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 use zeroize::ZeroizeOnDrop;
 
-use super::{generic::AssociatedData, CryptoError, Encrypted, KeyId, StorageKey};
+use super::{generic::AssociatedData, CryptoError, Encrypted, Export, KeyId, StorageKey};
 
 /// Provides the methods necessary to sign and verify a piece of data with a
 /// [`SigningKeyPair`]. This trait should be explicitly implemented on types
@@ -82,7 +81,7 @@ pub struct SigningPublicKey(VerifyingKey);
 ///
 /// This can only be "decrypted" by the server.
 /// TODO #307: Replace this placeholder with actual encryption.
-#[derive(Clone, Debug, Deserialize, Serialize, ZeroizeOnDrop)]
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize, ZeroizeOnDrop)]
 pub struct PlaceholderEncryptedSigningKeyPair {
     signing_key: Vec<u8>,
     #[zeroize(skip)]
@@ -539,18 +538,6 @@ mod test {
             key_id,
             storage_key,
         )
-    }
-
-    #[test]
-    fn export_conversion_works() {
-        let mut rng = rand::thread_rng();
-        let context = AssociatedData::new().with_str("a key for trying export");
-        let key = SigningKeyPair::generate(&mut rng, &context);
-
-        let export: Export = key.clone().into();
-        let output_key: SigningKeyPair = export.into_signing_key().unwrap();
-
-        assert_eq!(key, output_key);
     }
 
     #[test]

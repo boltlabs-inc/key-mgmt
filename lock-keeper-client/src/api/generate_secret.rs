@@ -18,7 +18,7 @@ pub struct GenerateResult {
 }
 
 impl LockKeeperClient {
-    pub(crate) async fn handle_generate(
+    pub(crate) async fn handle_generate_secret(
         &self,
         mut channel: ClientChannel<StdRng>,
     ) -> Result<LockKeeperResponse<GenerateResult>, LockKeeperClientError> {
@@ -86,6 +86,7 @@ async fn generate_and_store(
 
     // Await Ok from server
     let result: server::Store = channel.receive().await?;
+
     if result.success {
         Ok(LocalStorage { material: secret })
     } else {

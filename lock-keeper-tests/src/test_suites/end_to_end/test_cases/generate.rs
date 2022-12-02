@@ -30,8 +30,13 @@ async fn generate_works(config: Config) -> Result<()> {
     let state = init_test_state(config).await?;
     let client = authenticate(&state).await?;
 
-    let _ = client.generate_and_store().await?;
-    check_audit_events(&state, EventStatus::Successful, ClientAction::Generate).await?;
+    let _ = client.generate_secret().await?;
+    check_audit_events(
+        &state,
+        EventStatus::Successful,
+        ClientAction::GenerateSecret,
+    )
+    .await?;
 
     Ok(())
 }
@@ -42,7 +47,7 @@ async fn cannot_generate_after_logout(config: Config) -> Result<()> {
 
     client.logout().await?;
 
-    let res = client.generate_and_store().await;
+    let res = client.generate_secret().await;
     compare_status_errors(res, Status::unauthenticated("No session key for this user"))?;
 
     Ok(())

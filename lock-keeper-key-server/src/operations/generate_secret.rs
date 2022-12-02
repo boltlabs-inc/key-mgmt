@@ -8,15 +8,18 @@ use async_trait::async_trait;
 use lock_keeper::{
     crypto::KeyId,
     infrastructure::channel::ServerChannel,
-    types::operations::generate::{client, server},
+    types::{
+        database::secrets::StoredSecret,
+        operations::generate::{client, server},
+    },
 };
 use rand::rngs::StdRng;
 
 #[derive(Debug)]
-pub struct Generate;
+pub struct GenerateSecret;
 
 #[async_trait]
-impl<DB: DataStore> Operation<DB> for Generate {
+impl<DB: DataStore> Operation<DB> for GenerateSecret {
     async fn operation(
         self,
         channel: &mut ServerChannel<StdRng>,
@@ -58,15 +61,12 @@ async fn store_key<DB: DataStore>(
 ) -> Result<(), LockKeeperServerError> {
     // Receive Encrypted<Secret> from client
     let store_message: client::Store = channel.receive().await?;
+    let secret = StoredSecret::from_arbitrary_secret(key_id.clone(), store_message.ciphertext)?;
 
     // Check validity of ciphertext and store in DB
     context
         .db
-        .add_user_secret(
-            &store_message.user_id,
-            store_message.ciphertext,
-            key_id.clone(),
-        )
+        .add_user_secret(&store_message.user_id, secret)
         .await
         .map_err(LockKeeperServerError::database)?;
 

@@ -35,7 +35,7 @@ impl CliCommand for Generate {
         .into_inner();
 
         // If successful, proceed to generate a secret with the established session
-        let generate_result = lock_keeper_client.generate_and_store().await?.into_inner();
+        let generate_result = lock_keeper_client.generate_secret().await?.into_inner();
 
         // Store Key
         let stored = state.store_entry(self.name, generate_result)?;

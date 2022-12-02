@@ -9,8 +9,10 @@ use zeroize::ZeroizeOnDrop;
 
 use crate::crypto::{
     generic::{self, AssociatedData, CryptoError},
-    Encrypted, Export, KeyId, StorageKey,
+    Encrypted, KeyId, StorageKey,
 };
+
+use super::Export;
 
 /// An arbitrary secret.
 ///

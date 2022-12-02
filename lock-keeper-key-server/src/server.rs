@@ -63,15 +63,14 @@ pub(crate) struct Context<DB: DataStore> {
 impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
     type AuthenticateStream = MessageStream;
     type CreateStorageKeyStream = MessageStream;
-    type GenerateStream = MessageStream;
+    type GenerateSecretStream = MessageStream;
     type ImportSigningKeyStream = MessageStream;
     type LogoutStream = MessageStream;
     type RegisterStream = MessageStream;
     type RemoteGenerateStream = MessageStream;
     type RemoteSignBytesStream = MessageStream;
-    type RetrieveStream = MessageStream;
+    type RetrieveSecretStream = MessageStream;
     type RetrieveAuditEventsStream = MessageStream;
-    type RetrieveSigningKeyStream = MessageStream;
     type RetrieveStorageKeyStream = MessageStream;
 
     async fn health(&self, _: Request<HealthCheck>) -> Result<Response<HealthCheck>, Status> {
@@ -114,11 +113,11 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
             .await?)
     }
 
-    async fn generate(
+    async fn generate_secret(
         &self,
         request: Request<tonic::Streaming<Message>>,
-    ) -> Result<Response<Self::GenerateStream>, Status> {
-        Ok(operations::Generate
+    ) -> Result<Response<Self::GenerateSecretStream>, Status> {
+        Ok(operations::GenerateSecret
             .handle_request(self.context(), request)
             .await?)
     }
@@ -136,7 +135,7 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         &self,
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::RemoteGenerateStream>, Status> {
-        Ok(operations::RemoteGenerate
+        Ok(operations::RemoteGenerateSigningKey
             .handle_request(self.context(), request)
             .await?)
     }
@@ -150,11 +149,11 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
             .await?)
     }
 
-    async fn retrieve(
+    async fn retrieve_secret(
         &self,
         request: Request<tonic::Streaming<Message>>,
-    ) -> Result<Response<Self::RetrieveStream>, Status> {
-        Ok(operations::Retrieve
+    ) -> Result<Response<Self::RetrieveSecretStream>, Status> {
+        Ok(operations::RetrieveSecret
             .handle_request(self.context(), request)
             .await?)
     }
@@ -173,15 +172,6 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::RetrieveStorageKeyStream>, Status> {
         Ok(operations::RetrieveStorageKey
-            .handle_request(self.context(), request)
-            .await?)
-    }
-
-    async fn retrieve_signing_key(
-        &self,
-        request: Request<tonic::Streaming<Message>>,
-    ) -> Result<Response<Self::RetrieveSigningKeyStream>, Status> {
-        Ok(operations::RetrieveSigningKey
             .handle_request(self.context(), request)
             .await?)
     }

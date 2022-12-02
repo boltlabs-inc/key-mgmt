@@ -7,10 +7,10 @@
 
 mod authenticate;
 mod create_storage_key;
-mod generate;
+mod generate_secret;
 mod import;
 mod register;
-mod remote_generate;
+mod remote_generate_signing_key;
 mod remote_sign_bytes;
 mod retrieve;
 mod retrieve_audit_events;
@@ -23,7 +23,7 @@ use lock_keeper::{
     types::{
         audit_event::{AuditEvent, AuditEventOptions, EventType},
         database::user::AccountName,
-        operations::{retrieve::RetrieveContext, ClientAction, RequestMetadata},
+        operations::{retrieve_secret::RetrieveContext, ClientAction, RequestMetadata},
     },
 };
 use rand::{rngs::StdRng, SeedableRng};
@@ -32,7 +32,9 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use tracing::error;
 
-pub use self::{generate::GenerateResult, remote_generate::RemoteGenerateResult};
+pub use self::{
+    generate_secret::GenerateResult, remote_generate_signing_key::RemoteGenerateResult,
+};
 
 /// Wrapper for secrets prepared for local storage
 #[derive(Debug, Deserialize, Serialize)]
@@ -145,18 +147,18 @@ impl LockKeeperClient {
     ///
     /// Calling this function on a signing key will generate an error.
     /// Output: If successful, returns the requested key material in byte form.
-    pub async fn export_key(
+    pub async fn export_secret(
         &self,
         key_id: &KeyId,
     ) -> Result<LockKeeperResponse<Export>, LockKeeperClientError> {
         // Create channel: this will internally be a `retrieve` channel
-        let metadata = self.create_metadata(ClientAction::Export);
+        let metadata = self.create_metadata(ClientAction::ExportSecret);
         let client_channel = self
             .create_authenticated_channel(&mut self.tonic_client(), &metadata)
             .await?;
         // Get local-only secret
         let LockKeeperResponse { data, metadata } = self
-            .handle_retrieve(client_channel, key_id, RetrieveContext::LocalOnly)
+            .handle_retrieve_secret(client_channel, key_id, RetrieveContext::LocalOnly)
             .await?;
 
         let local_storage = data.ok_or(LockKeeperClientError::ExportFailed)?;
@@ -197,14 +199,15 @@ impl LockKeeperClient {
 
     /// Generate an arbitrary secret client-side, store this secret in the key
     /// server.
-    pub async fn generate_and_store(
+    pub async fn generate_secret(
         &self,
     ) -> Result<LockKeeperResponse<GenerateResult>, LockKeeperClientError> {
-        let metadata = self.create_metadata(ClientAction::Generate);
+        let metadata = self.create_metadata(ClientAction::GenerateSecret);
         let client_channel = self
             .create_authenticated_channel(&mut self.tonic_client(), &metadata)
             .await?;
-        self.handle_generate(client_channel).await
+
+        self.handle_generate_secret(client_channel).await
     }
 
     /// Import signing key material to the key server
@@ -220,30 +223,34 @@ impl LockKeeperClient {
             .await
     }
 
-    /// Retrieve an arbitrary secret from the key server by [`KeyId`]
+    /// Retrieve a secret from the key server by [`KeyId`]
     ///
     /// This operation will fail if it is called on a signing key.
-    pub async fn retrieve(
+    pub async fn retrieve_secret(
         &self,
         key_id: &KeyId,
         context: RetrieveContext,
     ) -> Result<LockKeeperResponse<Option<LocalStorage<Secret>>>, LockKeeperClientError> {
-        let metadata = self.create_metadata(ClientAction::Retrieve);
+        let metadata = self.create_metadata(ClientAction::RetrieveSecret);
         let client_channel = self
             .create_authenticated_channel(&mut self.tonic_client(), &metadata)
             .await?;
-        self.handle_retrieve(client_channel, key_id, context).await
+
+        self.handle_retrieve_secret(client_channel, key_id, context)
+            .await
     }
 
     /// Request that the server generate a new signing key.
     pub async fn remote_generate(
         &self,
     ) -> Result<LockKeeperResponse<RemoteGenerateResult>, LockKeeperClientError> {
-        let metadata = self.create_metadata(ClientAction::RemoteGenerate);
+        let metadata = self.create_metadata(ClientAction::RemoteGenerateSigningKey);
         let client_channel = self
             .create_authenticated_channel(&mut self.tonic_client(), &metadata)
             .await?;
-        self.handle_remote_generate(client_channel).await
+
+        self.handle_remote_generate_signing_key(client_channel)
+            .await
     }
 
     /// Sign an arbitrary blob of bytes with a remotely generated

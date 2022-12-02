@@ -36,7 +36,7 @@ async fn remote_generate_works(config: Config) -> Result<()> {
     check_audit_events(
         &state,
         EventStatus::Successful,
-        ClientAction::RemoteGenerate,
+        ClientAction::RemoteGenerateSigningKey,
     )
     .await?;
 
