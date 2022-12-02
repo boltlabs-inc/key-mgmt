@@ -30,7 +30,7 @@ impl<DB: DataStore> Operation<DB> for Logout {
                 .session_key_cache
                 .lock()
                 .await
-                .expire(request.user_id)?;
+                .delete_session(request.user_id)?;
         }
 
         let reply = server::Response { success: true };

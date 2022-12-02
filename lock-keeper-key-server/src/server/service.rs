@@ -1,5 +1,8 @@
 use crate::{
-    config::Config, database::DataStore, error::LockKeeperServerError, server::LockKeeperKeyServer,
+    config::Config,
+    database::DataStore,
+    error::LockKeeperServerError,
+    server::{session_key_cache::SessionCache, LockKeeperKeyServer},
 };
 
 use hyper::server::conn::Http;
@@ -8,20 +11,23 @@ use std::{net::SocketAddr, sync::Arc};
 use tokio::{
     net::{TcpListener, TcpStream},
     signal,
+    sync::Mutex,
 };
 use tokio_rustls::TlsAcceptor;
 use tonic::transport::{server::Routes, Server};
 use tracing::{error, info};
 
 /// Starts a full Lock Keeper server stack based on the given config.
-pub async fn start_lock_keeper_server<DB: DataStore + Clone>(
+pub async fn start_lock_keeper_server<DB: DataStore + Clone, S: SessionCache + 'static>(
     config: Config,
     db: DB,
+    session_key_cache: S,
 ) -> Result<(), LockKeeperServerError> {
     tracing::info!("Starting Lock Keeper key server");
     let db = Arc::new(db);
+    let session_key_cache = Arc::new(Mutex::new(session_key_cache));
     // Collect the futures for the result of running each specified server
-    let server_future = start_service(&config, db);
+    let server_future = start_service(&config, db, session_key_cache);
 
     tracing::info!("Lock Keeper key server started");
 
@@ -43,14 +49,16 @@ pub async fn start_lock_keeper_server<DB: DataStore + Clone>(
 async fn start_service<DB: DataStore + Clone>(
     config: &Config,
     db: Arc<DB>,
+    session_key_cache: Arc<Mutex<dyn SessionCache>>,
 ) -> Result<(), LockKeeperServerError> {
     // Clone `Arc`s for the various resources we need in this server
     let config = config.clone();
     let db = db.clone();
+    let session_key_cache = session_key_cache.clone();
 
     let tls = config.tls_config.clone();
 
-    let rpc_server = LockKeeperKeyServer::new(db, config)?;
+    let rpc_server = LockKeeperKeyServer::new(db, session_key_cache, config)?;
     let addr = rpc_server.config.address;
     let port = rpc_server.config.port;
 
