@@ -6,4 +6,4 @@ mkdir -p $KEY_DIR
 chmod 700 $KEY_DIR
 
 #Create server side encryption key
-openssl rand 32 -out $KEY_DIR/server_side_encryption.key
+openssl rand -out $KEY_DIR/server_side_encryption.key 32
