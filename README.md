@@ -25,6 +25,7 @@ The client also includes the cryptographic functionality for:
 Refer to the [current design specification](https://github.com/boltlabs-inc/key-mgmt-spec) for Lock Keeper.
 
 ## Breaking Changes
+- LockKeeperKeyServer v0.3 introduces a breaking change with respect to a database that was generated using LockKeeperKeyServer v0.2. Remotely generated signing keys are now encrypted using a server side encryption key.
 - LockKeeperClient v0.3 introduces a breaking change with respect to v0.2. Storage keys are encrypted inside the database using a different key, therefore, old storage keys in the database cannot be used anymore.
 - LockKeeperClient v0.3 is backwards **incompatible** with LockKeeperServer v0.2, given that authenticated traffic will now use an extra layer of encryption using the session key.
 
@@ -140,6 +141,22 @@ cargo run --bin key-server-cli dev/local/ServerMutualAuth.toml --private-key "$(
 The private key can optionally be provided via a file path in the client config.
 Alternatively, the raw bytes for a private key can be passed to the `lock_keeper_client::Config` constructors.
 This alternative allows the client to secure its private key however it chooses.
+
+# Server side encryption key security
+The key server always requires a server side encryption key.
+The server side encryption key can be provided in a similar fashion as the private key (see above).
+
+The command line argument for the `key-server-cli` binary included with the `lock-keeper-key-server` is `server-side-encryption-key`.
+
+Example:
+
+```bash
+cargo run --bin key-server-cli dev/local/ServerMutualAuth.toml --server-side-encryption-key "$(cat dev/server-side-encryption/gen/server_side_encryption.key | base64)"
+```
+
+Important to note is that this key encrypts all signing keys on the server, therefore, loss of this key would mean loss of all signing keys.
+Therefore, we recommend to store this key in a secure fashion, e.g. by using an HSM. Access to this key should be well guarded to obtain very high security.
+Ultimately, the key server will provide a different way to keep signing keys secure using an enclave.
 
 ## Running the interactive client
 
