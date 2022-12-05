@@ -42,7 +42,7 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for RemoteSignBytes {
         info!("Signing key found. Signing...");
 
         let key = encrypted_key.decrypt_signing_key_by_server(
-            context.config.server_side_encryption_key.clone(),
+            &context.config.server_side_encryption_key,
             request.user_id,
             request.key_id,
         )?;

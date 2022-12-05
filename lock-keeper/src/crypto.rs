@@ -722,7 +722,7 @@ mod test {
             &key_id,
         )?;
 
-        let result = encrypted.decrypt_signing_key_by_server(encryption_key, user_id, key_id)?;
+        let result = encrypted.decrypt_signing_key_by_server(&encryption_key, user_id, key_id)?;
         assert_eq!(result, signing_key);
         Ok(())
     }

@@ -209,7 +209,7 @@ impl Encrypted<SigningKeyPair> {
     /// subprotocol to retrieve a signing key from the server.
     pub fn decrypt_signing_key_by_server(
         self,
-        server_side_encryption_key: ServerSideEncryptionKey,
+        server_side_encryption_key: &ServerSideEncryptionKey,
         user_id: UserId,
         key_id: KeyId,
     ) -> Result<SigningKeyPair, LockKeeperError> {
