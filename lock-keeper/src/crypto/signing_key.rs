@@ -101,10 +101,6 @@ impl SigningKeyPair {
         &self.context
     }
 
-    pub fn to_bytes(&self) -> Vec<u8> {
-        self.signing_key.to_bytes().to_vec()
-    }
-
     /// Create a new `SigningKeyPair`. This must be run by the server.
     pub fn remote_generate(
         rng: &mut (impl CryptoRng + RngCore),

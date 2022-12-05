@@ -26,7 +26,7 @@ http = "0.2"
 http-body = "0.4"
 hyper = "0.14"
 hyper-rustls = { version = "0.23", features = ["http2"] }
-opaque-ke = { version = "2.0.0", features = ["argon2"] }
+opaque-ke = { version = "2.0.0-pre.3", features = ["argon2"] }
 prost = "0.11.0"
 rand = "0.8"
 rustls = "0.20"
