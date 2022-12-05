@@ -205,10 +205,9 @@ impl LockKeeperClient {
             .await?;
 
         let local_storage = data.ok_or(LockKeeperClientError::ExportFailed)?;
-        let exported_signing_key = Export::from(local_storage.material);
 
         Ok(LockKeeperResponse {
-            data: exported_signing_key,
+            data: local_storage.material,
             metadata,
         })
     }
