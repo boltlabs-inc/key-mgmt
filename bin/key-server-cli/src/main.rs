@@ -180,6 +180,9 @@ pub struct Cli {
     /// Base64 encoded private key data
     #[clap(long)]
     pub private_key: Option<String>,
+    /// Base64 encoded server side encryption key data
+    #[clap(long)]
+    pub server_side_encryption_key: Option<String>,
 }
 
 #[tokio::main]
@@ -192,7 +195,19 @@ pub async fn main() {
         .transpose()
         .unwrap();
 
-    let config = Config::from_file(&cli.config, private_key_bytes).unwrap();
+    let server_side_encryption_key_bytes = cli
+        .server_side_encryption_key
+        .map(String::into_bytes)
+        .map(base64::decode)
+        .transpose()
+        .unwrap();
+
+    let config = Config::from_file(
+        &cli.config,
+        private_key_bytes,
+        server_side_encryption_key_bytes,
+    )
+    .unwrap();
 
     // We keep `_logging` around for the lifetime of the server. On drop, this value
     // will ensure that our logs are flushed.

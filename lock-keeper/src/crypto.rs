@@ -11,7 +11,7 @@ use k256::sha2::Sha512;
 use rand::{CryptoRng, Rng, RngCore};
 use serde::{Deserialize, Serialize};
 use sha3::{Digest, Sha3_256};
-use std::{array::IntoIter, convert::TryFrom};
+use std::{array::IntoIter, convert::TryFrom, path::Path};
 use tracing::error;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
@@ -26,8 +26,7 @@ pub use arbitrary_secret::Secret;
 use generic::{AssociatedData, EncryptionKey};
 pub use generic::{CryptoError, Encrypted};
 pub use signing_key::{
-    Import, PlaceholderEncryptedSigningKeyPair, Signable, SignableBytes, Signature, SigningKeyPair,
-    SigningPublicKey,
+    Import, Signable, SignableBytes, Signature, SigningKeyPair, SigningPublicKey,
 };
 
 /// A session key is produced as shared output for client and server from
@@ -62,6 +61,62 @@ impl OpaqueSessionKey {
         message: Message,
     ) -> Result<Encrypted<Message>, CryptoError> {
         Encrypted::encrypt(rng, &self.0, message, &AssociatedData::new())
+    }
+}
+
+/// The server side encryption key is a default-length symmetric encryption key
+/// for an AEAD scheme.
+///
+/// The server side encryption key is used by the key server to securely encrypt
+/// signing keys generated on the server side.
+#[derive(Debug, Clone, Zeroize, ZeroizeOnDrop)]
+pub struct ServerSideEncryptionKey(EncryptionKey);
+
+impl ServerSideEncryptionKey {
+    fn domain_separator() -> &'static str {
+        "server side encryption key"
+    }
+
+    /// Generate a new 32-byte [`ServerSideEncryptionKey`].
+    pub fn generate<Rng: CryptoRng + RngCore>(rng: &mut Rng) -> Self {
+        Self(EncryptionKey::new(rng))
+    }
+
+    /// Returns the server side encryption key found in the file at the given
+    /// path
+    pub fn read_from_file(path: impl AsRef<Path>) -> Result<Self, LockKeeperError> {
+        let bytes = std::fs::read(path)?;
+        Self::read_from_bytes(&bytes)
+    }
+
+    /// Returns the server side encryption key found in the given bytes
+    pub fn read_from_bytes(bytes: &[u8]) -> Result<Self, LockKeeperError> {
+        let key = EncryptionKey::from_bytes(
+            bytes
+                .try_into()
+                .map_err(|_| LockKeeperError::InvalidServerSideEncryptionKey)?,
+            AssociatedData::new().with_str("ChaCha20Poly1305 with 96-bit nonce."),
+        );
+
+        Ok(Self(key))
+    }
+
+    /// Encrypt the given [`SigningKeyPair`] under the
+    /// [`ServerSideEncryptionKey`] using an AEAD scheme.
+    pub fn encrypt_signing_key_pair(
+        &self,
+        rng: &mut (impl CryptoRng + RngCore),
+        signing_key_pair: SigningKeyPair,
+        user_id: &UserId,
+        key_id: &KeyId,
+    ) -> Result<Encrypted<SigningKeyPair>, LockKeeperError> {
+        let associated_data = AssociatedData::new()
+            .with_bytes(user_id.clone())
+            .with_bytes(key_id.clone())
+            .with_str(Self::domain_separator());
+
+        Encrypted::encrypt(rng, &self.0, signing_key_pair, &associated_data)
+            .map_err(LockKeeperError::Crypto)
     }
 }
 
@@ -625,6 +680,50 @@ mod test {
 
         assert_eq!(encrypted_message, result_from_message.unwrap());
 
+        Ok(())
+    }
+
+    #[test]
+    fn server_side_encryption_key_from_bytes() -> Result<(), LockKeeperError> {
+        let mut rng = rand::thread_rng();
+        let encryption_key = ServerSideEncryptionKey::generate(&mut rng);
+        let encryption_key_bytes = encryption_key.0.clone().into_bytes();
+        let new_encryption_key =
+            ServerSideEncryptionKey::read_from_bytes(&encryption_key_bytes[..])?;
+        assert_eq!(encryption_key.0, new_encryption_key.0);
+        Ok(())
+    }
+
+    #[test]
+    fn server_side_encryption_key_from_bytes_fails_wrong_length() -> Result<(), LockKeeperError> {
+        let mut rng = rand::thread_rng();
+        let encryption_key = ServerSideEncryptionKey::generate(&mut rng);
+        let encryption_key_bytes = encryption_key.0.clone().into_bytes();
+        let new_encryption_key =
+            ServerSideEncryptionKey::read_from_bytes(&encryption_key_bytes[..31]);
+        assert_eq!(
+            new_encryption_key.unwrap_err().to_string(),
+            LockKeeperError::InvalidServerSideEncryptionKey.to_string()
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn server_side_encryption_key_works() -> Result<(), LockKeeperError> {
+        let mut rng = rand::thread_rng();
+        let encryption_key = ServerSideEncryptionKey::generate(&mut rng);
+        let user_id = UserId::new(&mut rng)?;
+        let key_id = KeyId::generate(&mut rng, &user_id)?;
+        let signing_key = SigningKeyPair::remote_generate(&mut rng, &user_id, &key_id);
+        let encrypted = encryption_key.encrypt_signing_key_pair(
+            &mut rng,
+            signing_key.clone(),
+            &user_id,
+            &key_id,
+        )?;
+
+        let result = encrypted.decrypt_signing_key_by_server(encryption_key, user_id, key_id)?;
+        assert_eq!(result, signing_key);
         Ok(())
     }
 }

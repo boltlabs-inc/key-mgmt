@@ -103,7 +103,11 @@ async fn export_signing_key_works(config: Config) -> Result<()> {
 
     let (key_id, bytes_original) = import_signing_key(&client).await?.into_inner();
     let export_res = client.export_signing_key(&key_id).await;
-    assert!(export_res.is_ok());
+    assert!(
+        export_res.is_ok(),
+        "Export failed: {}",
+        export_res.unwrap_err()
+    );
 
     let export = export_res?.into_inner();
     assert_eq!(export.key_material, bytes_original);

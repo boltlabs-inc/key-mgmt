@@ -8,7 +8,7 @@ use crate::database::DataStore;
 use async_trait::async_trait;
 use lock_keeper::{
     infrastructure::channel::{Authenticated, ServerChannel},
-    types::operations::retrieve_secret::{client, server},
+    types::operations::retrieve_secret::{client, server, RetrievedSecret},
 };
 use rand::rngs::StdRng;
 use tracing::{info, instrument};
@@ -52,7 +52,11 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for RetrieveSecret {
         };
 
         let reply = server::Response {
-            secret: stored_secret,
+            secret: RetrievedSecret::try_from_stored_secret(
+                stored_secret,
+                request.user_id,
+                context.config.server_side_encryption_key.clone(),
+            )?,
         };
         channel.send(reply).await?;
         info!("Successfully completed retrieve secret protocol.");

@@ -74,7 +74,7 @@ async fn server_config_with_file_private_key_works() -> Result<()> {
     use lock_keeper_key_server::config::{Config as ServerConfig, ConfigFile};
 
     let config_file = ConfigFile::from_str(SERVER_CONFIG_WITH_KEY)?;
-    let config = ServerConfig::from_config_file(config_file, None);
+    let config = ServerConfig::from_config_file(config_file, None, None);
     assert!(config.is_ok());
 
     Ok(())
@@ -85,7 +85,7 @@ async fn server_config_with_manual_private_key_works() -> Result<()> {
 
     let config_file = ConfigFile::from_str(SERVER_CONFIG_NO_KEY)?;
     let private_key_bytes = SAMPLE_PRIVATE_KEY.to_string().into_bytes();
-    let config = ServerConfig::from_config_file(config_file, Some(private_key_bytes));
+    let config = ServerConfig::from_config_file(config_file, Some(private_key_bytes), None);
     assert!(config.is_ok());
 
     Ok(())
@@ -95,7 +95,7 @@ async fn server_config_without_private_key_fails() -> Result<()> {
     use lock_keeper_key_server::config::{Config as ServerConfig, ConfigFile};
 
     let config_file = ConfigFile::from_str(SERVER_CONFIG_NO_KEY)?;
-    let config = ServerConfig::from_config_file(config_file, None);
+    let config = ServerConfig::from_config_file(config_file, None, None);
     assert!(matches!(
         config,
         Err(LockKeeperServerError::PrivateKeyMissing)

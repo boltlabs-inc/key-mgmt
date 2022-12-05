@@ -1,4 +1,4 @@
-use crate::{types::database::user::UserId, LockKeeperError};
+use crate::{crypto::ServerSideEncryptionKey, types::database::user::UserId, LockKeeperError};
 use k256::ecdsa::{
     self,
     signature::{Signer, Verifier},
@@ -76,38 +76,6 @@ pub struct SigningKeyPair {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SigningPublicKey(VerifyingKey);
 
-/// Temporary type to represent a remotely generated encrypted
-/// [`SigningKeyPair`].
-///
-/// This can only be "decrypted" by the server.
-/// TODO #307: Replace this placeholder with actual encryption.
-#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize, ZeroizeOnDrop)]
-pub struct PlaceholderEncryptedSigningKeyPair {
-    signing_key: Vec<u8>,
-    #[zeroize(skip)]
-    context: AssociatedData,
-}
-
-impl From<SigningKeyPair> for PlaceholderEncryptedSigningKeyPair {
-    fn from(key_pair: SigningKeyPair) -> Self {
-        Self {
-            signing_key: key_pair.signing_key.to_bytes().to_vec(),
-            context: key_pair.context.to_owned(),
-        }
-    }
-}
-
-impl TryFrom<PlaceholderEncryptedSigningKeyPair> for SigningKeyPair {
-    type Error = LockKeeperError;
-    fn try_from(key_pair: PlaceholderEncryptedSigningKeyPair) -> Result<Self, Self::Error> {
-        Ok(Self {
-            signing_key: SigningKey::from_bytes(key_pair.signing_key.as_slice())
-                .map_err(|_| CryptoError::ConversionError)?,
-            context: key_pair.context.to_owned(),
-        })
-    }
-}
-
 impl SigningKeyPair {
     /// Create a new `SigningKeyPair` with the given associated data.
     fn generate(rng: &mut (impl CryptoRng + RngCore), context: &AssociatedData) -> Self {
@@ -131,6 +99,10 @@ impl SigningKeyPair {
     #[cfg(test)]
     fn context(&self) -> &AssociatedData {
         &self.context
+    }
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        self.signing_key.to_bytes().to_vec()
     }
 
     /// Create a new `SigningKeyPair`. This must be run by the server.
@@ -232,6 +204,25 @@ impl Encrypted<SigningKeyPair> {
         // Keys encrypted under a storage key are either client-generated or imported.
         if self.associated_data == import_context || self.associated_data == client_context {
             Ok(self.decrypt(&storage_key.0)?)
+        } else {
+            Err(CryptoError::DecryptionFailed.into())
+        }
+    }
+
+    /// Decrypt a signing key. This should be run by the server as part of the
+    /// subprotocol to retrieve a signing key from the server.
+    pub fn decrypt_signing_key_by_server(
+        self,
+        server_side_encryption_key: ServerSideEncryptionKey,
+        user_id: UserId,
+        key_id: KeyId,
+    ) -> Result<SigningKeyPair, LockKeeperError> {
+        let identifying_context = AssociatedData::new().with_bytes(user_id).with_bytes(key_id);
+
+        let context = identifying_context.with_str(ServerSideEncryptionKey::domain_separator());
+
+        if self.associated_data == context {
+            Ok(self.decrypt(&server_side_encryption_key.0)?)
         } else {
             Err(CryptoError::DecryptionFailed.into())
         }
@@ -562,18 +553,6 @@ mod test {
         // Note that `context` above is the expected AD for an imported key.
         assert_eq!(key, output_key);
         Ok(())
-    }
-
-    #[test]
-    fn placeholder_encryption_conversion_works() {
-        let mut rng = rand::thread_rng();
-        let context = AssociatedData::new().with_str("a key to fake-encrypt");
-        let key = SigningKeyPair::generate(&mut rng, &context);
-
-        let placeholder: PlaceholderEncryptedSigningKeyPair = key.clone().into();
-        let output_key: SigningKeyPair = placeholder.try_into().unwrap();
-
-        assert_eq!(key, output_key);
     }
 
     #[test]

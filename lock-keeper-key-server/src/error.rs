@@ -9,6 +9,8 @@ pub enum LockKeeperServerError {
     MissingService,
     #[error("Private key was not provided.")]
     PrivateKeyMissing,
+    #[error("Server side encryption key was not provided.")]
+    ServerSideEncryptionKeyMissing,
 
     #[error("Error in session keys cache.")]
     SessionCache(#[from] SessionCacheError),
@@ -104,6 +106,7 @@ impl From<LockKeeperServerError> for Status {
             | LockKeeperServerError::Bincode(_)
             | LockKeeperServerError::OpaqueProtocol(_)
             | LockKeeperServerError::PrivateKeyMissing
+            | LockKeeperServerError::ServerSideEncryptionKeyMissing
             | LockKeeperServerError::EnvVar(_)
             | LockKeeperServerError::Rustls(_)
             | LockKeeperServerError::StrumParseError(_)

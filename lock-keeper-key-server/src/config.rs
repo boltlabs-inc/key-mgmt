@@ -1,4 +1,6 @@
-use lock_keeper::{config::opaque::OpaqueCipherSuite, infrastructure::pem_utils};
+use lock_keeper::{
+    config::opaque::OpaqueCipherSuite, crypto::ServerSideEncryptionKey, infrastructure::pem_utils,
+};
 use opaque_ke::{keypair::PrivateKey, Ristretto255, ServerSetup};
 use rand::{rngs::StdRng, SeedableRng};
 use rustls::{
@@ -23,6 +25,7 @@ pub struct Config {
     pub session_timeout: Duration,
     pub tls_config: Option<ServerConfig>,
     pub opaque_server_setup: ServerSetup<OpaqueCipherSuite, PrivateKey<Ristretto255>>,
+    pub server_side_encryption_key: ServerSideEncryptionKey,
     pub database: DatabaseSpec,
     pub logging: LoggingConfig,
 }
@@ -31,15 +34,21 @@ impl Config {
     pub fn from_file(
         config_path: impl AsRef<Path>,
         private_key_bytes: Option<Vec<u8>>,
+        server_side_encryption_key_bytes: Option<Vec<u8>>,
     ) -> Result<Self, LockKeeperServerError> {
         let config_string = std::fs::read_to_string(&config_path)?;
         let config_file = ConfigFile::from_str(&config_string)?;
-        Self::from_config_file(config_file, private_key_bytes)
+        Self::from_config_file(
+            config_file,
+            private_key_bytes,
+            server_side_encryption_key_bytes,
+        )
     }
 
     pub fn from_config_file(
         config: ConfigFile,
         private_key_bytes: Option<Vec<u8>>,
+        server_side_encryption_key_bytes: Option<Vec<u8>>,
     ) -> Result<Self, LockKeeperServerError> {
         let mut rng = StdRng::from_entropy();
 
@@ -53,6 +62,8 @@ impl Config {
             port: config.port,
             session_timeout: config.session_timeout,
             tls_config,
+            server_side_encryption_key: config
+                .server_side_encryption_key_config(server_side_encryption_key_bytes)?,
             opaque_server_setup: create_or_retrieve_server_key_opaque(
                 &mut rng,
                 config.opaque_server_key,
@@ -84,6 +95,9 @@ pub struct ConfigFile {
     pub port: u16,
     #[serde(with = "humantime_serde")]
     pub session_timeout: Duration,
+    /// The server side encryption key can be provided as a file or passed to
+    /// the [`Config`] constructors.
+    pub server_side_encryption_key: Option<PathBuf>,
     pub opaque_path: PathBuf,
     pub opaque_server_key: PathBuf,
     pub database: DatabaseSpec,
@@ -150,6 +164,21 @@ impl TlsConfig {
 
         Ok(tls)
     }
+
+    pub fn server_side_encryption_key_config(
+        &self,
+        server_side_encryption_key_bytes: Option<Vec<u8>>,
+    ) -> Result<ServerSideEncryptionKey, LockKeeperServerError> {
+        let key = if let Some(bytes) = server_side_encryption_key_bytes {
+            ServerSideEncryptionKey::read_from_bytes(&bytes)?
+        } else if let Some(key_path) = &self.server_side_encryption_key {
+            ServerSideEncryptionKey::read_from_file(key_path)?
+        } else {
+            return Err(LockKeeperServerError::ServerSideEncryptionKeyMissing);
+        };
+
+        Ok(key)
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -175,6 +204,7 @@ mod tests {
 
             [tls_config]
             private_key = "test.key"
+            server_side_encryption_key = "test_sse.key"
             certificate_chain = "test.crt"
             client_auth = false
 
@@ -192,6 +222,7 @@ mod tests {
             address,
             port,
             session_timeout,
+            server_side_encryption_key,
             tls_config,
             opaque_path,
             opaque_server_key,
@@ -210,6 +241,10 @@ mod tests {
         assert_eq!(address, IpAddr::from_str("127.0.0.2").unwrap());
         assert_eq!(port, 1114);
         assert_eq!(session_timeout, Duration::from_secs(60));
+        assert_eq!(
+            server_side_encryption_key,
+            Some(PathBuf::from("test_sse.key"))
+        );
         assert_eq!(tls_config.private_key, Some(PathBuf::from("test.key")));
         assert_eq!(tls_config.certificate_chain, PathBuf::from("test.crt"));
         assert!(!tls_config.client_auth);

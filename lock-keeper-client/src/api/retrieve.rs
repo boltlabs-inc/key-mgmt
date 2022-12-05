@@ -1,6 +1,6 @@
 use crate::{api::LocalStorage, LockKeeperClient, LockKeeperClientError, LockKeeperResponse};
 use lock_keeper::{
-    crypto::{Encrypted, KeyId, PlaceholderEncryptedSigningKeyPair, Secret, SigningKeyPair},
+    crypto::{Encrypted, KeyId, Secret, SigningKeyPair},
     infrastructure::channel::{Authenticated, ClientChannel},
     types::{
         database::secrets::secret_types,
@@ -72,16 +72,13 @@ impl LockKeeperClient {
 
         // Get StoredSigningKeyPair type back from server
         let server_response: server::Response = channel.receive().await?;
-        let key_pair: PlaceholderEncryptedSigningKeyPair = server_response.secret.try_into()?;
+        let key_pair: SigningKeyPair = server_response.secret.try_into()?;
 
         // Return appropriate value based on Context
         let result = match context {
             RetrieveContext::Null => None,
             RetrieveContext::LocalOnly => {
-                let signing_key_pair: SigningKeyPair = key_pair.try_into()?;
-                let wrapped_signing_key = LocalStorage {
-                    material: signing_key_pair,
-                };
+                let wrapped_signing_key = LocalStorage { material: key_pair };
                 Some(wrapped_signing_key)
             }
         };

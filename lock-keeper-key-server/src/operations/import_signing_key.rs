@@ -8,7 +8,7 @@ use crate::{
 use crate::database::DataStore;
 use async_trait::async_trait;
 use lock_keeper::{
-    crypto::{KeyId, PlaceholderEncryptedSigningKeyPair},
+    crypto::KeyId,
     infrastructure::channel::{Authenticated, ServerChannel},
     types::{
         database::secrets::StoredSecret,
@@ -45,10 +45,17 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for ImportSigningKey {
             .key_material
             .into_signing_key(&request.user_id, &key_id)?;
 
-        let secret = StoredSecret::from_remote_signing_key_pair(
-            key_id.clone(),
-            PlaceholderEncryptedSigningKeyPair::from(signing_key),
-        )?;
+        // encrypt key_pair
+        let encrypted_key_pair = {
+            let mut rng = context.rng.lock().await;
+            context
+                .config
+                .server_side_encryption_key
+                .encrypt_signing_key_pair(&mut *rng, signing_key, &request.user_id, &key_id)?
+        };
+
+        let secret =
+            StoredSecret::from_remote_signing_key_pair(key_id.clone(), encrypted_key_pair)?;
 
         // Check validity of ciphertext and store in DB
         context
