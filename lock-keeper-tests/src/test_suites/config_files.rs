@@ -242,4 +242,4 @@ XrqXH4XVk0PdxqQL0Ntny3OZT0QCnAFMIzs5Tb1hZy6mwOgXcOSOo+qs0l0ckvX3
 -----END PRIVATE KEY-----
 "#;
 
-const SAMPLE_SSE_KEY: &str = "LJwILTkNXoy53LzJK34X+7yMPqFz+jFS";
+const SAMPLE_SSE_KEY: &str = "32randombytes-As test!#$%^-\\_^^/";
