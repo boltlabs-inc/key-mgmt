@@ -2,8 +2,10 @@
 
 use colored::Colorize;
 use lock_keeper::{
-    crypto::{Import, KeyId, Secret, SigningKeyPair, StorageKey},
-    types::database::user::UserId,
+    crypto::{
+        Import, KeyId, PlaceholderEncryptedSigningKeyPair, Secret, SigningKeyPair, StorageKey,
+    },
+    types::database::{secrets::StoredSecret, user::UserId},
 };
 use lock_keeper_key_server::database::DataStore;
 use lock_keeper_mongodb::Database;
@@ -68,15 +70,19 @@ async fn cannot_get_another_users_secrets(db: TestDatabase) -> Result<()> {
     let key_id3 = remote_generate_signing_key(&db, &mut rng, &user_id).await?;
 
     // Attempt to retrieve each secret using other user's ID
-    assert!(db.db.get_user_secret(&other_user, &key_id1).await.is_err());
     assert!(db
         .db
-        .get_user_signing_key(&other_user, &key_id2)
+        .get_user_secret(&other_user, &key_id1, Default::default())
         .await
         .is_err());
     assert!(db
         .db
-        .get_user_signing_key(&other_user, &key_id3)
+        .get_user_secret(&other_user, &key_id2, Default::default())
+        .await
+        .is_err());
+    assert!(db
+        .db
+        .get_user_secret(&other_user, &key_id3, Default::default())
         .await
         .is_err());
 
@@ -92,8 +98,8 @@ async fn add_arbitrary_secret(
     let key_id = KeyId::generate(rng, user_id)?;
     let (_, encrypted) = Secret::create_and_encrypt(rng, storage_key, user_id, &key_id)?;
 
-    db.add_user_secret(user_id, encrypted.clone(), key_id.clone())
-        .await?;
+    let secret = StoredSecret::from_arbitrary_secret(key_id.clone(), encrypted)?;
+    db.add_user_secret(user_id, secret).await?;
 
     Ok(key_id)
 }
@@ -104,8 +110,11 @@ async fn import_signing_key(db: &Database, rng: &mut StdRng, user_id: &UserId) -
     let import = Import::new(random_bytes)?;
     let signing_key = import.into_signing_key(user_id, &key_id)?;
 
-    db.add_remote_secret(user_id, signing_key.clone(), key_id.clone())
-        .await?;
+    let secret = StoredSecret::from_remote_signing_key_pair(
+        key_id.clone(),
+        PlaceholderEncryptedSigningKeyPair::from(signing_key),
+    )?;
+    db.add_user_secret(user_id, secret).await?;
 
     Ok(key_id)
 }
@@ -118,8 +127,10 @@ async fn remote_generate_signing_key(
     let key_id = KeyId::generate(rng, user_id)?;
     let signing_key = SigningKeyPair::remote_generate(rng, user_id, &key_id);
 
-    db.add_remote_secret(user_id, signing_key.clone(), key_id.clone())
-        .await?;
-
+    let secret = StoredSecret::from_remote_signing_key_pair(
+        key_id.clone(),
+        PlaceholderEncryptedSigningKeyPair::from(signing_key),
+    )?;
+    db.add_user_secret(user_id, secret).await?;
     Ok(key_id)
 }

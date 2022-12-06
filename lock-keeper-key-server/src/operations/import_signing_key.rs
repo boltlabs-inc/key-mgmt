@@ -6,9 +6,12 @@ use crate::{
 use crate::database::DataStore;
 use async_trait::async_trait;
 use lock_keeper::{
-    crypto::KeyId,
+    crypto::{KeyId, PlaceholderEncryptedSigningKeyPair},
     infrastructure::channel::ServerChannel,
-    types::operations::import::{client, server},
+    types::{
+        database::secrets::StoredSecret,
+        operations::import::{client, server},
+    },
 };
 use rand::rngs::StdRng;
 
@@ -37,10 +40,15 @@ impl<DB: DataStore> Operation<DB> for ImportSigningKey {
             .key_material
             .into_signing_key(&request.user_id, &key_id)?;
 
+        let secret = StoredSecret::from_remote_signing_key_pair(
+            key_id.clone(),
+            PlaceholderEncryptedSigningKeyPair::from(signing_key),
+        )?;
+
         // Check validity of ciphertext and store in DB
         context
             .db
-            .add_remote_secret(&request.user_id, signing_key, key_id.clone())
+            .add_user_secret(&request.user_id, secret)
             .await
             .map_err(LockKeeperServerError::database)?;
 

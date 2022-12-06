@@ -13,7 +13,38 @@ use serde::{Deserialize, Serialize};
 use std::{fmt::Display, str::FromStr, vec::IntoIter};
 use uuid::Uuid;
 
-use super::secrets::StoredSecrets;
+use super::secrets::StoredSecret;
+
+/// One user with a set of arbitrary secrets and a [`ServerRegistration`] to
+/// authenticate with.
+#[derive(Debug, Deserialize, Serialize)]
+pub struct User {
+    pub user_id: UserId,
+    pub account_name: AccountName,
+    pub storage_key: Option<Encrypted<StorageKey>>,
+    pub secrets: Vec<StoredSecret>,
+    pub server_registration: ServerRegistration<OpaqueCipherSuite>,
+}
+
+impl User {
+    pub fn new(
+        user_id: UserId,
+        account_name: AccountName,
+        server_registration: ServerRegistration<OpaqueCipherSuite>,
+    ) -> Self {
+        User {
+            user_id,
+            account_name,
+            storage_key: None,
+            secrets: Vec::new(),
+            server_registration,
+        }
+    }
+
+    pub fn into_parts(self) -> (ServerRegistration<OpaqueCipherSuite>, UserId) {
+        (self.server_registration, self.user_id)
+    }
+}
 
 /// Unique ID for a user.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
@@ -94,36 +125,5 @@ impl FromStr for AccountName {
 impl AccountName {
     pub fn as_bytes(&self) -> &[u8] {
         self.0.as_bytes()
-    }
-}
-
-/// One user with a set of arbitrary secrets and a [`ServerRegistration`] to
-/// authenticate with.
-#[derive(Debug, Deserialize, Serialize)]
-pub struct User {
-    pub user_id: UserId,
-    pub account_name: AccountName,
-    pub storage_key: Option<Encrypted<StorageKey>>,
-    pub secrets: StoredSecrets,
-    pub server_registration: ServerRegistration<OpaqueCipherSuite>,
-}
-
-impl User {
-    pub fn new(
-        user_id: UserId,
-        account_name: AccountName,
-        server_registration: ServerRegistration<OpaqueCipherSuite>,
-    ) -> Self {
-        User {
-            user_id,
-            account_name,
-            storage_key: None,
-            secrets: StoredSecrets::default(),
-            server_registration,
-        }
-    }
-
-    pub fn into_parts(self) -> (ServerRegistration<OpaqueCipherSuite>, UserId) {
-        (self.server_registration, self.user_id)
     }
 }

@@ -45,14 +45,14 @@ async fn export_works(config: Config) -> Result<()> {
     let GenerateResult {
         key_id,
         local_storage,
-    } = client.generate_and_store().await?.into_inner();
-    let bytes_res = client.export_key(&key_id).await;
+    } = client.generate_secret().await?.into_inner();
+    let bytes_res = client.export_secret(&key_id).await;
     assert!(bytes_res.is_ok());
 
     // Turn the export back into a Secret and compare directly
     let exported_secret: Secret = bytes_res?.into_inner().try_into()?;
     assert_eq!(exported_secret, local_storage.material);
-    check_audit_events(&state, EventStatus::Successful, ClientAction::Export).await?;
+    check_audit_events(&state, EventStatus::Successful, ClientAction::ExportSecret).await?;
 
     Ok(())
 }
@@ -62,9 +62,9 @@ async fn cannot_export_fake_key(config: Config) -> Result<()> {
     let client = authenticate(&state).await?;
 
     let fake_key_id = generate_fake_key_id(&client).await?;
-    let bytes_res = client.export_key(&fake_key_id).await;
+    let bytes_res = client.export_secret(&fake_key_id).await;
     compare_errors(bytes_res, Status::internal("Internal server error"));
-    check_audit_events(&state, EventStatus::Failed, ClientAction::Export).await?;
+    check_audit_events(&state, EventStatus::Failed, ClientAction::ExportSecret).await?;
 
     Ok(())
 }
@@ -74,9 +74,9 @@ async fn cannot_export_signing_key_as_secret(config: Config) -> Result<()> {
     let client = authenticate(&state).await?;
 
     let (key_id, _) = import_signing_key(&client).await?.into_inner();
-    let export_res = client.export_key(&key_id).await;
+    let export_res = client.export_secret(&key_id).await;
     compare_errors(export_res, Status::internal("Internal server error"));
-    check_audit_events(&state, EventStatus::Failed, ClientAction::Export).await?;
+    check_audit_events(&state, EventStatus::Failed, ClientAction::ExportSecret).await?;
 
     Ok(())
 }
@@ -88,10 +88,10 @@ async fn cannot_export_after_logout(config: Config) -> Result<()> {
     let GenerateResult {
         key_id,
         local_storage: _,
-    } = client.generate_and_store().await?.into_inner();
+    } = client.generate_secret().await?.into_inner();
     client.logout().await?;
 
-    let res = client.export_key(&key_id).await;
+    let res = client.export_secret(&key_id).await;
     compare_status_errors(res, Status::unauthenticated("No session key for this user"))?;
 
     Ok(())
@@ -136,7 +136,7 @@ async fn cannot_export_secret_as_signing_key(config: Config) -> Result<()> {
     let GenerateResult {
         key_id,
         local_storage: _,
-    } = client.generate_and_store().await?.into_inner();
+    } = client.generate_secret().await?.into_inner();
     let export_res = client.export_signing_key(&key_id).await;
     compare_errors(export_res, Status::internal("Internal server error"));
     check_audit_events(&state, EventStatus::Failed, ClientAction::ExportSigningKey).await?;

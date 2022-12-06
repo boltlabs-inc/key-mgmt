@@ -11,6 +11,12 @@ pub enum LockKeeperError {
     #[error(transparent)]
     Crypto(#[from] CryptoError),
 
+    // Conversion errors
+    #[error("Unknown secret type: {}", .0)]
+    UnknownSecretType(String),
+    #[error("Invalid secret type")]
+    InvalidSecretType,
+
     // Request errors
     #[error("Invalid client action")]
     InvalidClientAction,
@@ -62,9 +68,10 @@ impl From<LockKeeperError> for Status {
     fn from(error: LockKeeperError) -> Self {
         match error {
             // Errors that are safe to return to the client
-            LockKeeperError::InvalidMessage | LockKeeperError::MetadataNotFound => {
-                Status::invalid_argument(error.to_string())
-            }
+            LockKeeperError::InvalidMessage
+            | LockKeeperError::MetadataNotFound
+            | LockKeeperError::UnknownSecretType(_)
+            | LockKeeperError::InvalidSecretType => Status::invalid_argument(error.to_string()),
             LockKeeperError::NoMessageReceived => Status::deadline_exceeded(error.to_string()),
             // Errors that the client should not see
             LockKeeperError::InvalidClientAction

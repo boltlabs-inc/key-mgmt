@@ -8,7 +8,7 @@ use rand::rngs::StdRng;
 use serde::{Deserialize, Serialize};
 
 impl LockKeeperClient {
-    pub(crate) async fn handle_remote_generate(
+    pub(crate) async fn handle_remote_generate_signing_key(
         &self,
         mut channel: ClientChannel<StdRng>,
     ) -> Result<LockKeeperResponse<RemoteGenerateResult>, LockKeeperClientError> {

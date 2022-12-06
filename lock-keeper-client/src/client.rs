@@ -190,14 +190,14 @@ impl LockKeeperClient {
 
             // These actions generate an error because they should be on an authenticated channel
             ClientAction::CreateStorageKey
-            | ClientAction::Export
+            | ClientAction::ExportSecret
             | ClientAction::ExportSigningKey
-            | ClientAction::Generate
+            | ClientAction::GenerateSecret
             | ClientAction::ImportSigningKey
             | ClientAction::Logout
-            | ClientAction::RemoteGenerate
+            | ClientAction::RemoteGenerateSigningKey
             | ClientAction::RemoteSignBytes
-            | ClientAction::Retrieve
+            | ClientAction::RetrieveSecret
             | ClientAction::RetrieveAuditEvents
             | ClientAction::RetrieveSigningKey
             | ClientAction::RetrieveStorageKey => {
@@ -227,16 +227,17 @@ impl LockKeeperClient {
         // Server returns its own channel that is uses to send responses
         let server_response = match metadata.action() {
             ClientAction::CreateStorageKey => client.create_storage_key(stream).await,
-            ClientAction::Export => client.retrieve(stream).await,
-            ClientAction::ExportSigningKey => client.retrieve_signing_key(stream).await,
-            ClientAction::Generate => client.generate(stream).await,
+            ClientAction::ExportSecret => client.retrieve_secret(stream).await,
+            ClientAction::ExportSigningKey => client.retrieve_secret(stream).await,
+            ClientAction::GenerateSecret => client.generate_secret(stream).await,
             ClientAction::ImportSigningKey => client.import_signing_key(stream).await,
             ClientAction::Logout => client.logout(stream).await,
-            ClientAction::RemoteGenerate => client.remote_generate(stream).await,
+            ClientAction::Register => client.register(stream).await,
+            ClientAction::RemoteGenerateSigningKey => client.remote_generate(stream).await,
             ClientAction::RemoteSignBytes => client.remote_sign_bytes(stream).await,
-            ClientAction::Retrieve => client.retrieve(stream).await,
+            ClientAction::RetrieveSecret => client.retrieve_secret(stream).await,
             ClientAction::RetrieveAuditEvents => client.retrieve_audit_events(stream).await,
-            ClientAction::RetrieveSigningKey => client.retrieve_signing_key(stream).await,
+            ClientAction::RetrieveSigningKey => client.retrieve_secret(stream).await,
             ClientAction::RetrieveStorageKey => client.retrieve_storage_key(stream).await,
 
             // These actions generate an error because they should be on an unauthenticated channel

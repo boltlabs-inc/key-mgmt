@@ -8,8 +8,8 @@ pub mod logout;
 pub mod register;
 pub mod remote_generate;
 pub mod remote_sign_bytes;
-pub mod retrieve;
 pub mod retrieve_audit_events;
+pub mod retrieve_secret;
 pub mod retrieve_storage_key;
 
 use crate::{
@@ -28,15 +28,15 @@ use uuid::Uuid;
 pub enum ClientAction {
     Authenticate,
     CreateStorageKey,
-    Export,
+    ExportSecret,
     ExportSigningKey,
-    Generate,
+    GenerateSecret,
     ImportSigningKey,
     Logout,
     Register,
-    RemoteGenerate,
+    RemoteGenerateSigningKey,
     RemoteSignBytes,
-    Retrieve,
+    RetrieveSecret,
     RetrieveAuditEvents,
     RetrieveSigningKey,
     RetrieveStorageKey,
