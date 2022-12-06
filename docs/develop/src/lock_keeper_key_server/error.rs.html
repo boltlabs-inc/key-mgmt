@@ -109,7 +109,7 @@
 <span id="109">109</span>
 <span id="110">110</span>
 <span id="111">111</span>
-</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::server::session_key_cache::SessionKeyCacheError;
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::server::session_key_cache::SessionCacheError;
 <span class="kw">use </span>thiserror::Error;
 <span class="kw">use </span>tonic::Status;
 
@@ -121,7 +121,7 @@
     </span>PrivateKeyMissing,
 
     <span class="attribute">#[error(<span class="string">&quot;Error in session keys cache.&quot;</span>)]
-    </span>SessionKeyCache(<span class="attribute">#[from] </span>SessionKeyCacheError),
+    </span>SessionCache(<span class="attribute">#[from] </span>SessionCacheError),
 
     <span class="comment">// Infrastructure errors
     </span><span class="attribute">#[error(<span class="string">&quot;Invalid OPAQUE directory&quot;</span>)]
@@ -182,11 +182,11 @@
 
 <span class="kw">impl </span>From&lt;LockKeeperServerError&gt; <span class="kw">for </span>Status {
     <span class="kw">fn </span>from(error: LockKeeperServerError) -&gt; Status {
-        <span class="kw">use </span><span class="kw">crate</span>::server::session_key_cache::SessionKeyCacheError::<span class="kw-2">*</span>;
+        <span class="kw">use </span><span class="kw">crate</span>::server::session_key_cache::SessionCacheError::<span class="kw-2">*</span>;
 
         <span class="kw">match </span>error {
-            LockKeeperServerError::SessionKeyCache(ExpiredSessionKey)
-            | LockKeeperServerError::SessionKeyCache(MissingSessionKey) =&gt; {
+            LockKeeperServerError::SessionCache(ExpiredSessionKey)
+            | LockKeeperServerError::SessionCache(MissingSessionKey) =&gt; {
                 Status::unauthenticated(<span class="string">&quot;No session key for this user&quot;</span>)
             }
             <span class="comment">// Errors that are safe to return to the client
@@ -204,7 +204,7 @@
 
             <span class="comment">// Errors that the client should not see
             </span>LockKeeperServerError::MissingService
-            | LockKeeperServerError::SessionKeyCache(<span class="kw">_</span>)
+            | LockKeeperServerError::SessionCache(<span class="kw">_</span>)
             | LockKeeperServerError::Hyper(<span class="kw">_</span>)
             | LockKeeperServerError::Io(<span class="kw">_</span>)
             | LockKeeperServerError::InvalidOpaqueDirectory

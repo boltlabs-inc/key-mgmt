@@ -106,8 +106,19 @@
 <span id="106">106</span>
 <span id="107">107</span>
 <span id="108">108</span>
+<span id="109">109</span>
+<span id="110">110</span>
+<span id="111">111</span>
+<span id="112">112</span>
+<span id="113">113</span>
+<span id="114">114</span>
+<span id="115">115</span>
+<span id="116">116</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{
-    config::Config, database::DataStore, error::LockKeeperServerError, server::LockKeeperKeyServer,
+    config::Config,
+    database::DataStore,
+    error::LockKeeperServerError,
+    server::{session_key_cache::SessionCache, LockKeeperKeyServer},
 };
 
 <span class="kw">use </span>hyper::server::conn::Http;
@@ -116,20 +127,23 @@
 <span class="kw">use </span>tokio::{
     net::{TcpListener, TcpStream},
     signal,
+    sync::Mutex,
 };
 <span class="kw">use </span>tokio_rustls::TlsAcceptor;
 <span class="kw">use </span>tonic::transport::{server::Routes, Server};
 <span class="kw">use </span>tracing::{error, info};
 
 <span class="doccomment">/// Starts a full Lock Keeper server stack based on the given config.
-</span><span class="kw">pub async fn </span>start_lock_keeper_server&lt;DB: DataStore + Clone&gt;(
+</span><span class="kw">pub async fn </span>start_lock_keeper_server&lt;DB: DataStore + Clone, S: SessionCache + <span class="lifetime">&#39;static</span>&gt;(
     config: Config,
     db: DB,
+    session_key_cache: S,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
     <span class="macro">tracing::info!</span>(<span class="string">&quot;Starting Lock Keeper key server&quot;</span>);
     <span class="kw">let </span>db = Arc::new(db);
+    <span class="kw">let </span>session_key_cache = Arc::new(Mutex::new(session_key_cache));
     <span class="comment">// Collect the futures for the result of running each specified server
-    </span><span class="kw">let </span>server_future = start_service(<span class="kw-2">&amp;</span>config, db);
+    </span><span class="kw">let </span>server_future = start_service(<span class="kw-2">&amp;</span>config, db, session_key_cache);
 
     <span class="macro">tracing::info!</span>(<span class="string">&quot;Lock Keeper key server started&quot;</span>);
 
@@ -151,14 +165,16 @@
 </span><span class="kw">async fn </span>start_service&lt;DB: DataStore + Clone&gt;(
     config: <span class="kw-2">&amp;</span>Config,
     db: Arc&lt;DB&gt;,
+    session_key_cache: Arc&lt;Mutex&lt;<span class="kw">dyn </span>SessionCache&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
     <span class="comment">// Clone `Arc`s for the various resources we need in this server
     </span><span class="kw">let </span>config = config.clone();
     <span class="kw">let </span>db = db.clone();
+    <span class="kw">let </span>session_key_cache = session_key_cache.clone();
 
     <span class="kw">let </span>tls = config.tls_config.clone();
 
-    <span class="kw">let </span>rpc_server = LockKeeperKeyServer::new(db, config)<span class="question-mark">?</span>;
+    <span class="kw">let </span>rpc_server = LockKeeperKeyServer::new(db, session_key_cache, config)<span class="question-mark">?</span>;
     <span class="kw">let </span>addr = rpc_server.config.address;
     <span class="kw">let </span>port = rpc_server.config.port;
 

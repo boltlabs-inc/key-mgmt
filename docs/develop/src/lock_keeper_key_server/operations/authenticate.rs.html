@@ -155,7 +155,7 @@
         <span class="kw">let </span>result = authenticate_start(channel, context).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">let </span>session_key = authenticate_finish(channel, result.login_start_result).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>session_key_cache = context.session_key_cache.lock().<span class="kw">await</span>;
-        session_key_cache.insert(result.user_id.clone(), session_key.clone());
+        session_key_cache.create_session(result.user_id.clone(), session_key.clone());
 
         channel.try_upgrade_to_authenticated(session_key)<span class="question-mark">?</span>;
         send_user_id(channel, result.user_id).<span class="kw">await</span><span class="question-mark">?</span>;

@@ -70,7 +70,7 @@
                 .session_key_cache
                 .lock()
                 .<span class="kw">await
-                </span>.expire(request.user_id)<span class="question-mark">?</span>;
+                </span>.delete_session(request.user_id)<span class="question-mark">?</span>;
         }
 
         <span class="kw">let </span>reply = server::Response { success: <span class="bool-val">true </span>};

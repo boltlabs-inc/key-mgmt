@@ -1,5 +1,6 @@
 var sourcesIndex = JSON.parse('{\
 "key_server_cli":["",[],["main.rs"]],\
+"lk_session_hashmap":["",[],["api.rs","lib.rs"]],\
 "lock_keeper":["",[["config",[],["opaque.rs"]],["crypto",[],["arbitrary_secret.rs","generic.rs","signing_key.rs"]],["infrastructure",[],["channel.rs","pem_utils.rs"]],["types",[["database",[],["secrets.rs","user.rs"]],["operations",[],["authenticate.rs","create_storage_key.rs","generate.rs","import.rs","logout.rs","register.rs","remote_generate.rs","remote_sign_bytes.rs","retrieve_audit_events.rs","retrieve_secret.rs","retrieve_storage_key.rs"]]],["audit_event.rs","database.rs","operations.rs"]]],["config.rs","constants.rs","crypto.rs","error.rs","infrastructure.rs","lib.rs","types.rs"]],\
 "lock_keeper_client":["",[["api",[],["authenticate.rs","create_storage_key.rs","generate_secret.rs","import.rs","register.rs","remote_generate_signing_key.rs","remote_sign_bytes.rs","retrieve.rs","retrieve_audit_events.rs"]]],["api.rs","client.rs","config.rs","error.rs","lib.rs","response.rs"]],\
 "lock_keeper_client_cli":["",[["cli_command",[],["authenticate.rs","export.rs","generate.rs","get_audit_events.rs","help.rs","import.rs","list.rs","logout.rs","print.rs","quit.rs","register.rs","remote_generate.rs","remote_sign.rs","retrieve.rs"]]],["app.rs","cli.rs","cli_command.rs","main.rs","state.rs","storage.rs"]],\

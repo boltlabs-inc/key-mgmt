@@ -29,9 +29,14 @@
 <span id="29">29</span>
 <span id="30">30</span>
 <span id="31">31</span>
+<span id="32">32</span>
+<span id="33">33</span>
+<span id="34">34</span>
+<span id="35">35</span>
 </pre><pre class="rust"><code><span class="kw">use </span>std::path::PathBuf;
 
 <span class="kw">use </span>clap::Parser;
+<span class="kw">use </span>lk_session_hashmap::HashmapKeyCache;
 <span class="kw">use </span>lock_keeper_key_server::{config::Config, server::start_lock_keeper_server};
 <span class="kw">use </span>lock_keeper_mongodb::Database;
 
@@ -58,7 +63,10 @@
     <span class="kw">let </span>config = Config::from_file(<span class="kw-2">&amp;</span>cli.config, private_key_bytes).unwrap();
 
     <span class="kw">let </span>mongo = Database::connect(<span class="kw-2">&amp;</span>config.database).<span class="kw">await</span>.unwrap();
-    start_lock_keeper_server(config, mongo).<span class="kw">await</span>.unwrap();
+    <span class="kw">let </span>hashmap_cache = HashmapKeyCache::new(config.session_timeout);
+    start_lock_keeper_server(config, mongo, hashmap_cache)
+        .<span class="kw">await
+        </span>.unwrap();
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="key_server_cli" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>
