@@ -21,6 +21,7 @@ mod arbitrary_secret;
 mod generic;
 mod signing_key;
 
+use crate::rpc::Message;
 pub use arbitrary_secret::Secret;
 use generic::{AssociatedData, EncryptionKey};
 pub use generic::{CryptoError, Encrypted};
@@ -36,11 +37,31 @@ pub use signing_key::{
 /// authentication session. It should not be passed out to the local calling
 /// application.
 #[derive(Debug, Clone, Zeroize, ZeroizeOnDrop)]
-pub struct OpaqueSessionKey(Box<[u8; 64]>);
+pub struct OpaqueSessionKey(EncryptionKey);
 
-impl From<GenericArray<u8, U64>> for OpaqueSessionKey {
-    fn from(arr: GenericArray<u8, U64>) -> Self {
-        Self(Box::new(arr.into()))
+impl TryFrom<GenericArray<u8, U64>> for OpaqueSessionKey {
+    type Error = LockKeeperError;
+
+    fn try_from(arr: GenericArray<u8, U64>) -> Result<Self, Self::Error> {
+        let context = AssociatedData::new().with_str("OPAQUE-derived Lock Keeper session key");
+        Ok(Self(EncryptionKey::from_bytes(
+            arr[..32]
+                .try_into()
+                .map_err(|_| LockKeeperError::Crypto(CryptoError::ConversionError))?,
+            context,
+        )))
+    }
+}
+
+impl OpaqueSessionKey {
+    /// Encrypt the given [`Message`] under the [`OpaqueSessionKey`] using an
+    /// AEAD scheme.
+    pub(crate) fn encrypt(
+        &self,
+        rng: &mut (impl CryptoRng + RngCore),
+        message: Message,
+    ) -> Result<Encrypted<Message>, CryptoError> {
+        Encrypted::encrypt(rng, &self.0, message, &AssociatedData::new())
     }
 }
 
@@ -228,6 +249,42 @@ impl Encrypted<StorageKey> {
     }
 }
 
+impl Encrypted<Message> {
+    pub fn decrypt_message(
+        self,
+        session_key: &OpaqueSessionKey,
+    ) -> Result<Message, LockKeeperError> {
+        let decrypted = self.decrypt(&session_key.0)?;
+        Ok(decrypted)
+    }
+
+    /// Translates an [`Encrypted<Message>`] to a [`Message`] in order to be
+    /// sent through an authenticated channel.
+    pub(crate) fn try_into_message(self) -> Result<Message, LockKeeperError> {
+        let content = serde_json::to_vec(&self)?;
+
+        Ok(Message { content })
+    }
+
+    /// Translates a [`Message`] received through an authenticated channel to an
+    /// [`Encrypted<Message>`].
+    pub(crate) fn try_from_message(message: Message) -> Result<Self, LockKeeperError> {
+        Ok(serde_json::from_slice(&message.content)?)
+    }
+}
+
+impl From<Vec<u8>> for Message {
+    fn from(value: Vec<u8>) -> Self {
+        Message { content: value }
+    }
+}
+
+impl From<Message> for Vec<u8> {
+    fn from(message: Message) -> Self {
+        message.content
+    }
+}
+
 /// Universally unique identifier for a stored secret or signing key.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct KeyId(Box<[u8; 32]>);
@@ -299,6 +356,7 @@ mod test {
     use crate::LockKeeperError;
 
     use super::*;
+    use crate::types::operations::authenticate::server::SendUserId;
     use rand::{rngs::StdRng, Rng, SeedableRng};
 
     #[test]
@@ -324,6 +382,16 @@ mod test {
             .expect("Failed to generate random key");
 
         key
+    }
+
+    // In practice, a session key will be a pseudorandom output from OPAQUE.
+    // We'll use random bytes for the test key.
+    fn create_test_session_key(rng: &mut (impl CryptoRng + RngCore)) -> OpaqueSessionKey {
+        let mut key = [0_u8; 64];
+        rng.try_fill(&mut key)
+            .expect("Failed to generate random key");
+
+        OpaqueSessionKey::try_from(GenericArray::from(key)).expect("Failed to create Session Key")
     }
 
     #[test]
@@ -506,15 +574,55 @@ mod test {
     }
 
     #[test]
-    fn opaque_session_key_gets_zeroized() -> Result<(), LockKeeperError> {
-        let key = [1_u8; 64];
-        let opaque_session_key = OpaqueSessionKey(key.into());
-        let ptr = opaque_session_key.0.as_ptr();
+    fn message_encryption_works() -> Result<(), LockKeeperError> {
+        let mut rng = rand::thread_rng();
+        let session_key = create_test_session_key(&mut rng);
+        let user_id = UserId::new(&mut rng)?;
 
-        drop(opaque_session_key);
+        // Set up matching RNGs to check behavior of the utility function.
+        let seed = b"not-random seed for convenience!";
+        let mut rng = StdRng::from_seed(*seed);
 
-        let after_drop = unsafe { core::slice::from_raw_parts(ptr, 64) };
-        assert_ne!(key, after_drop);
+        // Encrypt a message
+        let message = SendUserId {
+            user_id: user_id.clone(),
+        };
+        let expected_message = SendUserId { user_id };
+        let encrypted_message = session_key.encrypt(&mut rng, Message::try_from(message)?)?;
+
+        // Decrypt the message and check that it worked
+        let decrypted_message = encrypted_message.decrypt_message(&session_key)?;
+        assert_eq!(
+            expected_message.user_id,
+            SendUserId::try_from(decrypted_message)?.user_id
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn encrypted_message_to_message_and_back_conversion_works() -> Result<(), LockKeeperError> {
+        let mut rng = rand::thread_rng();
+        let session_key = create_test_session_key(&mut rng);
+        let user_id = UserId::new(&mut rng)?;
+
+        // Set up matching RNGs to check behavior of the utility function.
+        let seed = b"not-random seed for convenience!";
+        let mut rng = StdRng::from_seed(*seed);
+
+        // Encrypt a message
+        let message = SendUserId { user_id };
+        let encrypted_message = session_key.encrypt(&mut rng, Message::try_from(message)?)?;
+
+        let result_to_message = encrypted_message.clone().try_into_message();
+        assert!(result_to_message.is_ok());
+
+        let result_from_message =
+            Encrypted::<Message>::try_from_message(result_to_message.unwrap());
+        assert!(result_from_message.is_ok());
+
+        assert_eq!(encrypted_message, result_from_message.unwrap());
+
         Ok(())
     }
 }

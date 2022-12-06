@@ -4,11 +4,12 @@ use lock_keeper::{
     infrastructure::channel::ClientChannel,
     types::operations::remote_sign_bytes::{client, server},
 };
+use rand::rngs::StdRng;
 
 impl LockKeeperClient {
     pub(crate) async fn handle_remote_sign_bytes(
         &self,
-        mut channel: ClientChannel,
+        mut channel: ClientChannel<StdRng>,
         key_id: KeyId,
         bytes: impl Signable,
     ) -> Result<LockKeeperResponse<Signature>, LockKeeperClientError> {

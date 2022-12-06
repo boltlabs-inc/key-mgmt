@@ -7,13 +7,15 @@ use lock_keeper::{
         operations::create_storage_key::{client, server},
     },
 };
-use rand::{CryptoRng, RngCore};
+use rand::{rngs::StdRng, CryptoRng, RngCore};
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 impl LockKeeperClient {
     /// Creates a storage key and sends it to the key server
     pub(crate) async fn handle_create_storage_key<T: CryptoRng + RngCore>(
-        mut channel: ClientChannel,
-        rng: &mut T,
+        mut channel: ClientChannel<StdRng>,
+        rng: Arc<Mutex<T>>,
         account_name: &AccountName,
         master_key: MasterKey,
     ) -> Result<(), LockKeeperClientError> {
@@ -25,7 +27,7 @@ impl LockKeeperClient {
 }
 
 async fn request_user_id(
-    channel: &mut ClientChannel,
+    channel: &mut ClientChannel<StdRng>,
     account_name: &AccountName,
 ) -> Result<UserId, LockKeeperClientError> {
     let response = client::RequestUserId {
@@ -39,12 +41,15 @@ async fn request_user_id(
 }
 
 async fn create_and_send_storage_key<T: CryptoRng + RngCore>(
-    channel: &mut ClientChannel,
-    rng: &mut T,
+    channel: &mut ClientChannel<StdRng>,
+    rng: Arc<Mutex<T>>,
     user_id: UserId,
     master_key: MasterKey,
 ) -> Result<(), LockKeeperClientError> {
-    let storage_key = master_key.create_and_encrypt_storage_key(rng, &user_id)?;
+    let storage_key = {
+        let mut rng = rng.lock().await;
+        master_key.create_and_encrypt_storage_key(&mut *rng, &user_id)?
+    };
 
     let response = client::SendStorageKey {
         user_id,

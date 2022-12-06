@@ -15,6 +15,7 @@ use lock_keeper::{
     },
 };
 use opaque_ke::{ServerLogin, ServerLoginStartParameters, ServerLoginStartResult};
+use rand::{rngs::StdRng, CryptoRng, RngCore};
 
 struct AuthenticateStartResult {
     login_start_result: ServerLoginStartResult<OpaqueCipherSuite>,
@@ -28,14 +29,15 @@ pub struct Authenticate;
 impl<DB: DataStore> Operation<DB> for Authenticate {
     async fn operation(
         self,
-        channel: &mut ServerChannel,
+        channel: &mut ServerChannel<StdRng>,
         context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
         let result = authenticate_start(channel, context).await?;
         let session_key = authenticate_finish(channel, result.login_start_result).await?;
         let mut session_key_cache = context.session_key_cache.lock().await;
-        session_key_cache.insert(result.user_id.clone(), session_key);
+        session_key_cache.insert(result.user_id.clone(), session_key.clone());
 
+        channel.try_upgrade_to_authenticated(session_key)?;
         send_user_id(channel, result.user_id).await?;
 
         Ok(())
@@ -45,7 +47,7 @@ impl<DB: DataStore> Operation<DB> for Authenticate {
 /// Returns the server-side start message along with a login result that will be
 /// used in the finish step.
 async fn authenticate_start<DB: DataStore>(
-    channel: &mut ServerChannel,
+    channel: &mut ServerChannel<StdRng>,
     context: &Context<DB>,
 ) -> Result<AuthenticateStartResult, LockKeeperServerError> {
     // Receive start message from client
@@ -89,8 +91,8 @@ async fn authenticate_start<DB: DataStore>(
     })
 }
 
-async fn authenticate_finish(
-    channel: &mut ServerChannel,
+async fn authenticate_finish<G: CryptoRng + RngCore>(
+    channel: &mut ServerChannel<G>,
     start_result: ServerLoginStartResult<OpaqueCipherSuite>,
 ) -> Result<OpaqueSessionKey, LockKeeperServerError> {
     // Receive finish message from client
@@ -103,13 +105,13 @@ async fn authenticate_finish(
 
     // Send response to client
     channel.send(reply).await?;
-    Ok(server_login_finish_result.session_key.into())
+    Ok(server_login_finish_result.session_key.try_into()?)
 }
 
 /// Returns the server-side start message along with a login result that will be
 /// used in the finish step.
-async fn send_user_id(
-    channel: &mut ServerChannel,
+async fn send_user_id<G: CryptoRng + RngCore>(
+    channel: &mut ServerChannel<G>,
     user_id: UserId,
 ) -> Result<(), LockKeeperServerError> {
     let reply = server::SendUserId { user_id };

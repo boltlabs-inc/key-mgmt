@@ -1,5 +1,5 @@
 pub mod client {
-    use crate::{impl_message_conversion, types::database::user::UserId};
+    use crate::{impl_authenticated_message_conversion, types::database::user::UserId};
     use serde::{Deserialize, Serialize};
 
     #[derive(Debug, Deserialize, Serialize)]
@@ -8,11 +8,11 @@ pub mod client {
         pub user_id: UserId,
     }
 
-    impl_message_conversion!(Request);
+    impl_authenticated_message_conversion!(Request);
 }
 
 pub mod server {
-    use crate::impl_message_conversion;
+    use crate::impl_authenticated_message_conversion;
     use serde::{Deserialize, Serialize};
 
     #[derive(Debug, Deserialize, Serialize)]
@@ -21,5 +21,5 @@ pub mod server {
         pub success: bool,
     }
 
-    impl_message_conversion!(Response);
+    impl_authenticated_message_conversion!(Response);
 }

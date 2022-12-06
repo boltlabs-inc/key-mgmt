@@ -29,6 +29,10 @@ pub enum LockKeeperClientError {
     InvalidLogin,
     #[error("Invalid key retrieved")]
     InvalidKeyRetrieved,
+    #[error("An unauthenticated channel is needed for this action")]
+    UnauthenticatedChannelNeeded,
+    #[error("An authenticated channel is needed for this action")]
+    AuthenticatedChannelNeeded,
 
     // Wrapped errors
     #[error(transparent)]

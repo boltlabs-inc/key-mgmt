@@ -1,4 +1,5 @@
 use crate::client::{AuthenticateResult, LockKeeperClient, Password};
+use std::sync::Arc;
 
 use crate::LockKeeperClientError;
 use lock_keeper::{
@@ -13,17 +14,20 @@ use lock_keeper::{
 use opaque_ke::{
     ClientLogin, ClientLoginFinishParameters, ClientLoginFinishResult, ClientLoginStartResult,
 };
-use rand::{CryptoRng, RngCore};
+use rand::{rngs::StdRng, CryptoRng, RngCore};
+use tokio::sync::Mutex;
 
 impl LockKeeperClient {
     pub(crate) async fn handle_authentication<T: CryptoRng + RngCore>(
-        channel: &mut ClientChannel,
-        rng: &mut T,
+        channel: &mut ClientChannel<StdRng>,
+        rng: Arc<Mutex<T>>,
         account_name: &AccountName,
         password: &Password,
     ) -> Result<AuthenticateResult, LockKeeperClientError> {
-        let client_login_start_result =
-            ClientLogin::<OpaqueCipherSuite>::start(rng, password.as_bytes())?;
+        let client_login_start_result = {
+            let mut rng = rng.lock().await;
+            ClientLogin::<OpaqueCipherSuite>::start(&mut *rng, password.as_bytes())?
+        };
 
         // Handle start step
         let server_start_result =
@@ -39,9 +43,10 @@ impl LockKeeperClient {
         )
         .await?;
 
-        let session_key = client_login_finish_result.session_key.into();
+        let session_key: OpaqueSessionKey = client_login_finish_result.session_key.try_into()?;
 
         // Get user id
+        channel.try_upgrade_to_authenticated(session_key.clone())?;
         let user_id = retrieve_user_id(channel, &session_key).await?;
 
         let master_key = MasterKey::derive_master_key(client_login_finish_result.export_key)?;
@@ -54,7 +59,7 @@ impl LockKeeperClient {
 }
 
 async fn authenticate_start(
-    channel: &mut ClientChannel,
+    channel: &mut ClientChannel<StdRng>,
     client_login_start_result: &ClientLoginStartResult<OpaqueCipherSuite>,
     account_name: &AccountName,
 ) -> Result<server::AuthenticateStart, LockKeeperClientError> {
@@ -69,7 +74,7 @@ async fn authenticate_start(
 }
 
 async fn authenticate_finish(
-    channel: &mut ClientChannel,
+    channel: &mut ClientChannel<StdRng>,
     account_name: &AccountName,
     password: &Password,
     client_start_result: ClientLoginStartResult<OpaqueCipherSuite>,
@@ -102,7 +107,7 @@ async fn authenticate_finish(
 /// NB: The unused `_session_key` will have to be passed to receive in order to
 /// check authentication.
 async fn retrieve_user_id(
-    channel: &mut ClientChannel,
+    channel: &mut ClientChannel<StdRng>,
     _session_key: &OpaqueSessionKey,
 ) -> Result<UserId, LockKeeperClientError> {
     let received_id: server::SendUserId = channel.receive().await?;

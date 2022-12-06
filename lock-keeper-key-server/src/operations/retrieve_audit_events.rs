@@ -8,6 +8,7 @@ use lock_keeper::{
     infrastructure::channel::ServerChannel,
     types::operations::retrieve_audit_events::{client, server},
 };
+use rand::rngs::StdRng;
 
 #[derive(Debug)]
 pub struct RetrieveAuditEvents;
@@ -16,7 +17,7 @@ pub struct RetrieveAuditEvents;
 impl<DB: DataStore> Operation<DB> for RetrieveAuditEvents {
     async fn operation(
         self,
-        channel: &mut ServerChannel,
+        channel: &mut ServerChannel<StdRng>,
         context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
         // Receive event type and options for audit events to return

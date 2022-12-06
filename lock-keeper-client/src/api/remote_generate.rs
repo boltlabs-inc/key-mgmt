@@ -4,12 +4,13 @@ use lock_keeper::{
     infrastructure::channel::ClientChannel,
     types::operations::remote_generate::{client, server},
 };
+use rand::rngs::StdRng;
 use serde::{Deserialize, Serialize};
 
 impl LockKeeperClient {
     pub(crate) async fn handle_remote_generate(
         &self,
-        mut channel: ClientChannel,
+        mut channel: ClientChannel<StdRng>,
     ) -> Result<LockKeeperResponse<RemoteGenerateResult>, LockKeeperClientError> {
         let request = client::RequestRemoteGenerate {
             user_id: self.user_id().clone(),

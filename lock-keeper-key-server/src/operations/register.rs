@@ -15,6 +15,7 @@ use lock_keeper::{
     },
 };
 use opaque_ke::ServerRegistration;
+use rand::rngs::StdRng;
 
 #[derive(Debug)]
 pub struct Register;
@@ -23,7 +24,7 @@ pub struct Register;
 impl<DB: DataStore> Operation<DB> for Register {
     async fn operation(
         self,
-        channel: &mut ServerChannel,
+        channel: &mut ServerChannel<StdRng>,
         context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
         let account_name = register_start(channel, context).await?;
@@ -34,7 +35,7 @@ impl<DB: DataStore> Operation<DB> for Register {
 }
 
 async fn register_start<DB: DataStore>(
-    channel: &mut ServerChannel,
+    channel: &mut ServerChannel<StdRng>,
     context: &Context<DB>,
 ) -> Result<AccountName, LockKeeperServerError> {
     // Receive start message from client
@@ -70,7 +71,7 @@ async fn register_start<DB: DataStore>(
 
 async fn register_finish<DB: DataStore>(
     account_name: &AccountName,
-    channel: &mut ServerChannel,
+    channel: &mut ServerChannel<StdRng>,
     context: &Context<DB>,
 ) -> Result<(), LockKeeperServerError> {
     // Receive finish message from client

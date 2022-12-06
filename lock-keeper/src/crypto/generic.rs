@@ -7,7 +7,6 @@ use serde::{Deserialize, Serialize};
 use std::{iter, marker::PhantomData};
 use thiserror::Error;
 
-#[cfg(test)]
 use std::convert::Infallible;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
@@ -26,8 +25,6 @@ pub enum CryptoError {
     ConversionError,
     #[error("Signature did not verify")]
     VerificationFailed,
-
-    #[cfg(test)]
     #[error(transparent)]
     Infallible(#[from] Infallible),
 }
@@ -85,10 +82,10 @@ impl AssociatedData {
 /// [ChaCha20Poly1305 crate](https://docs.rs/chacha20poly1305/latest/chacha20poly1305/index.html).
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Encrypted<T> {
-    ciphertext: Vec<u8>,
+    pub(super) ciphertext: Vec<u8>,
     pub(super) associated_data: AssociatedData,
-    nonce: chacha20poly1305::Nonce,
-    original_type: PhantomData<T>,
+    pub(super) nonce: chacha20poly1305::Nonce,
+    pub(super) original_type: PhantomData<T>,
 }
 
 /// A well-formed symmetric encryption key for an AEAD scheme.
@@ -191,10 +188,7 @@ where
         enc_key: &EncryptionKey,
         object: T,
         associated_data: &AssociatedData,
-    ) -> Result<Encrypted<T>, CryptoError>
-    where
-        T: ZeroizeOnDrop,
-    {
+    ) -> Result<Encrypted<T>, CryptoError> {
         // Set up cipher with key
         let cipher = ChaCha20Poly1305::new(&enc_key.key);
 

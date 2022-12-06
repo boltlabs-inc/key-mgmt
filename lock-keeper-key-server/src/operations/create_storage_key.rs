@@ -12,6 +12,7 @@ use lock_keeper::{
         operations::create_storage_key::{client, server},
     },
 };
+use rand::rngs::StdRng;
 
 #[derive(Debug)]
 pub struct CreateStorageKey;
@@ -20,7 +21,7 @@ pub struct CreateStorageKey;
 impl<DB: DataStore> Operation<DB> for CreateStorageKey {
     async fn operation(
         self,
-        channel: &mut ServerChannel,
+        channel: &mut ServerChannel<StdRng>,
         context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
         let user_id = send_user_id(channel, context).await?;
@@ -30,7 +31,7 @@ impl<DB: DataStore> Operation<DB> for CreateStorageKey {
 }
 
 async fn send_user_id<DB: DataStore>(
-    channel: &mut ServerChannel,
+    channel: &mut ServerChannel<StdRng>,
     context: &Context<DB>,
 ) -> Result<UserId, LockKeeperServerError> {
     let request: client::RequestUserId = channel.receive().await?;
@@ -59,7 +60,7 @@ async fn send_user_id<DB: DataStore>(
 
 async fn store_storage_key<DB: DataStore>(
     user_id: UserId,
-    channel: &mut ServerChannel,
+    channel: &mut ServerChannel<StdRng>,
     context: &Context<DB>,
 ) -> Result<(), LockKeeperServerError> {
     let client_message: client::SendStorageKey = channel.receive().await?;

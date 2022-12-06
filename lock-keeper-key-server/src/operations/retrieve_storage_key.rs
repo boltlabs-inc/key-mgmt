@@ -8,6 +8,7 @@ use lock_keeper::{
     infrastructure::channel::ServerChannel,
     types::operations::retrieve_storage_key::{client, server},
 };
+use rand::rngs::StdRng;
 
 #[derive(Debug)]
 pub struct RetrieveStorageKey;
@@ -16,7 +17,7 @@ pub struct RetrieveStorageKey;
 impl<DB: DataStore> Operation<DB> for RetrieveStorageKey {
     async fn operation(
         self,
-        channel: &mut ServerChannel,
+        channel: &mut ServerChannel<StdRng>,
         context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
         // Receive user ID and retrieve encrypted storage key for that user

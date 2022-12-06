@@ -125,7 +125,7 @@ mod tests {
     fn get_key_back() -> Result<()> {
         let mut cache = SessionKeyCache::new(TEST_EXPIRATION_TIME);
         let id = get_temp_user_id()?;
-        let key = get_temp_session_key();
+        let key = get_temp_session_key()?;
 
         cache.insert(id.clone(), key);
 
@@ -139,10 +139,10 @@ mod tests {
     fn overwrite_existing_key() -> Result<()> {
         let mut cache = SessionKeyCache::new(TEST_EXPIRATION_TIME);
         let id = get_temp_user_id()?;
-        let key = get_temp_session_key();
+        let key = get_temp_session_key()?;
 
         cache.insert(id.clone(), key);
-        let second_key = get_temp_session_key();
+        let second_key = get_temp_session_key()?;
         cache.insert(id, second_key);
 
         Ok(())
@@ -155,7 +155,7 @@ mod tests {
         // Keys expire instantly
         let mut cache = SessionKeyCache::new(Duration::from_secs(0));
         let id = get_temp_user_id()?;
-        let key = get_temp_session_key();
+        let key = get_temp_session_key()?;
         cache.insert(id.clone(), key);
 
         // Verify key is expired.
@@ -179,7 +179,7 @@ mod tests {
         // Handle a longer timeout.
         let mut cache = SessionKeyCache::new(Duration::from_millis(10));
         let id = get_temp_user_id()?;
-        let key = get_temp_session_key();
+        let key = get_temp_session_key()?;
         cache.insert(id.clone(), key);
 
         // Sleep for a while so key expires.
@@ -199,9 +199,11 @@ mod tests {
         Ok(())
     }
 
-    fn get_temp_session_key() -> OpaqueSessionKey {
+    fn get_temp_session_key() -> Result<OpaqueSessionKey> {
         const FILLER: u8 = 42;
-        OpaqueSessionKey::from(GenericArray::from([FILLER; 64]))
+        Ok(OpaqueSessionKey::try_from(GenericArray::from(
+            [FILLER; 64],
+        ))?)
     }
 
     fn get_temp_user_id() -> Result<UserId> {

@@ -1,7 +1,7 @@
 pub mod client {
     use crate::{
         crypto::{Encrypted, StorageKey},
-        impl_message_conversion,
+        impl_authenticated_message_conversion,
         types::database::user::{AccountName, UserId},
     };
     use serde::{Deserialize, Serialize};
@@ -17,12 +17,11 @@ pub mod client {
         pub storage_key: Encrypted<StorageKey>,
     }
 
-    // TODO #186: These messages need to be authenticated
-    impl_message_conversion!(RequestUserId, SendStorageKey);
+    impl_authenticated_message_conversion!(RequestUserId, SendStorageKey);
 }
 
 pub mod server {
-    use crate::{impl_message_conversion, types::database::user::UserId};
+    use crate::{impl_authenticated_message_conversion, types::database::user::UserId};
     use serde::{Deserialize, Serialize};
 
     #[derive(Debug, Deserialize, Serialize)]
@@ -36,6 +35,5 @@ pub mod server {
         pub success: bool,
     }
 
-    // TODO #186: These messages need to be authenticated
-    impl_message_conversion!(SendUserId, CreateStorageKeyResult);
+    impl_authenticated_message_conversion!(SendUserId, CreateStorageKeyResult);
 }

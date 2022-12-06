@@ -9,6 +9,7 @@ use lock_keeper::{
     infrastructure::channel::ServerChannel,
     types::operations::logout::{client, server},
 };
+use rand::rngs::StdRng;
 
 #[derive(Debug)]
 pub struct Logout;
@@ -17,7 +18,7 @@ pub struct Logout;
 impl<DB: DataStore> Operation<DB> for Logout {
     async fn operation(
         self,
-        channel: &mut ServerChannel,
+        channel: &mut ServerChannel<StdRng>,
         context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
         // Receive UserId from client
