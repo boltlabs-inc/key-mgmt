@@ -112,6 +112,7 @@
 <span id="112">112</span>
 <span id="113">113</span>
 <span id="114">114</span>
+<span id="115">115</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{
     error::LockKeeperServerError,
     server::{Context, Operation},
@@ -129,6 +130,7 @@
     },
 };
 <span class="kw">use </span>opaque_ke::ServerRegistration;
+<span class="kw">use </span>rand::rngs::StdRng;
 
 <span class="attribute">#[derive(Debug)]
 </span><span class="kw">pub struct </span>Register;
@@ -137,7 +139,7 @@
 </span><span class="kw">impl</span>&lt;DB: DataStore&gt; Operation&lt;DB&gt; <span class="kw">for </span>Register {
     <span class="kw">async fn </span>operation(
         <span class="self">self</span>,
-        channel: <span class="kw-2">&amp;mut </span>ServerChannel,
+        channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;StdRng&gt;,
         context: <span class="kw-2">&amp;mut </span>Context&lt;DB&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
         <span class="kw">let </span>account_name = register_start(channel, context).<span class="kw">await</span><span class="question-mark">?</span>;
@@ -148,7 +150,7 @@
 }
 
 <span class="kw">async fn </span>register_start&lt;DB: DataStore&gt;(
-    channel: <span class="kw-2">&amp;mut </span>ServerChannel,
+    channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;StdRng&gt;,
     context: <span class="kw-2">&amp;</span>Context&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;AccountName, LockKeeperServerError&gt; {
     <span class="comment">// Receive start message from client
@@ -184,7 +186,7 @@
 
 <span class="kw">async fn </span>register_finish&lt;DB: DataStore&gt;(
     account_name: <span class="kw-2">&amp;</span>AccountName,
-    channel: <span class="kw-2">&amp;mut </span>ServerChannel,
+    channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;StdRng&gt;,
     context: <span class="kw-2">&amp;</span>Context&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
     <span class="comment">// Receive finish message from client

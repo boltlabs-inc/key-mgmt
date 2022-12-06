@@ -60,6 +60,11 @@
 <span id="60">60</span>
 <span id="61">61</span>
 <span id="62">62</span>
+<span id="63">63</span>
+<span id="64">64</span>
+<span id="65">65</span>
+<span id="66">66</span>
+<span id="67">67</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{client::LockKeeperClient, LockKeeperClientError};
 <span class="kw">use </span>lock_keeper::{
     crypto::MasterKey,
@@ -69,13 +74,15 @@
         operations::create_storage_key::{client, server},
     },
 };
-<span class="kw">use </span>rand::{CryptoRng, RngCore};
+<span class="kw">use </span>rand::{rngs::StdRng, CryptoRng, RngCore};
+<span class="kw">use </span>std::sync::Arc;
+<span class="kw">use </span>tokio::sync::Mutex;
 
 <span class="kw">impl </span>LockKeeperClient {
     <span class="doccomment">/// Creates a storage key and sends it to the key server
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>handle_create_storage_key&lt;T: CryptoRng + RngCore&gt;(
-        <span class="kw-2">mut </span>channel: ClientChannel,
-        rng: <span class="kw-2">&amp;mut </span>T,
+        <span class="kw-2">mut </span>channel: ClientChannel&lt;StdRng&gt;,
+        rng: Arc&lt;Mutex&lt;T&gt;&gt;,
         account_name: <span class="kw-2">&amp;</span>AccountName,
         master_key: MasterKey,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperClientError&gt; {
@@ -87,7 +94,7 @@
 }
 
 <span class="kw">async fn </span>request_user_id(
-    channel: <span class="kw-2">&amp;mut </span>ClientChannel,
+    channel: <span class="kw-2">&amp;mut </span>ClientChannel&lt;StdRng&gt;,
     account_name: <span class="kw-2">&amp;</span>AccountName,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;UserId, LockKeeperClientError&gt; {
     <span class="kw">let </span>response = client::RequestUserId {
@@ -101,12 +108,15 @@
 }
 
 <span class="kw">async fn </span>create_and_send_storage_key&lt;T: CryptoRng + RngCore&gt;(
-    channel: <span class="kw-2">&amp;mut </span>ClientChannel,
-    rng: <span class="kw-2">&amp;mut </span>T,
+    channel: <span class="kw-2">&amp;mut </span>ClientChannel&lt;StdRng&gt;,
+    rng: Arc&lt;Mutex&lt;T&gt;&gt;,
     user_id: UserId,
     master_key: MasterKey,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperClientError&gt; {
-    <span class="kw">let </span>storage_key = master_key.create_and_encrypt_storage_key(rng, <span class="kw-2">&amp;</span>user_id)<span class="question-mark">?</span>;
+    <span class="kw">let </span>storage_key = {
+        <span class="kw">let </span><span class="kw-2">mut </span>rng = rng.lock().<span class="kw">await</span>;
+        master_key.create_and_encrypt_storage_key(<span class="kw-2">&amp;mut *</span>rng, <span class="kw-2">&amp;</span>user_id)<span class="question-mark">?
+    </span>};
 
     <span class="kw">let </span>response = client::SendStorageKey {
         user_id,

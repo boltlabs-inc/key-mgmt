@@ -49,6 +49,37 @@
 <span id="49">49</span>
 <span id="50">50</span>
 <span id="51">51</span>
+<span id="52">52</span>
+<span id="53">53</span>
+<span id="54">54</span>
+<span id="55">55</span>
+<span id="56">56</span>
+<span id="57">57</span>
+<span id="58">58</span>
+<span id="59">59</span>
+<span id="60">60</span>
+<span id="61">61</span>
+<span id="62">62</span>
+<span id="63">63</span>
+<span id="64">64</span>
+<span id="65">65</span>
+<span id="66">66</span>
+<span id="67">67</span>
+<span id="68">68</span>
+<span id="69">69</span>
+<span id="70">70</span>
+<span id="71">71</span>
+<span id="72">72</span>
+<span id="73">73</span>
+<span id="74">74</span>
+<span id="75">75</span>
+<span id="76">76</span>
+<span id="77">77</span>
+<span id="78">78</span>
+<span id="79">79</span>
+<span id="80">80</span>
+<span id="81">81</span>
+<span id="82">82</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Cryptography, protocols, and other shared types and context used by multiple
 //! entities in the Lock Keeper digital asset management system.
 //!
@@ -74,28 +105,59 @@
     <span class="macro">tonic::include_proto!</span>(<span class="string">&quot;lock_keeper_rpc&quot;</span>);
 }
 
+<span class="doccomment">/// Common implementation for `impl_message_conversion` variants.
+</span><span class="attribute">#[macro_export]
+</span><span class="macro">macro_rules! </span>impl_message_conversion_internal {
+    (<span class="macro-nonterminal">$message_type</span>:ty) =&gt; {
+        <span class="kw">impl </span>TryFrom&lt;<span class="macro-nonterminal">$crate::types::Message</span>&gt; <span class="kw">for </span><span class="macro-nonterminal">$message_type </span>{
+            <span class="kw">type </span>Error = <span class="macro-nonterminal">$crate::LockKeeperError</span>;
+
+            <span class="kw">fn </span>try_from(value: <span class="macro-nonterminal">$crate::types::Message</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
+                <span class="prelude-val">Ok</span>(serde_json::from_slice(<span class="kw-2">&amp;</span>value.content)<span class="question-mark">?</span>)
+            }
+        }
+
+        <span class="kw">impl </span>TryFrom&lt;<span class="macro-nonterminal">$message_type</span>&gt; <span class="kw">for </span><span class="macro-nonterminal">$crate::types::Message </span>{
+            <span class="kw">type </span>Error = <span class="macro-nonterminal">$crate::LockKeeperError</span>;
+
+            <span class="kw">fn </span>try_from(value: <span class="macro-nonterminal">$message_type</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
+                <span class="kw">let </span>content = serde_json::to_vec(<span class="kw-2">&amp;</span>value)<span class="question-mark">?</span>;
+
+                <span class="prelude-val">Ok</span>(<span class="macro-nonterminal">$crate::types::Message </span>{ content })
+            }
+        }
+    };
+}
+
 <span class="doccomment">/// Generates `TryFrom` implementations to and from the `Message` type for a
 /// given list of types.
 </span><span class="attribute">#[macro_export]
 </span><span class="macro">macro_rules! </span>impl_message_conversion {
     ($(<span class="macro-nonterminal">$message_type</span>:ty),+) =&gt; {
         $(
-            <span class="kw">impl </span>TryFrom&lt;<span class="macro-nonterminal">$crate::types::Message</span>&gt; <span class="kw">for </span><span class="macro-nonterminal">$message_type </span>{
-                <span class="kw">type </span>Error = <span class="macro-nonterminal">$crate::LockKeeperError</span>;
+            <span class="macro-nonterminal">$</span><span class="macro">crate::impl_message_conversion_internal!</span>{<span class="macro-nonterminal">$message_type</span>}
 
-                <span class="kw">fn </span>try_from(value: <span class="macro-nonterminal">$crate::types::Message</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
-                    <span class="prelude-val">Ok</span>(serde_json::from_slice(<span class="kw-2">&amp;</span>value.content)<span class="question-mark">?</span>)
-                }
+            <span class="kw">impl </span><span class="macro-nonterminal">$crate::infrastructure::channel::ShouldBeAuthenticated </span><span class="kw">for </span><span class="macro-nonterminal">$message_type </span>{
+                <span class="kw">fn </span>should_be_authenticated(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+                    <span class="bool-val">false
+                </span>}
             }
+        )+
+    };
+}
 
-            <span class="kw">impl </span>TryFrom&lt;<span class="macro-nonterminal">$message_type</span>&gt; <span class="kw">for </span><span class="macro-nonterminal">$crate::types::Message </span>{
-                <span class="kw">type </span>Error = <span class="macro-nonterminal">$crate::LockKeeperError</span>;
+<span class="doccomment">/// Generates `TryFrom` implementations to and from the `Message` type for a
+/// given list of types that should only be sent authenticated.
+</span><span class="attribute">#[macro_export]
+</span><span class="macro">macro_rules! </span>impl_authenticated_message_conversion {
+    ($(<span class="macro-nonterminal">$message_type</span>:ty),+) =&gt; {
+        $(
+            <span class="macro-nonterminal">$</span><span class="macro">crate::impl_message_conversion_internal!</span>{<span class="macro-nonterminal">$message_type</span>}
 
-                <span class="kw">fn </span>try_from(value: <span class="macro-nonterminal">$message_type</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
-                    <span class="kw">let </span>content = serde_json::to_vec(<span class="kw-2">&amp;</span>value)<span class="question-mark">?</span>;
-
-                    <span class="prelude-val">Ok</span>(<span class="macro-nonterminal">$crate::types::Message </span>{ content })
-                }
+            <span class="kw">impl </span><span class="macro-nonterminal">$crate::infrastructure::channel::ShouldBeAuthenticated </span><span class="kw">for </span><span class="macro-nonterminal">$message_type </span>{
+                <span class="kw">fn </span>should_be_authenticated(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+                    <span class="bool-val">true
+                </span>}
             }
         )+
     };

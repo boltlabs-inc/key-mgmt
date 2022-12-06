@@ -141,9 +141,14 @@
 <span id="141">141</span>
 <span id="142">142</span>
 <span id="143">143</span>
+<span id="144">144</span>
+<span id="145">145</span>
+<span id="146">146</span>
+<span id="147">147</span>
 </pre><pre class="rust"><code><span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>lock_keeper::{
     constants::METADATA,
+    crypto::OpaqueSessionKey,
     infrastructure::channel::ServerChannel,
     types::{
         audit_event::EventStatus,
@@ -152,7 +157,7 @@
         Message, MessageStream,
     },
 };
-
+<span class="kw">use </span>rand::rngs::StdRng;
 <span class="kw">use </span>std::{ops::DerefMut, time::Duration};
 <span class="kw">use </span>tokio_stream::wrappers::ReceiverStream;
 <span class="kw">use </span>tonic::{Request, Response, Status, Streaming};
@@ -172,7 +177,7 @@
     <span class="doccomment">/// Core logic for a given operation.
     </span><span class="kw">async fn </span>operation(
         <span class="self">self</span>,
-        channel: <span class="kw-2">&amp;mut </span>ServerChannel,
+        channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;StdRng&gt;,
         context: <span class="kw-2">&amp;mut </span>Context&lt;DB&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt;;
 
@@ -186,16 +191,19 @@
         request: Request&lt;Streaming&lt;Message&gt;&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;MessageStream&gt;, Status&gt; {
         <span class="macro">info!</span>(<span class="string">&quot;Handling new client request.&quot;</span>);
-        <span class="kw">let </span>(<span class="kw-2">mut </span>channel, rx) = ServerChannel::create(request)<span class="question-mark">?</span>;
-
-        {
+        <span class="kw">let </span>(<span class="kw-2">mut </span>channel, rx) = ServerChannel::create(context.rng.clone(), request, <span class="prelude-val">None</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>session_key_option = {
             <span class="kw">let </span>session_cache = context.session_key_cache.lock().<span class="kw">await</span>;
             check_authentication(
                 <span class="kw-2">&amp;</span>channel.metadata().action(),
                 channel.metadata().user_id().as_ref(),
                 session_cache,
-            )<span class="question-mark">?</span>;
+            )<span class="question-mark">?
+        </span>};
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(session_key) = session_key_option {
+            channel.try_upgrade_to_authenticated(session_key)<span class="question-mark">?</span>;
         }
+        <span class="macro">tracing::info!</span>(<span class="string">&quot;Handling action: {:?}&quot;</span>, channel.metadata().action());
 
         <span class="kw">let _ </span>= tokio::spawn(
             <span class="kw">async move </span>{
@@ -238,28 +246,28 @@
     action: <span class="kw-2">&amp;</span>ClientAction,
     user_id: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>UserId&gt;,
     <span class="kw-2">mut </span>session_cache: <span class="kw">impl </span>DerefMut&lt;Target = SessionKeyCache&gt;,
-) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
+) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;OpaqueSessionKey&gt;, LockKeeperServerError&gt; {
     <span class="macro">info!</span>(<span class="string">&quot;Checking client&#39;s authentication...&quot;</span>);
     <span class="kw">match </span>action {
         <span class="comment">// These actions are unauthenticated.
         </span>ClientAction::Authenticate | ClientAction::Register =&gt; {
             <span class="macro">info!</span>(<span class="string">&quot;Protocol does not require client to be authenticated.&quot;</span>);
+            <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
         }
         <span class="comment">// The rest of the actions must be authenticated
         </span><span class="kw">_ </span>=&gt; {
             <span class="kw">let </span>user_id = user_id.ok_or(LockKeeperServerError::InvalidAccount)<span class="question-mark">?</span>;
-            <span class="kw">let _ </span>= session_cache
+            <span class="kw">let </span>session_key = session_cache
                 .get_key(user_id.clone())
                 .map_err(LockKeeperServerError::SessionKeyCache)<span class="question-mark">?</span>;
 
             <span class="macro">info!</span>(<span class="string">&quot;User is already authenticated.&quot;</span>);
+            <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(session_key))
         }
     }
-
-    <span class="prelude-val">Ok</span>(())
 }
 
-<span class="kw">async fn </span>handle_error(channel: <span class="kw-2">&amp;mut </span>ServerChannel, e: LockKeeperServerError) {
+<span class="kw">async fn </span>handle_error(channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;StdRng&gt;, e: LockKeeperServerError) {
     <span class="macro">error!</span>(<span class="string">&quot;{}&quot;</span>, e);
     <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = channel.send_error(e).<span class="kw">await </span>{
         <span class="macro">error!</span>(<span class="string">&quot;Problem while sending error over channel: {}&quot;</span>, e);
@@ -268,7 +276,7 @@
 
 <span class="doccomment">/// Log the given action as an audit event.
 </span><span class="kw">async fn </span>audit_event&lt;DB: DataStore&gt;(
-    channel: <span class="kw-2">&amp;mut </span>ServerChannel,
+    channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;StdRng&gt;,
     context: <span class="kw-2">&amp;</span>Context&lt;DB&gt;,
     status: EventStatus,
 ) {

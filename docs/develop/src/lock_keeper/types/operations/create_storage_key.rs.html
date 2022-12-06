@@ -37,12 +37,10 @@
 <span id="37">37</span>
 <span id="38">38</span>
 <span id="39">39</span>
-<span id="40">40</span>
-<span id="41">41</span>
 </pre><pre class="rust"><code><span class="kw">pub mod </span>client {
     <span class="kw">use crate</span>::{
         crypto::{Encrypted, StorageKey},
-        impl_message_conversion,
+        impl_authenticated_message_conversion,
         types::database::user::{AccountName, UserId},
     };
     <span class="kw">use </span>serde::{Deserialize, Serialize};
@@ -58,12 +56,11 @@
         <span class="kw">pub </span>storage_key: Encrypted&lt;StorageKey&gt;,
     }
 
-    <span class="comment">// TODO #186: These messages need to be authenticated
-    </span><span class="macro">impl_message_conversion!</span>(RequestUserId, SendStorageKey);
+    <span class="macro">impl_authenticated_message_conversion!</span>(RequestUserId, SendStorageKey);
 }
 
 <span class="kw">pub mod </span>server {
-    <span class="kw">use crate</span>::{impl_message_conversion, types::database::user::UserId};
+    <span class="kw">use crate</span>::{impl_authenticated_message_conversion, types::database::user::UserId};
     <span class="kw">use </span>serde::{Deserialize, Serialize};
 
     <span class="attribute">#[derive(Debug, Deserialize, Serialize)]
@@ -77,8 +74,7 @@
         <span class="kw">pub </span>success: bool,
     }
 
-    <span class="comment">// TODO #186: These messages need to be authenticated
-    </span><span class="macro">impl_message_conversion!</span>(SendUserId, CreateStorageKeyResult);
+    <span class="macro">impl_authenticated_message_conversion!</span>(SendUserId, CreateStorageKeyResult);
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="lock_keeper" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

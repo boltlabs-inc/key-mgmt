@@ -108,7 +108,13 @@
 <span id="108">108</span>
 <span id="109">109</span>
 <span id="110">110</span>
+<span id="111">111</span>
+<span id="112">112</span>
+<span id="113">113</span>
+<span id="114">114</span>
+<span id="115">115</span>
 </pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::client::{AuthenticateResult, LockKeeperClient, Password};
+<span class="kw">use </span>std::sync::Arc;
 
 <span class="kw">use </span><span class="kw">crate</span>::LockKeeperClientError;
 <span class="kw">use </span>lock_keeper::{
@@ -123,17 +129,20 @@
 <span class="kw">use </span>opaque_ke::{
     ClientLogin, ClientLoginFinishParameters, ClientLoginFinishResult, ClientLoginStartResult,
 };
-<span class="kw">use </span>rand::{CryptoRng, RngCore};
+<span class="kw">use </span>rand::{rngs::StdRng, CryptoRng, RngCore};
+<span class="kw">use </span>tokio::sync::Mutex;
 
 <span class="kw">impl </span>LockKeeperClient {
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>handle_authentication&lt;T: CryptoRng + RngCore&gt;(
-        channel: <span class="kw-2">&amp;mut </span>ClientChannel,
-        rng: <span class="kw-2">&amp;mut </span>T,
+        channel: <span class="kw-2">&amp;mut </span>ClientChannel&lt;StdRng&gt;,
+        rng: Arc&lt;Mutex&lt;T&gt;&gt;,
         account_name: <span class="kw-2">&amp;</span>AccountName,
         password: <span class="kw-2">&amp;</span>Password,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;AuthenticateResult, LockKeeperClientError&gt; {
-        <span class="kw">let </span>client_login_start_result =
-            ClientLogin::&lt;OpaqueCipherSuite&gt;::start(rng, password.as_bytes())<span class="question-mark">?</span>;
+        <span class="kw">let </span>client_login_start_result = {
+            <span class="kw">let </span><span class="kw-2">mut </span>rng = rng.lock().<span class="kw">await</span>;
+            ClientLogin::&lt;OpaqueCipherSuite&gt;::start(<span class="kw-2">&amp;mut *</span>rng, password.as_bytes())<span class="question-mark">?
+        </span>};
 
         <span class="comment">// Handle start step
         </span><span class="kw">let </span>server_start_result =
@@ -149,10 +158,11 @@
         )
         .<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="kw">let </span>session_key = client_login_finish_result.session_key.into();
+        <span class="kw">let </span>session_key: OpaqueSessionKey = client_login_finish_result.session_key.try_into()<span class="question-mark">?</span>;
 
         <span class="comment">// Get user id
-        </span><span class="kw">let </span>user_id = retrieve_user_id(channel, <span class="kw-2">&amp;</span>session_key).<span class="kw">await</span><span class="question-mark">?</span>;
+        </span>channel.try_upgrade_to_authenticated(session_key.clone())<span class="question-mark">?</span>;
+        <span class="kw">let </span>user_id = retrieve_user_id(channel, <span class="kw-2">&amp;</span>session_key).<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="kw">let </span>master_key = MasterKey::derive_master_key(client_login_finish_result.export_key)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(AuthenticateResult {
@@ -164,7 +174,7 @@
 }
 
 <span class="kw">async fn </span>authenticate_start(
-    channel: <span class="kw-2">&amp;mut </span>ClientChannel,
+    channel: <span class="kw-2">&amp;mut </span>ClientChannel&lt;StdRng&gt;,
     client_login_start_result: <span class="kw-2">&amp;</span>ClientLoginStartResult&lt;OpaqueCipherSuite&gt;,
     account_name: <span class="kw-2">&amp;</span>AccountName,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;server::AuthenticateStart, LockKeeperClientError&gt; {
@@ -179,7 +189,7 @@
 }
 
 <span class="kw">async fn </span>authenticate_finish(
-    channel: <span class="kw-2">&amp;mut </span>ClientChannel,
+    channel: <span class="kw-2">&amp;mut </span>ClientChannel&lt;StdRng&gt;,
     account_name: <span class="kw-2">&amp;</span>AccountName,
     password: <span class="kw-2">&amp;</span>Password,
     client_start_result: ClientLoginStartResult&lt;OpaqueCipherSuite&gt;,
@@ -212,7 +222,7 @@
 /// NB: The unused `_session_key` will have to be passed to receive in order to
 /// check authentication.
 </span><span class="kw">async fn </span>retrieve_user_id(
-    channel: <span class="kw-2">&amp;mut </span>ClientChannel,
+    channel: <span class="kw-2">&amp;mut </span>ClientChannel&lt;StdRng&gt;,
     _session_key: <span class="kw-2">&amp;</span>OpaqueSessionKey,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;UserId, LockKeeperClientError&gt; {
     <span class="kw">let </span>received_id: server::SendUserId = channel.receive().<span class="kw">await</span><span class="question-mark">?</span>;

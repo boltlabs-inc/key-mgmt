@@ -32,18 +32,20 @@
 <span id="32">32</span>
 <span id="33">33</span>
 <span id="34">34</span>
+<span id="35">35</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{LockKeeperClient, LockKeeperClientError, LockKeeperResponse};
 <span class="kw">use </span>lock_keeper::{
     crypto::{KeyId, SigningPublicKey},
     infrastructure::channel::ClientChannel,
     types::operations::remote_generate::{client, server},
 };
+<span class="kw">use </span>rand::rngs::StdRng;
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 
 <span class="kw">impl </span>LockKeeperClient {
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>handle_remote_generate(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="kw-2">mut </span>channel: ClientChannel,
+        <span class="kw-2">mut </span>channel: ClientChannel&lt;StdRng&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperResponse&lt;RemoteGenerateResult&gt;, LockKeeperClientError&gt; {
         <span class="kw">let </span>request = client::RequestRemoteGenerate {
             user_id: <span class="self">self</span>.user_id().clone(),

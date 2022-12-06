@@ -211,6 +211,8 @@
 <span id="211">211</span>
 <span id="212">212</span>
 <span id="213">213</span>
+<span id="214">214</span>
+<span id="215">215</span>
 </pre><pre class="rust"><code><span class="kw">use </span>lock_keeper::{crypto::OpaqueSessionKey, types::database::user::UserId};
 <span class="kw">use </span>std::collections::hash_map::Entry;
 
@@ -338,7 +340,7 @@
     </span><span class="kw">fn </span>get_key_back() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>cache = SessionKeyCache::new(TEST_EXPIRATION_TIME);
         <span class="kw">let </span>id = get_temp_user_id()<span class="question-mark">?</span>;
-        <span class="kw">let </span>key = get_temp_session_key();
+        <span class="kw">let </span>key = get_temp_session_key()<span class="question-mark">?</span>;
 
         cache.insert(id.clone(), key);
 
@@ -352,10 +354,10 @@
     </span><span class="kw">fn </span>overwrite_existing_key() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>cache = SessionKeyCache::new(TEST_EXPIRATION_TIME);
         <span class="kw">let </span>id = get_temp_user_id()<span class="question-mark">?</span>;
-        <span class="kw">let </span>key = get_temp_session_key();
+        <span class="kw">let </span>key = get_temp_session_key()<span class="question-mark">?</span>;
 
         cache.insert(id.clone(), key);
-        <span class="kw">let </span>second_key = get_temp_session_key();
+        <span class="kw">let </span>second_key = get_temp_session_key()<span class="question-mark">?</span>;
         cache.insert(id, second_key);
 
         <span class="prelude-val">Ok</span>(())
@@ -368,7 +370,7 @@
         <span class="comment">// Keys expire instantly
         </span><span class="kw">let </span><span class="kw-2">mut </span>cache = SessionKeyCache::new(Duration::from_secs(<span class="number">0</span>));
         <span class="kw">let </span>id = get_temp_user_id()<span class="question-mark">?</span>;
-        <span class="kw">let </span>key = get_temp_session_key();
+        <span class="kw">let </span>key = get_temp_session_key()<span class="question-mark">?</span>;
         cache.insert(id.clone(), key);
 
         <span class="comment">// Verify key is expired.
@@ -392,7 +394,7 @@
         <span class="comment">// Handle a longer timeout.
         </span><span class="kw">let </span><span class="kw-2">mut </span>cache = SessionKeyCache::new(Duration::from_millis(<span class="number">10</span>));
         <span class="kw">let </span>id = get_temp_user_id()<span class="question-mark">?</span>;
-        <span class="kw">let </span>key = get_temp_session_key();
+        <span class="kw">let </span>key = get_temp_session_key()<span class="question-mark">?</span>;
         cache.insert(id.clone(), key);
 
         <span class="comment">// Sleep for a while so key expires.
@@ -412,9 +414,11 @@
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">fn </span>get_temp_session_key() -&gt; OpaqueSessionKey {
+    <span class="kw">fn </span>get_temp_session_key() -&gt; <span class="prelude-ty">Result</span>&lt;OpaqueSessionKey&gt; {
         <span class="kw">const </span>FILLER: u8 = <span class="number">42</span>;
-        OpaqueSessionKey::from(GenericArray::from([FILLER; <span class="number">64</span>]))
+        <span class="prelude-val">Ok</span>(OpaqueSessionKey::try_from(GenericArray::from(
+            [FILLER; <span class="number">64</span>],
+        ))<span class="question-mark">?</span>)
     }
 
     <span class="kw">fn </span>get_temp_user_id() -&gt; <span class="prelude-ty">Result</span>&lt;UserId&gt; {

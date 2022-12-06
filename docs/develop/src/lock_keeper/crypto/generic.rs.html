@@ -597,12 +597,6 @@
 <span id="597">597</span>
 <span id="598">598</span>
 <span id="599">599</span>
-<span id="600">600</span>
-<span id="601">601</span>
-<span id="602">602</span>
-<span id="603">603</span>
-<span id="604">604</span>
-<span id="605">605</span>
 </pre><pre class="rust"><code><span class="kw">use </span>chacha20poly1305::{
     aead::{Aead, Payload},
     AeadCore, ChaCha20Poly1305, KeyInit,
@@ -612,8 +606,7 @@
 <span class="kw">use </span>std::{iter, marker::PhantomData};
 <span class="kw">use </span>thiserror::Error;
 
-<span class="attribute">#[cfg(test)]
-</span><span class="kw">use </span>std::convert::Infallible;
+<span class="kw">use </span>std::convert::Infallible;
 <span class="kw">use </span>zeroize::{Zeroize, ZeroizeOnDrop};
 
 <span class="doccomment">/// Errors that arise in the cryptography module.
@@ -631,9 +624,7 @@
     </span>ConversionError,
     <span class="attribute">#[error(<span class="string">&quot;Signature did not verify&quot;</span>)]
     </span>VerificationFailed,
-
-    <span class="attribute">#[cfg(test)]
-    #[error(transparent)]
+    <span class="attribute">#[error(transparent)]
     </span>Infallible(<span class="attribute">#[from] </span>Infallible),
 }
 
@@ -690,10 +681,10 @@
 /// [ChaCha20Poly1305 crate](https://docs.rs/chacha20poly1305/latest/chacha20poly1305/index.html).
 </span><span class="attribute">#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 </span><span class="kw">pub struct </span>Encrypted&lt;T&gt; {
-    ciphertext: Vec&lt;u8&gt;,
+    <span class="kw">pub</span>(<span class="kw">super</span>) ciphertext: Vec&lt;u8&gt;,
     <span class="kw">pub</span>(<span class="kw">super</span>) associated_data: AssociatedData,
-    nonce: chacha20poly1305::Nonce,
-    original_type: PhantomData&lt;T&gt;,
+    <span class="kw">pub</span>(<span class="kw">super</span>) nonce: chacha20poly1305::Nonce,
+    <span class="kw">pub</span>(<span class="kw">super</span>) original_type: PhantomData&lt;T&gt;,
 }
 
 <span class="doccomment">/// A well-formed symmetric encryption key for an AEAD scheme.
@@ -796,10 +787,7 @@
         enc_key: <span class="kw-2">&amp;</span>EncryptionKey,
         object: T,
         associated_data: <span class="kw-2">&amp;</span>AssociatedData,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;Encrypted&lt;T&gt;, CryptoError&gt;
-    <span class="kw">where
-        </span>T: ZeroizeOnDrop,
-    {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Encrypted&lt;T&gt;, CryptoError&gt; {
         <span class="comment">// Set up cipher with key
         </span><span class="kw">let </span>cipher = ChaCha20Poly1305::new(<span class="kw-2">&amp;</span>enc_key.key);
 

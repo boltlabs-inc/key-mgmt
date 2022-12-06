@@ -116,6 +116,8 @@
 <span id="116">116</span>
 <span id="117">117</span>
 <span id="118">118</span>
+<span id="119">119</span>
+<span id="120">120</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{
     error::LockKeeperServerError,
     server::{Context, Operation},
@@ -133,6 +135,7 @@
     },
 };
 <span class="kw">use </span>opaque_ke::{ServerLogin, ServerLoginStartParameters, ServerLoginStartResult};
+<span class="kw">use </span>rand::{rngs::StdRng, CryptoRng, RngCore};
 
 <span class="kw">struct </span>AuthenticateStartResult {
     login_start_result: ServerLoginStartResult&lt;OpaqueCipherSuite&gt;,
@@ -146,14 +149,15 @@
 </span><span class="kw">impl</span>&lt;DB: DataStore&gt; Operation&lt;DB&gt; <span class="kw">for </span>Authenticate {
     <span class="kw">async fn </span>operation(
         <span class="self">self</span>,
-        channel: <span class="kw-2">&amp;mut </span>ServerChannel,
+        channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;StdRng&gt;,
         context: <span class="kw-2">&amp;mut </span>Context&lt;DB&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
         <span class="kw">let </span>result = authenticate_start(channel, context).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">let </span>session_key = authenticate_finish(channel, result.login_start_result).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>session_key_cache = context.session_key_cache.lock().<span class="kw">await</span>;
-        session_key_cache.insert(result.user_id.clone(), session_key);
+        session_key_cache.insert(result.user_id.clone(), session_key.clone());
 
+        channel.try_upgrade_to_authenticated(session_key)<span class="question-mark">?</span>;
         send_user_id(channel, result.user_id).<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(())
@@ -163,7 +167,7 @@
 <span class="doccomment">/// Returns the server-side start message along with a login result that will be
 /// used in the finish step.
 </span><span class="kw">async fn </span>authenticate_start&lt;DB: DataStore&gt;(
-    channel: <span class="kw-2">&amp;mut </span>ServerChannel,
+    channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;StdRng&gt;,
     context: <span class="kw-2">&amp;</span>Context&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;AuthenticateStartResult, LockKeeperServerError&gt; {
     <span class="comment">// Receive start message from client
@@ -207,8 +211,8 @@
     })
 }
 
-<span class="kw">async fn </span>authenticate_finish(
-    channel: <span class="kw-2">&amp;mut </span>ServerChannel,
+<span class="kw">async fn </span>authenticate_finish&lt;G: CryptoRng + RngCore&gt;(
+    channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;G&gt;,
     start_result: ServerLoginStartResult&lt;OpaqueCipherSuite&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;OpaqueSessionKey, LockKeeperServerError&gt; {
     <span class="comment">// Receive finish message from client
@@ -221,13 +225,13 @@
 
     <span class="comment">// Send response to client
     </span>channel.send(reply).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="prelude-val">Ok</span>(server_login_finish_result.session_key.into())
+    <span class="prelude-val">Ok</span>(server_login_finish_result.session_key.try_into()<span class="question-mark">?</span>)
 }
 
 <span class="doccomment">/// Returns the server-side start message along with a login result that will be
 /// used in the finish step.
-</span><span class="kw">async fn </span>send_user_id(
-    channel: <span class="kw-2">&amp;mut </span>ServerChannel,
+</span><span class="kw">async fn </span>send_user_id&lt;G: CryptoRng + RngCore&gt;(
+    channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;G&gt;,
     user_id: UserId,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
     <span class="kw">let </span>reply = server::SendUserId { user_id };

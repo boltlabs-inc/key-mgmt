@@ -83,6 +83,15 @@
 <span id="83">83</span>
 <span id="84">84</span>
 <span id="85">85</span>
+<span id="86">86</span>
+<span id="87">87</span>
+<span id="88">88</span>
+<span id="89">89</span>
+<span id="90">90</span>
+<span id="91">91</span>
+<span id="92">92</span>
+<span id="93">93</span>
+<span id="94">94</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{api::LocalStorage, LockKeeperClient, LockKeeperClientError, LockKeeperResponse};
 <span class="kw">use </span>lock_keeper::{
     crypto::{KeyId, Secret, StorageKey},
@@ -93,6 +102,8 @@
     },
 };
 <span class="kw">use </span>rand::rngs::StdRng;
+<span class="kw">use </span>std::sync::Arc;
+<span class="kw">use </span>tokio::sync::Mutex;
 
 <span class="attribute">#[derive(Debug)]
 </span><span class="kw">pub struct </span>GenerateResult {
@@ -103,7 +114,7 @@
 <span class="kw">impl </span>LockKeeperClient {
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>handle_generate(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="kw-2">mut </span>channel: ClientChannel,
+        <span class="kw-2">mut </span>channel: ClientChannel&lt;StdRng&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperResponse&lt;GenerateResult&gt;, LockKeeperClientError&gt; {
         <span class="comment">// Retrieve the storage key
         </span><span class="kw">let </span>storage_key = <span class="self">self</span>.retrieve_storage_key().<span class="kw">await</span><span class="question-mark">?</span>;
@@ -111,10 +122,14 @@
         <span class="comment">// Generate step: get new KeyId from server
         </span><span class="kw">let </span>key_id = get_key_id(<span class="kw-2">&amp;mut </span>channel, <span class="self">self</span>.user_id()).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="comment">// Store step: encrypt secret and send to server to store
-        </span><span class="kw">let </span>wrapped_secret = {
-            <span class="kw">let </span><span class="kw-2">mut </span>rng = <span class="self">self</span>.rng.lock().<span class="kw">await</span>;
-            generate_and_store(<span class="kw-2">&amp;mut </span>channel, <span class="self">self</span>.user_id(), storage_key, <span class="kw-2">&amp;mut </span>rng, <span class="kw-2">&amp;</span>key_id).<span class="kw">await</span><span class="question-mark">?
-        </span>};
+        </span><span class="kw">let </span>wrapped_secret = generate_and_store(
+            <span class="kw-2">&amp;mut </span>channel,
+            <span class="self">self</span>.user_id(),
+            storage_key,
+            <span class="self">self</span>.rng.clone(),
+            <span class="kw-2">&amp;</span>key_id,
+        )
+        .<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="kw">let </span>result = GenerateResult {
             key_id,
@@ -126,7 +141,7 @@
 }
 
 <span class="kw">async fn </span>get_key_id(
-    channel: <span class="kw-2">&amp;mut </span>ClientChannel,
+    channel: <span class="kw-2">&amp;mut </span>ClientChannel&lt;StdRng&gt;,
     user_id: <span class="kw-2">&amp;</span>UserId,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;KeyId, LockKeeperClientError&gt; {
     <span class="comment">// Send UserId to server
@@ -142,14 +157,17 @@
 }
 
 <span class="kw">async fn </span>generate_and_store(
-    channel: <span class="kw-2">&amp;mut </span>ClientChannel,
+    channel: <span class="kw-2">&amp;mut </span>ClientChannel&lt;StdRng&gt;,
     user_id: <span class="kw-2">&amp;</span>UserId,
     storage_key: StorageKey,
-    rng: <span class="kw-2">&amp;mut </span>StdRng,
+    rng: Arc&lt;Mutex&lt;StdRng&gt;&gt;,
     key_id: <span class="kw-2">&amp;</span>KeyId,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;LocalStorage&lt;Secret&gt;, LockKeeperClientError&gt; {
     <span class="comment">// Generate and encrypt secret
-    </span><span class="kw">let </span>(secret, encrypted) = Secret::create_and_encrypt(rng, <span class="kw-2">&amp;</span>storage_key, user_id, key_id)<span class="question-mark">?</span>;
+    </span><span class="kw">let </span>(secret, encrypted) = {
+        <span class="kw">let </span><span class="kw-2">mut </span>rng = rng.lock().<span class="kw">await</span>;
+        Secret::create_and_encrypt(<span class="kw-2">&amp;mut *</span>rng, <span class="kw-2">&amp;</span>storage_key, user_id, key_id)<span class="question-mark">?
+    </span>};
     <span class="comment">// Serialize and send ciphertext
     </span><span class="kw">let </span>response = client::Store {
         ciphertext: encrypted.clone(),

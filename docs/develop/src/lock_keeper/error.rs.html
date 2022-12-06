@@ -75,6 +75,12 @@
 <span id="75">75</span>
 <span id="76">76</span>
 <span id="77">77</span>
+<span id="78">78</span>
+<span id="79">79</span>
+<span id="80">80</span>
+<span id="81">81</span>
+<span id="82">82</span>
+<span id="83">83</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Error type for all errors returned to code outside of this crate.
 
 </span><span class="kw">use </span>thiserror::Error;
@@ -99,6 +105,10 @@
     </span>InvalidMessage,
     <span class="attribute">#[error(<span class="string">&quot;No message received&quot;</span>)]
     </span>NoMessageReceived,
+    <span class="attribute">#[error(<span class="string">&quot;Already authenticated&quot;</span>)]
+    </span>AlreadyAuthenticated,
+    <span class="attribute">#[error(<span class="string">&quot;This message should be send over an authenticated channel&quot;</span>)]
+    </span>ShouldBeAuthenticated,
 
     <span class="comment">// TLS errors
     </span><span class="attribute">#[error(<span class="string">&quot;Invalid private key&quot;</span>)]
@@ -141,6 +151,8 @@
             LockKeeperError::NoMessageReceived =&gt; Status::deadline_exceeded(error.to_string()),
             <span class="comment">// Errors that the client should not see
             </span>LockKeeperError::InvalidClientAction
+            | LockKeeperError::AlreadyAuthenticated
+            | LockKeeperError::ShouldBeAuthenticated
             | LockKeeperError::Crypto(<span class="kw">_</span>)
             | LockKeeperError::Io(<span class="kw">_</span>)
             | LockKeeperError::InvalidPrivateKey

@@ -30,7 +30,7 @@
 <span id="30">30</span>
 </pre><pre class="rust"><code><span class="kw">pub mod </span>client {
     <span class="kw">use crate</span>::{
-        impl_message_conversion,
+        impl_authenticated_message_conversion,
         types::audit_event::{AuditEventOptions, EventType},
     };
     <span class="kw">use </span>serde::{Deserialize, Serialize};
@@ -43,11 +43,11 @@
         <span class="kw">pub </span>options: AuditEventOptions,
     }
 
-    <span class="macro">impl_message_conversion!</span>(Request);
+    <span class="macro">impl_authenticated_message_conversion!</span>(Request);
 }
 
 <span class="kw">pub mod </span>server {
-    <span class="kw">use crate</span>::{impl_message_conversion, types::audit_event::AuditEvent};
+    <span class="kw">use crate</span>::{impl_authenticated_message_conversion, types::audit_event::AuditEvent};
     <span class="kw">use </span>serde::{Deserialize, Serialize};
 
     <span class="attribute">#[derive(Debug, Deserialize, Serialize)]
@@ -56,7 +56,7 @@
         <span class="kw">pub </span>summary_record: Vec&lt;AuditEvent&gt;,
     }
 
-    <span class="macro">impl_message_conversion!</span>(Response);
+    <span class="macro">impl_authenticated_message_conversion!</span>(Response);
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="lock_keeper" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>
