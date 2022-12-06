@@ -5,6 +5,7 @@ pub mod utils;
 
 use crate::{error::LockKeeperTestError, utils::TestResult};
 use clap::Parser;
+use colored::Colorize;
 use config::Config;
 use std::{path::PathBuf, str::FromStr};
 
@@ -23,10 +24,8 @@ pub struct Cli {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TestType {
     All,
-    ConfigFiles,
     E2E,
     Integration,
-    MutualAuth,
 }
 
 impl FromStr for TestType {
@@ -35,10 +34,8 @@ impl FromStr for TestType {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "all" => Ok(TestType::All),
-            "config-files" => Ok(TestType::ConfigFiles),
             "e2e" => Ok(TestType::E2E),
             "integration" => Ok(TestType::Integration),
-            "mutual-auth" => Ok(TestType::MutualAuth),
             _ => Err(LockKeeperTestError::InvalidTestType(s.to_string())),
         }
     }
@@ -51,29 +48,33 @@ pub async fn main() {
     let config = Config::try_from(cli).unwrap();
     utils::wait_for_server(&config.client_config).await.unwrap();
 
-    match test_type {
-        TestType::All => {
-            check_errors(&test_suites::run_all(&config).await.unwrap()).unwrap();
+    match run_tests(test_type, config).await {
+        Err(e @ LockKeeperTestError::TestFailed) => {
+            // Manually report error to avoid a useless stack trace
+            eprintln!("{}", e.to_string().red());
+            std::process::exit(1);
         }
-        TestType::ConfigFiles => {
-            check_errors(&test_suites::config_files::run_tests(&config).await.unwrap()).unwrap();
-        }
-        TestType::E2E => {
-            check_errors(&test_suites::end_to_end::run_tests(&config).await.unwrap()).unwrap();
-        }
-        TestType::Integration => {
-            check_errors(&test_suites::database::run_tests(&config).await.unwrap()).unwrap();
-        }
-        TestType::MutualAuth => {
-            check_errors(&test_suites::mutual_auth::run_tests(&config).await.unwrap()).unwrap();
-        }
+        Err(e) => panic!("{e}"),
+        Ok(()) => (),
     }
 }
 
-fn check_errors(results: &[TestResult]) -> Result<(), LockKeeperTestError> {
-    use TestResult::*;
+async fn run_tests(test_type: TestType, config: Config) -> Result<(), LockKeeperTestError> {
+    let results = match test_type {
+        TestType::All => test_suites::run_all(&config).await?,
+        TestType::E2E => test_suites::end_to_end::run_tests(&config).await?,
+        TestType::Integration => {
+            let mut results = Vec::new();
 
-    if results.iter().any(|r| *r == Failed) {
+            results.extend(test_suites::config_files::run_tests(&config).await?);
+            results.extend(test_suites::database::run_tests(&config).await?);
+            results.extend(test_suites::mutual_auth::run_tests(&config).await?);
+
+            results
+        }
+    };
+
+    if results.iter().any(|r| *r == TestResult::Failed) {
         Err(LockKeeperTestError::TestFailed)
     } else {
         Ok(())

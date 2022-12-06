@@ -1,7 +1,7 @@
 use crate::{client::LockKeeperClient, LockKeeperClientError};
 use lock_keeper::{
     crypto::MasterKey,
-    infrastructure::channel::ClientChannel,
+    infrastructure::channel::{Authenticated, ClientChannel},
     types::{
         database::user::{AccountName, UserId},
         operations::create_storage_key::{client, server},
@@ -14,7 +14,7 @@ use tokio::sync::Mutex;
 impl LockKeeperClient {
     /// Creates a storage key and sends it to the key server
     pub(crate) async fn handle_create_storage_key<T: CryptoRng + RngCore>(
-        mut channel: ClientChannel<StdRng>,
+        mut channel: ClientChannel<Authenticated<StdRng>>,
         rng: Arc<Mutex<T>>,
         account_name: &AccountName,
         master_key: MasterKey,
@@ -27,7 +27,7 @@ impl LockKeeperClient {
 }
 
 async fn request_user_id(
-    channel: &mut ClientChannel<StdRng>,
+    channel: &mut ClientChannel<Authenticated<StdRng>>,
     account_name: &AccountName,
 ) -> Result<UserId, LockKeeperClientError> {
     let response = client::RequestUserId {
@@ -41,7 +41,7 @@ async fn request_user_id(
 }
 
 async fn create_and_send_storage_key<T: CryptoRng + RngCore>(
-    channel: &mut ClientChannel<StdRng>,
+    channel: &mut ClientChannel<Authenticated<StdRng>>,
     rng: Arc<Mutex<T>>,
     user_id: UserId,
     master_key: MasterKey,

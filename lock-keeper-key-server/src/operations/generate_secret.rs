@@ -7,7 +7,7 @@ use crate::database::DataStore;
 use async_trait::async_trait;
 use lock_keeper::{
     crypto::KeyId,
-    infrastructure::channel::ServerChannel,
+    infrastructure::channel::{Authenticated, ServerChannel},
     types::{
         database::secrets::StoredSecret,
         operations::generate::{client, server},
@@ -20,14 +20,14 @@ use tracing::{info, instrument};
 pub struct GenerateSecret;
 
 #[async_trait]
-impl<DB: DataStore> Operation<DB> for GenerateSecret {
+impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for GenerateSecret {
     /// Generate a new signing key for remotely (on the server from the client's
     /// POV!) and return a key_id to the client. The client may use this
     /// key_id to refer to this signing key.
     #[instrument(skip_all, err(Debug))]
     async fn operation(
         self,
-        channel: &mut ServerChannel<StdRng>,
+        channel: &mut ServerChannel<Authenticated<StdRng>>,
         context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
         info!("Starting generate protocol");
@@ -50,7 +50,7 @@ impl<DB: DataStore> Operation<DB> for GenerateSecret {
 /// Returns the key_id we generated.
 #[instrument(skip_all, err(Debug))]
 async fn generate_key<DB: DataStore>(
-    channel: &mut ServerChannel<StdRng>,
+    channel: &mut ServerChannel<Authenticated<StdRng>>,
     context: &Context<DB>,
 ) -> Result<KeyId, LockKeeperServerError> {
     // Receive UserId from client
@@ -76,7 +76,7 @@ async fn generate_key<DB: DataStore>(
 /// 3) Reply to client if successful.
 #[instrument(skip_all, err(Debug))]
 async fn store_key<DB: DataStore>(
-    channel: &mut ServerChannel<StdRng>,
+    channel: &mut ServerChannel<Authenticated<StdRng>>,
     context: &Context<DB>,
     key_id: &KeyId,
 ) -> Result<(), LockKeeperServerError> {

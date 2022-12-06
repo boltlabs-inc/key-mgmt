@@ -1,7 +1,6 @@
 pub mod client {
     use crate::{
         crypto::{Encrypted, StorageKey},
-        impl_authenticated_message_conversion,
         types::database::user::{AccountName, UserId},
     };
     use serde::{Deserialize, Serialize};
@@ -16,12 +15,10 @@ pub mod client {
         pub user_id: UserId,
         pub storage_key: Encrypted<StorageKey>,
     }
-
-    impl_authenticated_message_conversion!(RequestUserId, SendStorageKey);
 }
 
 pub mod server {
-    use crate::{impl_authenticated_message_conversion, types::database::user::UserId};
+    use crate::types::database::user::UserId;
     use serde::{Deserialize, Serialize};
 
     #[derive(Debug, Deserialize, Serialize)]
@@ -34,6 +31,4 @@ pub mod server {
     pub struct CreateStorageKeyResult {
         pub success: bool,
     }
-
-    impl_authenticated_message_conversion!(SendUserId, CreateStorageKeyResult);
 }

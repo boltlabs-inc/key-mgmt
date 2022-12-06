@@ -9,7 +9,7 @@ use crate::database::DataStore;
 use async_trait::async_trait;
 use lock_keeper::{
     crypto::{KeyId, PlaceholderEncryptedSigningKeyPair, SigningKeyPair},
-    infrastructure::channel::ServerChannel,
+    infrastructure::channel::{Authenticated, ServerChannel},
     types::{
         database::secrets::StoredSecret,
         operations::remote_generate::{client, server},
@@ -22,7 +22,7 @@ use tracing::{info, instrument};
 pub struct RemoteGenerateSigningKey;
 
 #[async_trait]
-impl<DB: DataStore> Operation<DB> for RemoteGenerateSigningKey {
+impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for RemoteGenerateSigningKey {
     /// Remote generation protocol works as follows:
     /// 1) Receive remote generate message from client.
     /// 2) Generate key ID and new signing key pair (private and public key).
@@ -31,7 +31,7 @@ impl<DB: DataStore> Operation<DB> for RemoteGenerateSigningKey {
     #[instrument(skip_all, err(Debug))]
     async fn operation(
         self,
-        channel: &mut ServerChannel<StdRng>,
+        channel: &mut ServerChannel<Authenticated<StdRng>>,
         context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
         info!("Starting remote generate protocol.");

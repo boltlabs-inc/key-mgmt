@@ -5,7 +5,7 @@ use crate::{
 };
 use async_trait::async_trait;
 use lock_keeper::{
-    infrastructure::channel::ServerChannel,
+    infrastructure::channel::{Authenticated, ServerChannel},
     types::operations::retrieve_storage_key::{client, server},
 };
 use rand::rngs::StdRng;
@@ -15,11 +15,11 @@ use tracing::{info, instrument};
 pub struct RetrieveStorageKey;
 
 #[async_trait]
-impl<DB: DataStore> Operation<DB> for RetrieveStorageKey {
+impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for RetrieveStorageKey {
     #[instrument(skip_all, err(Debug))]
     async fn operation(
         self,
-        channel: &mut ServerChannel<StdRng>,
+        channel: &mut ServerChannel<Authenticated<StdRng>>,
         context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
         info!("Starting retrieve storage key protocol.");

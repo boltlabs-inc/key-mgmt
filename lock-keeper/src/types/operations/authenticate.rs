@@ -1,8 +1,5 @@
 pub mod client {
-    use crate::{
-        config::opaque::OpaqueCipherSuite, impl_message_conversion,
-        types::database::user::AccountName,
-    };
+    use crate::{config::opaque::OpaqueCipherSuite, types::database::user::AccountName};
     use opaque_ke::{CredentialFinalization, CredentialRequest};
     use serde::{Deserialize, Serialize};
 
@@ -19,15 +16,10 @@ pub mod client {
         pub credential_finalization: CredentialFinalization<OpaqueCipherSuite>,
         pub account_name: AccountName,
     }
-
-    impl_message_conversion!(AuthenticateStart, AuthenticateFinish);
 }
 
 pub mod server {
-    use crate::{
-        config::opaque::OpaqueCipherSuite, impl_authenticated_message_conversion,
-        impl_message_conversion, types::database::user::UserId,
-    };
+    use crate::config::opaque::OpaqueCipherSuite;
     use opaque_ke::CredentialResponse;
     use serde::{Deserialize, Serialize};
 
@@ -42,13 +34,4 @@ pub mod server {
     pub struct AuthenticateFinish {
         pub success: bool,
     }
-
-    #[derive(Debug, Deserialize, Serialize)]
-    /// Return authenticated user id if authentication worked.
-    pub struct SendUserId {
-        pub user_id: UserId,
-    }
-
-    impl_message_conversion!(AuthenticateStart, AuthenticateFinish);
-    impl_authenticated_message_conversion!(SendUserId);
 }

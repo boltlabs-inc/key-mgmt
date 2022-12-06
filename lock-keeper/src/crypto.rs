@@ -353,10 +353,12 @@ pub struct Export {
 mod test {
     use std::collections::HashSet;
 
-    use crate::LockKeeperError;
+    use crate::{
+        types::operations::{get_user_id, ConvertMessage},
+        LockKeeperError,
+    };
 
     use super::*;
-    use crate::types::operations::authenticate::server::SendUserId;
     use rand::{rngs::StdRng, Rng, SeedableRng};
 
     #[test]
@@ -584,18 +586,18 @@ mod test {
         let mut rng = StdRng::from_seed(*seed);
 
         // Encrypt a message
-        let message = SendUserId {
+        let message = get_user_id::server::Response {
             user_id: user_id.clone(),
-        };
-        let expected_message = SendUserId { user_id };
-        let encrypted_message = session_key.encrypt(&mut rng, Message::try_from(message)?)?;
+        }
+        .to_message();
+        let expected_message = get_user_id::server::Response { user_id };
+        let encrypted_message = session_key.encrypt(&mut rng, message?)?;
 
         // Decrypt the message and check that it worked
-        let decrypted_message = encrypted_message.decrypt_message(&session_key)?;
-        assert_eq!(
-            expected_message.user_id,
-            SendUserId::try_from(decrypted_message)?.user_id
-        );
+        let decrypted_message = get_user_id::server::Response::from_message(
+            encrypted_message.decrypt_message(&session_key)?,
+        )?;
+        assert_eq!(expected_message.user_id, decrypted_message.user_id);
 
         Ok(())
     }
@@ -611,8 +613,8 @@ mod test {
         let mut rng = StdRng::from_seed(*seed);
 
         // Encrypt a message
-        let message = SendUserId { user_id };
-        let encrypted_message = session_key.encrypt(&mut rng, Message::try_from(message)?)?;
+        let message = get_user_id::server::Response { user_id }.to_message()?;
+        let encrypted_message = session_key.encrypt(&mut rng, message)?;
 
         let result_to_message = encrypted_message.clone().try_into_message();
         assert!(result_to_message.is_ok());

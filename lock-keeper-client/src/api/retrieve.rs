@@ -1,7 +1,7 @@
 use crate::{api::LocalStorage, LockKeeperClient, LockKeeperClientError, LockKeeperResponse};
 use lock_keeper::{
     crypto::{Encrypted, KeyId, PlaceholderEncryptedSigningKeyPair, Secret, SigningKeyPair},
-    infrastructure::channel::ClientChannel,
+    infrastructure::channel::{Authenticated, ClientChannel},
     types::{
         database::secrets::secret_types,
         operations::retrieve_secret::{client, server, RetrieveContext},
@@ -14,7 +14,7 @@ impl LockKeeperClient {
     /// ([`lock_keeper::crypto::Secret`]) only.
     pub(crate) async fn handle_retrieve_secret(
         &self,
-        mut channel: ClientChannel<StdRng>,
+        mut channel: ClientChannel<Authenticated<StdRng>>,
         key_id: &KeyId,
         context: RetrieveContext,
     ) -> Result<LockKeeperResponse<Option<LocalStorage<Secret>>>, LockKeeperClientError> {
@@ -54,7 +54,7 @@ impl LockKeeperClient {
     /// ([`lock_keeper::crypto::SigningKeyPair`]) only.
     pub(crate) async fn handle_retrieve_signing_key(
         &self,
-        mut channel: ClientChannel<StdRng>,
+        mut channel: ClientChannel<Authenticated<StdRng>>,
         key_id: &KeyId,
         context: RetrieveContext,
     ) -> Result<LockKeeperResponse<Option<LocalStorage<SigningKeyPair>>>, LockKeeperClientError>

@@ -1,5 +1,4 @@
 use lock_keeper::{infrastructure::channel::ClientChannel, types::operations::ResponseMetadata};
-use rand::rngs::StdRng;
 
 #[derive(Clone, Debug)]
 pub struct LockKeeperResponse<T> {
@@ -9,7 +8,7 @@ pub struct LockKeeperResponse<T> {
 
 impl<T> LockKeeperResponse<T> {
     /// Consumes a [`ClientChannel`] and returns a response.
-    pub fn from_channel(channel: ClientChannel<StdRng>, data: T) -> Self {
+    pub fn from_channel<AUTH>(channel: ClientChannel<AUTH>, data: T) -> Self {
         Self {
             data,
             metadata: channel.into_metadata(),

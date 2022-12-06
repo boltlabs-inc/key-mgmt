@@ -1,7 +1,7 @@
 use crate::{LockKeeperClient, LockKeeperClientError, LockKeeperResponse};
 use lock_keeper::{
     crypto::{KeyId, Signable, SignableBytes, Signature},
-    infrastructure::channel::ClientChannel,
+    infrastructure::channel::{Authenticated, ClientChannel},
     types::operations::remote_sign_bytes::{client, server},
 };
 use rand::rngs::StdRng;
@@ -9,7 +9,7 @@ use rand::rngs::StdRng;
 impl LockKeeperClient {
     pub(crate) async fn handle_remote_sign_bytes(
         &self,
-        mut channel: ClientChannel<StdRng>,
+        mut channel: ClientChannel<Authenticated<StdRng>>,
         key_id: KeyId,
         bytes: impl Signable,
     ) -> Result<LockKeeperResponse<Signature>, LockKeeperClientError> {

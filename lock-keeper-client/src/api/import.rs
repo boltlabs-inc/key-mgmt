@@ -1,7 +1,7 @@
 use crate::{LockKeeperClient, LockKeeperClientError, LockKeeperResponse};
 use lock_keeper::{
     crypto::{Import, KeyId},
-    infrastructure::channel::ClientChannel,
+    infrastructure::channel::{Authenticated, ClientChannel},
     types::operations::import::{client, server},
 };
 use rand::rngs::StdRng;
@@ -9,7 +9,7 @@ use rand::rngs::StdRng;
 impl LockKeeperClient {
     pub(crate) async fn handle_import_signing_key(
         &self,
-        mut channel: ClientChannel<StdRng>,
+        mut channel: ClientChannel<Authenticated<StdRng>>,
         key_material: Import,
     ) -> Result<LockKeeperResponse<KeyId>, LockKeeperClientError> {
         // Send UserId and key material to server
