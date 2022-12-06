@@ -1043,75 +1043,6 @@
 <span id="1043">1043</span>
 <span id="1044">1044</span>
 <span id="1045">1045</span>
-<span id="1046">1046</span>
-<span id="1047">1047</span>
-<span id="1048">1048</span>
-<span id="1049">1049</span>
-<span id="1050">1050</span>
-<span id="1051">1051</span>
-<span id="1052">1052</span>
-<span id="1053">1053</span>
-<span id="1054">1054</span>
-<span id="1055">1055</span>
-<span id="1056">1056</span>
-<span id="1057">1057</span>
-<span id="1058">1058</span>
-<span id="1059">1059</span>
-<span id="1060">1060</span>
-<span id="1061">1061</span>
-<span id="1062">1062</span>
-<span id="1063">1063</span>
-<span id="1064">1064</span>
-<span id="1065">1065</span>
-<span id="1066">1066</span>
-<span id="1067">1067</span>
-<span id="1068">1068</span>
-<span id="1069">1069</span>
-<span id="1070">1070</span>
-<span id="1071">1071</span>
-<span id="1072">1072</span>
-<span id="1073">1073</span>
-<span id="1074">1074</span>
-<span id="1075">1075</span>
-<span id="1076">1076</span>
-<span id="1077">1077</span>
-<span id="1078">1078</span>
-<span id="1079">1079</span>
-<span id="1080">1080</span>
-<span id="1081">1081</span>
-<span id="1082">1082</span>
-<span id="1083">1083</span>
-<span id="1084">1084</span>
-<span id="1085">1085</span>
-<span id="1086">1086</span>
-<span id="1087">1087</span>
-<span id="1088">1088</span>
-<span id="1089">1089</span>
-<span id="1090">1090</span>
-<span id="1091">1091</span>
-<span id="1092">1092</span>
-<span id="1093">1093</span>
-<span id="1094">1094</span>
-<span id="1095">1095</span>
-<span id="1096">1096</span>
-<span id="1097">1097</span>
-<span id="1098">1098</span>
-<span id="1099">1099</span>
-<span id="1100">1100</span>
-<span id="1101">1101</span>
-<span id="1102">1102</span>
-<span id="1103">1103</span>
-<span id="1104">1104</span>
-<span id="1105">1105</span>
-<span id="1106">1106</span>
-<span id="1107">1107</span>
-<span id="1108">1108</span>
-<span id="1109">1109</span>
-<span id="1110">1110</span>
-<span id="1111">1111</span>
-<span id="1112">1112</span>
-<span id="1113">1113</span>
-<span id="1114">1114</span>
 </pre><pre class="rust"><code><span class="attribute">#[derive(Clone, PartialEq, ::prost::Message)]
 </span><span class="kw">pub struct </span>Message {
     <span class="attribute">#[prost(bytes = <span class="string">&quot;vec&quot;</span>, tag = <span class="string">&quot;1&quot;</span>)]
@@ -1235,7 +1166,7 @@
             );
             <span class="self">self</span>.inner.streaming(request.into_streaming_request(), path, codec).<span class="kw">await
         </span>}
-        <span class="kw">pub async fn </span>generate(
+        <span class="kw">pub async fn </span>generate_secret(
             <span class="kw-2">&amp;mut </span><span class="self">self</span>,
             request: <span class="kw">impl </span>tonic::IntoStreamingRequest&lt;Message = <span class="kw">super</span>::Message&gt;,
         ) -&gt; <span class="prelude-ty">Result</span>&lt;
@@ -1253,7 +1184,7 @@
                 })<span class="question-mark">?</span>;
             <span class="kw">let </span>codec = tonic::codec::ProstCodec::default();
             <span class="kw">let </span>path = http::uri::PathAndQuery::from_static(
-                <span class="string">&quot;/lock_keeper_rpc.LockKeeperRpc/Generate&quot;</span>,
+                <span class="string">&quot;/lock_keeper_rpc.LockKeeperRpc/GenerateSecret&quot;</span>,
             );
             <span class="self">self</span>.inner.streaming(request.into_streaming_request(), path, codec).<span class="kw">await
         </span>}
@@ -1386,7 +1317,7 @@
             );
             <span class="self">self</span>.inner.streaming(request.into_streaming_request(), path, codec).<span class="kw">await
         </span>}
-        <span class="kw">pub async fn </span>retrieve(
+        <span class="kw">pub async fn </span>retrieve_secret(
             <span class="kw-2">&amp;mut </span><span class="self">self</span>,
             request: <span class="kw">impl </span>tonic::IntoStreamingRequest&lt;Message = <span class="kw">super</span>::Message&gt;,
         ) -&gt; <span class="prelude-ty">Result</span>&lt;
@@ -1404,7 +1335,7 @@
                 })<span class="question-mark">?</span>;
             <span class="kw">let </span>codec = tonic::codec::ProstCodec::default();
             <span class="kw">let </span>path = http::uri::PathAndQuery::from_static(
-                <span class="string">&quot;/lock_keeper_rpc.LockKeeperRpc/Retrieve&quot;</span>,
+                <span class="string">&quot;/lock_keeper_rpc.LockKeeperRpc/RetrieveSecret&quot;</span>,
             );
             <span class="self">self</span>.inner.streaming(request.into_streaming_request(), path, codec).<span class="kw">await
         </span>}
@@ -1427,28 +1358,6 @@
             <span class="kw">let </span>codec = tonic::codec::ProstCodec::default();
             <span class="kw">let </span>path = http::uri::PathAndQuery::from_static(
                 <span class="string">&quot;/lock_keeper_rpc.LockKeeperRpc/RetrieveAuditEvents&quot;</span>,
-            );
-            <span class="self">self</span>.inner.streaming(request.into_streaming_request(), path, codec).<span class="kw">await
-        </span>}
-        <span class="kw">pub async fn </span>retrieve_signing_key(
-            <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-            request: <span class="kw">impl </span>tonic::IntoStreamingRequest&lt;Message = <span class="kw">super</span>::Message&gt;,
-        ) -&gt; <span class="prelude-ty">Result</span>&lt;
-            tonic::Response&lt;tonic::codec::Streaming&lt;<span class="kw">super</span>::Message&gt;&gt;,
-            tonic::Status,
-        &gt; {
-            <span class="self">self</span>.inner
-                .ready()
-                .<span class="kw">await
-                </span>.map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        <span class="macro">format!</span>(<span class="string">&quot;Service was not ready: {}&quot;</span>, e.into()),
-                    )
-                })<span class="question-mark">?</span>;
-            <span class="kw">let </span>codec = tonic::codec::ProstCodec::default();
-            <span class="kw">let </span>path = http::uri::PathAndQuery::from_static(
-                <span class="string">&quot;/lock_keeper_rpc.LockKeeperRpc/RetrieveSigningKey&quot;</span>,
             );
             <span class="self">self</span>.inner.streaming(request.into_streaming_request(), path, codec).<span class="kw">await
         </span>}
@@ -1503,16 +1412,16 @@
             <span class="kw-2">&amp;</span><span class="self">self</span>,
             request: tonic::Request&lt;tonic::Streaming&lt;<span class="kw">super</span>::Message&gt;&gt;,
         ) -&gt; <span class="prelude-ty">Result</span>&lt;tonic::Response&lt;<span class="self">Self</span>::CreateStorageKeyStream&gt;, tonic::Status&gt;;
-        <span class="doccomment">/// Server streaming response type for the Generate method.
-        </span><span class="kw">type </span>GenerateStream: futures_core::Stream&lt;
+        <span class="doccomment">/// Server streaming response type for the GenerateSecret method.
+        </span><span class="kw">type </span>GenerateSecretStream: futures_core::Stream&lt;
                 Item = <span class="prelude-ty">Result</span>&lt;<span class="kw">super</span>::Message, tonic::Status&gt;,
             &gt;
             + Send
             + <span class="lifetime">&#39;static</span>;
-        <span class="kw">async fn </span>generate(
+        <span class="kw">async fn </span>generate_secret(
             <span class="kw-2">&amp;</span><span class="self">self</span>,
             request: tonic::Request&lt;tonic::Streaming&lt;<span class="kw">super</span>::Message&gt;&gt;,
-        ) -&gt; <span class="prelude-ty">Result</span>&lt;tonic::Response&lt;<span class="self">Self</span>::GenerateStream&gt;, tonic::Status&gt;;
+        ) -&gt; <span class="prelude-ty">Result</span>&lt;tonic::Response&lt;<span class="self">Self</span>::GenerateSecretStream&gt;, tonic::Status&gt;;
         <span class="kw">async fn </span>health(
             <span class="kw-2">&amp;</span><span class="self">self</span>,
             request: tonic::Request&lt;<span class="kw">super</span>::HealthCheck&gt;,
@@ -1567,16 +1476,16 @@
             <span class="kw-2">&amp;</span><span class="self">self</span>,
             request: tonic::Request&lt;tonic::Streaming&lt;<span class="kw">super</span>::Message&gt;&gt;,
         ) -&gt; <span class="prelude-ty">Result</span>&lt;tonic::Response&lt;<span class="self">Self</span>::RemoteSignBytesStream&gt;, tonic::Status&gt;;
-        <span class="doccomment">/// Server streaming response type for the Retrieve method.
-        </span><span class="kw">type </span>RetrieveStream: futures_core::Stream&lt;
+        <span class="doccomment">/// Server streaming response type for the RetrieveSecret method.
+        </span><span class="kw">type </span>RetrieveSecretStream: futures_core::Stream&lt;
                 Item = <span class="prelude-ty">Result</span>&lt;<span class="kw">super</span>::Message, tonic::Status&gt;,
             &gt;
             + Send
             + <span class="lifetime">&#39;static</span>;
-        <span class="kw">async fn </span>retrieve(
+        <span class="kw">async fn </span>retrieve_secret(
             <span class="kw-2">&amp;</span><span class="self">self</span>,
             request: tonic::Request&lt;tonic::Streaming&lt;<span class="kw">super</span>::Message&gt;&gt;,
-        ) -&gt; <span class="prelude-ty">Result</span>&lt;tonic::Response&lt;<span class="self">Self</span>::RetrieveStream&gt;, tonic::Status&gt;;
+        ) -&gt; <span class="prelude-ty">Result</span>&lt;tonic::Response&lt;<span class="self">Self</span>::RetrieveSecretStream&gt;, tonic::Status&gt;;
         <span class="doccomment">/// Server streaming response type for the RetrieveAuditEvents method.
         </span><span class="kw">type </span>RetrieveAuditEventsStream: futures_core::Stream&lt;
                 Item = <span class="prelude-ty">Result</span>&lt;<span class="kw">super</span>::Message, tonic::Status&gt;,
@@ -1587,16 +1496,6 @@
             <span class="kw-2">&amp;</span><span class="self">self</span>,
             request: tonic::Request&lt;tonic::Streaming&lt;<span class="kw">super</span>::Message&gt;&gt;,
         ) -&gt; <span class="prelude-ty">Result</span>&lt;tonic::Response&lt;<span class="self">Self</span>::RetrieveAuditEventsStream&gt;, tonic::Status&gt;;
-        <span class="doccomment">/// Server streaming response type for the RetrieveSigningKey method.
-        </span><span class="kw">type </span>RetrieveSigningKeyStream: futures_core::Stream&lt;
-                Item = <span class="prelude-ty">Result</span>&lt;<span class="kw">super</span>::Message, tonic::Status&gt;,
-            &gt;
-            + Send
-            + <span class="lifetime">&#39;static</span>;
-        <span class="kw">async fn </span>retrieve_signing_key(
-            <span class="kw-2">&amp;</span><span class="self">self</span>,
-            request: tonic::Request&lt;tonic::Streaming&lt;<span class="kw">super</span>::Message&gt;&gt;,
-        ) -&gt; <span class="prelude-ty">Result</span>&lt;tonic::Response&lt;<span class="self">Self</span>::RetrieveSigningKeyStream&gt;, tonic::Status&gt;;
         <span class="doccomment">/// Server streaming response type for the RetrieveStorageKey method.
         </span><span class="kw">type </span>RetrieveStorageKeyStream: futures_core::Stream&lt;
                 Item = <span class="prelude-ty">Result</span>&lt;<span class="kw">super</span>::Message, tonic::Status&gt;,
@@ -1749,15 +1648,15 @@
                     };
                     Box::pin(fut)
                 }
-                <span class="string">&quot;/lock_keeper_rpc.LockKeeperRpc/Generate&quot; </span>=&gt; {
+                <span class="string">&quot;/lock_keeper_rpc.LockKeeperRpc/GenerateSecret&quot; </span>=&gt; {
                     <span class="attribute">#[allow(non_camel_case_types)]
-                    </span><span class="kw">struct </span>GenerateSvc&lt;T: LockKeeperRpc&gt;(<span class="kw">pub </span>Arc&lt;T&gt;);
+                    </span><span class="kw">struct </span>GenerateSecretSvc&lt;T: LockKeeperRpc&gt;(<span class="kw">pub </span>Arc&lt;T&gt;);
                     <span class="kw">impl</span>&lt;
                         T: LockKeeperRpc,
                     &gt; tonic::server::StreamingService&lt;<span class="kw">super</span>::Message&gt;
-                    <span class="kw">for </span>GenerateSvc&lt;T&gt; {
+                    <span class="kw">for </span>GenerateSecretSvc&lt;T&gt; {
                         <span class="kw">type </span>Response = <span class="kw">super</span>::Message;
-                        <span class="kw">type </span>ResponseStream = T::GenerateStream;
+                        <span class="kw">type </span>ResponseStream = T::GenerateSecretStream;
                         <span class="kw">type </span>Future = BoxFuture&lt;
                             tonic::Response&lt;<span class="self">Self</span>::ResponseStream&gt;,
                             tonic::Status,
@@ -1767,7 +1666,9 @@
                             request: tonic::Request&lt;tonic::Streaming&lt;<span class="kw">super</span>::Message&gt;&gt;,
                         ) -&gt; <span class="self">Self</span>::Future {
                             <span class="kw">let </span>inner = <span class="self">self</span>.<span class="number">0</span>.clone();
-                            <span class="kw">let </span>fut = <span class="kw">async move </span>{ (<span class="kw-2">*</span>inner).generate(request).<span class="kw">await </span>};
+                            <span class="kw">let </span>fut = <span class="kw">async move </span>{
+                                (<span class="kw-2">*</span>inner).generate_secret(request).<span class="kw">await
+                            </span>};
                             Box::pin(fut)
                         }
                     }
@@ -1776,7 +1677,7 @@
                     <span class="kw">let </span>inner = <span class="self">self</span>.inner.clone();
                     <span class="kw">let </span>fut = <span class="kw">async move </span>{
                         <span class="kw">let </span>inner = inner.<span class="number">0</span>;
-                        <span class="kw">let </span>method = GenerateSvc(inner);
+                        <span class="kw">let </span>method = GenerateSecretSvc(inner);
                         <span class="kw">let </span>codec = tonic::codec::ProstCodec::default();
                         <span class="kw">let </span><span class="kw-2">mut </span>grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
@@ -2025,15 +1926,15 @@
                     };
                     Box::pin(fut)
                 }
-                <span class="string">&quot;/lock_keeper_rpc.LockKeeperRpc/Retrieve&quot; </span>=&gt; {
+                <span class="string">&quot;/lock_keeper_rpc.LockKeeperRpc/RetrieveSecret&quot; </span>=&gt; {
                     <span class="attribute">#[allow(non_camel_case_types)]
-                    </span><span class="kw">struct </span>RetrieveSvc&lt;T: LockKeeperRpc&gt;(<span class="kw">pub </span>Arc&lt;T&gt;);
+                    </span><span class="kw">struct </span>RetrieveSecretSvc&lt;T: LockKeeperRpc&gt;(<span class="kw">pub </span>Arc&lt;T&gt;);
                     <span class="kw">impl</span>&lt;
                         T: LockKeeperRpc,
                     &gt; tonic::server::StreamingService&lt;<span class="kw">super</span>::Message&gt;
-                    <span class="kw">for </span>RetrieveSvc&lt;T&gt; {
+                    <span class="kw">for </span>RetrieveSecretSvc&lt;T&gt; {
                         <span class="kw">type </span>Response = <span class="kw">super</span>::Message;
-                        <span class="kw">type </span>ResponseStream = T::RetrieveStream;
+                        <span class="kw">type </span>ResponseStream = T::RetrieveSecretStream;
                         <span class="kw">type </span>Future = BoxFuture&lt;
                             tonic::Response&lt;<span class="self">Self</span>::ResponseStream&gt;,
                             tonic::Status,
@@ -2043,7 +1944,9 @@
                             request: tonic::Request&lt;tonic::Streaming&lt;<span class="kw">super</span>::Message&gt;&gt;,
                         ) -&gt; <span class="self">Self</span>::Future {
                             <span class="kw">let </span>inner = <span class="self">self</span>.<span class="number">0</span>.clone();
-                            <span class="kw">let </span>fut = <span class="kw">async move </span>{ (<span class="kw-2">*</span>inner).retrieve(request).<span class="kw">await </span>};
+                            <span class="kw">let </span>fut = <span class="kw">async move </span>{
+                                (<span class="kw-2">*</span>inner).retrieve_secret(request).<span class="kw">await
+                            </span>};
                             Box::pin(fut)
                         }
                     }
@@ -2052,7 +1955,7 @@
                     <span class="kw">let </span>inner = <span class="self">self</span>.inner.clone();
                     <span class="kw">let </span>fut = <span class="kw">async move </span>{
                         <span class="kw">let </span>inner = inner.<span class="number">0</span>;
-                        <span class="kw">let </span>method = RetrieveSvc(inner);
+                        <span class="kw">let </span>method = RetrieveSecretSvc(inner);
                         <span class="kw">let </span>codec = tonic::codec::ProstCodec::default();
                         <span class="kw">let </span><span class="kw-2">mut </span>grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
@@ -2094,47 +1997,6 @@
                     <span class="kw">let </span>fut = <span class="kw">async move </span>{
                         <span class="kw">let </span>inner = inner.<span class="number">0</span>;
                         <span class="kw">let </span>method = RetrieveAuditEventsSvc(inner);
-                        <span class="kw">let </span>codec = tonic::codec::ProstCodec::default();
-                        <span class="kw">let </span><span class="kw-2">mut </span>grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
-                        <span class="kw">let </span>res = grpc.streaming(method, req).<span class="kw">await</span>;
-                        <span class="prelude-val">Ok</span>(res)
-                    };
-                    Box::pin(fut)
-                }
-                <span class="string">&quot;/lock_keeper_rpc.LockKeeperRpc/RetrieveSigningKey&quot; </span>=&gt; {
-                    <span class="attribute">#[allow(non_camel_case_types)]
-                    </span><span class="kw">struct </span>RetrieveSigningKeySvc&lt;T: LockKeeperRpc&gt;(<span class="kw">pub </span>Arc&lt;T&gt;);
-                    <span class="kw">impl</span>&lt;
-                        T: LockKeeperRpc,
-                    &gt; tonic::server::StreamingService&lt;<span class="kw">super</span>::Message&gt;
-                    <span class="kw">for </span>RetrieveSigningKeySvc&lt;T&gt; {
-                        <span class="kw">type </span>Response = <span class="kw">super</span>::Message;
-                        <span class="kw">type </span>ResponseStream = T::RetrieveSigningKeyStream;
-                        <span class="kw">type </span>Future = BoxFuture&lt;
-                            tonic::Response&lt;<span class="self">Self</span>::ResponseStream&gt;,
-                            tonic::Status,
-                        &gt;;
-                        <span class="kw">fn </span>call(
-                            <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-                            request: tonic::Request&lt;tonic::Streaming&lt;<span class="kw">super</span>::Message&gt;&gt;,
-                        ) -&gt; <span class="self">Self</span>::Future {
-                            <span class="kw">let </span>inner = <span class="self">self</span>.<span class="number">0</span>.clone();
-                            <span class="kw">let </span>fut = <span class="kw">async move </span>{
-                                (<span class="kw-2">*</span>inner).retrieve_signing_key(request).<span class="kw">await
-                            </span>};
-                            Box::pin(fut)
-                        }
-                    }
-                    <span class="kw">let </span>accept_compression_encodings = <span class="self">self</span>.accept_compression_encodings;
-                    <span class="kw">let </span>send_compression_encodings = <span class="self">self</span>.send_compression_encodings;
-                    <span class="kw">let </span>inner = <span class="self">self</span>.inner.clone();
-                    <span class="kw">let </span>fut = <span class="kw">async move </span>{
-                        <span class="kw">let </span>inner = inner.<span class="number">0</span>;
-                        <span class="kw">let </span>method = RetrieveSigningKeySvc(inner);
                         <span class="kw">let </span>codec = tonic::codec::ProstCodec::default();
                         <span class="kw">let </span><span class="kw-2">mut </span>grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

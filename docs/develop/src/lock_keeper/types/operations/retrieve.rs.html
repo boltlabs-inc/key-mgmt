@@ -52,8 +52,6 @@
 <span id="52">52</span>
 <span id="53">53</span>
 <span id="54">54</span>
-<span id="55">55</span>
-<span id="56">56</span>
 </pre><pre class="rust"><code><span class="kw">use </span>serde::{Deserialize, Serialize};
 
 <span class="doccomment">/// Options for the asset owner&#39;s intended use of a secret
@@ -64,9 +62,7 @@
 }
 
 <span class="kw">pub mod </span>client {
-    <span class="kw">use crate</span>::{
-        crypto::KeyId, impl_authenticated_message_conversion, types::database::user::UserId,
-    };
+    <span class="kw">use crate</span>::{crypto::KeyId, impl_message_conversion, types::database::user::UserId};
     <span class="kw">use </span>serde::{Deserialize, Serialize};
 
     <span class="kw">use </span><span class="kw">super</span>::RetrieveContext;
@@ -86,12 +82,12 @@
         <span class="kw">pub </span>context: RetrieveContext,
     }
 
-    <span class="macro">impl_authenticated_message_conversion!</span>(Request, RequestSigningKey);
+    <span class="macro">impl_message_conversion!</span>(Request, RequestSigningKey);
 }
 
 <span class="kw">pub mod </span>server {
     <span class="kw">use crate</span>::{
-        impl_authenticated_message_conversion,
+        impl_message_conversion,
         types::database::secrets::{StoredEncryptedSecret, StoredSigningKeyPair},
     };
     <span class="kw">use </span>serde::{Deserialize, Serialize};
@@ -108,7 +104,7 @@
         <span class="kw">pub </span>stored_signing_key: StoredSigningKeyPair,
     }
 
-    <span class="macro">impl_authenticated_message_conversion!</span>(Response, ResponseSigningKey);
+    <span class="macro">impl_message_conversion!</span>(Response, ResponseSigningKey);
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="lock_keeper" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

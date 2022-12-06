@@ -597,6 +597,8 @@
 <span id="597">597</span>
 <span id="598">598</span>
 <span id="599">599</span>
+<span id="600">600</span>
+<span id="601">601</span>
 </pre><pre class="rust"><code><span class="kw">use </span>chacha20poly1305::{
     aead::{Aead, Payload},
     AeadCore, ChaCha20Poly1305, KeyInit,
@@ -773,6 +775,8 @@
 
 <span class="kw">impl</span>&lt;T&gt; Encrypted&lt;T&gt;
 <span class="kw">where
+    </span><span class="comment">// These bounds cover both the `encrypt` and `decrypt` methods.
+    // This ensures that the user can only encrypt types than can also be decrypted.
     </span>T: TryFrom&lt;Vec&lt;u8&gt;&gt;,
     CryptoError: From&lt;&lt;T <span class="kw">as </span>TryFrom&lt;Vec&lt;u8&gt;&gt;&gt;::Error&gt;,
     Vec&lt;u8&gt;: From&lt;T&gt;,

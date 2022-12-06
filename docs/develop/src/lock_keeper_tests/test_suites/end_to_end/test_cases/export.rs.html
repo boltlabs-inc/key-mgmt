@@ -203,14 +203,14 @@
     <span class="kw">let </span>GenerateResult {
         key_id,
         local_storage,
-    } = client.generate_and_store().<span class="kw">await</span><span class="question-mark">?</span>.into_inner();
-    <span class="kw">let </span>bytes_res = client.export_key(<span class="kw-2">&amp;</span>key_id).<span class="kw">await</span>;
+    } = client.generate_secret().<span class="kw">await</span><span class="question-mark">?</span>.into_inner();
+    <span class="kw">let </span>bytes_res = client.export_secret(<span class="kw-2">&amp;</span>key_id).<span class="kw">await</span>;
     <span class="macro">assert!</span>(bytes_res.is_ok());
 
     <span class="comment">// Turn the export back into a Secret and compare directly
     </span><span class="kw">let </span>exported_secret: Secret = bytes_res<span class="question-mark">?</span>.into_inner().try_into()<span class="question-mark">?</span>;
     <span class="macro">assert_eq!</span>(exported_secret, local_storage.material);
-    check_audit_events(<span class="kw-2">&amp;</span>state, EventStatus::Successful, ClientAction::Export).<span class="kw">await</span><span class="question-mark">?</span>;
+    check_audit_events(<span class="kw-2">&amp;</span>state, EventStatus::Successful, ClientAction::ExportSecret).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
 }
@@ -220,9 +220,9 @@
     <span class="kw">let </span>client = authenticate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="kw">let </span>fake_key_id = generate_fake_key_id(<span class="kw-2">&amp;</span>client).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let </span>bytes_res = client.export_key(<span class="kw-2">&amp;</span>fake_key_id).<span class="kw">await</span>;
+    <span class="kw">let </span>bytes_res = client.export_secret(<span class="kw-2">&amp;</span>fake_key_id).<span class="kw">await</span>;
     compare_errors(bytes_res, Status::internal(<span class="string">&quot;Internal server error&quot;</span>));
-    check_audit_events(<span class="kw-2">&amp;</span>state, EventStatus::Failed, ClientAction::Export).<span class="kw">await</span><span class="question-mark">?</span>;
+    check_audit_events(<span class="kw-2">&amp;</span>state, EventStatus::Failed, ClientAction::ExportSecret).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
 }
@@ -232,9 +232,9 @@
     <span class="kw">let </span>client = authenticate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="kw">let </span>(key_id, <span class="kw">_</span>) = import_signing_key(<span class="kw-2">&amp;</span>client).<span class="kw">await</span><span class="question-mark">?</span>.into_inner();
-    <span class="kw">let </span>export_res = client.export_key(<span class="kw-2">&amp;</span>key_id).<span class="kw">await</span>;
+    <span class="kw">let </span>export_res = client.export_secret(<span class="kw-2">&amp;</span>key_id).<span class="kw">await</span>;
     compare_errors(export_res, Status::internal(<span class="string">&quot;Internal server error&quot;</span>));
-    check_audit_events(<span class="kw-2">&amp;</span>state, EventStatus::Failed, ClientAction::Export).<span class="kw">await</span><span class="question-mark">?</span>;
+    check_audit_events(<span class="kw-2">&amp;</span>state, EventStatus::Failed, ClientAction::ExportSecret).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
 }
@@ -246,10 +246,10 @@
     <span class="kw">let </span>GenerateResult {
         key_id,
         local_storage: <span class="kw">_</span>,
-    } = client.generate_and_store().<span class="kw">await</span><span class="question-mark">?</span>.into_inner();
+    } = client.generate_secret().<span class="kw">await</span><span class="question-mark">?</span>.into_inner();
     client.logout().<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let </span>res = client.export_key(<span class="kw-2">&amp;</span>key_id).<span class="kw">await</span>;
+    <span class="kw">let </span>res = client.export_secret(<span class="kw-2">&amp;</span>key_id).<span class="kw">await</span>;
     compare_status_errors(res, Status::unauthenticated(<span class="string">&quot;No session key for this user&quot;</span>))<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
@@ -294,7 +294,7 @@
     <span class="kw">let </span>GenerateResult {
         key_id,
         local_storage: <span class="kw">_</span>,
-    } = client.generate_and_store().<span class="kw">await</span><span class="question-mark">?</span>.into_inner();
+    } = client.generate_secret().<span class="kw">await</span><span class="question-mark">?</span>.into_inner();
     <span class="kw">let </span>export_res = client.export_signing_key(<span class="kw-2">&amp;</span>key_id).<span class="kw">await</span>;
     compare_errors(export_res, Status::internal(<span class="string">&quot;Internal server error&quot;</span>));
     check_audit_events(<span class="kw-2">&amp;</span>state, EventStatus::Failed, ClientAction::ExportSigningKey).<span class="kw">await</span><span class="question-mark">?</span>;

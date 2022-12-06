@@ -810,21 +810,7 @@
 <span id="810">810</span>
 <span id="811">811</span>
 <span id="812">812</span>
-<span id="813">813</span>
-<span id="814">814</span>
-<span id="815">815</span>
-<span id="816">816</span>
-<span id="817">817</span>
-<span id="818">818</span>
-<span id="819">819</span>
-<span id="820">820</span>
-<span id="821">821</span>
-<span id="822">822</span>
-<span id="823">823</span>
-<span id="824">824</span>
-<span id="825">825</span>
-</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::Export;
-<span class="kw">use crate</span>::{types::database::user::UserId, LockKeeperError};
+</pre><pre class="rust"><code><span class="kw">use crate</span>::{types::database::user::UserId, LockKeeperError};
 <span class="kw">use </span>k256::ecdsa::{
     <span class="self">self</span>,
     signature::{Signer, Verifier},
@@ -834,7 +820,7 @@
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>zeroize::ZeroizeOnDrop;
 
-<span class="kw">use super</span>::{generic::AssociatedData, CryptoError, Encrypted, KeyId, StorageKey};
+<span class="kw">use super</span>::{generic::AssociatedData, CryptoError, Encrypted, Export, KeyId, StorageKey};
 
 <span class="doccomment">/// Provides the methods necessary to sign and verify a piece of data with a
 /// [`SigningKeyPair`]. This trait should be explicitly implemented on types
@@ -907,7 +893,7 @@
 ///
 /// This can only be &quot;decrypted&quot; by the server.
 /// TODO #307: Replace this placeholder with actual encryption.
-</span><span class="attribute">#[derive(Clone, Debug, Deserialize, Serialize, ZeroizeOnDrop)]
+</span><span class="attribute">#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize, ZeroizeOnDrop)]
 </span><span class="kw">pub struct </span>PlaceholderEncryptedSigningKeyPair {
     signing_key: Vec&lt;u8&gt;,
     <span class="attribute">#[zeroize(skip)]
@@ -1364,18 +1350,6 @@
             key_id,
             storage_key,
         )
-    }
-
-    <span class="attribute">#[test]
-    </span><span class="kw">fn </span>export_conversion_works() {
-        <span class="kw">let </span><span class="kw-2">mut </span>rng = rand::thread_rng();
-        <span class="kw">let </span>context = AssociatedData::new().with_str(<span class="string">&quot;a key for trying export&quot;</span>);
-        <span class="kw">let </span>key = SigningKeyPair::generate(<span class="kw-2">&amp;mut </span>rng, <span class="kw-2">&amp;</span>context);
-
-        <span class="kw">let </span>export: Export = key.clone().into();
-        <span class="kw">let </span>output_key: SigningKeyPair = export.into_signing_key().unwrap();
-
-        <span class="macro">assert_eq!</span>(key, output_key);
     }
 
     <span class="attribute">#[test]

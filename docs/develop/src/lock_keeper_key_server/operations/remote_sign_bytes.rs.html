@@ -40,6 +40,7 @@
 <span id="40">40</span>
 <span id="41">41</span>
 <span id="42">42</span>
+<span id="43">43</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{
     server::{Context, Operation},
     LockKeeperServerError,
@@ -48,7 +49,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::database::DataStore;
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>lock_keeper::{
-    crypto::{Signable, SigningKeyPair},
+    crypto::{PlaceholderEncryptedSigningKeyPair, Signable, SigningKeyPair},
     infrastructure::channel::ServerChannel,
     types::operations::remote_sign_bytes::{client, server},
 };
@@ -65,14 +66,15 @@
         context: <span class="kw-2">&amp;mut </span>Context&lt;DB&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
         <span class="kw">let </span>request: client::RequestRemoteSign = channel.receive().<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="kw">let </span>key: SigningKeyPair = context
+        <span class="kw">let </span>key_pair: PlaceholderEncryptedSigningKeyPair = context
             .db
-            .get_user_signing_key(<span class="kw-2">&amp;</span>request.user_id, <span class="kw-2">&amp;</span>request.key_id)
+            .get_user_secret(<span class="kw-2">&amp;</span>request.user_id, <span class="kw-2">&amp;</span>request.key_id, Default::default())
             .<span class="kw">await
             </span>.map_err(LockKeeperServerError::database)<span class="question-mark">?
-            </span>.signing_key
-            .to_owned()
-            .try_into()<span class="question-mark">?</span>;
+            </span>.try_into()<span class="question-mark">?</span>;
+
+        <span class="comment">// Pretend to decrypt our placeholder type
+        </span><span class="kw">let </span>key: SigningKeyPair = key_pair.try_into()<span class="question-mark">?</span>;
 
         <span class="kw">let </span>signature = request.data.sign(<span class="kw-2">&amp;</span>key);
 

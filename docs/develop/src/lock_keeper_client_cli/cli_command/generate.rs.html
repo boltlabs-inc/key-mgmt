@@ -102,7 +102,7 @@
         </span>.into_inner();
 
         <span class="comment">// If successful, proceed to generate a secret with the established session
-        </span><span class="kw">let </span>generate_result = lock_keeper_client.generate_and_store().<span class="kw">await</span><span class="question-mark">?</span>.into_inner();
+        </span><span class="kw">let </span>generate_result = lock_keeper_client.generate_secret().<span class="kw">await</span><span class="question-mark">?</span>.into_inner();
 
         <span class="comment">// Store Key
         </span><span class="kw">let </span>stored = state.store_entry(<span class="self">self</span>.name, generate_result)<span class="question-mark">?</span>;

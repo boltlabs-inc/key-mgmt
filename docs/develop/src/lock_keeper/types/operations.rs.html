@@ -123,8 +123,8 @@
 <span class="kw">pub mod </span>register;
 <span class="kw">pub mod </span>remote_generate;
 <span class="kw">pub mod </span>remote_sign_bytes;
-<span class="kw">pub mod </span>retrieve;
 <span class="kw">pub mod </span>retrieve_audit_events;
+<span class="kw">pub mod </span>retrieve_secret;
 <span class="kw">pub mod </span>retrieve_storage_key;
 
 <span class="kw">use crate</span>::{
@@ -143,15 +143,15 @@
 </span><span class="kw">pub enum </span>ClientAction {
     Authenticate,
     CreateStorageKey,
-    Export,
+    ExportSecret,
     ExportSigningKey,
-    Generate,
+    GenerateSecret,
     ImportSigningKey,
     Logout,
     Register,
-    RemoteGenerate,
+    RemoteGenerateSigningKey,
     RemoteSignBytes,
-    Retrieve,
+    RetrieveSecret,
     RetrieveAuditEvents,
     RetrieveSigningKey,
     RetrieveStorageKey,

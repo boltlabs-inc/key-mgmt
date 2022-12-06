@@ -81,6 +81,13 @@
 <span id="81">81</span>
 <span id="82">82</span>
 <span id="83">83</span>
+<span id="84">84</span>
+<span id="85">85</span>
+<span id="86">86</span>
+<span id="87">87</span>
+<span id="88">88</span>
+<span id="89">89</span>
+<span id="90">90</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Error type for all errors returned to code outside of this crate.
 
 </span><span class="kw">use </span>thiserror::Error;
@@ -93,6 +100,12 @@
 </span><span class="kw">pub enum </span>LockKeeperError {
     <span class="attribute">#[error(transparent)]
     </span>Crypto(<span class="attribute">#[from] </span>CryptoError),
+
+    <span class="comment">// Conversion errors
+    </span><span class="attribute">#[error(<span class="string">&quot;Unknown secret type: {}&quot;</span>, .<span class="number">0</span>)]
+    </span>UnknownSecretType(String),
+    <span class="attribute">#[error(<span class="string">&quot;Invalid secret type&quot;</span>)]
+    </span>InvalidSecretType,
 
     <span class="comment">// Request errors
     </span><span class="attribute">#[error(<span class="string">&quot;Invalid client action&quot;</span>)]
@@ -145,9 +158,10 @@
     <span class="kw">fn </span>from(error: LockKeeperError) -&gt; <span class="self">Self </span>{
         <span class="kw">match </span>error {
             <span class="comment">// Errors that are safe to return to the client
-            </span>LockKeeperError::InvalidMessage | LockKeeperError::MetadataNotFound =&gt; {
-                Status::invalid_argument(error.to_string())
-            }
+            </span>LockKeeperError::InvalidMessage
+            | LockKeeperError::MetadataNotFound
+            | LockKeeperError::UnknownSecretType(<span class="kw">_</span>)
+            | LockKeeperError::InvalidSecretType =&gt; Status::invalid_argument(error.to_string()),
             LockKeeperError::NoMessageReceived =&gt; Status::deadline_exceeded(error.to_string()),
             <span class="comment">// Errors that the client should not see
             </span>LockKeeperError::InvalidClientAction

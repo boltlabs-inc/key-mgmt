@@ -91,16 +91,19 @@
 <span id="91">91</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{api::LocalStorage, LockKeeperClient, LockKeeperClientError, LockKeeperResponse};
 <span class="kw">use </span>lock_keeper::{
-    crypto::{KeyId, Secret, SigningKeyPair},
+    crypto::{Encrypted, KeyId, PlaceholderEncryptedSigningKeyPair, Secret, SigningKeyPair},
     infrastructure::channel::ClientChannel,
-    types::operations::retrieve::{client, server, RetrieveContext},
+    types::{
+        database::secrets::secret_types,
+        operations::retrieve_secret::{client, server, RetrieveContext},
+    },
 };
 <span class="kw">use </span>rand::rngs::StdRng;
 
 <span class="kw">impl </span>LockKeeperClient {
     <span class="doccomment">/// Handles the retrieval of arbitrary secrets
     /// ([`lock_keeper::crypto::Secret`]) only.
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>handle_retrieve(
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>handle_retrieve_secret(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         <span class="kw-2">mut </span>channel: ClientChannel&lt;StdRng&gt;,
         key_id: <span class="kw-2">&amp;</span>KeyId,
@@ -116,21 +119,20 @@
             user_id: <span class="self">self</span>.user_id().clone(),
             key_id: key_id.clone(),
             context: context.clone(),
+            secret_type: <span class="prelude-val">Some</span>(secret_types::ARBITRARY_SECRET.to_string()),
         };
         channel.send(request).<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="comment">// Get StoredSecret from server
         </span><span class="kw">let </span>server_response: server::Response = channel.receive().<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>secret: Encrypted&lt;Secret&gt; = server_response.secret.try_into()<span class="question-mark">?</span>;
 
         <span class="comment">// Return appropriate value based on Context
         </span><span class="kw">let </span>result = <span class="kw">match </span>context {
             RetrieveContext::Null =&gt; <span class="prelude-val">None</span>,
             RetrieveContext::LocalOnly =&gt; {
                 <span class="comment">// Decrypt secret
-                </span><span class="kw">let </span>secret = server_response
-                    .stored_secret
-                    .secret
-                    .decrypt_secret(storage_key)<span class="question-mark">?</span>;
+                </span><span class="kw">let </span>secret = secret.decrypt_secret(storage_key)<span class="question-mark">?</span>;
                 <span class="kw">let </span>wrapped_secret = LocalStorage { material: secret };
                 <span class="prelude-val">Some</span>(wrapped_secret)
             }
@@ -151,25 +153,23 @@
         <span class="comment">// TODO spec#39 look up key ID in local storage before making request to server
 
         // Send UserId to server
-        </span><span class="kw">let </span>request = client::RequestSigningKey {
+        </span><span class="kw">let </span>request = client::Request {
             user_id: <span class="self">self</span>.user_id().clone(),
             key_id: key_id.clone(),
             context: context.clone(),
+            secret_type: <span class="prelude-val">Some</span>(secret_types::REMOTE_SIGNING_KEY.to_string()),
         };
         channel.send(request).<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="comment">// Get StoredSigningKeyPair type back from server
-        </span><span class="kw">let </span>server_response: server::ResponseSigningKey = channel.receive().<span class="kw">await</span><span class="question-mark">?</span>;
+        </span><span class="kw">let </span>server_response: server::Response = channel.receive().<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>key_pair: PlaceholderEncryptedSigningKeyPair = server_response.secret.try_into()<span class="question-mark">?</span>;
 
         <span class="comment">// Return appropriate value based on Context
         </span><span class="kw">let </span>result = <span class="kw">match </span>context {
             RetrieveContext::Null =&gt; <span class="prelude-val">None</span>,
             RetrieveContext::LocalOnly =&gt; {
-                <span class="kw">let </span>signing_key_pair: SigningKeyPair = server_response
-                    .stored_signing_key
-                    .signing_key
-                    .to_owned()
-                    .try_into()<span class="question-mark">?</span>;
+                <span class="kw">let </span>signing_key_pair: SigningKeyPair = key_pair.try_into()<span class="question-mark">?</span>;
                 <span class="kw">let </span>wrapped_signing_key = LocalStorage {
                     material: signing_key_pair,
                 };

@@ -319,6 +319,7 @@
 <span id="319">319</span>
 <span id="320">320</span>
 <span id="321">321</span>
+<span id="322">322</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Client object to interact with the key server.
 
 </span><span class="kw">use crate</span>::{config::Config, LockKeeperClientError, LockKeeperResponse, <span class="prelude-ty">Result</span>};
@@ -511,14 +512,14 @@
 
             <span class="comment">// These actions generate an error because they should be on an authenticated channel
             </span>ClientAction::CreateStorageKey
-            | ClientAction::Export
+            | ClientAction::ExportSecret
             | ClientAction::ExportSigningKey
-            | ClientAction::Generate
+            | ClientAction::GenerateSecret
             | ClientAction::ImportSigningKey
             | ClientAction::Logout
-            | ClientAction::RemoteGenerate
+            | ClientAction::RemoteGenerateSigningKey
             | ClientAction::RemoteSignBytes
-            | ClientAction::Retrieve
+            | ClientAction::RetrieveSecret
             | ClientAction::RetrieveAuditEvents
             | ClientAction::RetrieveSigningKey
             | ClientAction::RetrieveStorageKey =&gt; {
@@ -548,16 +549,17 @@
         <span class="comment">// Server returns its own channel that is uses to send responses
         </span><span class="kw">let </span>server_response = <span class="kw">match </span>metadata.action() {
             ClientAction::CreateStorageKey =&gt; client.create_storage_key(stream).<span class="kw">await</span>,
-            ClientAction::Export =&gt; client.retrieve(stream).<span class="kw">await</span>,
-            ClientAction::ExportSigningKey =&gt; client.retrieve_signing_key(stream).<span class="kw">await</span>,
-            ClientAction::Generate =&gt; client.generate(stream).<span class="kw">await</span>,
+            ClientAction::ExportSecret =&gt; client.retrieve_secret(stream).<span class="kw">await</span>,
+            ClientAction::ExportSigningKey =&gt; client.retrieve_secret(stream).<span class="kw">await</span>,
+            ClientAction::GenerateSecret =&gt; client.generate_secret(stream).<span class="kw">await</span>,
             ClientAction::ImportSigningKey =&gt; client.import_signing_key(stream).<span class="kw">await</span>,
             ClientAction::Logout =&gt; client.logout(stream).<span class="kw">await</span>,
-            ClientAction::RemoteGenerate =&gt; client.remote_generate(stream).<span class="kw">await</span>,
+            ClientAction::Register =&gt; client.register(stream).<span class="kw">await</span>,
+            ClientAction::RemoteGenerateSigningKey =&gt; client.remote_generate(stream).<span class="kw">await</span>,
             ClientAction::RemoteSignBytes =&gt; client.remote_sign_bytes(stream).<span class="kw">await</span>,
-            ClientAction::Retrieve =&gt; client.retrieve(stream).<span class="kw">await</span>,
+            ClientAction::RetrieveSecret =&gt; client.retrieve_secret(stream).<span class="kw">await</span>,
             ClientAction::RetrieveAuditEvents =&gt; client.retrieve_audit_events(stream).<span class="kw">await</span>,
-            ClientAction::RetrieveSigningKey =&gt; client.retrieve_signing_key(stream).<span class="kw">await</span>,
+            ClientAction::RetrieveSigningKey =&gt; client.retrieve_secret(stream).<span class="kw">await</span>,
             ClientAction::RetrieveStorageKey =&gt; client.retrieve_storage_key(stream).<span class="kw">await</span>,
 
             <span class="comment">// These actions generate an error because they should be on an unauthenticated channel

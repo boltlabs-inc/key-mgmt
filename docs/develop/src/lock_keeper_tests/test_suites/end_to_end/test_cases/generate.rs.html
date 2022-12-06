@@ -47,6 +47,11 @@
 <span id="47">47</span>
 <span id="48">48</span>
 <span id="49">49</span>
+<span id="50">50</span>
+<span id="51">51</span>
+<span id="52">52</span>
+<span id="53">53</span>
+<span id="54">54</span>
 </pre><pre class="rust"><code><span class="kw">use </span>colored::Colorize;
 <span class="kw">use </span>lock_keeper::types::{audit_event::EventStatus, operations::ClientAction};
 <span class="kw">use </span>lock_keeper_client::Config;
@@ -79,8 +84,13 @@
     <span class="kw">let </span>state = init_test_state(config).<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="kw">let </span>client = authenticate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let _ </span>= client.generate_and_store().<span class="kw">await</span><span class="question-mark">?</span>;
-    check_audit_events(<span class="kw-2">&amp;</span>state, EventStatus::Successful, ClientAction::Generate).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let _ </span>= client.generate_secret().<span class="kw">await</span><span class="question-mark">?</span>;
+    check_audit_events(
+        <span class="kw-2">&amp;</span>state,
+        EventStatus::Successful,
+        ClientAction::GenerateSecret,
+    )
+    .<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
 }
@@ -91,7 +101,7 @@
 
     client.logout().<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let </span>res = client.generate_and_store().<span class="kw">await</span>;
+    <span class="kw">let </span>res = client.generate_secret().<span class="kw">await</span>;
     compare_status_errors(res, Status::unauthenticated(<span class="string">&quot;No session key for this user&quot;</span>))<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())

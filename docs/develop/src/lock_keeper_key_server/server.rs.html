@@ -176,16 +176,6 @@
 <span id="176">176</span>
 <span id="177">177</span>
 <span id="178">178</span>
-<span id="179">179</span>
-<span id="180">180</span>
-<span id="181">181</span>
-<span id="182">182</span>
-<span id="183">183</span>
-<span id="184">184</span>
-<span id="185">185</span>
-<span id="186">186</span>
-<span id="187">187</span>
-<span id="188">188</span>
 </pre><pre class="rust"><code><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>opaque_storage;
 <span class="kw">mod </span>operation;
 <span class="kw">mod </span>service;
@@ -251,15 +241,14 @@
 </span><span class="kw">impl</span>&lt;DB: DataStore&gt; LockKeeperRpc <span class="kw">for </span>LockKeeperKeyServer&lt;DB&gt; {
     <span class="kw">type </span>AuthenticateStream = MessageStream;
     <span class="kw">type </span>CreateStorageKeyStream = MessageStream;
-    <span class="kw">type </span>GenerateStream = MessageStream;
+    <span class="kw">type </span>GenerateSecretStream = MessageStream;
     <span class="kw">type </span>ImportSigningKeyStream = MessageStream;
     <span class="kw">type </span>LogoutStream = MessageStream;
     <span class="kw">type </span>RegisterStream = MessageStream;
     <span class="kw">type </span>RemoteGenerateStream = MessageStream;
     <span class="kw">type </span>RemoteSignBytesStream = MessageStream;
-    <span class="kw">type </span>RetrieveStream = MessageStream;
+    <span class="kw">type </span>RetrieveSecretStream = MessageStream;
     <span class="kw">type </span>RetrieveAuditEventsStream = MessageStream;
-    <span class="kw">type </span>RetrieveSigningKeyStream = MessageStream;
     <span class="kw">type </span>RetrieveStorageKeyStream = MessageStream;
 
     <span class="kw">async fn </span>health(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="kw">_</span>: Request&lt;HealthCheck&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;HealthCheck&gt;, Status&gt; {
@@ -302,11 +291,11 @@
             .<span class="kw">await</span><span class="question-mark">?</span>)
     }
 
-    <span class="kw">async fn </span>generate(
+    <span class="kw">async fn </span>generate_secret(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         request: Request&lt;tonic::Streaming&lt;Message&gt;&gt;,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;<span class="self">Self</span>::GenerateStream&gt;, Status&gt; {
-        <span class="prelude-val">Ok</span>(operations::Generate
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;<span class="self">Self</span>::GenerateSecretStream&gt;, Status&gt; {
+        <span class="prelude-val">Ok</span>(operations::GenerateSecret
             .handle_request(<span class="self">self</span>.context(), request)
             .<span class="kw">await</span><span class="question-mark">?</span>)
     }
@@ -324,7 +313,7 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         request: Request&lt;tonic::Streaming&lt;Message&gt;&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;<span class="self">Self</span>::RemoteGenerateStream&gt;, Status&gt; {
-        <span class="prelude-val">Ok</span>(operations::RemoteGenerate
+        <span class="prelude-val">Ok</span>(operations::RemoteGenerateSigningKey
             .handle_request(<span class="self">self</span>.context(), request)
             .<span class="kw">await</span><span class="question-mark">?</span>)
     }
@@ -338,11 +327,11 @@
             .<span class="kw">await</span><span class="question-mark">?</span>)
     }
 
-    <span class="kw">async fn </span>retrieve(
+    <span class="kw">async fn </span>retrieve_secret(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         request: Request&lt;tonic::Streaming&lt;Message&gt;&gt;,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;<span class="self">Self</span>::RetrieveStream&gt;, Status&gt; {
-        <span class="prelude-val">Ok</span>(operations::Retrieve
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;<span class="self">Self</span>::RetrieveSecretStream&gt;, Status&gt; {
+        <span class="prelude-val">Ok</span>(operations::RetrieveSecret
             .handle_request(<span class="self">self</span>.context(), request)
             .<span class="kw">await</span><span class="question-mark">?</span>)
     }
@@ -361,15 +350,6 @@
         request: Request&lt;tonic::Streaming&lt;Message&gt;&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;<span class="self">Self</span>::RetrieveStorageKeyStream&gt;, Status&gt; {
         <span class="prelude-val">Ok</span>(operations::RetrieveStorageKey
-            .handle_request(<span class="self">self</span>.context(), request)
-            .<span class="kw">await</span><span class="question-mark">?</span>)
-    }
-
-    <span class="kw">async fn </span>retrieve_signing_key(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
-        request: Request&lt;tonic::Streaming&lt;Message&gt;&gt;,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;<span class="self">Self</span>::RetrieveSigningKeyStream&gt;, Status&gt; {
-        <span class="prelude-val">Ok</span>(operations::RetrieveSigningKey
             .handle_request(<span class="self">self</span>.context(), request)
             .<span class="kw">await</span><span class="question-mark">?</span>)
     }

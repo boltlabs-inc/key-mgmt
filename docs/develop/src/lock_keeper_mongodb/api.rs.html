@@ -150,38 +150,25 @@
 <span id="150">150</span>
 <span id="151">151</span>
 <span id="152">152</span>
-<span id="153">153</span>
-<span id="154">154</span>
-<span id="155">155</span>
-<span id="156">156</span>
-<span id="157">157</span>
-<span id="158">158</span>
-<span id="159">159</span>
-<span id="160">160</span>
-<span id="161">161</span>
-<span id="162">162</span>
-<span id="163">163</span>
-<span id="164">164</span>
-<span id="165">165</span>
-<span id="166">166</span>
-<span id="167">167</span>
-<span id="168">168</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{constants::USERS, error::Error};
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>lock_keeper::{
     config::opaque::OpaqueCipherSuite,
     constants::{ACCOUNT_NAME, USER_ID},
-    crypto::{Encrypted, KeyId, Secret, SigningKeyPair, StorageKey},
+    crypto::{Encrypted, KeyId, StorageKey},
     types::{
         audit_event::{AuditEvent, AuditEventOptions, EventStatus, EventType},
         database::{
-            secrets::{StoredEncryptedSecret, StoredSigningKeyPair},
+            secrets::StoredSecret,
             user::{AccountName, User, UserId},
         },
         operations::ClientAction,
     },
 };
-<span class="kw">use </span>lock_keeper_key_server::{config::DatabaseSpec, database::DataStore};
+<span class="kw">use </span>lock_keeper_key_server::{
+    config::DatabaseSpec,
+    database::{DataStore, SecretFilter},
+};
 <span class="kw">use </span>mongodb::{
     bson::doc,
     options::{ClientOptions, IndexOptions},
@@ -263,10 +250,9 @@
     <span class="kw">async fn </span>add_user_secret(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         user_id: <span class="kw-2">&amp;</span>UserId,
-        secret: Encrypted&lt;Secret&gt;,
-        key_id: KeyId,
+        secret: StoredSecret,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt; {
-        <span class="self">self</span>.add_user_secret(user_id, secret, key_id).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="self">self</span>.add_user_secret(user_id, secret).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
     }
 
@@ -274,28 +260,10 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         user_id: <span class="kw-2">&amp;</span>UserId,
         key_id: <span class="kw-2">&amp;</span>KeyId,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;StoredEncryptedSecret, <span class="self">Self</span>::Error&gt; {
-        <span class="kw">let </span>stored_encrypted_secret = <span class="self">self</span>.get_user_secret(user_id, key_id).<span class="kw">await</span><span class="question-mark">?</span>;
+        filter: SecretFilter,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;StoredSecret, <span class="self">Self</span>::Error&gt; {
+        <span class="kw">let </span>stored_encrypted_secret = <span class="self">self</span>.get_user_secret(user_id, key_id, filter).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(stored_encrypted_secret)
-    }
-
-    <span class="kw">async fn </span>add_remote_secret(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
-        user_id: <span class="kw-2">&amp;</span>UserId,
-        secret: SigningKeyPair,
-        key_id: KeyId,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt; {
-        <span class="self">self</span>.add_remote_secret(user_id, secret, key_id).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(())
-    }
-
-    <span class="kw">async fn </span>get_user_signing_key(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
-        user_id: <span class="kw-2">&amp;</span>UserId,
-        key_id: <span class="kw-2">&amp;</span>KeyId,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;StoredSigningKeyPair, <span class="self">Self</span>::Error&gt; {
-        <span class="kw">let </span>stored_signing_key_pair = <span class="self">self</span>.get_user_signing_key(user_id, key_id).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(stored_signing_key_pair)
     }
 
     <span class="kw">async fn </span>create_user(

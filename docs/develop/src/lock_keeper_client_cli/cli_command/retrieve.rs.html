@@ -65,7 +65,7 @@
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{cli_command::CliCommand, state::State};
 <span class="kw">use </span>anyhow::Error;
 <span class="kw">use </span>async_trait::async_trait;
-<span class="kw">use </span>lock_keeper::types::operations::retrieve::RetrieveContext;
+<span class="kw">use </span>lock_keeper::types::operations::retrieve_secret::RetrieveContext;
 <span class="kw">use </span>lock_keeper_client::LockKeeperClient;
 
 <span class="attribute">#[derive(Debug)]
@@ -90,7 +90,7 @@
         <span class="kw">let </span>entry = state.get_key_id(<span class="kw-2">&amp;</span><span class="self">self</span>.name)<span class="question-mark">?</span>;
         <span class="comment">// Retrieve results for specified key.
         </span><span class="kw">let </span>retrieve_result = lock_keeper_client
-            .retrieve(<span class="kw-2">&amp;</span>entry.key_id, RetrieveContext::LocalOnly)
+            .retrieve_secret(<span class="kw-2">&amp;</span>entry.key_id, RetrieveContext::LocalOnly)
             .<span class="kw">await</span><span class="question-mark">?
             </span>.into_inner();
 

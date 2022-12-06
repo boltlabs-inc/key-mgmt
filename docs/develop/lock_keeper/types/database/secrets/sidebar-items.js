@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":[["_DERIVE_Drop_FOR_StoredSigningKeyPair",""]],"struct":[["StoredEncryptedSecret","Wrapper around an [`Encrypted<Secret>`] and its [`KeyId`]"],["StoredEncryptedSigningKeyPair","Wrapper around an [`Encrypted<SigningKeyPair>`] and its [`KeyId`]."],["StoredSecrets","Holds user’s stored secrets of all types"],["StoredSigningKeyPair","Wrapper around an [`SigningKeyPair`] and its [`KeyId`]"]]};
+window.SIDEBAR_ITEMS = {"mod":[["secret_types",""]],"struct":[["StoredSecret","Generic representation of a secret that is stored in a database."]]};

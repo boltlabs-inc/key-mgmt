@@ -142,7 +142,38 @@
 <span class="kw">use </span>std::{fmt::Display, str::FromStr, vec::IntoIter};
 <span class="kw">use </span>uuid::Uuid;
 
-<span class="kw">use </span><span class="kw">super</span>::secrets::StoredSecrets;
+<span class="kw">use </span><span class="kw">super</span>::secrets::StoredSecret;
+
+<span class="doccomment">/// One user with a set of arbitrary secrets and a [`ServerRegistration`] to
+/// authenticate with.
+</span><span class="attribute">#[derive(Debug, Deserialize, Serialize)]
+</span><span class="kw">pub struct </span>User {
+    <span class="kw">pub </span>user_id: UserId,
+    <span class="kw">pub </span>account_name: AccountName,
+    <span class="kw">pub </span>storage_key: <span class="prelude-ty">Option</span>&lt;Encrypted&lt;StorageKey&gt;&gt;,
+    <span class="kw">pub </span>secrets: Vec&lt;StoredSecret&gt;,
+    <span class="kw">pub </span>server_registration: ServerRegistration&lt;OpaqueCipherSuite&gt;,
+}
+
+<span class="kw">impl </span>User {
+    <span class="kw">pub fn </span>new(
+        user_id: UserId,
+        account_name: AccountName,
+        server_registration: ServerRegistration&lt;OpaqueCipherSuite&gt;,
+    ) -&gt; <span class="self">Self </span>{
+        User {
+            user_id,
+            account_name,
+            storage_key: <span class="prelude-val">None</span>,
+            secrets: Vec::new(),
+            server_registration,
+        }
+    }
+
+    <span class="kw">pub fn </span>into_parts(<span class="self">self</span>) -&gt; (ServerRegistration&lt;OpaqueCipherSuite&gt;, UserId) {
+        (<span class="self">self</span>.server_registration, <span class="self">self</span>.user_id)
+    }
+}
 
 <span class="doccomment">/// Unique ID for a user.
 </span><span class="attribute">#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
@@ -223,37 +254,6 @@
 <span class="kw">impl </span>AccountName {
     <span class="kw">pub fn </span>as_bytes(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[u8] {
         <span class="self">self</span>.<span class="number">0</span>.as_bytes()
-    }
-}
-
-<span class="doccomment">/// One user with a set of arbitrary secrets and a [`ServerRegistration`] to
-/// authenticate with.
-</span><span class="attribute">#[derive(Debug, Deserialize, Serialize)]
-</span><span class="kw">pub struct </span>User {
-    <span class="kw">pub </span>user_id: UserId,
-    <span class="kw">pub </span>account_name: AccountName,
-    <span class="kw">pub </span>storage_key: <span class="prelude-ty">Option</span>&lt;Encrypted&lt;StorageKey&gt;&gt;,
-    <span class="kw">pub </span>secrets: StoredSecrets,
-    <span class="kw">pub </span>server_registration: ServerRegistration&lt;OpaqueCipherSuite&gt;,
-}
-
-<span class="kw">impl </span>User {
-    <span class="kw">pub fn </span>new(
-        user_id: UserId,
-        account_name: AccountName,
-        server_registration: ServerRegistration&lt;OpaqueCipherSuite&gt;,
-    ) -&gt; <span class="self">Self </span>{
-        User {
-            user_id,
-            account_name,
-            storage_key: <span class="prelude-val">None</span>,
-            secrets: StoredSecrets::default(),
-            server_registration,
-        }
-    }
-
-    <span class="kw">pub fn </span>into_parts(<span class="self">self</span>) -&gt; (ServerRegistration&lt;OpaqueCipherSuite&gt;, UserId) {
-        (<span class="self">self</span>.server_registration, <span class="self">self</span>.user_id)
     }
 }
 </code></pre></div>

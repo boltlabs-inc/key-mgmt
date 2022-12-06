@@ -292,6 +292,13 @@
 <span id="292">292</span>
 <span id="293">293</span>
 <span id="294">294</span>
+<span id="295">295</span>
+<span id="296">296</span>
+<span id="297">297</span>
+<span id="298">298</span>
+<span id="299">299</span>
+<span id="300">300</span>
+<span id="301">301</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Full implementation of the public API for the Lock Keeper client library.
 //!
 //! This API is designed for use with a local client application - that is, an
@@ -301,10 +308,10 @@
 
 </span><span class="kw">mod </span>authenticate;
 <span class="kw">mod </span>create_storage_key;
-<span class="kw">mod </span>generate;
+<span class="kw">mod </span>generate_secret;
 <span class="kw">mod </span>import;
 <span class="kw">mod </span>register;
-<span class="kw">mod </span>remote_generate;
+<span class="kw">mod </span>remote_generate_signing_key;
 <span class="kw">mod </span>remote_sign_bytes;
 <span class="kw">mod </span>retrieve;
 <span class="kw">mod </span>retrieve_audit_events;
@@ -317,7 +324,7 @@
     types::{
         audit_event::{AuditEvent, AuditEventOptions, EventType},
         database::user::AccountName,
-        operations::{retrieve::RetrieveContext, ClientAction, RequestMetadata},
+        operations::{retrieve_secret::RetrieveContext, ClientAction, RequestMetadata},
     },
 };
 <span class="kw">use </span>rand::{rngs::StdRng, SeedableRng};
@@ -326,7 +333,9 @@
 <span class="kw">use </span>tokio::sync::Mutex;
 <span class="kw">use </span>tracing::error;
 
-<span class="kw">pub use </span><span class="self">self</span>::{generate::GenerateResult, remote_generate::RemoteGenerateResult};
+<span class="kw">pub use </span><span class="self">self</span>::{
+    generate_secret::GenerateResult, remote_generate_signing_key::RemoteGenerateResult,
+};
 
 <span class="doccomment">/// Wrapper for secrets prepared for local storage
 </span><span class="attribute">#[derive(Debug, Deserialize, Serialize)]
@@ -439,18 +448,18 @@
     ///
     /// Calling this function on a signing key will generate an error.
     /// Output: If successful, returns the requested key material in byte form.
-    </span><span class="kw">pub async fn </span>export_key(
+    </span><span class="kw">pub async fn </span>export_secret(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         key_id: <span class="kw-2">&amp;</span>KeyId,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperResponse&lt;Export&gt;, LockKeeperClientError&gt; {
         <span class="comment">// Create channel: this will internally be a `retrieve` channel
-        </span><span class="kw">let </span>metadata = <span class="self">self</span>.create_metadata(ClientAction::Export);
+        </span><span class="kw">let </span>metadata = <span class="self">self</span>.create_metadata(ClientAction::ExportSecret);
         <span class="kw">let </span>client_channel = <span class="self">self
             </span>.create_authenticated_channel(<span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(), <span class="kw-2">&amp;</span>metadata)
             .<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="comment">// Get local-only secret
         </span><span class="kw">let </span>LockKeeperResponse { data, metadata } = <span class="self">self
-            </span>.handle_retrieve(client_channel, key_id, RetrieveContext::LocalOnly)
+            </span>.handle_retrieve_secret(client_channel, key_id, RetrieveContext::LocalOnly)
             .<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="kw">let </span>local_storage = data.ok_or(LockKeeperClientError::ExportFailed)<span class="question-mark">?</span>;
@@ -491,14 +500,15 @@
 
     <span class="doccomment">/// Generate an arbitrary secret client-side, store this secret in the key
     /// server.
-    </span><span class="kw">pub async fn </span>generate_and_store(
+    </span><span class="kw">pub async fn </span>generate_secret(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperResponse&lt;GenerateResult&gt;, LockKeeperClientError&gt; {
-        <span class="kw">let </span>metadata = <span class="self">self</span>.create_metadata(ClientAction::Generate);
+        <span class="kw">let </span>metadata = <span class="self">self</span>.create_metadata(ClientAction::GenerateSecret);
         <span class="kw">let </span>client_channel = <span class="self">self
             </span>.create_authenticated_channel(<span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(), <span class="kw-2">&amp;</span>metadata)
             .<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="self">self</span>.handle_generate(client_channel).<span class="kw">await
+
+        <span class="self">self</span>.handle_generate_secret(client_channel).<span class="kw">await
     </span>}
 
     <span class="doccomment">/// Import signing key material to the key server
@@ -514,30 +524,34 @@
             .<span class="kw">await
     </span>}
 
-    <span class="doccomment">/// Retrieve an arbitrary secret from the key server by [`KeyId`]
+    <span class="doccomment">/// Retrieve a secret from the key server by [`KeyId`]
     ///
     /// This operation will fail if it is called on a signing key.
-    </span><span class="kw">pub async fn </span>retrieve(
+    </span><span class="kw">pub async fn </span>retrieve_secret(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         key_id: <span class="kw-2">&amp;</span>KeyId,
         context: RetrieveContext,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperResponse&lt;<span class="prelude-ty">Option</span>&lt;LocalStorage&lt;Secret&gt;&gt;&gt;, LockKeeperClientError&gt; {
-        <span class="kw">let </span>metadata = <span class="self">self</span>.create_metadata(ClientAction::Retrieve);
+        <span class="kw">let </span>metadata = <span class="self">self</span>.create_metadata(ClientAction::RetrieveSecret);
         <span class="kw">let </span>client_channel = <span class="self">self
             </span>.create_authenticated_channel(<span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(), <span class="kw-2">&amp;</span>metadata)
             .<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="self">self</span>.handle_retrieve(client_channel, key_id, context).<span class="kw">await
+
+        <span class="self">self</span>.handle_retrieve_secret(client_channel, key_id, context)
+            .<span class="kw">await
     </span>}
 
     <span class="doccomment">/// Request that the server generate a new signing key.
     </span><span class="kw">pub async fn </span>remote_generate(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperResponse&lt;RemoteGenerateResult&gt;, LockKeeperClientError&gt; {
-        <span class="kw">let </span>metadata = <span class="self">self</span>.create_metadata(ClientAction::RemoteGenerate);
+        <span class="kw">let </span>metadata = <span class="self">self</span>.create_metadata(ClientAction::RemoteGenerateSigningKey);
         <span class="kw">let </span>client_channel = <span class="self">self
             </span>.create_authenticated_channel(<span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(), <span class="kw-2">&amp;</span>metadata)
             .<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="self">self</span>.handle_remote_generate(client_channel).<span class="kw">await
+
+        <span class="self">self</span>.handle_remote_generate_signing_key(client_channel)
+            .<span class="kw">await
     </span>}
 
     <span class="doccomment">/// Sign an arbitrary blob of bytes with a remotely generated
