@@ -111,7 +111,7 @@ args = ["test", "--all-features", "--doc", "--workspace"]
 [tasks.ci-docs]
 env = { "RUSTDOCFLAGS" = "-Dwarnings" }
 command = "cargo"
-args = ["doc", "--all-features", "--no-deps", "--workspace"]
+args = ["doc", "--all-features", "--no-deps", "--document-private-items", "--workspace"]
 
 # -- Utility Tasks --
 
