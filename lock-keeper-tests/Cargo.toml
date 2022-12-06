@@ -10,7 +10,7 @@ edition = "2021"
 lock-keeper = { version = "0.2.0", path = "../lock-keeper" }
 lock-keeper-key-server = { version = "0.2.0", path = "../lock-keeper-key-server" }
 lock-keeper-client = { version = "0.2.0", path = "../lock-keeper-client", features=["allow_explicit_certificate_trust"] }
-lock-keeper-mongodb = { version = "0.2.0", path = "../databases/lock-keeper-mongodb" }
+lock-keeper-mongodb = { version = "0.2.0", path = "../persistence/lock-keeper-mongodb" }
 
 # Workspace dependencies
 clap.workspace = true

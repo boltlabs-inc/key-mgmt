@@ -19,7 +19,7 @@ use uuid::Uuid;
 
 use crate::{
     database::DataStore,
-    server::{session_key_cache::SessionKeyCache, Context},
+    server::{session_key_cache::SessionCache, Context},
     LockKeeperServerError,
 };
 
@@ -98,7 +98,7 @@ pub(crate) trait Operation<DB: DataStore>: Sized + Send + 'static {
 fn check_authentication(
     action: &ClientAction,
     user_id: Option<&UserId>,
-    mut session_cache: impl DerefMut<Target = SessionKeyCache>,
+    mut session_cache: impl DerefMut<Target = dyn SessionCache>,
 ) -> Result<Option<OpaqueSessionKey>, LockKeeperServerError> {
     info!("Checking client's authentication...");
     match action {
@@ -111,8 +111,8 @@ fn check_authentication(
         _ => {
             let user_id = user_id.ok_or(LockKeeperServerError::InvalidAccount)?;
             let session_key = session_cache
-                .get_key(user_id.clone())
-                .map_err(LockKeeperServerError::SessionKeyCache)?;
+                .find_session(user_id.clone())
+                .map_err(LockKeeperServerError::SessionCache)?;
 
             info!("User is already authenticated.");
             Ok(Some(session_key))

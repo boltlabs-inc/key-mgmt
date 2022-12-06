@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use clap::Parser;
+use lk_session_hashmap::HashmapKeyCache;
 use lock_keeper_key_server::{config::Config, server::start_lock_keeper_server};
 use lock_keeper_mongodb::Database;
 
@@ -27,5 +28,8 @@ pub async fn main() {
     let config = Config::from_file(&cli.config, private_key_bytes).unwrap();
 
     let mongo = Database::connect(&config.database).await.unwrap();
-    start_lock_keeper_server(config, mongo).await.unwrap();
+    let hashmap_cache = HashmapKeyCache::new(config.session_timeout);
+    start_lock_keeper_server(config, mongo, hashmap_cache)
+        .await
+        .unwrap();
 }

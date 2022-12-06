@@ -1,7 +1,7 @@
 pub(crate) mod opaque_storage;
 mod operation;
 mod service;
-pub(crate) mod session_key_cache;
+pub mod session_key_cache;
 
 pub(crate) use operation::Operation;
 pub use service::start_lock_keeper_server;
@@ -14,7 +14,7 @@ use lock_keeper::{
     types::{Message, MessageStream},
 };
 
-use crate::{database::DataStore, server::session_key_cache::SessionKeyCache};
+use crate::{database::DataStore, server::session_key_cache::SessionCache};
 use rand::{rngs::StdRng, SeedableRng};
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -24,18 +24,22 @@ pub struct LockKeeperKeyServer<DB: DataStore> {
     config: Arc<Config>,
     db: Arc<DB>,
     rng: Arc<Mutex<StdRng>>,
-    session_key_cache: Arc<Mutex<SessionKeyCache>>,
+    session_key_cache: Arc<Mutex<dyn SessionCache>>,
 }
 
 impl<DB: DataStore> LockKeeperKeyServer<DB> {
-    pub fn new(db: Arc<DB>, config: Config) -> Result<Self, LockKeeperServerError> {
+    pub fn new(
+        db: Arc<DB>,
+        session_key_cache: Arc<Mutex<dyn SessionCache>>,
+        config: Config,
+    ) -> Result<Self, LockKeeperServerError> {
         let rng = StdRng::from_entropy();
 
         Ok(Self {
-            config: Arc::new(config.clone()),
+            config: Arc::new(config),
             db,
             rng: Arc::new(Mutex::new(rng)),
-            session_key_cache: Arc::new(Mutex::new(SessionKeyCache::new(config.session_timeout))),
+            session_key_cache,
         })
     }
 
@@ -56,7 +60,7 @@ pub(crate) struct Context<DB: DataStore> {
     pub rng: Arc<Mutex<StdRng>>,
     pub key_id: Option<KeyId>,
     /// Our user session keys are held in this cache after authentication.
-    pub session_key_cache: Arc<Mutex<SessionKeyCache>>,
+    pub session_key_cache: Arc<Mutex<dyn SessionCache>>,
 }
 
 #[tonic::async_trait]
