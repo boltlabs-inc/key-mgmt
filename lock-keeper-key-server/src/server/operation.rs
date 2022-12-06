@@ -1,7 +1,7 @@
 use async_trait::async_trait;
-use lock_keeper::crypto::OpaqueSessionKey;
 use lock_keeper::{
     constants::METADATA,
+    crypto::OpaqueSessionKey,
     infrastructure::channel::ServerChannel,
     types::{
         audit_event::EventStatus,
@@ -11,7 +11,7 @@ use lock_keeper::{
     },
 };
 use rand::rngs::StdRng;
-use std::{ops::DerefMut, thread, time::Duration};
+use std::{ops::DerefMut, time::Duration};
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status, Streaming};
 use tracing::{error, info, Instrument};

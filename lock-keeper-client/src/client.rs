@@ -194,6 +194,7 @@ impl LockKeeperClient {
             | ClientAction::ExportSigningKey
             | ClientAction::Generate
             | ClientAction::ImportSigningKey
+            | ClientAction::Logout
             | ClientAction::RemoteGenerate
             | ClientAction::RemoteSignBytes
             | ClientAction::Retrieve
@@ -258,7 +259,7 @@ impl LockKeeperClient {
     /// Outputs: None, if successful.
     pub(crate) async fn handle_logout(
         &self,
-        mut channel: ClientChannel,
+        mut channel: ClientChannel<StdRng>,
     ) -> Result<LockKeeperResponse<()>> {
         // Send UserId to server
         let request = logout_client::Request {
