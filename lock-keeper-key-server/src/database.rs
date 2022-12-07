@@ -47,11 +47,7 @@ pub trait DataStore: Send + Sync + 'static {
     // Secret
     /// Add a [`StoredSecret`] to a [`User`]'s list of arbitrary
     /// secrets
-    async fn add_user_secret(
-        &self,
-        user_id: &UserId,
-        secret: StoredSecret,
-    ) -> Result<(), Self::Error>;
+    async fn add_user_secret(&self, secret: StoredSecret) -> Result<(), Self::Error>;
 
     /// Get a [`User`]'s [`StoredSecret`] based on its [`KeyId`].
     /// A [`StoredSecret`] will only be returned if it matches the given

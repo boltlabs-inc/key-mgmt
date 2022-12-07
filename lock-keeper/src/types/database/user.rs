@@ -6,14 +6,16 @@ use crate::{
     LockKeeperError,
 };
 
-use bson::Bson;
 use opaque_ke::ServerRegistration;
 use rand::{CryptoRng, Rng, RngCore};
 use serde::{Deserialize, Serialize};
-use std::{fmt::Display, str::FromStr, vec::IntoIter};
-use uuid::Uuid;
+use std::{
+    array::IntoIter,
+    fmt::{Debug, Display},
+    str::FromStr,
+};
 
-use super::secrets::StoredSecret;
+use super::HexBytes;
 
 /// One user with a set of arbitrary secrets and a [`ServerRegistration`] to
 /// authenticate with.
@@ -22,7 +24,6 @@ pub struct User {
     pub user_id: UserId,
     pub account_name: AccountName,
     pub storage_key: Option<Encrypted<StorageKey>>,
-    pub secrets: Vec<StoredSecret>,
     pub server_registration: ServerRegistration<OpaqueCipherSuite>,
 }
 
@@ -36,7 +37,6 @@ impl User {
             user_id,
             account_name,
             storage_key: None,
-            secrets: Vec::new(),
             server_registration,
         }
     }
@@ -47,19 +47,19 @@ impl User {
 }
 
 /// Unique ID for a user.
-#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
-pub struct UserId(String);
+/// Wrapped in a `Box` to avoid stack overflows during heavy traffic.
+#[derive(Clone, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
+#[serde(try_from = "HexBytes", into = "HexBytes")]
+pub struct UserId(Box<[u8; 16]>);
 
 impl UserId {
     pub fn new(rng: &mut (impl CryptoRng + RngCore)) -> Result<Self, LockKeeperError> {
-        // Generate a UUID from bytes
+        // Generate random bytes
         let mut id = [0_u8; 16];
         rng.try_fill(&mut id)
             .map_err(|_| CryptoError::RandomNumberGeneratorFailed)?;
-        let uuid = Uuid::from_bytes(id);
 
-        // Store the UUID as a string to simplify database queries
-        Ok(Self(uuid.to_string()))
+        Ok(Self(Box::new(id)))
     }
 
     pub fn as_bytes(&self) -> &[u8] {
@@ -73,22 +73,38 @@ impl UserId {
 
 impl IntoIterator for UserId {
     type Item = u8;
-    type IntoIter = IntoIter<u8>;
+    type IntoIter = IntoIter<u8, 16>;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.0.into_bytes().into_iter()
+        self.0.into_iter()
+    }
+}
+
+impl Debug for UserId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let hex = hex::encode(*self.0);
+        f.debug_tuple("UserId").field(&hex).finish()
     }
 }
 
 impl Display for UserId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self.0)
+        let hex = hex::encode(*self.0);
+        write!(f, "{hex}")
     }
 }
 
-impl From<UserId> for Bson {
-    fn from(user_id: UserId) -> Self {
-        Bson::String(user_id.0)
+impl From<UserId> for HexBytes {
+    fn from(key_id: UserId) -> Self {
+        (*key_id.0).into()
+    }
+}
+
+impl TryFrom<HexBytes> for UserId {
+    type Error = LockKeeperError;
+
+    fn try_from(bytes: HexBytes) -> Result<Self, Self::Error> {
+        Ok(UserId(Box::new(bytes.try_into()?)))
     }
 }
 

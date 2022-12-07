@@ -54,13 +54,16 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for ImportSigningKey {
                 .encrypt_signing_key_pair(&mut *rng, signing_key)?
         };
 
-        let secret =
-            StoredSecret::from_remote_signing_key_pair(key_id.clone(), encrypted_key_pair)?;
+        let secret = StoredSecret::from_remote_signing_key_pair(
+            key_id.clone(),
+            encrypted_key_pair,
+            request.user_id,
+        )?;
 
         // Check validity of ciphertext and store in DB
         context
             .db
-            .add_user_secret(&request.user_id, secret)
+            .add_user_secret(secret)
             .await
             .map_err(LockKeeperServerError::database)?;
 

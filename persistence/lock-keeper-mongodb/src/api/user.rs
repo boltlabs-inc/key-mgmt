@@ -53,7 +53,8 @@ impl Database {
     /// Find a [`User`] by their machine-readable [`UserId`].
     pub(crate) async fn find_user_by_id(&self, user_id: &UserId) -> Result<Option<User>, Error> {
         let collection = self.handle.collection::<User>(USERS);
-        let query = doc! { USER_ID: user_id };
+        let user_id_bson = mongodb::bson::to_bson(user_id)?;
+        let query = doc! { USER_ID: user_id_bson };
         let user = collection.find_one(query, None).await?;
         Ok(user)
     }
@@ -61,7 +62,8 @@ impl Database {
     /// Delete a [`User`] by their [`UserId`]
     pub(crate) async fn delete_user(&self, user_id: &UserId) -> Result<(), Error> {
         let collection = self.handle.collection::<User>(USERS);
-        let query = doc! { USER_ID: user_id };
+        let user_id_bson = mongodb::bson::to_bson(user_id)?;
+        let query = doc! { USER_ID: user_id_bson };
         let result = collection.delete_one(query, None).await?;
 
         if result.deleted_count == 0 {
@@ -86,7 +88,8 @@ impl Database {
         let storage_key_bson = mongodb::bson::to_bson(&storage_key)?;
 
         let collection = self.handle.collection::<User>(USERS);
-        let filter = doc! { USER_ID: user_id };
+        let user_id_bson = mongodb::bson::to_bson(user_id)?;
+        let filter = doc! { USER_ID: user_id_bson };
         let update = doc! { "$set": { STORAGE_KEY: storage_key_bson } };
 
         let user = collection.find_one_and_update(filter, update, None).await?;

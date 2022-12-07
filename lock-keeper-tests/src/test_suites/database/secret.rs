@@ -96,8 +96,8 @@ async fn add_arbitrary_secret(
     let key_id = KeyId::generate(rng, user_id)?;
     let (_, encrypted) = Secret::create_and_encrypt(rng, storage_key, user_id, &key_id)?;
 
-    let secret = StoredSecret::from_arbitrary_secret(key_id.clone(), encrypted)?;
-    db.add_user_secret(user_id, secret).await?;
+    let secret = StoredSecret::from_arbitrary_secret(key_id.clone(), user_id.clone(), encrypted)?;
+    db.add_user_secret(secret).await?;
 
     Ok(key_id)
 }
@@ -113,8 +113,12 @@ async fn import_signing_key(db: &Database, rng: &mut StdRng, user_id: &UserId) -
     // encrypt key_pair
     let encrypted_key_pair = encryption_key.encrypt_signing_key_pair(rng, signing_key)?;
 
-    let secret = StoredSecret::from_remote_signing_key_pair(key_id.clone(), encrypted_key_pair)?;
-    db.add_user_secret(user_id, secret).await?;
+    let secret = StoredSecret::from_remote_signing_key_pair(
+        key_id.clone(),
+        encrypted_key_pair,
+        user_id.clone(),
+    )?;
+    db.add_user_secret(secret).await?;
 
     Ok(key_id)
 }
@@ -132,7 +136,11 @@ async fn remote_generate_signing_key(
     // encrypt key_pair
     let encrypted_key_pair = encryption_key.encrypt_signing_key_pair(rng, signing_key)?;
 
-    let secret = StoredSecret::from_remote_signing_key_pair(key_id.clone(), encrypted_key_pair)?;
-    db.add_user_secret(user_id, secret).await?;
+    let secret = StoredSecret::from_remote_signing_key_pair(
+        key_id.clone(),
+        encrypted_key_pair,
+        user_id.clone(),
+    )?;
+    db.add_user_secret(secret).await?;
     Ok(key_id)
 }

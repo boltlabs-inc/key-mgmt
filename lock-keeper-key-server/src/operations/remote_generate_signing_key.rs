@@ -57,13 +57,16 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for RemoteGenerateSigni
                 .encrypt_signing_key_pair(&mut *rng, key_pair)?
         };
 
-        let secret =
-            StoredSecret::from_remote_signing_key_pair(key_id.clone(), encrypted_key_pair)?;
+        let secret = StoredSecret::from_remote_signing_key_pair(
+            key_id.clone(),
+            encrypted_key_pair,
+            request.user_id,
+        )?;
 
         // Store key in database
         context
             .db
-            .add_user_secret(&request.user_id, secret)
+            .add_user_secret(secret)
             .await
             .map_err(LockKeeperServerError::database)?;
 
