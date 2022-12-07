@@ -150,6 +150,17 @@
 <span id="150">150</span>
 <span id="151">151</span>
 <span id="152">152</span>
+<span id="153">153</span>
+<span id="154">154</span>
+<span id="155">155</span>
+<span id="156">156</span>
+<span id="157">157</span>
+<span id="158">158</span>
+<span id="159">159</span>
+<span id="160">160</span>
+<span id="161">161</span>
+<span id="162">162</span>
+<span id="163">163</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{constants::USERS, error::Error};
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>lock_keeper::{
@@ -175,12 +186,15 @@
     Client, Database <span class="kw">as </span>MongoDB, IndexModel,
 };
 <span class="kw">use </span>opaque_ke::ServerRegistration;
+<span class="kw">use </span>tracing::instrument;
 
 <span class="kw">mod </span>audit_event;
 <span class="kw">mod </span>secret;
 <span class="kw">mod </span>user;
 
-<span class="attribute">#[derive(Debug, Clone)]
+<span class="doccomment">/// Our wrapper around the [`MongoDB`] type. We implement the trait
+/// [`DataStore`] for this type.
+</span><span class="attribute">#[derive(Debug, Clone)]
 </span><span class="kw">pub struct </span>Database {
     handle: MongoDB,
 }
@@ -223,7 +237,8 @@
 </span><span class="kw">impl </span>DataStore <span class="kw">for </span>Database {
     <span class="kw">type </span>Error = Error;
 
-    <span class="kw">async fn </span>create_audit_event(
+    <span class="attribute">#[instrument(skip_all, err(Debug), fields(actor, secret_id, action, status))]
+    </span><span class="kw">async fn </span>create_audit_event(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         actor: <span class="kw-2">&amp;</span>AccountName,
         secret_id: <span class="kw-2">&amp;</span><span class="prelude-ty">Option</span>&lt;KeyId&gt;,
@@ -235,7 +250,8 @@
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">async fn </span>find_audit_events(
+    <span class="attribute">#[instrument(skip_all, err(Debug), fields(account_name, event_type, options))]
+    </span><span class="kw">async fn </span>find_audit_events(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         account_name: <span class="kw-2">&amp;</span>AccountName,
         event_type: EventType,
@@ -247,7 +263,8 @@
         <span class="prelude-val">Ok</span>(audit_events)
     }
 
-    <span class="kw">async fn </span>add_user_secret(
+    <span class="attribute">#[instrument(skip_all, err(Debug), fields(user_id))]
+    </span><span class="kw">async fn </span>add_user_secret(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         user_id: <span class="kw-2">&amp;</span>UserId,
         secret: StoredSecret,
@@ -256,7 +273,8 @@
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">async fn </span>get_user_secret(
+    <span class="attribute">#[instrument(skip_all, err(Debug), fields(user_id, key_id))]
+    </span><span class="kw">async fn </span>get_user_secret(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         user_id: <span class="kw-2">&amp;</span>UserId,
         key_id: <span class="kw-2">&amp;</span>KeyId,
@@ -278,22 +296,26 @@
         <span class="prelude-val">Ok</span>(user)
     }
 
-    <span class="kw">async fn </span>find_user(<span class="kw-2">&amp;</span><span class="self">self</span>, account_name: <span class="kw-2">&amp;</span>AccountName) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;User&gt;, <span class="self">Self</span>::Error&gt; {
+    <span class="attribute">#[instrument(skip_all, err(Debug), fields(account_name))]
+    </span><span class="kw">async fn </span>find_user(<span class="kw-2">&amp;</span><span class="self">self</span>, account_name: <span class="kw-2">&amp;</span>AccountName) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;User&gt;, <span class="self">Self</span>::Error&gt; {
         <span class="kw">let </span>opt_user = <span class="self">self</span>.find_user(account_name).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(opt_user)
     }
 
-    <span class="kw">async fn </span>find_user_by_id(<span class="kw-2">&amp;</span><span class="self">self</span>, user_id: <span class="kw-2">&amp;</span>UserId) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;User&gt;, <span class="self">Self</span>::Error&gt; {
+    <span class="attribute">#[instrument(skip_all, err(Debug), fields(user_id))]
+    </span><span class="kw">async fn </span>find_user_by_id(<span class="kw-2">&amp;</span><span class="self">self</span>, user_id: <span class="kw-2">&amp;</span>UserId) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;User&gt;, <span class="self">Self</span>::Error&gt; {
         <span class="kw">let </span>opt_user = <span class="self">self</span>.find_user_by_id(user_id).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(opt_user)
     }
 
-    <span class="kw">async fn </span>delete_user(<span class="kw-2">&amp;</span><span class="self">self</span>, user_id: <span class="kw-2">&amp;</span>UserId) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt; {
+    <span class="attribute">#[instrument(skip_all, err(Debug), fields(user_id))]
+    </span><span class="kw">async fn </span>delete_user(<span class="kw-2">&amp;</span><span class="self">self</span>, user_id: <span class="kw-2">&amp;</span>UserId) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt; {
         <span class="self">self</span>.delete_user(user_id).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">async fn </span>set_storage_key(
+    <span class="attribute">#[instrument(skip_all, err(Debug), fields(user_id))]
+    </span><span class="kw">async fn </span>set_storage_key(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         user_id: <span class="kw-2">&amp;</span>UserId,
         storage_key: Encrypted&lt;StorageKey&gt;,

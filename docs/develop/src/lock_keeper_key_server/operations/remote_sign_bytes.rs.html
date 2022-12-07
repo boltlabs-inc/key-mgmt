@@ -41,7 +41,20 @@
 <span id="41">41</span>
 <span id="42">42</span>
 <span id="43">43</span>
-</pre><pre class="rust"><code><span class="kw">use crate</span>::{
+<span id="44">44</span>
+<span id="45">45</span>
+<span id="46">46</span>
+<span id="47">47</span>
+<span id="48">48</span>
+<span id="49">49</span>
+<span id="50">50</span>
+<span id="51">51</span>
+<span id="52">52</span>
+<span id="53">53</span>
+<span id="54">54</span>
+</pre><pre class="rust"><code><span class="doccomment">//! This operation allows client to specify a key ID for a key that was remotely
+//! generated on the server and use this key to sign a message.
+</span><span class="kw">use crate</span>::{
     server::{Context, Operation},
     LockKeeperServerError,
 };
@@ -54,17 +67,25 @@
     types::operations::remote_sign_bytes::{client, server},
 };
 <span class="kw">use </span>rand::rngs::StdRng;
+<span class="kw">use </span>tracing::{info, instrument};
 
 <span class="attribute">#[derive(Debug)]
 </span><span class="kw">pub struct </span>RemoteSignBytes;
 
 <span class="attribute">#[async_trait]
 </span><span class="kw">impl</span>&lt;DB: DataStore&gt; Operation&lt;DB&gt; <span class="kw">for </span>RemoteSignBytes {
-    <span class="kw">async fn </span>operation(
+    <span class="doccomment">/// Remotely sign protocol:
+    /// 1) Receive remote sign request from client.
+    /// 2) Look up signing key based on client-provided key ID.
+    /// 3) Use signing key to sign client-provided data.
+    /// 4) Respond to client with signed data, the signature.
+    </span><span class="attribute">#[instrument(skip_all, err(Debug))]
+    </span><span class="kw">async fn </span>operation(
         <span class="self">self</span>,
         channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;StdRng&gt;,
         context: <span class="kw-2">&amp;mut </span>Context&lt;DB&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
+        <span class="macro">info!</span>(<span class="string">&quot;Starting remote sign protocol.&quot;</span>);
         <span class="kw">let </span>request: client::RequestRemoteSign = channel.receive().<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">let </span>key_pair: PlaceholderEncryptedSigningKeyPair = context
             .db
@@ -72,15 +93,16 @@
             .<span class="kw">await
             </span>.map_err(LockKeeperServerError::database)<span class="question-mark">?
             </span>.try_into()<span class="question-mark">?</span>;
+        <span class="macro">info!</span>(<span class="string">&quot;Signing key found. Signing...&quot;</span>);
 
         <span class="comment">// Pretend to decrypt our placeholder type
         </span><span class="kw">let </span>key: SigningKeyPair = key_pair.try_into()<span class="question-mark">?</span>;
 
         <span class="kw">let </span>signature = request.data.sign(<span class="kw-2">&amp;</span>key);
-
         <span class="kw">let </span>response = server::ReturnSignature { signature };
         channel.send(response).<span class="kw">await</span><span class="question-mark">?</span>;
 
+        <span class="macro">info!</span>(<span class="string">&quot;Successfully completed remote sign protocol.&quot;</span>);
         <span class="prelude-val">Ok</span>(())
     }
 }

@@ -37,7 +37,7 @@
 
 <span class="attribute">#[derive(Debug, Error, PartialOrd, PartialEq, Eq)]
 </span><span class="kw">pub enum </span>SessionCacheError {
-    <span class="attribute">#[error(<span class="string">&quot;TODO&quot;</span>)]
+    <span class="attribute">#[error(<span class="string">&quot;Session key already exists for this user.&quot;</span>)]
     </span>SessionKeyExists,
     <span class="attribute">#[error(<span class="string">&quot;Session key has expired.&quot;</span>)]
     </span>ExpiredSessionKey,

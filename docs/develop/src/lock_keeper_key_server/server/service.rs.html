@@ -114,6 +114,7 @@
 <span id="114">114</span>
 <span id="115">115</span>
 <span id="116">116</span>
+<span id="117">117</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{
     config::Config,
     database::DataStore,
@@ -139,13 +140,13 @@
     db: DB,
     session_key_cache: S,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
-    <span class="macro">tracing::info!</span>(<span class="string">&quot;Starting Lock Keeper key server&quot;</span>);
+    <span class="macro">info!</span>(<span class="string">&quot;Starting Lock Keeper key server&quot;</span>);
     <span class="kw">let </span>db = Arc::new(db);
     <span class="kw">let </span>session_key_cache = Arc::new(Mutex::new(session_key_cache));
     <span class="comment">// Collect the futures for the result of running each specified server
     </span><span class="kw">let </span>server_future = start_service(<span class="kw-2">&amp;</span>config, db, session_key_cache);
 
-    <span class="macro">tracing::info!</span>(<span class="string">&quot;Lock Keeper key server started&quot;</span>);
+    <span class="macro">info!</span>(<span class="string">&quot;Lock Keeper key server started&quot;</span>);
 
     <span class="comment">// Wait for the server to finish
     </span><span class="macro">tokio::select! </span>{
@@ -177,6 +178,7 @@
     <span class="kw">let </span>rpc_server = LockKeeperKeyServer::new(db, session_key_cache, config)<span class="question-mark">?</span>;
     <span class="kw">let </span>addr = rpc_server.config.address;
     <span class="kw">let </span>port = rpc_server.config.port;
+    <span class="macro">info!</span>(<span class="question-mark">?</span>addr, <span class="question-mark">?</span>port, <span class="string">&quot;Starting server with:&quot;</span>);
 
     <span class="kw">let </span>svc = Server::builder()
         .add_service(LockKeeperRpcServer::new(rpc_server))
@@ -191,14 +193,14 @@
     <span class="comment">// Spawn a task to accept connections
     </span><span class="kw">let _ </span>= tokio::spawn(<span class="kw">async move </span>{
         <span class="kw">loop </span>{
-            <span class="kw">let </span>(conn, <span class="kw">_</span>) = <span class="kw">match </span>listener.accept().<span class="kw">await </span>{
+            <span class="kw">let </span>(conn, client) = <span class="kw">match </span>listener.accept().<span class="kw">await </span>{
                 <span class="prelude-val">Ok</span>(incoming) =&gt; incoming,
                 <span class="prelude-val">Err</span>(e) =&gt; {
                     <span class="macro">error!</span>(<span class="string">&quot;Error accepting connection: {}&quot;</span>, e);
                     <span class="kw">continue</span>;
                 }
             };
-
+            <span class="macro">info!</span>(<span class="question-mark">?</span>client, <span class="string">&quot;Accepted Connection from:&quot;</span>);
             <span class="kw">let </span>http = http.clone();
             <span class="kw">let </span>tls_acceptor = tls_acceptor.clone();
             <span class="kw">let </span>svc = svc.clone();

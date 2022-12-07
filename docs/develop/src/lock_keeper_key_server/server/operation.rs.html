@@ -145,11 +145,20 @@
 <span id="145">145</span>
 <span id="146">146</span>
 <span id="147">147</span>
+<span id="148">148</span>
+<span id="149">149</span>
+<span id="150">150</span>
+<span id="151">151</span>
+<span id="152">152</span>
+<span id="153">153</span>
+<span id="154">154</span>
+<span id="155">155</span>
+<span id="156">156</span>
 </pre><pre class="rust"><code><span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>lock_keeper::{
     constants::METADATA,
     crypto::OpaqueSessionKey,
-    infrastructure::channel::ServerChannel,
+    infrastructure::{channel::ServerChannel, logging},
     types::{
         audit_event::EventStatus,
         database::user::UserId,
@@ -161,7 +170,7 @@
 <span class="kw">use </span>std::{ops::DerefMut, time::Duration};
 <span class="kw">use </span>tokio_stream::wrappers::ReceiverStream;
 <span class="kw">use </span>tonic::{Request, Response, Status, Streaming};
-<span class="kw">use </span>tracing::{error, info, Instrument};
+<span class="kw">use </span>tracing::{error, info, instrument, Instrument};
 <span class="kw">use </span>uuid::Uuid;
 
 <span class="kw">use crate</span>::{
@@ -185,13 +194,18 @@
     /// request through the logic defined by the `Operation::operation` method.
     /// Any errors returned by the operation are logged and an appropriate error
     /// message is sent to the client.
+    </span><span class="attribute">#[instrument(skip_all, err(Debug), fields(action, user_id, request_id))]
     </span><span class="kw">async fn </span>handle_request(
         <span class="self">self</span>,
         <span class="kw-2">mut </span>context: Context&lt;DB&gt;,
         request: Request&lt;Streaming&lt;Message&gt;&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;MessageStream&gt;, Status&gt; {
+        <span class="kw">let </span>request_id = Uuid::new_v4();
+        logging::record_field(<span class="string">&quot;request_id&quot;</span>, <span class="kw-2">&amp;</span>request_id);
         <span class="macro">info!</span>(<span class="string">&quot;Handling new client request.&quot;</span>);
+
         <span class="kw">let </span>(<span class="kw-2">mut </span>channel, rx) = ServerChannel::create(context.rng.clone(), request, <span class="prelude-val">None</span>)<span class="question-mark">?</span>;
+
         <span class="kw">let </span>session_key_option = {
             <span class="kw">let </span>session_cache = context.session_key_cache.lock().<span class="kw">await</span>;
             check_authentication(
@@ -203,7 +217,11 @@
         <span class="kw">if let </span><span class="prelude-val">Some</span>(session_key) = session_key_option {
             channel.try_upgrade_to_authenticated(session_key)<span class="question-mark">?</span>;
         }
-        <span class="macro">tracing::info!</span>(<span class="string">&quot;Handling action: {:?}&quot;</span>, channel.metadata().action());
+
+        logging::record_field(<span class="string">&quot;action&quot;</span>, <span class="kw-2">&amp;</span>channel.action());
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(user_id) = channel.user_id() {
+            logging::record_field(<span class="string">&quot;user_id&quot;</span>, <span class="kw-2">&amp;</span>user_id);
+        }
 
         <span class="kw">let _ </span>= tokio::spawn(
             <span class="kw">async move </span>{
@@ -227,14 +245,10 @@
             .in_current_span(),
         );
 
-        <span class="kw">let </span>metadata = ResponseMetadata {
-            request_id: Uuid::new_v4(),
-        };
-
         <span class="kw">let </span><span class="kw-2">mut </span>response = Response::new(ReceiverStream::new(rx));
         <span class="kw">let _ </span>= response
             .metadata_mut()
-            .insert(METADATA, metadata.try_into()<span class="question-mark">?</span>);
+            .insert(METADATA, ResponseMetadata { request_id }.try_into()<span class="question-mark">?</span>);
 
         <span class="prelude-val">Ok</span>(response)
     }
@@ -242,6 +256,7 @@
 
 <span class="doccomment">/// Most operations require an authenticated session. Check if there is a valid
 /// session.
+</span><span class="attribute">#[instrument(skip_all, err(Debug), fields(action, user_id))]
 </span><span class="kw">fn </span>check_authentication(
     action: <span class="kw-2">&amp;</span>ClientAction,
     user_id: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>UserId&gt;,
@@ -261,13 +276,15 @@
                 .find_session(user_id.clone())
                 .map_err(LockKeeperServerError::SessionCache)<span class="question-mark">?</span>;
 
+            logging::record_field(<span class="string">&quot;user_id&quot;</span>, <span class="kw-2">&amp;</span>user_id);
             <span class="macro">info!</span>(<span class="string">&quot;User is already authenticated.&quot;</span>);
             <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(session_key))
         }
     }
 }
 
-<span class="kw">async fn </span>handle_error(channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;StdRng&gt;, e: LockKeeperServerError) {
+<span class="attribute">#[instrument(skip_all, fields(e))]
+</span><span class="kw">async fn </span>handle_error(channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;StdRng&gt;, e: LockKeeperServerError) {
     <span class="macro">error!</span>(<span class="string">&quot;{}&quot;</span>, e);
     <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = channel.send_error(e).<span class="kw">await </span>{
         <span class="macro">error!</span>(<span class="string">&quot;Problem while sending error over channel: {}&quot;</span>, e);
@@ -275,6 +292,7 @@
 }
 
 <span class="doccomment">/// Log the given action as an audit event.
+</span><span class="attribute">#[instrument(skip_all, fields(status))]
 </span><span class="kw">async fn </span>audit_event&lt;DB: DataStore&gt;(
     channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;StdRng&gt;,
     context: <span class="kw-2">&amp;</span>Context&lt;DB&gt;,

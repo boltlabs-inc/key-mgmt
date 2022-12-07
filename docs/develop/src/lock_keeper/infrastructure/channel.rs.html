@@ -231,6 +231,19 @@
 <span id="231">231</span>
 <span id="232">232</span>
 <span id="233">233</span>
+<span id="234">234</span>
+<span id="235">235</span>
+<span id="236">236</span>
+<span id="237">237</span>
+<span id="238">238</span>
+<span id="239">239</span>
+<span id="240">240</span>
+<span id="241">241</span>
+<span id="242">242</span>
+<span id="243">243</span>
+<span id="244">244</span>
+<span id="245">245</span>
+<span id="246">246</span>
 </pre><pre class="rust"><code><span class="kw">use </span>rand::{CryptoRng, RngCore};
 <span class="kw">use </span>std::{fmt::Debug, sync::Arc};
 <span class="kw">use </span>tokio::sync::{
@@ -244,7 +257,10 @@
     constants::METADATA,
     crypto::{Encrypted, OpaqueSessionKey},
     rpc::Message,
-    types::operations::{RequestMetadata, ResponseMetadata},
+    types::{
+        database::user::UserId,
+        operations::{ClientAction, RequestMetadata, ResponseMetadata},
+    },
     LockKeeperError,
     LockKeeperError::AlreadyAuthenticated,
 };
@@ -253,6 +269,16 @@
 
 <span class="kw">pub type </span>ServerChannel&lt;G&gt; = Channel&lt;<span class="prelude-ty">Result</span>&lt;Message, Status&gt;, RequestMetadata, G&gt;;
 <span class="kw">pub type </span>ClientChannel&lt;G&gt; = Channel&lt;Message, ResponseMetadata, G&gt;;
+
+<span class="kw">impl</span>&lt;G: CryptoRng + RngCore&gt; ServerChannel&lt;G&gt; {
+    <span class="kw">pub fn </span>user_id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>UserId&gt; {
+        <span class="self">self</span>.metadata.user_id().as_ref()
+    }
+
+    <span class="kw">pub fn </span>action(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ClientAction {
+        <span class="self">self</span>.metadata.action()
+    }
+}
 
 <span class="doccomment">/// A two-way channel between a client and server used to communicate with
 /// `Message` objects. `Channel` uses `tonic` types to receive messages. It can

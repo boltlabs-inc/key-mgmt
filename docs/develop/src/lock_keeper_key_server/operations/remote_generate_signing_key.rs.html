@@ -57,7 +57,20 @@
 <span id="57">57</span>
 <span id="58">58</span>
 <span id="59">59</span>
-</pre><pre class="rust"><code><span class="kw">use crate</span>::{
+<span id="60">60</span>
+<span id="61">61</span>
+<span id="62">62</span>
+<span id="63">63</span>
+<span id="64">64</span>
+<span id="65">65</span>
+<span id="66">66</span>
+<span id="67">67</span>
+<span id="68">68</span>
+<span id="69">69</span>
+<span id="70">70</span>
+</pre><pre class="rust"><code><span class="doccomment">//! Client has asked server to generate a new signing key and store it in the
+//! server.
+</span><span class="kw">use crate</span>::{
     server::{Context, Operation},
     LockKeeperServerError,
 };
@@ -73,17 +86,25 @@
     },
 };
 <span class="kw">use </span>rand::rngs::StdRng;
+<span class="kw">use </span>tracing::{info, instrument};
 
 <span class="attribute">#[derive(Debug)]
 </span><span class="kw">pub struct </span>RemoteGenerateSigningKey;
 
 <span class="attribute">#[async_trait]
 </span><span class="kw">impl</span>&lt;DB: DataStore&gt; Operation&lt;DB&gt; <span class="kw">for </span>RemoteGenerateSigningKey {
-    <span class="kw">async fn </span>operation(
+    <span class="doccomment">/// Remote generation protocol works as follows:
+    /// 1) Receive remote generate message from client.
+    /// 2) Generate key ID and new signing key pair (private and public key).
+    /// 3) Store key pair in our database.
+    /// 4) Reply to client with public key and key ID.
+    </span><span class="attribute">#[instrument(skip_all, err(Debug))]
+    </span><span class="kw">async fn </span>operation(
         <span class="self">self</span>,
         channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;StdRng&gt;,
         context: <span class="kw-2">&amp;mut </span>Context&lt;DB&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
+        <span class="macro">info!</span>(<span class="string">&quot;Starting remote generate protocol.&quot;</span>);
         <span class="kw">let </span>request: client::RequestRemoteGenerate = channel.receive().<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="comment">// Create a scope for rng mutex
@@ -91,7 +112,7 @@
             <span class="kw">let </span><span class="kw-2">mut </span>rng = context.rng.lock().<span class="kw">await</span>;
             <span class="kw">let </span>key_id = KeyId::generate(<span class="kw-2">&amp;mut *</span>rng, <span class="kw-2">&amp;</span>request.user_id)<span class="question-mark">?</span>;
             <span class="kw">let </span>key_pair = SigningKeyPair::remote_generate(<span class="kw-2">&amp;mut *</span>rng, <span class="kw-2">&amp;</span>request.user_id, <span class="kw-2">&amp;</span>key_id);
-
+            <span class="macro">info!</span>(<span class="string">&quot;Generated key ID: {:?}&quot;</span>, key_id);
             (key_id, key_pair)
         };
 
@@ -109,10 +130,11 @@
             .<span class="kw">await
             </span>.map_err(LockKeeperServerError::database)<span class="question-mark">?</span>;
 
-        <span class="kw">let </span>response = server::ReturnKeyId { key_id, public_key };
+        channel
+            .send(server::ReturnKeyId { key_id, public_key })
+            .<span class="kw">await</span><span class="question-mark">?</span>;
 
-        channel.send(response).<span class="kw">await</span><span class="question-mark">?</span>;
-
+        <span class="macro">info!</span>(<span class="string">&quot;Successfully completed remote generate protocol.&quot;</span>);
         <span class="prelude-val">Ok</span>(())
     }
 }

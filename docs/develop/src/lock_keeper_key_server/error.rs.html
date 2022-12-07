@@ -109,7 +109,12 @@
 <span id="109">109</span>
 <span id="110">110</span>
 <span id="111">111</span>
+<span id="112">112</span>
+<span id="113">113</span>
+<span id="114">114</span>
+<span id="115">115</span>
 </pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::server::session_key_cache::SessionCacheError;
+<span class="kw">use </span>std::path::PathBuf;
 <span class="kw">use </span>thiserror::Error;
 <span class="kw">use </span>tonic::Status;
 
@@ -126,9 +131,11 @@
     <span class="comment">// Infrastructure errors
     </span><span class="attribute">#[error(<span class="string">&quot;Invalid OPAQUE directory&quot;</span>)]
     </span>InvalidOpaqueDirectory,
+    <span class="attribute">#[error(<span class="string">&quot;Invalid log file path: {0}&quot;</span>)]
+    </span>InvalidLogFilePath(PathBuf),
 
     <span class="comment">// Protocol errors
-    </span><span class="attribute">#[error(<span class="string">&quot;Account already registered&quot;</span>)]
+    </span><span class="attribute">#[error(<span class="string">&quot;Account already registered.&quot;</span>)]
     </span>AccountAlreadyRegistered,
     <span class="attribute">#[error(<span class="string">&quot;Invalid account&quot;</span>)]
     </span>InvalidAccount,
@@ -204,6 +211,7 @@
 
             <span class="comment">// Errors that the client should not see
             </span>LockKeeperServerError::MissingService
+            | LockKeeperServerError::InvalidLogFilePath(<span class="kw">_</span>)
             | LockKeeperServerError::SessionCache(<span class="kw">_</span>)
             | LockKeeperServerError::Hyper(<span class="kw">_</span>)
             | LockKeeperServerError::Io(<span class="kw">_</span>)
