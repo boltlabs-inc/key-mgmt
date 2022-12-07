@@ -124,10 +124,12 @@ private_key = "dev/test-pki/gen/certs/client.key"
 const SERVER_CONFIG_NO_KEY: &str = r#"
 address = "127.0.0.1"
 port = 1114
-certificate_chain = "dev/test-pki/gen/certs/server.chain"
-client_auth = true
 opaque_path = "dev/opaque"
 opaque_server_key = "dev/opaque/server_setup"
+
+[tls_config]
+certificate_chain = "dev/test-pki/gen/certs/server.chain"
+client_auth = true
 
 [database]
 mongodb_uri = 'mongodb://localhost:27017'
@@ -141,11 +143,13 @@ all_logs_file_name = "/app/logs/all.log"
 const SERVER_CONFIG_WITH_KEY: &str = r#"
 address = "127.0.0.1"
 port = 1114
-certificate_chain = "dev/test-pki/gen/certs/server.chain"
-private_key = "dev/test-pki/gen/certs/server.key"
-client_auth = true
 opaque_path = "dev/opaque"
 opaque_server_key = "dev/opaque/server_setup"
+
+[tls_config]
+private_key = "dev/test-pki/gen/certs/server.key"
+certificate_chain = "dev/test-pki/gen/certs/server.chain"
+client_auth = true
 
 [database]
 mongodb_uri = 'mongodb://localhost:27017'

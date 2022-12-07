@@ -21,7 +21,7 @@ pub struct Config {
     pub address: IpAddr,
     pub port: u16,
     pub session_timeout: Duration,
-    pub tls_config: ServerConfig,
+    pub tls_config: Option<ServerConfig>,
     pub opaque_server_setup: ServerSetup<OpaqueCipherSuite, PrivateKey<Ristretto255>>,
     pub database: DatabaseSpec,
     pub logging: LoggingConfig,
@@ -43,11 +43,16 @@ impl Config {
     ) -> Result<Self, LockKeeperServerError> {
         let mut rng = StdRng::from_entropy();
 
+        let tls_config = config
+            .tls_config
+            .map(|tc| tc.into_rustls_config(private_key_bytes))
+            .transpose()?;
+
         Ok(Self {
             address: config.address,
             port: config.port,
             session_timeout: config.session_timeout,
-            tls_config: config.tls_config(private_key_bytes)?,
+            tls_config,
             opaque_server_setup: create_or_retrieve_server_key_opaque(
                 &mut rng,
                 config.opaque_server_key,
@@ -80,16 +85,11 @@ pub struct ConfigFile {
     #[serde(default)]
     #[serde(with = "humantime_serde")]
     pub session_timeout: Duration,
-    /// The private key can be provided as a file or passed to the
-    /// [`Config`] constructors.
-    pub private_key: Option<PathBuf>,
-    pub certificate_chain: PathBuf,
-    #[serde(default)]
-    pub client_auth: bool,
     pub opaque_path: PathBuf,
     pub opaque_server_key: PathBuf,
     pub database: DatabaseSpec,
     pub logging: LoggingConfig,
+    pub tls_config: Option<TlsConfig>,
 }
 
 impl FromStr for ConfigFile {
@@ -108,14 +108,17 @@ pub struct LoggingConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(deny_unknown_fields, rename_all = "snake_case")]
-pub struct DatabaseSpec {
-    pub mongodb_uri: String,
-    pub db_name: String,
+pub struct TlsConfig {
+    /// The private key can be provided as a file or passed to the
+    /// [`Config`] constructors.
+    pub private_key: Option<PathBuf>,
+    pub certificate_chain: PathBuf,
+    #[serde(default)]
+    pub client_auth: bool,
 }
 
-impl ConfigFile {
-    pub fn tls_config(
+impl TlsConfig {
+    pub fn into_rustls_config(
         &self,
         private_key_bytes: Option<Vec<u8>>,
     ) -> Result<ServerConfig, LockKeeperServerError> {
@@ -150,6 +153,13 @@ impl ConfigFile {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
+pub struct DatabaseSpec {
+    pub mongodb_uri: String,
+    pub db_name: String,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -161,11 +171,13 @@ mod tests {
             address = "127.0.0.2"
             port = 1114
             session_timeout = "60s"
+            opaque_path = "tests/gen/opaque"
+            opaque_server_key = "tests/gen/opaque/server_setup"
+
+            [tls_config]
             private_key = "test.key"
             certificate_chain = "test.crt"
             client_auth = false
-            opaque_path = "tests/gen/opaque"
-            opaque_server_key = "tests/gen/opaque/server_setup"
 
             [database]
             mongodb_uri = "mongodb://localhost:27017"
@@ -181,9 +193,7 @@ mod tests {
             address,
             port,
             session_timeout,
-            private_key,
-            certificate_chain,
-            client_auth,
+            tls_config,
             opaque_path,
             opaque_server_key,
             database:
@@ -194,14 +204,16 @@ mod tests {
             logging,
         } = ConfigFile::from_str(config_str).unwrap();
 
+        let tls_config = tls_config.unwrap();
+
         assert_eq!(mongodb_uri, "mongodb://localhost:27017");
         assert_eq!(db_name, "lock-keeper-test-db");
         assert_eq!(address, IpAddr::from_str("127.0.0.2").unwrap());
         assert_eq!(port, 1114);
         assert_eq!(session_timeout, Duration::from_secs(60));
-        assert_eq!(private_key, Some(PathBuf::from("test.key")));
-        assert_eq!(certificate_chain, PathBuf::from("test.crt"));
-        assert!(!client_auth);
+        assert_eq!(tls_config.private_key, Some(PathBuf::from("test.key")));
+        assert_eq!(tls_config.certificate_chain, PathBuf::from("test.crt"));
+        assert!(!tls_config.client_auth);
         assert_eq!(opaque_path, PathBuf::from("tests/gen/opaque"));
         assert_eq!(
             opaque_server_key,

@@ -56,7 +56,10 @@ async fn start_service<DB: DataStore + Clone>(
     let db = db.clone();
     let session_key_cache = session_key_cache.clone();
 
-    let tls = config.tls_config.clone();
+    let tls_acceptor = config
+        .tls_config
+        .clone()
+        .map(|tls| TlsAcceptor::from(Arc::new(tls)));
 
     let rpc_server = LockKeeperKeyServer::new(db, session_key_cache, config)?;
     let addr = rpc_server.config.address;
@@ -71,7 +74,6 @@ async fn start_service<DB: DataStore + Clone>(
     let _ = http.http2_only(true);
 
     let listener = TcpListener::bind(SocketAddr::new(addr, port)).await?;
-    let tls_acceptor = TlsAcceptor::from(Arc::new(tls));
 
     // Spawn a task to accept connections
     let _ = tokio::spawn(async move {
@@ -106,12 +108,18 @@ async fn start_service<DB: DataStore + Clone>(
 async fn handle_connection(
     http: Http,
     connection: TcpStream,
-    tls_acceptor: TlsAcceptor,
+    tls_acceptor: Option<TlsAcceptor>,
     service: Routes,
 ) -> Result<(), LockKeeperServerError> {
-    let conn = tls_acceptor.accept(connection).await?;
     let svc = tower::ServiceBuilder::new().service(service);
-    http.serve_connection(conn, svc).await?;
+
+    match tls_acceptor {
+        Some(tls_acceptor) => {
+            let conn = tls_acceptor.accept(connection).await?;
+            http.serve_connection(conn, svc).await?;
+        }
+        None => http.serve_connection(connection, svc).await?,
+    }
 
     Ok(())
 }
