@@ -1,4 +1,5 @@
 use crate::server::session_key_cache::SessionCacheError;
+use std::path::PathBuf;
 use thiserror::Error;
 use tonic::Status;
 
@@ -15,9 +16,11 @@ pub enum LockKeeperServerError {
     // Infrastructure errors
     #[error("Invalid OPAQUE directory")]
     InvalidOpaqueDirectory,
+    #[error("Invalid log file path: {0}")]
+    InvalidLogFilePath(PathBuf),
 
     // Protocol errors
-    #[error("Account already registered")]
+    #[error("Account already registered.")]
     AccountAlreadyRegistered,
     #[error("Invalid account")]
     InvalidAccount,
@@ -93,6 +96,7 @@ impl From<LockKeeperServerError> for Status {
 
             // Errors that the client should not see
             LockKeeperServerError::MissingService
+            | LockKeeperServerError::InvalidLogFilePath(_)
             | LockKeeperServerError::SessionCache(_)
             | LockKeeperServerError::Hyper(_)
             | LockKeeperServerError::Io(_)

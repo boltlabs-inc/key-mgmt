@@ -10,3 +10,7 @@ opaque_server_key = "/app/opaque/server_setup"
 [database]
 mongodb_uri = 'mongodb://mongodb:27017'
 db_name = 'lock-keeper-test-db'
+
+[logging]
+lock_keeper_logs_file_name = "/app/logs/server.log"
+all_logs_file_name = "/app/logs/all.log"

@@ -3,7 +3,7 @@ use thiserror::Error;
 
 #[derive(Debug, Error, PartialOrd, PartialEq, Eq)]
 pub enum SessionCacheError {
-    #[error("TODO")]
+    #[error("Session key already exists for this user.")]
     SessionKeyExists,
     #[error("Session key has expired.")]
     ExpiredSessionKey,

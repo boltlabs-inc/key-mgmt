@@ -11,7 +11,10 @@ use crate::{
     constants::METADATA,
     crypto::{Encrypted, OpaqueSessionKey},
     rpc::Message,
-    types::operations::{RequestMetadata, ResponseMetadata},
+    types::{
+        database::user::UserId,
+        operations::{ClientAction, RequestMetadata, ResponseMetadata},
+    },
     LockKeeperError,
     LockKeeperError::AlreadyAuthenticated,
 };
@@ -20,6 +23,16 @@ const BUFFER_SIZE: usize = 2;
 
 pub type ServerChannel<G> = Channel<Result<Message, Status>, RequestMetadata, G>;
 pub type ClientChannel<G> = Channel<Message, ResponseMetadata, G>;
+
+impl<G: CryptoRng + RngCore> ServerChannel<G> {
+    pub fn user_id(&self) -> Option<&UserId> {
+        self.metadata.user_id().as_ref()
+    }
+
+    pub fn action(&self) -> ClientAction {
+        self.metadata.action()
+    }
+}
 
 /// A two-way channel between a client and server used to communicate with
 /// `Message` objects. `Channel` uses `tonic` types to receive messages. It can

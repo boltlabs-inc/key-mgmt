@@ -8,6 +8,11 @@ Please be kind, courteous, and respectful. This project, although not formally a
 Please report any violations of this code of conduct to
 [conduct@boltlabs.io](mailto:conduct@boltlabs.io).
 
+## Logging
+Our repository uses the [`tracing`](https://crates.io/crates/tracing) library for logging. The server automatically writes `INFO`-level logs
+to standard output if the logging event originated from our `lock-keeper` crates.
+
+Here we cover adding your own logging messages.
 
 ## Understanding inline issues
 Issues are described in the issue tracker, but there is also supporting inline documentation noting the specific location of various types of problems in the code. These are marked as `TODO #(issue) (optional modifiers):`. Potential modifiers include:

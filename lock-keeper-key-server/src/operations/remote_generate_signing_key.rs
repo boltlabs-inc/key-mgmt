@@ -1,3 +1,5 @@
+//! Client has asked server to generate a new signing key and store it in the
+//! server.
 use crate::{
     server::{Context, Operation},
     LockKeeperServerError,
@@ -14,17 +16,25 @@ use lock_keeper::{
     },
 };
 use rand::rngs::StdRng;
+use tracing::{info, instrument};
 
 #[derive(Debug)]
 pub struct RemoteGenerateSigningKey;
 
 #[async_trait]
 impl<DB: DataStore> Operation<DB> for RemoteGenerateSigningKey {
+    /// Remote generation protocol works as follows:
+    /// 1) Receive remote generate message from client.
+    /// 2) Generate key ID and new signing key pair (private and public key).
+    /// 3) Store key pair in our database.
+    /// 4) Reply to client with public key and key ID.
+    #[instrument(skip_all, err(Debug))]
     async fn operation(
         self,
         channel: &mut ServerChannel<StdRng>,
         context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
+        info!("Starting remote generate protocol.");
         let request: client::RequestRemoteGenerate = channel.receive().await?;
 
         // Create a scope for rng mutex
@@ -32,7 +42,7 @@ impl<DB: DataStore> Operation<DB> for RemoteGenerateSigningKey {
             let mut rng = context.rng.lock().await;
             let key_id = KeyId::generate(&mut *rng, &request.user_id)?;
             let key_pair = SigningKeyPair::remote_generate(&mut *rng, &request.user_id, &key_id);
-
+            info!("Generated key ID: {:?}", key_id);
             (key_id, key_pair)
         };
 
@@ -50,10 +60,11 @@ impl<DB: DataStore> Operation<DB> for RemoteGenerateSigningKey {
             .await
             .map_err(LockKeeperServerError::database)?;
 
-        let response = server::ReturnKeyId { key_id, public_key };
+        channel
+            .send(server::ReturnKeyId { key_id, public_key })
+            .await?;
 
-        channel.send(response).await?;
-
+        info!("Successfully completed remote generate protocol.");
         Ok(())
     }
 }

@@ -8,7 +8,7 @@ use crate::database::DataStore;
 use async_trait::async_trait;
 use lock_keeper::{
     config::opaque::OpaqueCipherSuite,
-    infrastructure::channel::ServerChannel,
+    infrastructure::{channel::ServerChannel, logging},
     types::{
         database::user::{AccountName, UserId},
         operations::register::{client, server},
@@ -16,24 +16,31 @@ use lock_keeper::{
 };
 use opaque_ke::ServerRegistration;
 use rand::rngs::StdRng;
+use tracing::{info, instrument};
 
 #[derive(Debug)]
 pub struct Register;
 
 #[async_trait]
 impl<DB: DataStore> Operation<DB> for Register {
+    #[instrument(skip_all, err(Debug), fields(account_name))]
     async fn operation(
         self,
         channel: &mut ServerChannel<StdRng>,
         context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
-        let account_name = register_start(channel, context).await?;
-        register_finish(&account_name, channel, context).await?;
+        info!("Starting register protocol.");
 
+        let account_name = register_start(channel, context).await?;
+        logging::record_field("account_name", &account_name);
+
+        register_finish(&account_name, channel, context).await?;
+        info!("Successfully completed register protocol.");
         Ok(())
     }
 }
 
+#[instrument(skip_all, err(Debug), fields(user_id))]
 async fn register_start<DB: DataStore>(
     channel: &mut ServerChannel<StdRng>,
     context: &Context<DB>,
@@ -48,27 +55,34 @@ async fn register_start<DB: DataStore>(
         .await
         .map_err(LockKeeperServerError::database)?;
 
-    if user.is_some() {
-        Err(LockKeeperServerError::AccountAlreadyRegistered)
-    } else {
+    match user {
+        // Abort registration if UserId already exists
+        Some(user) => {
+            logging::record_field("user_id", &user.user_id);
+            Err(LockKeeperServerError::AccountAlreadyRegistered)
+        }
         // Registration can continue if user ID doesn't exist yet
-        let server_registration_start_result = ServerRegistration::<OpaqueCipherSuite>::start(
-            &context.config.opaque_server_setup,
-            start_message.registration_request,
-            start_message.account_name.as_bytes(),
-        )?;
+        None => {
+            info!("Account name available for registration.");
+            let registration_start = ServerRegistration::<OpaqueCipherSuite>::start(
+                &context.config.opaque_server_setup,
+                start_message.registration_request,
+                start_message.account_name.as_bytes(),
+            )?;
 
-        let reply = server::RegisterStart {
-            registration_response: server_registration_start_result.message,
-        };
+            let reply = server::RegisterStart {
+                registration_response: registration_start.message,
+            };
 
-        // Send response to client
-        channel.send(reply).await?;
+            // Send response to client
+            channel.send(reply).await?;
 
-        Ok(start_message.account_name)
+            Ok(start_message.account_name)
+        }
     }
 }
 
+#[instrument(skip_all, err(Debug))]
 async fn register_finish<DB: DataStore>(
     account_name: &AccountName,
     channel: &mut ServerChannel<StdRng>,
@@ -96,6 +110,7 @@ async fn register_finish<DB: DataStore>(
             .map_err(LockKeeperServerError::database)?
             .is_none()
         {
+            info!("Fresh user id generated: {:?}", user_id);
             let _user = context
                 .db
                 .create_user(&user_id, account_name, &server_registration)

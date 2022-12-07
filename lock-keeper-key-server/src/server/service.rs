@@ -23,13 +23,13 @@ pub async fn start_lock_keeper_server<DB: DataStore + Clone, S: SessionCache + '
     db: DB,
     session_key_cache: S,
 ) -> Result<(), LockKeeperServerError> {
-    tracing::info!("Starting Lock Keeper key server");
+    info!("Starting Lock Keeper key server");
     let db = Arc::new(db);
     let session_key_cache = Arc::new(Mutex::new(session_key_cache));
     // Collect the futures for the result of running each specified server
     let server_future = start_service(&config, db, session_key_cache);
 
-    tracing::info!("Lock Keeper key server started");
+    info!("Lock Keeper key server started");
 
     // Wait for the server to finish
     tokio::select! {
@@ -61,6 +61,7 @@ async fn start_service<DB: DataStore + Clone>(
     let rpc_server = LockKeeperKeyServer::new(db, session_key_cache, config)?;
     let addr = rpc_server.config.address;
     let port = rpc_server.config.port;
+    info!(?addr, ?port, "Starting server with:");
 
     let svc = Server::builder()
         .add_service(LockKeeperRpcServer::new(rpc_server))
@@ -75,14 +76,14 @@ async fn start_service<DB: DataStore + Clone>(
     // Spawn a task to accept connections
     let _ = tokio::spawn(async move {
         loop {
-            let (conn, _) = match listener.accept().await {
+            let (conn, client) = match listener.accept().await {
                 Ok(incoming) => incoming,
                 Err(e) => {
                     error!("Error accepting connection: {}", e);
                     continue;
                 }
             };
-
+            info!(?client, "Accepted Connection from:");
             let http = http.clone();
             let tls_acceptor = tls_acceptor.clone();
             let svc = svc.clone();

@@ -14,27 +14,41 @@ use lock_keeper::{
     },
 };
 use rand::rngs::StdRng;
+use tracing::{info, instrument};
 
 #[derive(Debug)]
 pub struct GenerateSecret;
 
 #[async_trait]
 impl<DB: DataStore> Operation<DB> for GenerateSecret {
+    /// Generate a new signing key for remotely (on the server from the client's
+    /// POV!) and return a key_id to the client. The client may use this
+    /// key_id to refer to this signing key.
+    #[instrument(skip_all, err(Debug))]
     async fn operation(
         self,
         channel: &mut ServerChannel<StdRng>,
         context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
+        info!("Starting generate protocol");
         // Generate step: receive UserId and reply with new KeyId
         let key_id = generate_key(channel, context).await?;
         context.key_id = Some(key_id.clone());
 
         // Store step: receive ciphertext from client and store in DB
         store_key(channel, context, &key_id).await?;
+        info!("Successfully completed generate protocol.");
         Ok(())
     }
 }
 
+/// First step for generation:
+/// 1) Receive generate message from client.
+/// 2) Generate a new key ID.
+/// 3) Reply to client with key_id.
+///
+/// Returns the key_id we generated.
+#[instrument(skip_all, err(Debug))]
 async fn generate_key<DB: DataStore>(
     channel: &mut ServerChannel<StdRng>,
     context: &Context<DB>,
@@ -46,6 +60,8 @@ async fn generate_key<DB: DataStore>(
         let mut rng = context.rng.lock().await;
         KeyId::generate(&mut *rng, &generate_message.user_id)?
     };
+    info!("New key_id generated: {:?}", key_id);
+
     // Serialize KeyId and send to client
     let reply = server::Generate {
         key_id: key_id.clone(),
@@ -54,6 +70,11 @@ async fn generate_key<DB: DataStore>(
     Ok(key_id)
 }
 
+/// Second step for generation operation.
+/// 1) Receive store message from client.
+/// 2) Check validity of ciphertext and store in DB.
+/// 3) Reply to client if successful.
+#[instrument(skip_all, err(Debug))]
 async fn store_key<DB: DataStore>(
     channel: &mut ServerChannel<StdRng>,
     context: &Context<DB>,
@@ -69,6 +90,7 @@ async fn store_key<DB: DataStore>(
         .add_user_secret(&store_message.user_id, secret)
         .await
         .map_err(LockKeeperServerError::database)?;
+    info!("Client's cypher text stored successfully.");
 
     // Reply with the success:true if successful
     let reply = server::Store { success: true };

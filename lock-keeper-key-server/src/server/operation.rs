@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use lock_keeper::{
     constants::METADATA,
     crypto::OpaqueSessionKey,
-    infrastructure::channel::ServerChannel,
+    infrastructure::{channel::ServerChannel, logging},
     types::{
         audit_event::EventStatus,
         database::user::UserId,
@@ -14,7 +14,7 @@ use rand::rngs::StdRng;
 use std::{ops::DerefMut, time::Duration};
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status, Streaming};
-use tracing::{error, info, Instrument};
+use tracing::{error, info, instrument, Instrument};
 use uuid::Uuid;
 
 use crate::{
@@ -38,13 +38,18 @@ pub(crate) trait Operation<DB: DataStore>: Sized + Send + 'static {
     /// request through the logic defined by the `Operation::operation` method.
     /// Any errors returned by the operation are logged and an appropriate error
     /// message is sent to the client.
+    #[instrument(skip_all, err(Debug), fields(action, user_id, request_id))]
     async fn handle_request(
         self,
         mut context: Context<DB>,
         request: Request<Streaming<Message>>,
     ) -> Result<Response<MessageStream>, Status> {
+        let request_id = Uuid::new_v4();
+        logging::record_field("request_id", &request_id);
         info!("Handling new client request.");
+
         let (mut channel, rx) = ServerChannel::create(context.rng.clone(), request, None)?;
+
         let session_key_option = {
             let session_cache = context.session_key_cache.lock().await;
             check_authentication(
@@ -56,7 +61,11 @@ pub(crate) trait Operation<DB: DataStore>: Sized + Send + 'static {
         if let Some(session_key) = session_key_option {
             channel.try_upgrade_to_authenticated(session_key)?;
         }
-        tracing::info!("Handling action: {:?}", channel.metadata().action());
+
+        logging::record_field("action", &channel.action());
+        if let Some(user_id) = channel.user_id() {
+            logging::record_field("user_id", &user_id);
+        }
 
         let _ = tokio::spawn(
             async move {
@@ -80,14 +89,10 @@ pub(crate) trait Operation<DB: DataStore>: Sized + Send + 'static {
             .in_current_span(),
         );
 
-        let metadata = ResponseMetadata {
-            request_id: Uuid::new_v4(),
-        };
-
         let mut response = Response::new(ReceiverStream::new(rx));
         let _ = response
             .metadata_mut()
-            .insert(METADATA, metadata.try_into()?);
+            .insert(METADATA, ResponseMetadata { request_id }.try_into()?);
 
         Ok(response)
     }
@@ -95,6 +100,7 @@ pub(crate) trait Operation<DB: DataStore>: Sized + Send + 'static {
 
 /// Most operations require an authenticated session. Check if there is a valid
 /// session.
+#[instrument(skip_all, err(Debug), fields(action, user_id))]
 fn check_authentication(
     action: &ClientAction,
     user_id: Option<&UserId>,
@@ -114,12 +120,14 @@ fn check_authentication(
                 .find_session(user_id.clone())
                 .map_err(LockKeeperServerError::SessionCache)?;
 
+            logging::record_field("user_id", &user_id);
             info!("User is already authenticated.");
             Ok(Some(session_key))
         }
     }
 }
 
+#[instrument(skip_all, fields(e))]
 async fn handle_error(channel: &mut ServerChannel<StdRng>, e: LockKeeperServerError) {
     error!("{}", e);
     if let Err(e) = channel.send_error(e).await {
@@ -128,6 +136,7 @@ async fn handle_error(channel: &mut ServerChannel<StdRng>, e: LockKeeperServerEr
 }
 
 /// Log the given action as an audit event.
+#[instrument(skip_all, fields(status))]
 async fn audit_event<DB: DataStore>(
     channel: &mut ServerChannel<StdRng>,
     context: &Context<DB>,
