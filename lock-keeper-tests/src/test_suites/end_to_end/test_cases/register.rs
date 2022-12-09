@@ -2,14 +2,15 @@ use colored::Colorize;
 use lock_keeper::types::{
     audit_event::EventStatus, database::user::AccountName, operations::ClientAction,
 };
-use lock_keeper_client::{client::Password, Config, LockKeeperClient, LockKeeperClientError};
+use lock_keeper_client::{client::Password, Config, LockKeeperClient};
 use std::str::FromStr;
+use tonic::Status;
 
 use crate::{
     error::Result,
     run_parallel,
     test_suites::end_to_end::{
-        operations::{check_audit_events, compare_errors},
+        operations::{check_audit_events, compare_status_errors},
         test_cases::TestState,
     },
     utils::{tagged, TestResult},
@@ -33,10 +34,10 @@ async fn register_same_user_twice_fails(config: Config) -> Result<()> {
     LockKeeperClient::register(&account_name, &password, &config).await?;
 
     let second_register = LockKeeperClient::register(&account_name, &password, &config).await;
-    compare_errors(
+    compare_status_errors(
         second_register,
-        LockKeeperClientError::AccountAlreadyRegistered,
-    );
+        Status::invalid_argument("Account already registered."),
+    )?;
     let state = TestState {
         account_name,
         password,

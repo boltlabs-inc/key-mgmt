@@ -3,7 +3,7 @@ pub mod error;
 pub mod test_suites;
 pub mod utils;
 
-use crate::error::LockKeeperTestError;
+use crate::{error::LockKeeperTestError, utils::TestResult};
 use clap::Parser;
 use config::Config;
 use std::{path::PathBuf, str::FromStr};
@@ -53,19 +53,29 @@ pub async fn main() {
 
     match test_type {
         TestType::All => {
-            test_suites::run_all(&config).await.unwrap();
+            check_errors(&test_suites::run_all(&config).await.unwrap()).unwrap();
         }
         TestType::ConfigFiles => {
-            test_suites::config_files::run_tests(&config).await.unwrap();
+            check_errors(&test_suites::config_files::run_tests(&config).await.unwrap()).unwrap();
         }
         TestType::E2E => {
-            test_suites::end_to_end::run_tests(&config).await.unwrap();
+            check_errors(&test_suites::end_to_end::run_tests(&config).await.unwrap()).unwrap();
         }
         TestType::Integration => {
-            test_suites::database::run_tests(&config).await.unwrap();
+            check_errors(&test_suites::database::run_tests(&config).await.unwrap()).unwrap();
         }
         TestType::MutualAuth => {
-            test_suites::mutual_auth::run_tests(&config).await.unwrap();
+            check_errors(&test_suites::mutual_auth::run_tests(&config).await.unwrap()).unwrap();
         }
+    }
+}
+
+fn check_errors(results: &[TestResult]) -> Result<(), LockKeeperTestError> {
+    use TestResult::*;
+
+    if results.iter().any(|r| *r == Failed) {
+        Err(LockKeeperTestError::TestFailed)
+    } else {
+        Ok(())
     }
 }

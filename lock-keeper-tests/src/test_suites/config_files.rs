@@ -132,6 +132,10 @@ opaque_server_key = "dev/opaque/server_setup"
 [database]
 mongodb_uri = 'mongodb://localhost:27017'
 db_name = 'lock-keeper-test-db'
+
+[logging]
+lock_keeper_logs_file_name = "/app/logs/server.log"
+all_logs_file_name = "/app/logs/all.log"
 "#;
 
 const SERVER_CONFIG_WITH_KEY: &str = r#"
@@ -146,6 +150,10 @@ opaque_server_key = "dev/opaque/server_setup"
 [database]
 mongodb_uri = 'mongodb://localhost:27017'
 db_name = 'lock-keeper-test-db'
+
+[logging]
+lock_keeper_logs_file_name = "/app/logs/server.log"
+all_logs_file_name = "/app/logs/all.log"
 "#;
 
 const SAMPLE_PRIVATE_KEY: &str = r#"
