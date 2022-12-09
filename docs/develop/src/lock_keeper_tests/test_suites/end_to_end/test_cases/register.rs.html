@@ -46,18 +46,20 @@
 <span id="46">46</span>
 <span id="47">47</span>
 <span id="48">48</span>
+<span id="49">49</span>
 </pre><pre class="rust"><code><span class="kw">use </span>colored::Colorize;
 <span class="kw">use </span>lock_keeper::types::{
     audit_event::EventStatus, database::user::AccountName, operations::ClientAction,
 };
-<span class="kw">use </span>lock_keeper_client::{client::Password, Config, LockKeeperClient, LockKeeperClientError};
+<span class="kw">use </span>lock_keeper_client::{client::Password, Config, LockKeeperClient};
 <span class="kw">use </span>std::str::FromStr;
+<span class="kw">use </span>tonic::Status;
 
 <span class="kw">use crate</span>::{
     error::Result,
     run_parallel,
     test_suites::end_to_end::{
-        operations::{check_audit_events, compare_errors},
+        operations::{check_audit_events, compare_status_errors},
         test_cases::TestState,
     },
     utils::{tagged, TestResult},
@@ -81,10 +83,10 @@
     LockKeeperClient::register(<span class="kw-2">&amp;</span>account_name, <span class="kw-2">&amp;</span>password, <span class="kw-2">&amp;</span>config).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="kw">let </span>second_register = LockKeeperClient::register(<span class="kw-2">&amp;</span>account_name, <span class="kw-2">&amp;</span>password, <span class="kw-2">&amp;</span>config).<span class="kw">await</span>;
-    compare_errors(
+    compare_status_errors(
         second_register,
-        LockKeeperClientError::AccountAlreadyRegistered,
-    );
+        Status::invalid_argument(<span class="string">&quot;Account already registered.&quot;</span>),
+    )<span class="question-mark">?</span>;
     <span class="kw">let </span>state = TestState {
         account_name,
         password,

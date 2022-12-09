@@ -178,6 +178,14 @@
 <span id="178">178</span>
 <span id="179">179</span>
 <span id="180">180</span>
+<span id="181">181</span>
+<span id="182">182</span>
+<span id="183">183</span>
+<span id="184">184</span>
+<span id="185">185</span>
+<span id="186">186</span>
+<span id="187">187</span>
+<span id="188">188</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Config file tests that depend on files to exist at specific paths.
 //! If the paths listed in these tests change, the tests will fail.
 
@@ -312,6 +320,10 @@ opaque_server_key = &quot;dev/opaque/server_setup&quot;
 [database]
 mongodb_uri = &#39;mongodb://localhost:27017&#39;
 db_name = &#39;lock-keeper-test-db&#39;
+
+[logging]
+lock_keeper_logs_file_name = &quot;/app/logs/server.log&quot;
+all_logs_file_name = &quot;/app/logs/all.log&quot;
 &quot;#</span>;
 
 <span class="kw">const </span>SERVER_CONFIG_WITH_KEY: <span class="kw-2">&amp;</span>str = <span class="string">r#&quot;
@@ -326,6 +338,10 @@ opaque_server_key = &quot;dev/opaque/server_setup&quot;
 [database]
 mongodb_uri = &#39;mongodb://localhost:27017&#39;
 db_name = &#39;lock-keeper-test-db&#39;
+
+[logging]
+lock_keeper_logs_file_name = &quot;/app/logs/server.log&quot;
+all_logs_file_name = &quot;/app/logs/all.log&quot;
 &quot;#</span>;
 
 <span class="kw">const </span>SAMPLE_PRIVATE_KEY: <span class="kw-2">&amp;</span>str = <span class="string">r#&quot;
