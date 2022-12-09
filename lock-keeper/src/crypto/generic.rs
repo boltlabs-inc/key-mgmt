@@ -99,11 +99,15 @@ pub(super) struct EncryptionKey {
 }
 
 impl EncryptionKey {
+    pub(super) fn domain_separator() -> &'static str {
+        "ChaCha20Poly1305 with 96-bit nonce."
+    }
+
     /// Generate a new symmetric AEAD encryption key from scratch.
     pub(super) fn new(rng: &mut (impl CryptoRng + RngCore)) -> Self {
         Self {
             key: Box::new(ChaCha20Poly1305::generate_key(rng)),
-            context: AssociatedData::new().with_str("ChaCha20Poly1305 with 96-bit nonce."),
+            context: AssociatedData::new().with_str(Self::domain_separator()),
         }
     }
 

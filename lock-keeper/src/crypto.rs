@@ -78,7 +78,7 @@ impl ServerSideEncryptionKey {
     }
 
     /// Generate a new 32-byte [`ServerSideEncryptionKey`].
-    pub fn generate<Rng: CryptoRng + RngCore>(rng: &mut Rng) -> Self {
+    pub fn generate(rng: &mut (impl CryptoRng + RngCore)) -> Self {
         Self(EncryptionKey::new(rng))
     }
 
@@ -86,16 +86,16 @@ impl ServerSideEncryptionKey {
     /// path
     pub fn read_from_file(path: impl AsRef<Path>) -> Result<Self, LockKeeperError> {
         let bytes = std::fs::read(path)?;
-        Self::read_from_bytes(&bytes)
+        Self::from_bytes(&bytes)
     }
 
     /// Returns the server side encryption key found in the given bytes
-    pub fn read_from_bytes(bytes: &[u8]) -> Result<Self, LockKeeperError> {
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, LockKeeperError> {
         let key = EncryptionKey::from_bytes(
             bytes
                 .try_into()
                 .map_err(|_| LockKeeperError::InvalidServerSideEncryptionKey)?,
-            AssociatedData::new().with_str("ChaCha20Poly1305 with 96-bit nonce."),
+            AssociatedData::new().with_str(EncryptionKey::domain_separator()),
         );
 
         Ok(Self(key))
@@ -688,8 +688,7 @@ mod test {
         let mut rng = rand::thread_rng();
         let encryption_key = ServerSideEncryptionKey::generate(&mut rng);
         let encryption_key_bytes = encryption_key.0.clone().into_bytes();
-        let new_encryption_key =
-            ServerSideEncryptionKey::read_from_bytes(&encryption_key_bytes[..])?;
+        let new_encryption_key = ServerSideEncryptionKey::from_bytes(&encryption_key_bytes[..])?;
         assert_eq!(encryption_key.0, new_encryption_key.0);
         Ok(())
     }
@@ -699,8 +698,7 @@ mod test {
         let mut rng = rand::thread_rng();
         let encryption_key = ServerSideEncryptionKey::generate(&mut rng);
         let encryption_key_bytes = encryption_key.0.clone().into_bytes();
-        let new_encryption_key =
-            ServerSideEncryptionKey::read_from_bytes(&encryption_key_bytes[..31]);
+        let new_encryption_key = ServerSideEncryptionKey::from_bytes(&encryption_key_bytes[..31]);
         assert_eq!(
             new_encryption_key.unwrap_err().to_string(),
             LockKeeperError::InvalidServerSideEncryptionKey.to_string()

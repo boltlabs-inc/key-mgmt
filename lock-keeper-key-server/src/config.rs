@@ -170,7 +170,7 @@ impl TlsConfig {
         server_side_encryption_key_bytes: Option<Vec<u8>>,
     ) -> Result<ServerSideEncryptionKey, LockKeeperServerError> {
         let key = if let Some(bytes) = server_side_encryption_key_bytes {
-            ServerSideEncryptionKey::read_from_bytes(&bytes)?
+            ServerSideEncryptionKey::from_bytes(&bytes)?
         } else if let Some(key_path) = &self.server_side_encryption_key {
             ServerSideEncryptionKey::read_from_file(key_path)?
         } else {
