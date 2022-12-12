@@ -151,7 +151,7 @@ The command line argument for the `key-server-cli` binary included with the `loc
 Example:
 
 ```bash
-cargo run --bin key-server-cli dev/local/ServerMutualAuth.toml --server-side-encryption-key "$(cat dev/server-side-encryption/gen/server_side_encryption.key | base64)"
+cargo run --bin key-server-cli dev/local/ServerMutualAuth.toml --remote_storage_key "$(cat dev/server-side-encryption/gen/remote_storage.key | base64)"
 ```
 
 Important to note is that this key encrypts all signing keys on the server, therefore, loss of this key would mean loss of all signing keys.

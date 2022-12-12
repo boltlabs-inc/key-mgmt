@@ -26,9 +26,9 @@ pub async fn run_tests(config: &Config) -> Result<Vec<TestResult>> {
         client_config_without_private_key_fails(),
         server_config_with_file_private_key_works(),
         server_config_with_manual_private_key_works(),
-        server_config_with_manual_server_side_encryption_key_works(),
+        server_config_with_manual_remote_storage_key_works(),
         server_config_without_private_key_fails(),
-        server_config_without_server_side_encryption_key_fails(),
+        server_config_without_remote_storage_key_fails(),
     )?;
 
     db.drop().await?;
@@ -93,7 +93,7 @@ async fn server_config_with_manual_private_key_works() -> Result<()> {
     Ok(())
 }
 
-async fn server_config_with_manual_server_side_encryption_key_works() -> Result<()> {
+async fn server_config_with_manual_remote_storage_key_works() -> Result<()> {
     use lock_keeper_key_server::config::{Config as ServerConfig, ConfigFile};
 
     let config_file = ConfigFile::from_str(SERVER_CONFIG_NO_SSE_KEY)?;
@@ -118,14 +118,14 @@ async fn server_config_without_private_key_fails() -> Result<()> {
     Ok(())
 }
 
-async fn server_config_without_server_side_encryption_key_fails() -> Result<()> {
+async fn server_config_without_remote_storage_key_fails() -> Result<()> {
     use lock_keeper_key_server::config::{Config as ServerConfig, ConfigFile};
 
     let config_file = ConfigFile::from_str(SERVER_CONFIG_NO_SSE_KEY)?;
     let config = ServerConfig::from_config_file(config_file, None, None);
     assert!(matches!(
         config,
-        Err(LockKeeperServerError::ServerSideEncryptionKeyMissing)
+        Err(LockKeeperServerError::RemoteStorageKeyMissing)
     ));
 
     Ok(())
@@ -154,7 +154,7 @@ port = 1114
 session_timeout = "60s"
 opaque_path = "dev/opaque"
 opaque_server_key = "dev/opaque/server_setup"
-server_side_encryption_key = "dev/server-side-encryption/gen/server_side_encryption.key"
+remote_storage_key = "dev/server-side-encryption/gen/remote_storage.key"
 
 [tls_config]
 certificate_chain = "dev/test-pki/gen/certs/server.chain"
@@ -195,7 +195,7 @@ port = 1114
 session_timeout = "60s"
 opaque_path = "dev/opaque"
 opaque_server_key = "dev/opaque/server_setup"
-server_side_encryption_key = "dev/server-side-encryption/gen/server_side_encryption.key"
+remote_storage_key = "dev/server-side-encryption/gen/remote_storage.key"
 
 [tls_config]
 private_key = "dev/test-pki/gen/certs/server.key"

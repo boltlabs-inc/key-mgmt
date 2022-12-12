@@ -1,5 +1,5 @@
 use crate::{
-    crypto::{Encrypted, KeyId, Secret, ServerSideEncryptionKey, SigningKeyPair},
+    crypto::{Encrypted, KeyId, RemoteStorageKey, Secret, SigningKeyPair},
     types::database::{
         secrets::{secret_types, StoredSecret},
         user::UserId,
@@ -28,7 +28,7 @@ impl RetrievedSecret {
     pub fn try_from_stored_secret(
         stored_secret: StoredSecret,
         user_id: UserId,
-        server_side_encryption_key: ServerSideEncryptionKey,
+        remote_storage_key: RemoteStorageKey,
     ) -> Result<Self, LockKeeperError> {
         let key_id = stored_secret.key_id.clone();
         let secret_type = stored_secret.secret_type.clone();
@@ -41,7 +41,7 @@ impl RetrievedSecret {
             secret_types::REMOTE_SIGNING_KEY => {
                 let encrypted_key: Encrypted<SigningKeyPair> = stored_secret.try_into()?;
                 let key = encrypted_key.decrypt_signing_key_by_server(
-                    &server_side_encryption_key,
+                    &remote_storage_key,
                     user_id,
                     key_id.clone(),
                 )?;

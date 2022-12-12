@@ -55,7 +55,7 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for RetrieveSecret {
             secret: RetrievedSecret::try_from_stored_secret(
                 stored_secret,
                 request.user_id,
-                context.config.server_side_encryption_key.clone(),
+                context.config.remote_storage_key.clone(),
             )?,
         };
         channel.send(reply).await?;

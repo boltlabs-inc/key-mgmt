@@ -223,7 +223,7 @@ where
     /// Raises a [`CryptoError::DecryptionFailed`] if decryption fails or
     /// [`CryptoError::ConversionError`] if the decrypted plaintext cannot be
     /// converted into `T`.
-    pub(super) fn decrypt(self, enc_key: &EncryptionKey) -> Result<T, CryptoError> {
+    pub(super) fn decrypt_inner(self, enc_key: &EncryptionKey) -> Result<T, CryptoError> {
         // Set up cipher with key
         let cipher = ChaCha20Poly1305::new(&enc_key.key);
 
@@ -518,7 +518,7 @@ mod test {
             let expected_aad = AssociatedData::default();
             assert_eq!(expected_aad, encrypted_bytes.associated_data);
 
-            let decrypted_bytes = encrypted_bytes.decrypt(&enc_key)?;
+            let decrypted_bytes = encrypted_bytes.decrypt_inner(&enc_key)?;
             // Make sure decryption works
             assert_eq!(bytes, decrypted_bytes);
         }
@@ -545,7 +545,7 @@ mod test {
         for _ in 0..100 {
             let (_, mut encrypted_bytes, enc_key) = encrypt_random_bytes(&mut rng);
             encrypted_bytes.nonce = ChaCha20Poly1305::generate_nonce(&mut rng);
-            assert!(encrypted_bytes.decrypt(&enc_key).is_err());
+            assert!(encrypted_bytes.decrypt_inner(&enc_key).is_err());
         }
     }
 
@@ -556,7 +556,7 @@ mod test {
             let (_, encrypted_bytes, _) = encrypt_random_bytes(&mut rng);
             let wrong_key = EncryptionKey::new(&mut rand::thread_rng());
 
-            assert!(encrypted_bytes.decrypt(&wrong_key).is_err());
+            assert!(encrypted_bytes.decrypt_inner(&wrong_key).is_err());
         }
     }
 
@@ -567,7 +567,7 @@ mod test {
         encrypted_bytes.associated_data =
             AssociatedData::new().with_str("Here is some incorrect data");
 
-        assert!(encrypted_bytes.decrypt(&enc_key).is_err())
+        assert!(encrypted_bytes.decrypt_inner(&enc_key).is_err())
     }
 
     #[test]
@@ -577,16 +577,16 @@ mod test {
         for _ in 0..100 {
             let (_, mut encrypted_bytes, enc_key) = encrypt_random_bytes(&mut rng);
             encrypted_bytes.ciphertext[0] ^= 1;
-            assert!(encrypted_bytes.decrypt(&enc_key).is_err());
+            assert!(encrypted_bytes.decrypt_inner(&enc_key).is_err());
 
             let (_, mut encrypted_bytes, enc_key) = encrypt_random_bytes(&mut rng);
             let len = encrypted_bytes.ciphertext.len();
             encrypted_bytes.ciphertext[len - 1] ^= 1;
-            assert!(encrypted_bytes.decrypt(&enc_key).is_err());
+            assert!(encrypted_bytes.decrypt_inner(&enc_key).is_err());
 
             let (_, mut encrypted_bytes, enc_key) = encrypt_random_bytes(&mut rng);
             encrypted_bytes.ciphertext[len / 2] ^= 1;
-            assert!(encrypted_bytes.decrypt(&enc_key).is_err());
+            assert!(encrypted_bytes.decrypt_inner(&enc_key).is_err());
         }
     }
 

@@ -39,7 +39,7 @@ pub enum LockKeeperError {
 
     // Server side encryption error
     #[error("Invalid server side encryption key")]
-    InvalidServerSideEncryptionKey,
+    InvalidRemoteStorageKey,
 
     // Wrapped errors
     #[error(transparent)]
@@ -84,7 +84,7 @@ impl From<LockKeeperError> for Status {
             | LockKeeperError::Crypto(_)
             | LockKeeperError::Io(_)
             | LockKeeperError::InvalidPrivateKey
-            | LockKeeperError::InvalidServerSideEncryptionKey
+            | LockKeeperError::InvalidRemoteStorageKey
             | LockKeeperError::OpaqueProtocol(_)
             | LockKeeperError::SerdeJson(_)
             | LockKeeperError::TokioSender(_)

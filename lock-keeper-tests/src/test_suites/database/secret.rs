@@ -2,7 +2,7 @@
 
 use colored::Colorize;
 use lock_keeper::{
-    crypto::{Import, KeyId, Secret, ServerSideEncryptionKey, SigningKeyPair, StorageKey},
+    crypto::{Import, KeyId, RemoteStorageKey, Secret, SigningKeyPair, StorageKey},
     types::database::{secrets::StoredSecret, user::UserId},
 };
 use lock_keeper_key_server::database::DataStore;
@@ -108,11 +108,10 @@ async fn import_signing_key(db: &Database, rng: &mut StdRng, user_id: &UserId) -
     let import = Import::new(random_bytes)?;
     let signing_key = import.into_signing_key(user_id, &key_id)?;
 
-    let encryption_key = ServerSideEncryptionKey::generate(rng);
+    let encryption_key = RemoteStorageKey::generate(rng);
 
     // encrypt key_pair
-    let encrypted_key_pair =
-        encryption_key.encrypt_signing_key_pair(rng, signing_key, user_id, &key_id)?;
+    let encrypted_key_pair = encryption_key.encrypt_signing_key_pair(rng, signing_key)?;
 
     let secret = StoredSecret::from_remote_signing_key_pair(key_id.clone(), encrypted_key_pair)?;
     db.add_user_secret(user_id, secret).await?;
@@ -128,11 +127,10 @@ async fn remote_generate_signing_key(
     let key_id = KeyId::generate(rng, user_id)?;
     let signing_key = SigningKeyPair::remote_generate(rng, user_id, &key_id);
 
-    let encryption_key = ServerSideEncryptionKey::generate(rng);
+    let encryption_key = RemoteStorageKey::generate(rng);
 
     // encrypt key_pair
-    let encrypted_key_pair =
-        encryption_key.encrypt_signing_key_pair(rng, signing_key, user_id, &key_id)?;
+    let encrypted_key_pair = encryption_key.encrypt_signing_key_pair(rng, signing_key)?;
 
     let secret = StoredSecret::from_remote_signing_key_pair(key_id.clone(), encrypted_key_pair)?;
     db.add_user_secret(user_id, secret).await?;

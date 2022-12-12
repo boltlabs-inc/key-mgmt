@@ -1,4 +1,12 @@
-use crate::{crypto::ServerSideEncryptionKey, types::database::user::UserId, LockKeeperError};
+use crate::{
+    crypto::{
+        generic::EncryptionKey,
+        signing_key::generation_types::{CLIENT_GENERATED, IMPORTED, SERVER_GENERATED},
+        RemoteStorageKey,
+    },
+    types::database::user::UserId,
+    LockKeeperError,
+};
 use k256::ecdsa::{
     self,
     signature::{Signer, Verifier},
@@ -59,6 +67,12 @@ impl Signable for SignableBytes {
     }
 }
 
+pub mod generation_types {
+    pub const SERVER_GENERATED: &str = "server-generated";
+    pub const CLIENT_GENERATED: &str = "client-generated";
+    pub const IMPORTED: &str = "imported key";
+}
+
 /// An ECDSA signing key pair, including a public component for verifying
 /// signatures, a private component for creating them, and context about the key
 /// pair.
@@ -96,8 +110,7 @@ impl SigningKeyPair {
     }
 
     /// Retrieve the context associated with the signing key.
-    #[cfg(test)]
-    fn context(&self) -> &AssociatedData {
+    pub(super) fn context(&self) -> &AssociatedData {
         &self.context
     }
 
@@ -110,7 +123,7 @@ impl SigningKeyPair {
         let context = AssociatedData::new()
             .with_bytes(user_id.clone())
             .with_bytes(key_id.clone())
-            .with_str("server-generated");
+            .with_str(SERVER_GENERATED);
         Self::generate(rng, &context)
     }
 
@@ -138,7 +151,7 @@ impl SigningKeyPair {
         let context = AssociatedData::new()
             .with_bytes(user_id.clone())
             .with_bytes(key_id.clone())
-            .with_str("imported key");
+            .with_str(IMPORTED);
 
         let signing_key = Self {
             signing_key: SigningKey::from_bytes(key_material)
@@ -171,7 +184,7 @@ impl SigningKeyPair {
         let context = AssociatedData::new()
             .with_bytes(user_id.clone())
             .with_bytes(key_id.clone())
-            .with_str("client-generated");
+            .with_str(CLIENT_GENERATED);
         let signing_key = SigningKeyPair::generate(rng, &context);
 
         Ok((
@@ -192,33 +205,45 @@ impl Encrypted<SigningKeyPair> {
         user_id: UserId,
         key_id: KeyId,
     ) -> Result<SigningKeyPair, LockKeeperError> {
-        let identifying_context = AssociatedData::new().with_bytes(user_id).with_bytes(key_id);
-
-        let import_context = identifying_context.clone().with_str("imported key");
-        let client_context = identifying_context.with_str("client-generated");
-
-        // Keys encrypted under a storage key are either client-generated or imported.
-        if self.associated_data == import_context || self.associated_data == client_context {
-            Ok(self.decrypt(&storage_key.0)?)
-        } else {
-            Err(CryptoError::DecryptionFailed.into())
-        }
+        self.decrypt(
+            &storage_key.0,
+            user_id,
+            key_id,
+            vec![IMPORTED, CLIENT_GENERATED],
+        )
     }
 
     /// Decrypt a signing key. This should be run by the server as part of the
     /// subprotocol to retrieve a signing key from the server.
     pub fn decrypt_signing_key_by_server(
         self,
-        server_side_encryption_key: &ServerSideEncryptionKey,
+        remote_storage_key: &RemoteStorageKey,
         user_id: UserId,
         key_id: KeyId,
     ) -> Result<SigningKeyPair, LockKeeperError> {
+        self.decrypt(
+            &remote_storage_key.0,
+            user_id,
+            key_id,
+            vec![IMPORTED, SERVER_GENERATED],
+        )
+    }
+
+    fn decrypt(
+        self,
+        encryption_key: &EncryptionKey,
+        user_id: UserId,
+        key_id: KeyId,
+        possible_context_strings: Vec<&str>,
+    ) -> Result<SigningKeyPair, LockKeeperError> {
         let identifying_context = AssociatedData::new().with_bytes(user_id).with_bytes(key_id);
 
-        let context = identifying_context.with_str(ServerSideEncryptionKey::domain_separator());
-
-        if self.associated_data == context {
-            Ok(self.decrypt(&server_side_encryption_key.0)?)
+        if possible_context_strings
+            .iter()
+            .map(|context| identifying_context.clone().with_str(context))
+            .any(|x| x == self.associated_data)
+        {
+            Ok(self.decrypt_inner(encryption_key)?)
         } else {
             Err(CryptoError::DecryptionFailed.into())
         }
@@ -270,7 +295,7 @@ impl Import {
         let context = AssociatedData::new()
             .with_bytes(user_id.clone())
             .with_bytes(key_id.clone())
-            .with_str("imported key");
+            .with_str(IMPORTED);
 
         let signing_key =
             SigningKey::from_bytes(&self.key_material).map_err(|_| CryptoError::ConversionError)?;
@@ -459,7 +484,7 @@ mod test {
         let bad_extra_context = AssociatedData::new()
             .with_bytes(user_id.clone())
             .with_bytes(key_id.clone())
-            .with_str("server-generated");
+            .with_str(SERVER_GENERATED);
         encrypted_key.associated_data = bad_extra_context;
         assert!(encrypted_key
             .clone()
@@ -494,7 +519,7 @@ mod test {
 
         check_context(
             encrypted_client_key,
-            "client-generated",
+            CLIENT_GENERATED,
             user_id,
             key_id,
             storage_key,
@@ -518,13 +543,7 @@ mod test {
             &user_id,
             &key_id,
         )?;
-        check_context(
-            encrypted_import_key,
-            "imported key",
-            user_id,
-            key_id,
-            storage_key,
-        )
+        check_context(encrypted_import_key, IMPORTED, user_id, key_id, storage_key)
     }
 
     #[test]
@@ -536,7 +555,7 @@ mod test {
         let context = AssociatedData::new()
             .with_bytes(user_id.clone())
             .with_bytes(key_id.clone())
-            .with_str("imported key");
+            .with_str(IMPORTED);
 
         let key = SigningKeyPair::generate(&mut rng, &context);
 
@@ -721,15 +740,15 @@ mod test {
         // Create and encrypt a key pair - client side
         let (secret, _) =
             SigningKeyPair::create_and_encrypt(&mut rng, &storage_key, &user_id, &key_id)?;
-        assert!(!contains_str(secret.clone(), "imported"));
-        assert!(!contains_str(secret.clone(), "server-generated"));
-        assert!(contains_str(secret, "client-generated"));
+        assert!(!contains_str(secret.clone(), IMPORTED));
+        assert!(!contains_str(secret.clone(), SERVER_GENERATED));
+        assert!(contains_str(secret, CLIENT_GENERATED));
 
         // Remote generate a key pair -- not imported.
         let secret = SigningKeyPair::remote_generate(&mut rng, &user_id, &key_id);
-        assert!(!contains_str(secret.clone(), "imported"));
-        assert!(!contains_str(secret.clone(), "client-generated"));
-        assert!(contains_str(secret, "server-generated"));
+        assert!(!contains_str(secret.clone(), IMPORTED));
+        assert!(!contains_str(secret.clone(), CLIENT_GENERATED));
+        assert!(contains_str(secret, SERVER_GENERATED));
 
         // Use the local-import creation function
         let key_material = SigningKey::random(rng.clone()).to_bytes();
@@ -740,16 +759,16 @@ mod test {
             &user_id,
             &key_id,
         )?;
-        assert!(!contains_str(imported_secret.clone(), "client-generated"));
-        assert!(!contains_str(imported_secret.clone(), "server-generated"));
-        assert!(contains_str(imported_secret, "imported"));
+        assert!(!contains_str(imported_secret.clone(), CLIENT_GENERATED));
+        assert!(!contains_str(imported_secret.clone(), SERVER_GENERATED));
+        assert!(contains_str(imported_secret, IMPORTED));
 
         // Use the remote-import creation function
         let import: Import = key_material.as_slice().try_into()?;
         let key_pair = import.into_signing_key(&user_id, &key_id)?;
-        assert!(!contains_str(key_pair.clone(), "client-generated"));
-        assert!(!contains_str(key_pair.clone(), "server-generated"));
-        assert!(contains_str(key_pair, "imported"));
+        assert!(!contains_str(key_pair.clone(), CLIENT_GENERATED));
+        assert!(!contains_str(key_pair.clone(), SERVER_GENERATED));
+        assert!(contains_str(key_pair, IMPORTED));
 
         Ok(())
     }

@@ -53,8 +53,8 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for RemoteGenerateSigni
             let mut rng = context.rng.lock().await;
             context
                 .config
-                .server_side_encryption_key
-                .encrypt_signing_key_pair(&mut *rng, key_pair, &request.user_id, &key_id)?
+                .remote_storage_key
+                .encrypt_signing_key_pair(&mut *rng, key_pair)?
         };
 
         let secret =
