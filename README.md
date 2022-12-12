@@ -25,7 +25,7 @@ The client also includes the cryptographic functionality for:
 Refer to the [current design specification](https://github.com/boltlabs-inc/key-mgmt-spec) for Lock Keeper.
 
 ## Breaking Changes
-- LockKeeperKeyServer v0.3 introduces a breaking change with respect to a database that was generated using LockKeeperKeyServer v0.2. Remotely generated signing keys are now encrypted using a server side encryption key.
+- LockKeeperKeyServer v0.4 introduces a breaking change with respect to a database that was generated using LockKeeperKeyServer v0.3. Remotely generated signing keys are now encrypted using a server side encryption key.
 - LockKeeperClient v0.3 introduces a breaking change with respect to v0.2. Storage keys are encrypted inside the database using a different key, therefore, old storage keys in the database cannot be used anymore.
 - LockKeeperClient v0.3 is backwards **incompatible** with LockKeeperServer v0.2, given that authenticated traffic will now use an extra layer of encryption using the session key.
 
