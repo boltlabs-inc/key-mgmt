@@ -129,6 +129,6 @@ args = ["run", "--bin", "lock-keeper-client-cli"]
 [tasks.certs]
 script = { file = "dev/test-pki/generate-test-pki.sh" }
 
-# Generate server side encryption key in the dev/server-side-encryption/gen directory
+# Generate server side encryption key in the dev/remote-storage-key/gen directory
 [tasks.sse]
-script = { file = "dev/server-side-encryption/generate-test-server-side-encryption-key.sh" }
+script = { file = "dev/remote-storage-key/generate-test-remote-storage-key.sh" }

@@ -2,7 +2,7 @@
 # It generates a ChaCha20Poly1305 encryption key to be used on the server side
 # The key is used for encrypting Signing Keys in the database
 
-SCRIPT_DIR="dev/server-side-encryption"
+SCRIPT_DIR="dev/remote-storage-key"
 KEY_DIR=$SCRIPT_DIR/gen
 rm -rf $KEY_DIR
 

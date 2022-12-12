@@ -146,12 +146,12 @@ This alternative allows the client to secure its private key however it chooses.
 The key server always requires a server side encryption key.
 The server side encryption key can be provided in a similar fashion as the private key (see above).
 
-The command line argument for the `key-server-cli` binary included with the `lock-keeper-key-server` is `server-side-encryption-key`.
+The command line argument for the `key-server-cli` binary included with the `lock-keeper-key-server` is `remote-storage-key`.
 
 Example:
 
 ```bash
-cargo run --bin key-server-cli dev/local/ServerMutualAuth.toml --remote_storage_key "$(cat dev/server-side-encryption/gen/remote_storage.key | base64)"
+cargo run --bin key-server-cli dev/local/ServerMutualAuth.toml --remote_storage_key "$(cat dev/remote-storage-key/gen/remote_storage.key | base64)"
 ```
 
 Important to note is that this key encrypts all signing keys on the server, therefore, loss of this key would mean loss of all signing keys.

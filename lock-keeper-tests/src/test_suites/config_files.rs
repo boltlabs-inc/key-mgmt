@@ -154,7 +154,7 @@ port = 1114
 session_timeout = "60s"
 opaque_path = "dev/opaque"
 opaque_server_key = "dev/opaque/server_setup"
-remote_storage_key = "dev/server-side-encryption/gen/remote_storage.key"
+remote_storage_key = "dev/remote-storage-key/gen/remote_storage.key"
 
 [tls_config]
 certificate_chain = "dev/test-pki/gen/certs/server.chain"
@@ -195,7 +195,7 @@ port = 1114
 session_timeout = "60s"
 opaque_path = "dev/opaque"
 opaque_server_key = "dev/opaque/server_setup"
-remote_storage_key = "dev/server-side-encryption/gen/remote_storage.key"
+remote_storage_key = "dev/remote-storage-key/gen/remote_storage.key"
 
 [tls_config]
 private_key = "dev/test-pki/gen/certs/server.key"
