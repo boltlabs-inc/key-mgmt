@@ -41,14 +41,14 @@ impl RetrievedSecret {
             secret_types::REMOTE_SIGNING_KEY => {
                 let encrypted_key: Encrypted<SigningKeyPair> = stored_secret.try_into()?;
                 let key = encrypted_key.decrypt_signing_key_by_server(
-                    server_side_encryption_key,
+                    &server_side_encryption_key,
                     user_id,
                     key_id.clone(),
                 )?;
                 Ok(Self {
                     key_id,
                     secret_type,
-                    bytes: key.to_bytes(),
+                    bytes: key.into(),
                 })
             }
             &_ => Err(LockKeeperError::InvalidSecretType),
