@@ -78,7 +78,9 @@ impl TryFrom<StoredSecret> for Encrypted<SigningKeyPair> {
     type Error = LockKeeperError;
 
     fn try_from(secret: StoredSecret) -> Result<Self, Self::Error> {
-        if secret.secret_type == secret_types::SIGNING_KEY_PAIR {
+        if secret.secret_type == secret_types::SIGNING_KEY_PAIR
+            || secret.secret_type == secret_types::REMOTE_SIGNING_KEY
+        {
             Ok(serde_json::from_slice(&secret.bytes)?)
         } else {
             Err(LockKeeperError::InvalidSecretType)
