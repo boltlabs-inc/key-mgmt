@@ -38,7 +38,7 @@ pub enum LockKeeperError {
     InvalidPrivateKey,
 
     // Server side encryption error
-    #[error("Invalid server side encryption key")]
+    #[error("Invalid remote storage key")]
     InvalidRemoteStorageKey,
 
     // Wrapped errors

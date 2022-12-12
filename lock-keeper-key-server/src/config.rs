@@ -90,7 +90,7 @@ pub struct ConfigFile {
     pub port: u16,
     #[serde(with = "humantime_serde")]
     pub session_timeout: Duration,
-    /// The server side encryption key can be provided as a file or passed to
+    /// The remote storage key can be provided as a file or passed to
     /// the [`Config`] constructors.
     pub remote_storage_key: Option<PathBuf>,
     pub opaque_path: PathBuf,

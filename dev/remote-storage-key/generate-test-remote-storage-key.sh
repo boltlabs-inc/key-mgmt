@@ -9,5 +9,5 @@ rm -rf $KEY_DIR
 mkdir -p $KEY_DIR
 chmod 700 $KEY_DIR
 
-#Create server side encryption key, i.e. 32 random bytes that can be used as a ChaCha20Poly1305 key
+#Create remote storage key, i.e. 32 random bytes that can be used as a ChaCha20Poly1305 key
 openssl rand -out $KEY_DIR/remote_storage.key 32

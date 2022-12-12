@@ -31,7 +31,7 @@ args = ["compose", "up",
         "--attach", "key_server", 
         "--attach", "key_server_mutual_auth"
 ]
-dependencies = ["certs", "sse"]
+dependencies = ["certs", "remote-storage-key"]
 
 # Start a key server in the background
 [tasks.start-server-detached]
@@ -40,7 +40,7 @@ args = ["compose", "up",
         "--build", "mongodb", "key_server", "key_server_mutual_auth",
         "--wait"
 ]
-dependencies = ["certs", "sse"]
+dependencies = ["certs", "remote-storage-key"]
 
 # Stop a key server running in the background.
 [tasks.stop-server]
@@ -129,6 +129,6 @@ args = ["run", "--bin", "lock-keeper-client-cli"]
 [tasks.certs]
 script = { file = "dev/test-pki/generate-test-pki.sh" }
 
-# Generate server side encryption key in the dev/remote-storage-key/gen directory
-[tasks.sse]
+# Generate remote storage key in the dev/remote-storage-key/gen directory
+[tasks.remote-storage-key]
 script = { file = "dev/remote-storage-key/generate-test-remote-storage-key.sh" }

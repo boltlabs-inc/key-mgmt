@@ -7,10 +7,10 @@ use rand::{CryptoRng, RngCore};
 use std::path::Path;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
-/// The server side encryption key is a default-length symmetric encryption key
+/// The remote storage key is a default-length symmetric encryption key
 /// for an AEAD scheme.
 ///
-/// The server side encryption key is used by the key server to securely encrypt
+/// The remote storage key is used by the key server to securely encrypt
 /// signing keys generated on (or plaintext imported to) the server.
 #[derive(Debug, Clone, Zeroize, ZeroizeOnDrop)]
 pub struct RemoteStorageKey(pub(super) EncryptionKey);
@@ -21,14 +21,14 @@ impl RemoteStorageKey {
         Self(EncryptionKey::new(rng))
     }
 
-    /// Returns the server side encryption key found in the file at the given
+    /// Returns the remote storage key found in the file at the given
     /// path
     pub fn read_from_file(path: impl AsRef<Path>) -> Result<Self, LockKeeperError> {
         let bytes = std::fs::read(path)?;
         Self::from_bytes(&bytes)
     }
 
-    /// Returns the server side encryption key found in the given bytes
+    /// Returns the remote storage key found in the given bytes
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, LockKeeperError> {
         let key = EncryptionKey::from_bytes(
             bytes

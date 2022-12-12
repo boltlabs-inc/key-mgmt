@@ -9,7 +9,7 @@ pub enum LockKeeperServerError {
     MissingService,
     #[error("Private key was not provided.")]
     PrivateKeyMissing,
-    #[error("Server side encryption key was not provided.")]
+    #[error("Remote storage key was not provided.")]
     RemoteStorageKeyMissing,
 
     #[error("Error in session keys cache.")]
