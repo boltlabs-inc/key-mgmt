@@ -142,9 +142,9 @@ The private key can optionally be provided via a file path in the client config.
 Alternatively, the raw bytes for a private key can be passed to the `lock_keeper_client::Config` constructors.
 This alternative allows the client to secure its private key however it chooses.
 
-# Server side encryption key security
-The key server always requires a server side encryption key.
-The server side encryption key can be provided in a similar fashion as the private key (see above).
+# Remote storage key security
+The key server always requires a remote storage key.
+The remote storage key can be provided in a similar fashion as the private key (see above).
 
 The command line argument for the `key-server-cli` binary included with the `lock-keeper-key-server` is `remote-storage-key`.
 
