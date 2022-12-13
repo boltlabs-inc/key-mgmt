@@ -1,3 +1,7 @@
+/// This module provides the necessary encryption keys to securely encrypt
+/// secrets in storage.
+/// A [`StorageKey`] that can be used by the client to encrypt secrets and
+/// a [`RemoteStorageKey`] that can be used by a server.
 use super::{
     generic::{AssociatedData, EncryptionKey},
     CryptoError, Encrypted, MasterKey, SigningKeyPair,
