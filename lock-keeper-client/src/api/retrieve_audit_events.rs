@@ -1,6 +1,6 @@
 use crate::{LockKeeperClient, LockKeeperClientError, LockKeeperResponse};
 use lock_keeper::{
-    infrastructure::channel::ClientChannel,
+    infrastructure::channel::{Authenticated, ClientChannel},
     types::{
         audit_event::{AuditEvent, AuditEventOptions, EventType},
         operations::retrieve_audit_events::{client, server},
@@ -11,7 +11,7 @@ use rand::rngs::StdRng;
 impl LockKeeperClient {
     pub(crate) async fn handle_retrieve_audit_events(
         &self,
-        mut channel: ClientChannel<StdRng>,
+        mut channel: ClientChannel<Authenticated<StdRng>>,
         event_type: EventType,
         options: AuditEventOptions,
     ) -> Result<LockKeeperResponse<Vec<AuditEvent>>, LockKeeperClientError> {

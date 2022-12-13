@@ -1,7 +1,7 @@
 use crate::{LockKeeperClient, LockKeeperClientError, LockKeeperResponse};
 use lock_keeper::{
     crypto::{KeyId, SigningPublicKey},
-    infrastructure::channel::ClientChannel,
+    infrastructure::channel::{Authenticated, ClientChannel},
     types::operations::remote_generate::{client, server},
 };
 use rand::rngs::StdRng;
@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 impl LockKeeperClient {
     pub(crate) async fn handle_remote_generate_signing_key(
         &self,
-        mut channel: ClientChannel<StdRng>,
+        mut channel: ClientChannel<Authenticated<StdRng>>,
     ) -> Result<LockKeeperResponse<RemoteGenerateResult>, LockKeeperClientError> {
         let request = client::RequestRemoteGenerate {
             user_id: self.user_id().clone(),

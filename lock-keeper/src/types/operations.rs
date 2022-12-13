@@ -3,6 +3,7 @@
 pub mod authenticate;
 pub mod create_storage_key;
 pub mod generate;
+pub mod get_user_id;
 pub mod import;
 pub mod logout;
 pub mod register;
@@ -21,6 +22,8 @@ use strum::{Display, EnumIter, EnumString};
 use tonic::metadata::{Ascii, MetadataValue};
 use uuid::Uuid;
 
+use super::Message;
+
 /// Options for actions the Lock Keeper client can take.
 #[derive(
     Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq, Display, EnumIter, EnumString,
@@ -31,6 +34,7 @@ pub enum ClientAction {
     ExportSecret,
     ExportSigningKey,
     GenerateSecret,
+    GetUserId,
     ImportSigningKey,
     Logout,
     Register,
@@ -41,6 +45,22 @@ pub enum ClientAction {
     RetrieveSigningKey,
     RetrieveStorageKey,
 }
+
+/// Converts a serializable Rust type to and from the RPC [`Message`] type.
+pub trait ConvertMessage: Sized + for<'a> Deserialize<'a> + Serialize {
+    fn from_message(value: Message) -> Result<Self, LockKeeperError> {
+        Ok(serde_json::from_slice(&value.content)?)
+    }
+
+    fn to_message(self) -> Result<Message, LockKeeperError> {
+        let content = serde_json::to_vec(&self)?;
+        Ok(Message { content })
+    }
+}
+
+// Implements `ConvertMessage` for all types that implement `Serialize` and
+// `Deserialize`.
+impl<T: for<'a> Deserialize<'a> + Serialize> ConvertMessage for T {}
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct RequestMetadata {
@@ -66,8 +86,12 @@ impl RequestMetadata {
         self.action
     }
 
-    pub fn user_id(&self) -> &Option<UserId> {
-        &self.user_id
+    pub fn user_id(&self) -> Option<&UserId> {
+        self.user_id.as_ref()
+    }
+
+    pub fn set_user_id(&mut self, user_id: UserId) {
+        self.user_id = Some(user_id);
     }
 }
 

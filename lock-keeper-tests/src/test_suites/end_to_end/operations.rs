@@ -71,7 +71,7 @@ pub(crate) async fn check_audit_events(
     // authenticating
     let fourth_last = audit_event_log
         .len()
-        .checked_sub(4)
+        .checked_sub(6)
         .map(|i| &audit_event_log[i]);
     assert!(fourth_last.is_some());
 

@@ -1,5 +1,5 @@
 pub mod client {
-    use crate::{impl_authenticated_message_conversion, types::database::user::UserId};
+    use crate::types::database::user::UserId;
     use serde::{Deserialize, Serialize};
 
     #[derive(Debug, Deserialize, Serialize)]
@@ -7,12 +7,9 @@ pub mod client {
     pub struct Request {
         pub user_id: UserId,
     }
-
-    impl_authenticated_message_conversion!(Request);
 }
 
 pub mod server {
-    use crate::impl_authenticated_message_conversion;
     use serde::{Deserialize, Serialize};
 
     #[derive(Debug, Deserialize, Serialize)]
@@ -20,6 +17,4 @@ pub mod server {
     pub struct Response {
         pub success: bool,
     }
-
-    impl_authenticated_message_conversion!(Response);
 }

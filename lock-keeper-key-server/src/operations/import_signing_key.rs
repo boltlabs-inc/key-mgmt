@@ -9,7 +9,7 @@ use crate::database::DataStore;
 use async_trait::async_trait;
 use lock_keeper::{
     crypto::{KeyId, PlaceholderEncryptedSigningKeyPair},
-    infrastructure::channel::ServerChannel,
+    infrastructure::channel::{Authenticated, ServerChannel},
     types::{
         database::secrets::StoredSecret,
         operations::import::{client, server},
@@ -22,11 +22,11 @@ use tracing::{info, instrument};
 pub struct ImportSigningKey;
 
 #[async_trait]
-impl<DB: DataStore> Operation<DB> for ImportSigningKey {
+impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for ImportSigningKey {
     #[instrument(skip_all, err(Debug))]
     async fn operation(
         self,
-        channel: &mut ServerChannel<StdRng>,
+        channel: &mut ServerChannel<Authenticated<StdRng>>,
         context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
         info!("Starting import key operation.");

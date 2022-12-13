@@ -1,7 +1,7 @@
 use crate::{api::LocalStorage, LockKeeperClient, LockKeeperClientError, LockKeeperResponse};
 use lock_keeper::{
     crypto::{KeyId, Secret, StorageKey},
-    infrastructure::channel::ClientChannel,
+    infrastructure::channel::{Authenticated, ClientChannel},
     types::{
         database::user::UserId,
         operations::generate::{client, server},
@@ -20,7 +20,7 @@ pub struct GenerateResult {
 impl LockKeeperClient {
     pub(crate) async fn handle_generate_secret(
         &self,
-        mut channel: ClientChannel<StdRng>,
+        mut channel: ClientChannel<Authenticated<StdRng>>,
     ) -> Result<LockKeeperResponse<GenerateResult>, LockKeeperClientError> {
         // Retrieve the storage key
         let storage_key = self.retrieve_storage_key().await?;
@@ -47,7 +47,7 @@ impl LockKeeperClient {
 }
 
 async fn get_key_id(
-    channel: &mut ClientChannel<StdRng>,
+    channel: &mut ClientChannel<Authenticated<StdRng>>,
     user_id: &UserId,
 ) -> Result<KeyId, LockKeeperClientError> {
     // Send UserId to server
@@ -63,7 +63,7 @@ async fn get_key_id(
 }
 
 async fn generate_and_store(
-    channel: &mut ClientChannel<StdRng>,
+    channel: &mut ClientChannel<Authenticated<StdRng>>,
     user_id: &UserId,
     storage_key: StorageKey,
     rng: Arc<Mutex<StdRng>>,

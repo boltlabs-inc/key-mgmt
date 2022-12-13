@@ -6,7 +6,7 @@ use crate::{
 use crate::database::DataStore;
 use async_trait::async_trait;
 use lock_keeper::{
-    infrastructure::channel::ServerChannel,
+    infrastructure::channel::{Authenticated, ServerChannel},
     types::operations::logout::{client, server},
 };
 use rand::rngs::StdRng;
@@ -15,10 +15,10 @@ use rand::rngs::StdRng;
 pub struct Logout;
 
 #[async_trait]
-impl<DB: DataStore> Operation<DB> for Logout {
+impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for Logout {
     async fn operation(
         self,
-        channel: &mut ServerChannel<StdRng>,
+        channel: &mut ServerChannel<Authenticated<StdRng>>,
         context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
         // Receive UserId from client

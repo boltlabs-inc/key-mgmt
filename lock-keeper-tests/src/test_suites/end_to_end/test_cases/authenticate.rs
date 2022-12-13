@@ -34,7 +34,11 @@ async fn multiple_sessions_from_same_client_allowed(config: Config) -> Result<()
 
     let _first_login = authenticate(&state).await?;
     let _second_login = authenticate(&state).await?;
-    check_audit_events(&state, EventStatus::Successful, ClientAction::Authenticate).await?;
+    // TODO: Successful authentication now ends with the `GetUserId` action.
+    // At some point we need to update the audit event checks so that they're not
+    // based on the order of audit events. Once that happens, we can change this
+    // back to `Authenticate`.
+    check_audit_events(&state, EventStatus::Successful, ClientAction::GetUserId).await?;
 
     Ok(())
 }

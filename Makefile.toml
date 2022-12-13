@@ -66,16 +66,6 @@ args = ["run", "--bin", "lock-keeper-tests", "--", "--test-type", "e2e"]
 command = "cargo"
 args = ["run", "--bin", "lock-keeper-tests", "--", "--test-type", "integration"]
 
-# Run TLS mutual auth tests
-[tasks.test-mutual-auth]
-command = "cargo"
-args = ["run", "--bin", "lock-keeper-tests", "--", "--test-type", "mutual-auth"]
-
-# Run TLS mutual auth tests
-[tasks.test-config-files]
-command = "cargo"
-args = ["run", "--bin", "lock-keeper-tests", "--", "--test-type", "config-files"]
-
 # Run all tests that require a server to be running in Docker.
 [tasks.all-tests]
 command = "cargo"

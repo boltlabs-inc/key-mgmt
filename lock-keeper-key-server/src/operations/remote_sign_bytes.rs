@@ -9,7 +9,7 @@ use crate::database::DataStore;
 use async_trait::async_trait;
 use lock_keeper::{
     crypto::{PlaceholderEncryptedSigningKeyPair, Signable, SigningKeyPair},
-    infrastructure::channel::ServerChannel,
+    infrastructure::channel::{Authenticated, ServerChannel},
     types::operations::remote_sign_bytes::{client, server},
 };
 use rand::rngs::StdRng;
@@ -19,7 +19,7 @@ use tracing::{info, instrument};
 pub struct RemoteSignBytes;
 
 #[async_trait]
-impl<DB: DataStore> Operation<DB> for RemoteSignBytes {
+impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for RemoteSignBytes {
     /// Remotely sign protocol:
     /// 1) Receive remote sign request from client.
     /// 2) Look up signing key based on client-provided key ID.
@@ -28,7 +28,7 @@ impl<DB: DataStore> Operation<DB> for RemoteSignBytes {
     #[instrument(skip_all, err(Debug))]
     async fn operation(
         self,
-        channel: &mut ServerChannel<StdRng>,
+        channel: &mut ServerChannel<Authenticated<StdRng>>,
         context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
         info!("Starting remote sign protocol.");

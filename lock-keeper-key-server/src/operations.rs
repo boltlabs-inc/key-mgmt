@@ -1,6 +1,7 @@
 mod authenticate;
 mod create_storage_key;
 mod generate_secret;
+mod get_user_id;
 mod import_signing_key;
 mod logout;
 mod register;
@@ -13,6 +14,7 @@ mod retrieve_storage_key;
 pub use authenticate::Authenticate;
 pub use create_storage_key::CreateStorageKey;
 pub use generate_secret::GenerateSecret;
+pub use get_user_id::GetUserId;
 pub use import_signing_key::ImportSigningKey;
 pub use logout::Logout;
 pub use register::Register;

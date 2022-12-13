@@ -5,6 +5,7 @@ service LockKeeperRpc {
   rpc Authenticate (stream Message) returns (stream Message);
   rpc CreateStorageKey (stream Message) returns (stream Message);
   rpc GenerateSecret (stream Message) returns (stream Message);
+  rpc GetUserId (stream Message) returns (stream Message);
   rpc Health (HealthCheck) returns (HealthCheck);
   rpc ImportSigningKey (stream Message) returns (stream Message);
   rpc Logout (stream Message) returns (stream Message);

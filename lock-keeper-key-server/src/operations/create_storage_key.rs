@@ -6,7 +6,7 @@ use crate::{
 use crate::database::DataStore;
 use async_trait::async_trait;
 use lock_keeper::{
-    infrastructure::channel::ServerChannel,
+    infrastructure::channel::{Authenticated, ServerChannel},
     types::{
         database::user::UserId,
         operations::create_storage_key::{client, server},
@@ -19,11 +19,11 @@ use tracing::{error, info, instrument};
 pub struct CreateStorageKey;
 
 #[async_trait]
-impl<DB: DataStore> Operation<DB> for CreateStorageKey {
+impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for CreateStorageKey {
     #[instrument(skip_all, err(Debug))]
     async fn operation(
         self,
-        channel: &mut ServerChannel<StdRng>,
+        channel: &mut ServerChannel<Authenticated<StdRng>>,
         context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
         info!("Starting create storage key operation.");
@@ -42,7 +42,7 @@ impl<DB: DataStore> Operation<DB> for CreateStorageKey {
 /// 4) Reply to client via channel.
 #[instrument(skip_all, err(Debug))]
 async fn send_user_id<DB: DataStore>(
-    channel: &mut ServerChannel<StdRng>,
+    channel: &mut ServerChannel<Authenticated<StdRng>>,
     context: &Context<DB>,
 ) -> Result<UserId, LockKeeperServerError> {
     let request: client::RequestUserId = channel.receive().await?;
@@ -77,7 +77,7 @@ async fn send_user_id<DB: DataStore>(
 #[instrument(skip_all, err(Debug), fields(user_id))]
 async fn store_storage_key<DB: DataStore>(
     user_id: UserId,
-    channel: &mut ServerChannel<StdRng>,
+    channel: &mut ServerChannel<Authenticated<StdRng>>,
     context: &Context<DB>,
 ) -> Result<(), LockKeeperServerError> {
     info!("Storing storage key.");

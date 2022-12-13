@@ -8,14 +8,16 @@ use async_trait::async_trait;
 use lock_keeper::{
     config::opaque::OpaqueCipherSuite,
     crypto::OpaqueSessionKey,
-    infrastructure::{channel::ServerChannel, logging},
+    infrastructure::{
+        channel::{ServerChannel, Unauthenticated},
+        logging,
+    },
     types::{
         database::user::UserId,
         operations::authenticate::{client, server},
     },
 };
 use opaque_ke::{ServerLogin, ServerLoginStartParameters, ServerLoginStartResult};
-use rand::{rngs::StdRng, CryptoRng, RngCore};
 use tracing::{debug, info, instrument};
 
 struct AuthenticateStartResult {
@@ -27,13 +29,13 @@ struct AuthenticateStartResult {
 pub struct Authenticate;
 
 #[async_trait]
-impl<DB: DataStore> Operation<DB> for Authenticate {
+impl<DB: DataStore> Operation<Unauthenticated, DB> for Authenticate {
     /// Executes the sever-side opaque authentication protocol. This establishes
     /// a session key for client and server to use for secure communication.
     #[instrument(skip_all, err(Debug), fields(account_name))] // TODO: Record acccount name.
     async fn operation(
         self,
-        channel: &mut ServerChannel<StdRng>,
+        channel: &mut ServerChannel<Unauthenticated>,
         context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
         info!("Starting authentication protocol.");
@@ -43,11 +45,8 @@ impl<DB: DataStore> Operation<DB> for Authenticate {
 
         // Save session key into our cache.
         let mut session_key_cache = context.session_key_cache.lock().await;
-        session_key_cache.create_session(result.user_id.clone(), session_key.clone());
+        session_key_cache.create_session(result.user_id.clone(), session_key);
         info!("Session key established and saved.");
-
-        channel.try_upgrade_to_authenticated(session_key)?;
-        send_user_id(channel, result.user_id).await?;
 
         info!("Successfully completed authentication protocol.");
         Ok(())
@@ -58,7 +57,7 @@ impl<DB: DataStore> Operation<DB> for Authenticate {
 /// used in the finish step.
 #[instrument(skip_all, err(Debug), fields(user_id))]
 async fn authenticate_start<DB: DataStore>(
-    channel: &mut ServerChannel<StdRng>,
+    channel: &mut ServerChannel<Unauthenticated>,
     context: &Context<DB>,
 ) -> Result<AuthenticateStartResult, LockKeeperServerError> {
     // Receive start message from client
@@ -109,8 +108,8 @@ async fn authenticate_start<DB: DataStore>(
 /// session key is established between server and client. This function returns
 /// this key.
 #[instrument(skip_all, err(Debug))]
-async fn authenticate_finish<G: CryptoRng + RngCore>(
-    channel: &mut ServerChannel<G>,
+async fn authenticate_finish(
+    channel: &mut ServerChannel<Unauthenticated>,
     start_result: ServerLoginStartResult<OpaqueCipherSuite>,
 ) -> Result<OpaqueSessionKey, LockKeeperServerError> {
     // Receive finish message from client
@@ -124,15 +123,4 @@ async fn authenticate_finish<G: CryptoRng + RngCore>(
     // Send response to client
     channel.send(reply).await?;
     Ok(server_login_finish_result.session_key.try_into()?)
-}
-
-/// Returns the server-side start message along with a login result that will be
-/// used in the finish step.
-async fn send_user_id<G: CryptoRng + RngCore>(
-    channel: &mut ServerChannel<G>,
-    user_id: UserId,
-) -> Result<(), LockKeeperServerError> {
-    let reply = server::SendUserId { user_id };
-    channel.send(reply).await?;
-    Ok(())
 }

@@ -6,7 +6,7 @@ use crate::{
 };
 use async_trait::async_trait;
 use lock_keeper::{
-    infrastructure::channel::ServerChannel,
+    infrastructure::channel::{Authenticated, ServerChannel},
     types::operations::retrieve_audit_events::{client, server},
 };
 use rand::rngs::StdRng;
@@ -16,11 +16,11 @@ use tracing::{info, instrument};
 pub struct RetrieveAuditEvents;
 
 #[async_trait]
-impl<DB: DataStore> Operation<DB> for RetrieveAuditEvents {
+impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for RetrieveAuditEvents {
     #[instrument(skip_all, err(Debug))]
     async fn operation(
         self,
-        channel: &mut ServerChannel<StdRng>,
+        channel: &mut ServerChannel<Authenticated<StdRng>>,
         context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
         info!("Starting retrieve audit events protocol");

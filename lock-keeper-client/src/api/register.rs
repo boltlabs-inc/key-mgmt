@@ -5,7 +5,7 @@ use crate::{
 use lock_keeper::{
     config::opaque::OpaqueCipherSuite,
     crypto::MasterKey,
-    infrastructure::channel::ClientChannel,
+    infrastructure::channel::{ClientChannel, Unauthenticated},
     types::{
         database::user::AccountName,
         operations::register::{client, server},
@@ -14,14 +14,14 @@ use lock_keeper::{
 use opaque_ke::{
     ClientRegistration, ClientRegistrationFinishParameters, ClientRegistrationStartResult,
 };
-use rand::{CryptoRng, RngCore};
+use rand::rngs::StdRng;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
 impl LockKeeperClient {
-    pub(crate) async fn handle_registration<T: CryptoRng + RngCore>(
-        mut channel: ClientChannel<T>,
-        rng: Arc<Mutex<T>>,
+    pub(crate) async fn handle_registration(
+        mut channel: ClientChannel<Unauthenticated>,
+        rng: Arc<Mutex<StdRng>>,
         account_name: &AccountName,
         password: &Password,
     ) -> Result<MasterKey, LockKeeperClientError> {
@@ -36,9 +36,9 @@ impl LockKeeperClient {
     }
 }
 
-async fn register_start<T: CryptoRng + RngCore>(
-    channel: &mut ClientChannel<T>,
-    rng: Arc<Mutex<T>>,
+async fn register_start(
+    channel: &mut ClientChannel<Unauthenticated>,
+    rng: Arc<Mutex<StdRng>>,
     account_name: &AccountName,
     password: &Password,
 ) -> Result<ClientRegistrationStartResult<OpaqueCipherSuite>, LockKeeperClientError> {
@@ -57,9 +57,9 @@ async fn register_start<T: CryptoRng + RngCore>(
     Ok(client_registration_start_result)
 }
 
-async fn register_finish<T: CryptoRng + RngCore>(
-    channel: &mut ClientChannel<T>,
-    rng: Arc<Mutex<T>>,
+async fn register_finish(
+    channel: &mut ClientChannel<Unauthenticated>,
+    rng: Arc<Mutex<StdRng>>,
     password: &Password,
     client_start_result: ClientRegistrationStartResult<OpaqueCipherSuite>,
 ) -> Result<MasterKey, LockKeeperClientError> {

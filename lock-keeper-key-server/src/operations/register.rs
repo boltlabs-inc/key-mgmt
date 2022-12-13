@@ -8,25 +8,27 @@ use crate::database::DataStore;
 use async_trait::async_trait;
 use lock_keeper::{
     config::opaque::OpaqueCipherSuite,
-    infrastructure::{channel::ServerChannel, logging},
+    infrastructure::{
+        channel::{ServerChannel, Unauthenticated},
+        logging,
+    },
     types::{
         database::user::{AccountName, UserId},
         operations::register::{client, server},
     },
 };
 use opaque_ke::ServerRegistration;
-use rand::rngs::StdRng;
 use tracing::{info, instrument};
 
 #[derive(Debug)]
 pub struct Register;
 
 #[async_trait]
-impl<DB: DataStore> Operation<DB> for Register {
+impl<DB: DataStore> Operation<Unauthenticated, DB> for Register {
     #[instrument(skip_all, err(Debug), fields(account_name))]
     async fn operation(
         self,
-        channel: &mut ServerChannel<StdRng>,
+        channel: &mut ServerChannel<Unauthenticated>,
         context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
         info!("Starting register protocol.");
@@ -42,7 +44,7 @@ impl<DB: DataStore> Operation<DB> for Register {
 
 #[instrument(skip_all, err(Debug), fields(user_id))]
 async fn register_start<DB: DataStore>(
-    channel: &mut ServerChannel<StdRng>,
+    channel: &mut ServerChannel<Unauthenticated>,
     context: &Context<DB>,
 ) -> Result<AccountName, LockKeeperServerError> {
     // Receive start message from client
@@ -85,7 +87,7 @@ async fn register_start<DB: DataStore>(
 #[instrument(skip_all, err(Debug))]
 async fn register_finish<DB: DataStore>(
     account_name: &AccountName,
-    channel: &mut ServerChannel<StdRng>,
+    channel: &mut ServerChannel<Unauthenticated>,
     context: &Context<DB>,
 ) -> Result<(), LockKeeperServerError> {
     // Receive finish message from client
