@@ -79,6 +79,7 @@
 <span id="79">79</span>
 <span id="80">80</span>
 <span id="81">81</span>
+<span id="82">82</span>
 </pre><pre class="rust"><code><span class="kw">pub mod </span>config;
 <span class="kw">pub mod </span>error;
 <span class="kw">pub mod </span>test_suites;
@@ -86,6 +87,7 @@
 
 <span class="kw">use crate</span>::{error::LockKeeperTestError, utils::TestResult};
 <span class="kw">use </span>clap::Parser;
+<span class="kw">use </span>colored::Colorize;
 <span class="kw">use </span>config::Config;
 <span class="kw">use </span>std::{path::PathBuf, str::FromStr};
 
@@ -104,10 +106,8 @@
 <span class="attribute">#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 </span><span class="kw">pub enum </span>TestType {
     All,
-    ConfigFiles,
     E2E,
     Integration,
-    MutualAuth,
 }
 
 <span class="kw">impl </span>FromStr <span class="kw">for </span>TestType {
@@ -116,10 +116,8 @@
     <span class="kw">fn </span>from_str(s: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Err&gt; {
         <span class="kw">match </span>s {
             <span class="string">&quot;all&quot; </span>=&gt; <span class="prelude-val">Ok</span>(TestType::All),
-            <span class="string">&quot;config-files&quot; </span>=&gt; <span class="prelude-val">Ok</span>(TestType::ConfigFiles),
             <span class="string">&quot;e2e&quot; </span>=&gt; <span class="prelude-val">Ok</span>(TestType::E2E),
             <span class="string">&quot;integration&quot; </span>=&gt; <span class="prelude-val">Ok</span>(TestType::Integration),
-            <span class="string">&quot;mutual-auth&quot; </span>=&gt; <span class="prelude-val">Ok</span>(TestType::MutualAuth),
             <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(LockKeeperTestError::InvalidTestType(s.to_string())),
         }
     }
@@ -132,29 +130,33 @@
     <span class="kw">let </span>config = Config::try_from(cli).unwrap();
     utils::wait_for_server(<span class="kw-2">&amp;</span>config.client_config).<span class="kw">await</span>.unwrap();
 
-    <span class="kw">match </span>test_type {
-        TestType::All =&gt; {
-            check_errors(<span class="kw-2">&amp;</span>test_suites::run_all(<span class="kw-2">&amp;</span>config).<span class="kw">await</span>.unwrap()).unwrap();
+    <span class="kw">match </span>run_tests(test_type, config).<span class="kw">await </span>{
+        <span class="prelude-val">Err</span>(e @ LockKeeperTestError::TestFailed) =&gt; {
+            <span class="comment">// Manually report error to avoid a useless stack trace
+            </span><span class="macro">eprintln!</span>(<span class="string">&quot;{}&quot;</span>, e.to_string().red());
+            std::process::exit(<span class="number">1</span>);
         }
-        TestType::ConfigFiles =&gt; {
-            check_errors(<span class="kw-2">&amp;</span>test_suites::config_files::run_tests(<span class="kw-2">&amp;</span>config).<span class="kw">await</span>.unwrap()).unwrap();
-        }
-        TestType::E2E =&gt; {
-            check_errors(<span class="kw-2">&amp;</span>test_suites::end_to_end::run_tests(<span class="kw-2">&amp;</span>config).<span class="kw">await</span>.unwrap()).unwrap();
-        }
-        TestType::Integration =&gt; {
-            check_errors(<span class="kw-2">&amp;</span>test_suites::database::run_tests(<span class="kw-2">&amp;</span>config).<span class="kw">await</span>.unwrap()).unwrap();
-        }
-        TestType::MutualAuth =&gt; {
-            check_errors(<span class="kw-2">&amp;</span>test_suites::mutual_auth::run_tests(<span class="kw-2">&amp;</span>config).<span class="kw">await</span>.unwrap()).unwrap();
-        }
+        <span class="prelude-val">Err</span>(e) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;{e}&quot;</span>),
+        <span class="prelude-val">Ok</span>(()) =&gt; (),
     }
 }
 
-<span class="kw">fn </span>check_errors(results: <span class="kw-2">&amp;</span>[TestResult]) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperTestError&gt; {
-    <span class="kw">use </span>TestResult::<span class="kw-2">*</span>;
+<span class="kw">async fn </span>run_tests(test_type: TestType, config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperTestError&gt; {
+    <span class="kw">let </span>results = <span class="kw">match </span>test_type {
+        TestType::All =&gt; test_suites::run_all(<span class="kw-2">&amp;</span>config).<span class="kw">await</span><span class="question-mark">?</span>,
+        TestType::E2E =&gt; test_suites::end_to_end::run_tests(<span class="kw-2">&amp;</span>config).<span class="kw">await</span><span class="question-mark">?</span>,
+        TestType::Integration =&gt; {
+            <span class="kw">let </span><span class="kw-2">mut </span>results = Vec::new();
 
-    <span class="kw">if </span>results.iter().any(|r| <span class="kw-2">*</span>r == Failed) {
+            results.extend(test_suites::config_files::run_tests(<span class="kw-2">&amp;</span>config).<span class="kw">await</span><span class="question-mark">?</span>);
+            results.extend(test_suites::database::run_tests(<span class="kw-2">&amp;</span>config).<span class="kw">await</span><span class="question-mark">?</span>);
+            results.extend(test_suites::mutual_auth::run_tests(<span class="kw-2">&amp;</span>config).<span class="kw">await</span><span class="question-mark">?</span>);
+
+            results
+        }
+    };
+
+    <span class="kw">if </span>results.iter().any(|r| <span class="kw-2">*</span>r == TestResult::Failed) {
         <span class="prelude-val">Err</span>(LockKeeperTestError::TestFailed)
     } <span class="kw">else </span>{
         <span class="prelude-val">Ok</span>(())

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":[["authenticate_finish",""],["authenticate_start",""],["retrieve_user_id","Retrieve the authenticated user ID from the server."]]};
+window.SIDEBAR_ITEMS = {"fn":[["authenticate_finish",""],["authenticate_start",""]]};

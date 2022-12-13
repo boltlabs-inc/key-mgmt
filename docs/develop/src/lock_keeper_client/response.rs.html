@@ -20,9 +20,7 @@
 <span id="20">20</span>
 <span id="21">21</span>
 <span id="22">22</span>
-<span id="23">23</span>
 </pre><pre class="rust"><code><span class="kw">use </span>lock_keeper::{infrastructure::channel::ClientChannel, types::operations::ResponseMetadata};
-<span class="kw">use </span>rand::rngs::StdRng;
 
 <span class="attribute">#[derive(Clone, Debug)]
 </span><span class="kw">pub struct </span>LockKeeperResponse&lt;T&gt; {
@@ -32,7 +30,7 @@
 
 <span class="kw">impl</span>&lt;T&gt; LockKeeperResponse&lt;T&gt; {
     <span class="doccomment">/// Consumes a [`ClientChannel`] and returns a response.
-    </span><span class="kw">pub fn </span>from_channel(channel: ClientChannel&lt;StdRng&gt;, data: T) -&gt; <span class="self">Self </span>{
+    </span><span class="kw">pub fn </span>from_channel&lt;AUTH&gt;(channel: ClientChannel&lt;AUTH&gt;, data: T) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
             data,
             metadata: channel.into_metadata(),

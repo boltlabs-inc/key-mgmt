@@ -124,18 +124,6 @@
 <span id="124">124</span>
 <span id="125">125</span>
 <span id="126">126</span>
-<span id="127">127</span>
-<span id="128">128</span>
-<span id="129">129</span>
-<span id="130">130</span>
-<span id="131">131</span>
-<span id="132">132</span>
-<span id="133">133</span>
-<span id="134">134</span>
-<span id="135">135</span>
-<span id="136">136</span>
-<span id="137">137</span>
-<span id="138">138</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{
     error::LockKeeperServerError,
     server::{Context, Operation},
@@ -146,14 +134,16 @@
 <span class="kw">use </span>lock_keeper::{
     config::opaque::OpaqueCipherSuite,
     crypto::OpaqueSessionKey,
-    infrastructure::{channel::ServerChannel, logging},
+    infrastructure::{
+        channel::{ServerChannel, Unauthenticated},
+        logging,
+    },
     types::{
         database::user::UserId,
         operations::authenticate::{client, server},
     },
 };
 <span class="kw">use </span>opaque_ke::{ServerLogin, ServerLoginStartParameters, ServerLoginStartResult};
-<span class="kw">use </span>rand::{rngs::StdRng, CryptoRng, RngCore};
 <span class="kw">use </span>tracing::{debug, info, instrument};
 
 <span class="kw">struct </span>AuthenticateStartResult {
@@ -165,13 +155,13 @@
 </span><span class="kw">pub struct </span>Authenticate;
 
 <span class="attribute">#[async_trait]
-</span><span class="kw">impl</span>&lt;DB: DataStore&gt; Operation&lt;DB&gt; <span class="kw">for </span>Authenticate {
+</span><span class="kw">impl</span>&lt;DB: DataStore&gt; Operation&lt;Unauthenticated, DB&gt; <span class="kw">for </span>Authenticate {
     <span class="doccomment">/// Executes the sever-side opaque authentication protocol. This establishes
     /// a session key for client and server to use for secure communication.
     </span><span class="attribute">#[instrument(skip_all, err(Debug), fields(account_name))] </span><span class="comment">// TODO: Record acccount name.
     </span><span class="kw">async fn </span>operation(
         <span class="self">self</span>,
-        channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;StdRng&gt;,
+        channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;Unauthenticated&gt;,
         context: <span class="kw-2">&amp;mut </span>Context&lt;DB&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
         <span class="macro">info!</span>(<span class="string">&quot;Starting authentication protocol.&quot;</span>);
@@ -181,11 +171,8 @@
 
         <span class="comment">// Save session key into our cache.
         </span><span class="kw">let </span><span class="kw-2">mut </span>session_key_cache = context.session_key_cache.lock().<span class="kw">await</span>;
-        session_key_cache.create_session(result.user_id.clone(), session_key.clone());
+        session_key_cache.create_session(result.user_id.clone(), session_key);
         <span class="macro">info!</span>(<span class="string">&quot;Session key established and saved.&quot;</span>);
-
-        channel.try_upgrade_to_authenticated(session_key)<span class="question-mark">?</span>;
-        send_user_id(channel, result.user_id).<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="macro">info!</span>(<span class="string">&quot;Successfully completed authentication protocol.&quot;</span>);
         <span class="prelude-val">Ok</span>(())
@@ -196,7 +183,7 @@
 /// used in the finish step.
 </span><span class="attribute">#[instrument(skip_all, err(Debug), fields(user_id))]
 </span><span class="kw">async fn </span>authenticate_start&lt;DB: DataStore&gt;(
-    channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;StdRng&gt;,
+    channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;Unauthenticated&gt;,
     context: <span class="kw-2">&amp;</span>Context&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;AuthenticateStartResult, LockKeeperServerError&gt; {
     <span class="comment">// Receive start message from client
@@ -247,8 +234,8 @@
 /// session key is established between server and client. This function returns
 /// this key.
 </span><span class="attribute">#[instrument(skip_all, err(Debug))]
-</span><span class="kw">async fn </span>authenticate_finish&lt;G: CryptoRng + RngCore&gt;(
-    channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;G&gt;,
+</span><span class="kw">async fn </span>authenticate_finish(
+    channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;Unauthenticated&gt;,
     start_result: ServerLoginStartResult&lt;OpaqueCipherSuite&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;OpaqueSessionKey, LockKeeperServerError&gt; {
     <span class="comment">// Receive finish message from client
@@ -262,17 +249,6 @@
     <span class="comment">// Send response to client
     </span>channel.send(reply).<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="prelude-val">Ok</span>(server_login_finish_result.session_key.try_into()<span class="question-mark">?</span>)
-}
-
-<span class="doccomment">/// Returns the server-side start message along with a login result that will be
-/// used in the finish step.
-</span><span class="kw">async fn </span>send_user_id&lt;G: CryptoRng + RngCore&gt;(
-    channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;G&gt;,
-    user_id: UserId,
-) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
-    <span class="kw">let </span>reply = server::SendUserId { user_id };
-    channel.send(reply).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="prelude-val">Ok</span>(())
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="lock_keeper_key_server" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

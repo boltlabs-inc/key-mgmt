@@ -92,7 +92,7 @@
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{api::LocalStorage, LockKeeperClient, LockKeeperClientError, LockKeeperResponse};
 <span class="kw">use </span>lock_keeper::{
     crypto::{Encrypted, KeyId, PlaceholderEncryptedSigningKeyPair, Secret, SigningKeyPair},
-    infrastructure::channel::ClientChannel,
+    infrastructure::channel::{Authenticated, ClientChannel},
     types::{
         database::secrets::secret_types,
         operations::retrieve_secret::{client, server, RetrieveContext},
@@ -105,7 +105,7 @@
     /// ([`lock_keeper::crypto::Secret`]) only.
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>handle_retrieve_secret(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="kw-2">mut </span>channel: ClientChannel&lt;StdRng&gt;,
+        <span class="kw-2">mut </span>channel: ClientChannel&lt;Authenticated&lt;StdRng&gt;&gt;,
         key_id: <span class="kw-2">&amp;</span>KeyId,
         context: RetrieveContext,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperResponse&lt;<span class="prelude-ty">Option</span>&lt;LocalStorage&lt;Secret&gt;&gt;&gt;, LockKeeperClientError&gt; {
@@ -145,7 +145,7 @@
     /// ([`lock_keeper::crypto::SigningKeyPair`]) only.
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>handle_retrieve_signing_key(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="kw-2">mut </span>channel: ClientChannel&lt;StdRng&gt;,
+        <span class="kw-2">mut </span>channel: ClientChannel&lt;Authenticated&lt;StdRng&gt;&gt;,
         key_id: <span class="kw-2">&amp;</span>KeyId,
         context: RetrieveContext,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperResponse&lt;<span class="prelude-ty">Option</span>&lt;LocalStorage&lt;SigningKeyPair&gt;&gt;&gt;, LockKeeperClientError&gt;

@@ -20,16 +20,8 @@
 <span id="20">20</span>
 <span id="21">21</span>
 <span id="22">22</span>
-<span id="23">23</span>
-<span id="24">24</span>
-<span id="25">25</span>
-<span id="26">26</span>
-<span id="27">27</span>
-<span id="28">28</span>
 </pre><pre class="rust"><code><span class="kw">pub mod </span>client {
-    <span class="kw">use crate</span>::{
-        crypto::Import, impl_authenticated_message_conversion, types::database::user::UserId,
-    };
+    <span class="kw">use crate</span>::{crypto::Import, types::database::user::UserId};
     <span class="kw">use </span>serde::{Deserialize, Serialize};
 
     <span class="attribute">#[derive(Debug, Deserialize, Serialize)]
@@ -38,12 +30,10 @@
         <span class="kw">pub </span>user_id: UserId,
         <span class="kw">pub </span>key_material: Import,
     }
-
-    <span class="macro">impl_authenticated_message_conversion!</span>(Request);
 }
 
 <span class="kw">pub mod </span>server {
-    <span class="kw">use crate</span>::{crypto::KeyId, impl_authenticated_message_conversion};
+    <span class="kw">use </span><span class="kw">crate</span>::crypto::KeyId;
     <span class="kw">use </span>serde::{Deserialize, Serialize};
 
     <span class="attribute">#[derive(Debug, Deserialize, Serialize)]
@@ -51,8 +41,6 @@
     </span><span class="kw">pub struct </span>Response {
         <span class="kw">pub </span>key_id: KeyId,
     }
-
-    <span class="macro">impl_authenticated_message_conversion!</span>(Response);
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="lock_keeper" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

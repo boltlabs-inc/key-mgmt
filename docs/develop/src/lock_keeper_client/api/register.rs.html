@@ -97,7 +97,7 @@
 <span class="kw">use </span>lock_keeper::{
     config::opaque::OpaqueCipherSuite,
     crypto::MasterKey,
-    infrastructure::channel::ClientChannel,
+    infrastructure::channel::{ClientChannel, Unauthenticated},
     types::{
         database::user::AccountName,
         operations::register::{client, server},
@@ -106,14 +106,14 @@
 <span class="kw">use </span>opaque_ke::{
     ClientRegistration, ClientRegistrationFinishParameters, ClientRegistrationStartResult,
 };
-<span class="kw">use </span>rand::{CryptoRng, RngCore};
+<span class="kw">use </span>rand::rngs::StdRng;
 <span class="kw">use </span>std::sync::Arc;
 <span class="kw">use </span>tokio::sync::Mutex;
 
 <span class="kw">impl </span>LockKeeperClient {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>handle_registration&lt;T: CryptoRng + RngCore&gt;(
-        <span class="kw-2">mut </span>channel: ClientChannel&lt;T&gt;,
-        rng: Arc&lt;Mutex&lt;T&gt;&gt;,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>handle_registration(
+        <span class="kw-2">mut </span>channel: ClientChannel&lt;Unauthenticated&gt;,
+        rng: Arc&lt;Mutex&lt;StdRng&gt;&gt;,
         account_name: <span class="kw-2">&amp;</span>AccountName,
         password: <span class="kw-2">&amp;</span>Password,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;MasterKey, LockKeeperClientError&gt; {
@@ -128,9 +128,9 @@
     }
 }
 
-<span class="kw">async fn </span>register_start&lt;T: CryptoRng + RngCore&gt;(
-    channel: <span class="kw-2">&amp;mut </span>ClientChannel&lt;T&gt;,
-    rng: Arc&lt;Mutex&lt;T&gt;&gt;,
+<span class="kw">async fn </span>register_start(
+    channel: <span class="kw-2">&amp;mut </span>ClientChannel&lt;Unauthenticated&gt;,
+    rng: Arc&lt;Mutex&lt;StdRng&gt;&gt;,
     account_name: <span class="kw-2">&amp;</span>AccountName,
     password: <span class="kw-2">&amp;</span>Password,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;ClientRegistrationStartResult&lt;OpaqueCipherSuite&gt;, LockKeeperClientError&gt; {
@@ -149,9 +149,9 @@
     <span class="prelude-val">Ok</span>(client_registration_start_result)
 }
 
-<span class="kw">async fn </span>register_finish&lt;T: CryptoRng + RngCore&gt;(
-    channel: <span class="kw-2">&amp;mut </span>ClientChannel&lt;T&gt;,
-    rng: Arc&lt;Mutex&lt;T&gt;&gt;,
+<span class="kw">async fn </span>register_finish(
+    channel: <span class="kw-2">&amp;mut </span>ClientChannel&lt;Unauthenticated&gt;,
+    rng: Arc&lt;Mutex&lt;StdRng&gt;&gt;,
     password: <span class="kw-2">&amp;</span>Password,
     client_start_result: ClientRegistrationStartResult&lt;OpaqueCipherSuite&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;MasterKey, LockKeeperClientError&gt; {

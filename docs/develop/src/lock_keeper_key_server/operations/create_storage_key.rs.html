@@ -122,7 +122,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::database::DataStore;
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>lock_keeper::{
-    infrastructure::channel::ServerChannel,
+    infrastructure::channel::{Authenticated, ServerChannel},
     types::{
         database::user::UserId,
         operations::create_storage_key::{client, server},
@@ -135,11 +135,11 @@
 </span><span class="kw">pub struct </span>CreateStorageKey;
 
 <span class="attribute">#[async_trait]
-</span><span class="kw">impl</span>&lt;DB: DataStore&gt; Operation&lt;DB&gt; <span class="kw">for </span>CreateStorageKey {
+</span><span class="kw">impl</span>&lt;DB: DataStore&gt; Operation&lt;Authenticated&lt;StdRng&gt;, DB&gt; <span class="kw">for </span>CreateStorageKey {
     <span class="attribute">#[instrument(skip_all, err(Debug))]
     </span><span class="kw">async fn </span>operation(
         <span class="self">self</span>,
-        channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;StdRng&gt;,
+        channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;Authenticated&lt;StdRng&gt;&gt;,
         context: <span class="kw-2">&amp;mut </span>Context&lt;DB&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
         <span class="macro">info!</span>(<span class="string">&quot;Starting create storage key operation.&quot;</span>);
@@ -158,7 +158,7 @@
 /// 4) Reply to client via channel.
 </span><span class="attribute">#[instrument(skip_all, err(Debug))]
 </span><span class="kw">async fn </span>send_user_id&lt;DB: DataStore&gt;(
-    channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;StdRng&gt;,
+    channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;Authenticated&lt;StdRng&gt;&gt;,
     context: <span class="kw-2">&amp;</span>Context&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;UserId, LockKeeperServerError&gt; {
     <span class="kw">let </span>request: client::RequestUserId = channel.receive().<span class="kw">await</span><span class="question-mark">?</span>;
@@ -193,7 +193,7 @@
 <span class="attribute">#[instrument(skip_all, err(Debug), fields(user_id))]
 </span><span class="kw">async fn </span>store_storage_key&lt;DB: DataStore&gt;(
     user_id: UserId,
-    channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;StdRng&gt;,
+    channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;Authenticated&lt;StdRng&gt;&gt;,
     context: <span class="kw-2">&amp;</span>Context&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
     <span class="macro">info!</span>(<span class="string">&quot;Storing storage key.&quot;</span>);

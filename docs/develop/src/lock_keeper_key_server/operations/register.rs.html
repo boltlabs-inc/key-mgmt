@@ -128,6 +128,8 @@
 <span id="128">128</span>
 <span id="129">129</span>
 <span id="130">130</span>
+<span id="131">131</span>
+<span id="132">132</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{
     error::LockKeeperServerError,
     server::{Context, Operation},
@@ -138,25 +140,27 @@
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>lock_keeper::{
     config::opaque::OpaqueCipherSuite,
-    infrastructure::{channel::ServerChannel, logging},
+    infrastructure::{
+        channel::{ServerChannel, Unauthenticated},
+        logging,
+    },
     types::{
         database::user::{AccountName, UserId},
         operations::register::{client, server},
     },
 };
 <span class="kw">use </span>opaque_ke::ServerRegistration;
-<span class="kw">use </span>rand::rngs::StdRng;
 <span class="kw">use </span>tracing::{info, instrument};
 
 <span class="attribute">#[derive(Debug)]
 </span><span class="kw">pub struct </span>Register;
 
 <span class="attribute">#[async_trait]
-</span><span class="kw">impl</span>&lt;DB: DataStore&gt; Operation&lt;DB&gt; <span class="kw">for </span>Register {
+</span><span class="kw">impl</span>&lt;DB: DataStore&gt; Operation&lt;Unauthenticated, DB&gt; <span class="kw">for </span>Register {
     <span class="attribute">#[instrument(skip_all, err(Debug), fields(account_name))]
     </span><span class="kw">async fn </span>operation(
         <span class="self">self</span>,
-        channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;StdRng&gt;,
+        channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;Unauthenticated&gt;,
         context: <span class="kw-2">&amp;mut </span>Context&lt;DB&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
         <span class="macro">info!</span>(<span class="string">&quot;Starting register protocol.&quot;</span>);
@@ -172,7 +176,7 @@
 
 <span class="attribute">#[instrument(skip_all, err(Debug), fields(user_id))]
 </span><span class="kw">async fn </span>register_start&lt;DB: DataStore&gt;(
-    channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;StdRng&gt;,
+    channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;Unauthenticated&gt;,
     context: <span class="kw-2">&amp;</span>Context&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;AccountName, LockKeeperServerError&gt; {
     <span class="comment">// Receive start message from client
@@ -215,7 +219,7 @@
 <span class="attribute">#[instrument(skip_all, err(Debug))]
 </span><span class="kw">async fn </span>register_finish&lt;DB: DataStore&gt;(
     account_name: <span class="kw-2">&amp;</span>AccountName,
-    channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;StdRng&gt;,
+    channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;Unauthenticated&gt;,
     context: <span class="kw-2">&amp;</span>Context&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
     <span class="comment">// Receive finish message from client

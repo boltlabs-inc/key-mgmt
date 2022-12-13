@@ -180,6 +180,141 @@
 <span id="180">180</span>
 <span id="181">181</span>
 <span id="182">182</span>
+<span id="183">183</span>
+<span id="184">184</span>
+<span id="185">185</span>
+<span id="186">186</span>
+<span id="187">187</span>
+<span id="188">188</span>
+<span id="189">189</span>
+<span id="190">190</span>
+<span id="191">191</span>
+<span id="192">192</span>
+<span id="193">193</span>
+<span id="194">194</span>
+<span id="195">195</span>
+<span id="196">196</span>
+<span id="197">197</span>
+<span id="198">198</span>
+<span id="199">199</span>
+<span id="200">200</span>
+<span id="201">201</span>
+<span id="202">202</span>
+<span id="203">203</span>
+<span id="204">204</span>
+<span id="205">205</span>
+<span id="206">206</span>
+<span id="207">207</span>
+<span id="208">208</span>
+<span id="209">209</span>
+<span id="210">210</span>
+<span id="211">211</span>
+<span id="212">212</span>
+<span id="213">213</span>
+<span id="214">214</span>
+<span id="215">215</span>
+<span id="216">216</span>
+<span id="217">217</span>
+<span id="218">218</span>
+<span id="219">219</span>
+<span id="220">220</span>
+<span id="221">221</span>
+<span id="222">222</span>
+<span id="223">223</span>
+<span id="224">224</span>
+<span id="225">225</span>
+<span id="226">226</span>
+<span id="227">227</span>
+<span id="228">228</span>
+<span id="229">229</span>
+<span id="230">230</span>
+<span id="231">231</span>
+<span id="232">232</span>
+<span id="233">233</span>
+<span id="234">234</span>
+<span id="235">235</span>
+<span id="236">236</span>
+<span id="237">237</span>
+<span id="238">238</span>
+<span id="239">239</span>
+<span id="240">240</span>
+<span id="241">241</span>
+<span id="242">242</span>
+<span id="243">243</span>
+<span id="244">244</span>
+<span id="245">245</span>
+<span id="246">246</span>
+<span id="247">247</span>
+<span id="248">248</span>
+<span id="249">249</span>
+<span id="250">250</span>
+<span id="251">251</span>
+<span id="252">252</span>
+<span id="253">253</span>
+<span id="254">254</span>
+<span id="255">255</span>
+<span id="256">256</span>
+<span id="257">257</span>
+<span id="258">258</span>
+<span id="259">259</span>
+<span id="260">260</span>
+<span id="261">261</span>
+<span id="262">262</span>
+<span id="263">263</span>
+<span id="264">264</span>
+<span id="265">265</span>
+<span id="266">266</span>
+<span id="267">267</span>
+<span id="268">268</span>
+<span id="269">269</span>
+<span id="270">270</span>
+<span id="271">271</span>
+<span id="272">272</span>
+<span id="273">273</span>
+<span id="274">274</span>
+<span id="275">275</span>
+<span id="276">276</span>
+<span id="277">277</span>
+<span id="278">278</span>
+<span id="279">279</span>
+<span id="280">280</span>
+<span id="281">281</span>
+<span id="282">282</span>
+<span id="283">283</span>
+<span id="284">284</span>
+<span id="285">285</span>
+<span id="286">286</span>
+<span id="287">287</span>
+<span id="288">288</span>
+<span id="289">289</span>
+<span id="290">290</span>
+<span id="291">291</span>
+<span id="292">292</span>
+<span id="293">293</span>
+<span id="294">294</span>
+<span id="295">295</span>
+<span id="296">296</span>
+<span id="297">297</span>
+<span id="298">298</span>
+<span id="299">299</span>
+<span id="300">300</span>
+<span id="301">301</span>
+<span id="302">302</span>
+<span id="303">303</span>
+<span id="304">304</span>
+<span id="305">305</span>
+<span id="306">306</span>
+<span id="307">307</span>
+<span id="308">308</span>
+<span id="309">309</span>
+<span id="310">310</span>
+<span id="311">311</span>
+<span id="312">312</span>
+<span id="313">313</span>
+<span id="314">314</span>
+<span id="315">315</span>
+<span id="316">316</span>
+<span id="317">317</span>
 </pre><pre class="rust"><code><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>opaque_storage;
 <span class="kw">mod </span>operation;
 <span class="kw">mod </span>service;
@@ -187,20 +322,28 @@
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use </span>operation::Operation;
 <span class="kw">pub use </span>service::start_lock_keeper_server;
+<span class="kw">use </span>tokio_stream::wrappers::ReceiverStream;
+<span class="kw">use </span>tracing::{info, instrument};
+<span class="kw">use </span>uuid::Uuid;
 
 <span class="kw">use crate</span>::{config::Config, error::LockKeeperServerError, operations};
 
 <span class="kw">use </span>lock_keeper::{
+    constants::METADATA,
     crypto::KeyId,
+    infrastructure::channel::{Authenticated, ServerChannel, Unauthenticated},
     rpc::{lock_keeper_rpc_server::LockKeeperRpc, HealthCheck},
-    types::{Message, MessageStream},
+    types::{
+        operations::{RequestMetadata, ResponseMetadata},
+        Message, MessageStream,
+    },
 };
 
 <span class="kw">use crate</span>::{database::DataStore, server::session_key_cache::SessionCache};
 <span class="kw">use </span>rand::{rngs::StdRng, SeedableRng};
 <span class="kw">use </span>std::sync::Arc;
 <span class="kw">use </span>tokio::sync::Mutex;
-<span class="kw">use </span>tonic::{Request, Response, Status};
+<span class="kw">use </span>tonic::{Request, Response, Status, Streaming};
 
 <span class="kw">pub struct </span>LockKeeperKeyServer&lt;DB: DataStore&gt; {
     config: Arc&lt;Config&gt;,
@@ -250,6 +393,7 @@
     <span class="kw">type </span>AuthenticateStream = MessageStream;
     <span class="kw">type </span>CreateStorageKeyStream = MessageStream;
     <span class="kw">type </span>GenerateSecretStream = MessageStream;
+    <span class="kw">type </span>GetUserIdStream = MessageStream;
     <span class="kw">type </span>ImportSigningKeyStream = MessageStream;
     <span class="kw">type </span>LogoutStream = MessageStream;
     <span class="kw">type </span>RegisterStream = MessageStream;
@@ -267,99 +411,225 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         request: Request&lt;tonic::Streaming&lt;Message&gt;&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;<span class="self">Self</span>::RegisterStream&gt;, Status&gt; {
-        <span class="prelude-val">Ok</span>(operations::Register
-            .handle_request(<span class="self">self</span>.context(), request)
-            .<span class="kw">await</span><span class="question-mark">?</span>)
+        <span class="kw">let </span>(channel, response) = <span class="self">self</span>.create_unauthenticated_channel(request).<span class="kw">await</span><span class="question-mark">?</span>;
+        operations::Register
+            .handle_request(<span class="self">self</span>.context(), channel)
+            .<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(response)
     }
 
     <span class="kw">async fn </span>authenticate(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         request: Request&lt;tonic::Streaming&lt;Message&gt;&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;<span class="self">Self</span>::AuthenticateStream&gt;, Status&gt; {
-        <span class="prelude-val">Ok</span>(operations::Authenticate
-            .handle_request(<span class="self">self</span>.context(), request)
-            .<span class="kw">await</span><span class="question-mark">?</span>)
+        <span class="kw">let </span>(channel, response) = <span class="self">self</span>.create_unauthenticated_channel(request).<span class="kw">await</span><span class="question-mark">?</span>;
+        operations::Authenticate
+            .handle_request(<span class="self">self</span>.context(), channel)
+            .<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(response)
     }
 
     <span class="kw">async fn </span>logout(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         request: Request&lt;tonic::Streaming&lt;Message&gt;&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;<span class="self">Self</span>::LogoutStream&gt;, Status&gt; {
-        <span class="prelude-val">Ok</span>(operations::Logout
-            .handle_request(<span class="self">self</span>.context(), request)
-            .<span class="kw">await</span><span class="question-mark">?</span>)
+        <span class="kw">let </span>(channel, response) = <span class="self">self</span>.create_authenticated_channel(request).<span class="kw">await</span><span class="question-mark">?</span>;
+        operations::Logout
+            .handle_request(<span class="self">self</span>.context(), channel)
+            .<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(response)
     }
 
     <span class="kw">async fn </span>create_storage_key(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         request: Request&lt;tonic::Streaming&lt;Message&gt;&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;<span class="self">Self</span>::CreateStorageKeyStream&gt;, Status&gt; {
-        <span class="prelude-val">Ok</span>(operations::CreateStorageKey
-            .handle_request(<span class="self">self</span>.context(), request)
-            .<span class="kw">await</span><span class="question-mark">?</span>)
+        <span class="kw">let </span>(channel, response) = <span class="self">self</span>.create_authenticated_channel(request).<span class="kw">await</span><span class="question-mark">?</span>;
+        operations::CreateStorageKey
+            .handle_request(<span class="self">self</span>.context(), channel)
+            .<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(response)
     }
 
     <span class="kw">async fn </span>generate_secret(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         request: Request&lt;tonic::Streaming&lt;Message&gt;&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;<span class="self">Self</span>::GenerateSecretStream&gt;, Status&gt; {
-        <span class="prelude-val">Ok</span>(operations::GenerateSecret
-            .handle_request(<span class="self">self</span>.context(), request)
-            .<span class="kw">await</span><span class="question-mark">?</span>)
+        <span class="kw">let </span>(channel, response) = <span class="self">self</span>.create_authenticated_channel(request).<span class="kw">await</span><span class="question-mark">?</span>;
+        operations::GenerateSecret
+            .handle_request(<span class="self">self</span>.context(), channel)
+            .<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(response)
+    }
+
+    <span class="kw">async fn </span>get_user_id(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        request: Request&lt;tonic::Streaming&lt;Message&gt;&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;<span class="self">Self</span>::GenerateSecretStream&gt;, Status&gt; {
+        <span class="comment">// `create_authenticated_channel` gets the `user_id` out of the request metadata
+        // in order to retrieve the session key. Since the client doesn&#39;t know
+        // its `user_id` before the `GetUserId` operation is called, we can&#39;t call the
+        // normal `create_authenticated_channel` method. Instead, we&#39;ll look up
+        // the user ID ourselves and upgrade an unauthenticated channel manually.
+        </span><span class="kw">let </span>context = <span class="self">self</span>.context();
+
+        <span class="comment">// Get the user ID before `create_unauthenticated_channel` consumes the request
+        </span><span class="kw">let </span>metadata: RequestMetadata = request
+            .metadata()
+            .get(METADATA)
+            <span class="comment">// We&#39;ll just use the existing error in the `lock_keeper` crate since this is a weird
+            // case.
+            </span>.ok_or(lock_keeper::LockKeeperError::MetadataNotFound)<span class="question-mark">?
+            </span>.try_into()<span class="question-mark">?</span>;
+
+        <span class="kw">let </span>user_id = context
+            .db
+            .find_user(metadata.account_name())
+            .<span class="kw">await
+            </span>.map_err(LockKeeperServerError::database)<span class="question-mark">?
+            </span>.ok_or(LockKeeperServerError::InvalidAccount)<span class="question-mark">?
+            </span>.user_id;
+
+        <span class="comment">// Now work through the normal process to create an authenticated channel
+        </span><span class="kw">let </span>(channel, response) = <span class="self">self</span>.create_unauthenticated_channel(request).<span class="kw">await</span><span class="question-mark">?</span>;
+
+        <span class="kw">let </span>session_key = {
+            <span class="kw">let </span><span class="kw-2">mut </span>session_cache = context.session_key_cache.lock().<span class="kw">await</span>;
+            session_cache
+                .find_session(user_id.clone())
+                .map_err(|e| Status::internal(e.to_string()))<span class="question-mark">?
+        </span>};
+
+        <span class="kw">let </span><span class="kw-2">mut </span>channel = channel.into_authenticated(session_key, context.rng.clone());
+        <span class="comment">// Manually set the user_id in the channel since it&#39;s not in the metadata
+        </span>channel.set_user_id(user_id);
+
+        operations::GetUserId
+            .handle_request(<span class="self">self</span>.context(), channel)
+            .<span class="kw">await</span><span class="question-mark">?</span>;
+
+        <span class="prelude-val">Ok</span>(response)
     }
 
     <span class="kw">async fn </span>import_signing_key(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         request: Request&lt;tonic::Streaming&lt;Message&gt;&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;<span class="self">Self</span>::ImportSigningKeyStream&gt;, Status&gt; {
-        <span class="prelude-val">Ok</span>(operations::ImportSigningKey
-            .handle_request(<span class="self">self</span>.context(), request)
-            .<span class="kw">await</span><span class="question-mark">?</span>)
+        <span class="kw">let </span>(channel, response) = <span class="self">self</span>.create_authenticated_channel(request).<span class="kw">await</span><span class="question-mark">?</span>;
+        operations::ImportSigningKey
+            .handle_request(<span class="self">self</span>.context(), channel)
+            .<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(response)
     }
 
     <span class="kw">async fn </span>remote_generate(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         request: Request&lt;tonic::Streaming&lt;Message&gt;&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;<span class="self">Self</span>::RemoteGenerateStream&gt;, Status&gt; {
-        <span class="prelude-val">Ok</span>(operations::RemoteGenerateSigningKey
-            .handle_request(<span class="self">self</span>.context(), request)
-            .<span class="kw">await</span><span class="question-mark">?</span>)
+        <span class="kw">let </span>(channel, response) = <span class="self">self</span>.create_authenticated_channel(request).<span class="kw">await</span><span class="question-mark">?</span>;
+        operations::RemoteGenerateSigningKey
+            .handle_request(<span class="self">self</span>.context(), channel)
+            .<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(response)
     }
 
     <span class="kw">async fn </span>remote_sign_bytes(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         request: Request&lt;tonic::Streaming&lt;Message&gt;&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;<span class="self">Self</span>::RemoteSignBytesStream&gt;, Status&gt; {
-        <span class="prelude-val">Ok</span>(operations::RemoteSignBytes
-            .handle_request(<span class="self">self</span>.context(), request)
-            .<span class="kw">await</span><span class="question-mark">?</span>)
+        <span class="kw">let </span>(channel, response) = <span class="self">self</span>.create_authenticated_channel(request).<span class="kw">await</span><span class="question-mark">?</span>;
+        operations::RemoteSignBytes
+            .handle_request(<span class="self">self</span>.context(), channel)
+            .<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(response)
     }
 
     <span class="kw">async fn </span>retrieve_secret(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         request: Request&lt;tonic::Streaming&lt;Message&gt;&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;<span class="self">Self</span>::RetrieveSecretStream&gt;, Status&gt; {
-        <span class="prelude-val">Ok</span>(operations::RetrieveSecret
-            .handle_request(<span class="self">self</span>.context(), request)
-            .<span class="kw">await</span><span class="question-mark">?</span>)
+        <span class="kw">let </span>(channel, response) = <span class="self">self</span>.create_authenticated_channel(request).<span class="kw">await</span><span class="question-mark">?</span>;
+        operations::RetrieveSecret
+            .handle_request(<span class="self">self</span>.context(), channel)
+            .<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(response)
     }
 
     <span class="kw">async fn </span>retrieve_audit_events(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         request: Request&lt;tonic::Streaming&lt;Message&gt;&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;<span class="self">Self</span>::RetrieveAuditEventsStream&gt;, Status&gt; {
-        <span class="prelude-val">Ok</span>(operations::RetrieveAuditEvents
-            .handle_request(<span class="self">self</span>.context(), request)
-            .<span class="kw">await</span><span class="question-mark">?</span>)
+        <span class="kw">let </span>(channel, response) = <span class="self">self</span>.create_authenticated_channel(request).<span class="kw">await</span><span class="question-mark">?</span>;
+        operations::RetrieveAuditEvents
+            .handle_request(<span class="self">self</span>.context(), channel)
+            .<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(response)
     }
 
     <span class="kw">async fn </span>retrieve_storage_key(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         request: Request&lt;tonic::Streaming&lt;Message&gt;&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;<span class="self">Self</span>::RetrieveStorageKeyStream&gt;, Status&gt; {
-        <span class="prelude-val">Ok</span>(operations::RetrieveStorageKey
-            .handle_request(<span class="self">self</span>.context(), request)
-            .<span class="kw">await</span><span class="question-mark">?</span>)
+        <span class="kw">let </span>(channel, response) = <span class="self">self</span>.create_authenticated_channel(request).<span class="kw">await</span><span class="question-mark">?</span>;
+        operations::RetrieveStorageKey
+            .handle_request(<span class="self">self</span>.context(), channel)
+            .<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(response)
+    }
+}
+
+<span class="kw">impl</span>&lt;DB: DataStore&gt; LockKeeperKeyServer&lt;DB&gt; {
+    <span class="attribute">#[instrument(skip_all, err(Debug))]
+    </span><span class="kw">async fn </span>create_unauthenticated_channel(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        request: Request&lt;Streaming&lt;Message&gt;&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(ServerChannel&lt;Unauthenticated&gt;, Response&lt;MessageStream&gt;), LockKeeperServerError&gt;
+    {
+        <span class="macro">info!</span>(<span class="string">&quot;Handling new client request.&quot;</span>);
+        <span class="kw">let </span>(channel, rx) = ServerChannel::new(request)<span class="question-mark">?</span>;
+
+        <span class="kw">let </span>metadata = ResponseMetadata {
+            request_id: Uuid::new_v4(),
+        };
+
+        <span class="kw">let </span><span class="kw-2">mut </span>response = Response::new(ReceiverStream::new(rx));
+        <span class="kw">let _ </span>= response
+            .metadata_mut()
+            .insert(METADATA, metadata.try_into()<span class="question-mark">?</span>);
+
+        <span class="prelude-val">Ok</span>((channel, response))
+    }
+
+    <span class="attribute">#[instrument(skip_all, err(Debug))]
+    </span><span class="kw">async fn </span>create_authenticated_channel(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        request: Request&lt;Streaming&lt;Message&gt;&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;
+        (
+            ServerChannel&lt;Authenticated&lt;StdRng&gt;&gt;,
+            Response&lt;MessageStream&gt;,
+        ),
+        LockKeeperServerError,
+    &gt; {
+        <span class="macro">info!</span>(<span class="string">&quot;Handling new client request.&quot;</span>);
+        <span class="kw">let </span>(channel, response) = <span class="self">self</span>.create_unauthenticated_channel(request).<span class="kw">await</span><span class="question-mark">?</span>;
+
+        <span class="comment">// Upgrade channel to be authenticated
+        </span><span class="kw">let </span>user_id = channel
+            .metadata()
+            .user_id()
+            .ok_or(LockKeeperServerError::InvalidAccount)<span class="question-mark">?
+            </span>.clone();
+        <span class="kw">let </span>context = <span class="self">self</span>.context();
+
+        <span class="kw">let </span>session_key = {
+            <span class="kw">let </span><span class="kw-2">mut </span>session_cache = context.session_key_cache.lock().<span class="kw">await</span>;
+            session_cache.find_session(user_id)<span class="question-mark">?
+        </span>};
+
+        <span class="kw">let </span>channel = channel.into_authenticated(session_key, context.rng.clone());
+
+        <span class="prelude-val">Ok</span>((channel, response))
     }
 }
 </code></pre></div>

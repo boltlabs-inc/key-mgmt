@@ -113,11 +113,36 @@
 <span id="113">113</span>
 <span id="114">114</span>
 <span id="115">115</span>
+<span id="116">116</span>
+<span id="117">117</span>
+<span id="118">118</span>
+<span id="119">119</span>
+<span id="120">120</span>
+<span id="121">121</span>
+<span id="122">122</span>
+<span id="123">123</span>
+<span id="124">124</span>
+<span id="125">125</span>
+<span id="126">126</span>
+<span id="127">127</span>
+<span id="128">128</span>
+<span id="129">129</span>
+<span id="130">130</span>
+<span id="131">131</span>
+<span id="132">132</span>
+<span id="133">133</span>
+<span id="134">134</span>
+<span id="135">135</span>
+<span id="136">136</span>
+<span id="137">137</span>
+<span id="138">138</span>
+<span id="139">139</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Types related to server operations and the protocols they execute.
 
 </span><span class="kw">pub mod </span>authenticate;
 <span class="kw">pub mod </span>create_storage_key;
 <span class="kw">pub mod </span>generate;
+<span class="kw">pub mod </span>get_user_id;
 <span class="kw">pub mod </span>import;
 <span class="kw">pub mod </span>logout;
 <span class="kw">pub mod </span>register;
@@ -136,6 +161,8 @@
 <span class="kw">use </span>tonic::metadata::{Ascii, MetadataValue};
 <span class="kw">use </span>uuid::Uuid;
 
+<span class="kw">use </span><span class="kw">super</span>::Message;
+
 <span class="doccomment">/// Options for actions the Lock Keeper client can take.
 </span><span class="attribute">#[derive(
     Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq, Display, EnumIter, EnumString,
@@ -146,6 +173,7 @@
     ExportSecret,
     ExportSigningKey,
     GenerateSecret,
+    GetUserId,
     ImportSigningKey,
     Logout,
     Register,
@@ -156,6 +184,22 @@
     RetrieveSigningKey,
     RetrieveStorageKey,
 }
+
+<span class="doccomment">/// Converts a serializable Rust type to and from the RPC [`Message`] type.
+</span><span class="kw">pub trait </span>ConvertMessage: Sized + <span class="kw">for</span>&lt;<span class="lifetime">&#39;a</span>&gt; Deserialize&lt;<span class="lifetime">&#39;a</span>&gt; + Serialize {
+    <span class="kw">fn </span>from_message(value: Message) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, LockKeeperError&gt; {
+        <span class="prelude-val">Ok</span>(serde_json::from_slice(<span class="kw-2">&amp;</span>value.content)<span class="question-mark">?</span>)
+    }
+
+    <span class="kw">fn </span>to_message(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Message, LockKeeperError&gt; {
+        <span class="kw">let </span>content = serde_json::to_vec(<span class="kw-2">&amp;</span><span class="self">self</span>)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(Message { content })
+    }
+}
+
+<span class="comment">// Implements `ConvertMessage` for all types that implement `Serialize` and
+// `Deserialize`.
+</span><span class="kw">impl</span>&lt;T: <span class="kw">for</span>&lt;<span class="lifetime">&#39;a</span>&gt; Deserialize&lt;<span class="lifetime">&#39;a</span>&gt; + Serialize&gt; ConvertMessage <span class="kw">for </span>T {}
 
 <span class="attribute">#[derive(Clone, Debug, Deserialize, Serialize)]
 </span><span class="kw">pub struct </span>RequestMetadata {
@@ -181,8 +225,12 @@
         <span class="self">self</span>.action
     }
 
-    <span class="kw">pub fn </span>user_id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="prelude-ty">Option</span>&lt;UserId&gt; {
-        <span class="kw-2">&amp;</span><span class="self">self</span>.user_id
+    <span class="kw">pub fn </span>user_id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>UserId&gt; {
+        <span class="self">self</span>.user_id.as_ref()
+    }
+
+    <span class="kw">pub fn </span>set_user_id(<span class="kw-2">&amp;mut </span><span class="self">self</span>, user_id: UserId) {
+        <span class="self">self</span>.user_id = <span class="prelude-val">Some</span>(user_id);
     }
 }
 

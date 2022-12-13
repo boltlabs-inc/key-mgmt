@@ -626,6 +626,8 @@
 <span id="626">626</span>
 <span id="627">627</span>
 <span id="628">628</span>
+<span id="629">629</span>
+<span id="630">630</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Application-specific cryptographic types and operations.
 //!
 //! Defines and implements keys and secret types, and the appropriate
@@ -981,10 +983,12 @@
 </span><span class="kw">mod </span>test {
     <span class="kw">use </span>std::collections::HashSet;
 
-    <span class="kw">use </span><span class="kw">crate</span>::LockKeeperError;
+    <span class="kw">use crate</span>::{
+        types::operations::{get_user_id, ConvertMessage},
+        LockKeeperError,
+    };
 
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
-    <span class="kw">use </span><span class="kw">crate</span>::types::operations::authenticate::server::SendUserId;
     <span class="kw">use </span>rand::{rngs::StdRng, Rng, SeedableRng};
 
     <span class="attribute">#[test]
@@ -1212,18 +1216,18 @@
         <span class="kw">let </span><span class="kw-2">mut </span>rng = StdRng::from_seed(<span class="kw-2">*</span>seed);
 
         <span class="comment">// Encrypt a message
-        </span><span class="kw">let </span>message = SendUserId {
+        </span><span class="kw">let </span>message = get_user_id::server::Response {
             user_id: user_id.clone(),
-        };
-        <span class="kw">let </span>expected_message = SendUserId { user_id };
-        <span class="kw">let </span>encrypted_message = session_key.encrypt(<span class="kw-2">&amp;mut </span>rng, Message::try_from(message)<span class="question-mark">?</span>)<span class="question-mark">?</span>;
+        }
+        .to_message();
+        <span class="kw">let </span>expected_message = get_user_id::server::Response { user_id };
+        <span class="kw">let </span>encrypted_message = session_key.encrypt(<span class="kw-2">&amp;mut </span>rng, message<span class="question-mark">?</span>)<span class="question-mark">?</span>;
 
         <span class="comment">// Decrypt the message and check that it worked
-        </span><span class="kw">let </span>decrypted_message = encrypted_message.decrypt_message(<span class="kw-2">&amp;</span>session_key)<span class="question-mark">?</span>;
-        <span class="macro">assert_eq!</span>(
-            expected_message.user_id,
-            SendUserId::try_from(decrypted_message)<span class="question-mark">?</span>.user_id
-        );
+        </span><span class="kw">let </span>decrypted_message = get_user_id::server::Response::from_message(
+            encrypted_message.decrypt_message(<span class="kw-2">&amp;</span>session_key)<span class="question-mark">?</span>,
+        )<span class="question-mark">?</span>;
+        <span class="macro">assert_eq!</span>(expected_message.user_id, decrypted_message.user_id);
 
         <span class="prelude-val">Ok</span>(())
     }
@@ -1239,8 +1243,8 @@
         <span class="kw">let </span><span class="kw-2">mut </span>rng = StdRng::from_seed(<span class="kw-2">*</span>seed);
 
         <span class="comment">// Encrypt a message
-        </span><span class="kw">let </span>message = SendUserId { user_id };
-        <span class="kw">let </span>encrypted_message = session_key.encrypt(<span class="kw-2">&amp;mut </span>rng, Message::try_from(message)<span class="question-mark">?</span>)<span class="question-mark">?</span>;
+        </span><span class="kw">let </span>message = get_user_id::server::Response { user_id }.to_message()<span class="question-mark">?</span>;
+        <span class="kw">let </span>encrypted_message = session_key.encrypt(<span class="kw-2">&amp;mut </span>rng, message)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>result_to_message = encrypted_message.clone().try_into_message();
         <span class="macro">assert!</span>(result_to_message.is_ok());

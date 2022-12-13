@@ -69,6 +69,10 @@
 <span id="69">69</span>
 <span id="70">70</span>
 <span id="71">71</span>
+<span id="72">72</span>
+<span id="73">73</span>
+<span id="74">74</span>
+<span id="75">75</span>
 </pre><pre class="rust"><code><span class="kw">use </span>colored::Colorize;
 <span class="kw">use </span>lock_keeper::types::{
     audit_event::EventStatus, database::user::AccountName, operations::ClientAction,
@@ -105,7 +109,11 @@
 
     <span class="kw">let </span>_first_login = authenticate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="kw">let </span>_second_login = authenticate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>;
-    check_audit_events(<span class="kw-2">&amp;</span>state, EventStatus::Successful, ClientAction::Authenticate).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="comment">// TODO: Successful authentication now ends with the `GetUserId` action.
+    // At some point we need to update the audit event checks so that they&#39;re not
+    // based on the order of audit events. Once that happens, we can change this
+    // back to `Authenticate`.
+    </span>check_audit_events(<span class="kw-2">&amp;</span>state, EventStatus::Successful, ClientAction::GetUserId).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
 }

@@ -32,7 +32,7 @@
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{LockKeeperClient, LockKeeperClientError, LockKeeperResponse};
 <span class="kw">use </span>lock_keeper::{
     crypto::{KeyId, Signable, SignableBytes, Signature},
-    infrastructure::channel::ClientChannel,
+    infrastructure::channel::{Authenticated, ClientChannel},
     types::operations::remote_sign_bytes::{client, server},
 };
 <span class="kw">use </span>rand::rngs::StdRng;
@@ -40,7 +40,7 @@
 <span class="kw">impl </span>LockKeeperClient {
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>handle_remote_sign_bytes(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="kw-2">mut </span>channel: ClientChannel&lt;StdRng&gt;,
+        <span class="kw-2">mut </span>channel: ClientChannel&lt;Authenticated&lt;StdRng&gt;&gt;,
         key_id: KeyId,
         bytes: <span class="kw">impl </span>Signable,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperResponse&lt;Signature&gt;, LockKeeperClientError&gt; {

@@ -79,7 +79,7 @@
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>lock_keeper::{
     crypto::{KeyId, PlaceholderEncryptedSigningKeyPair, SigningKeyPair},
-    infrastructure::channel::ServerChannel,
+    infrastructure::channel::{Authenticated, ServerChannel},
     types::{
         database::secrets::StoredSecret,
         operations::remote_generate::{client, server},
@@ -92,7 +92,7 @@
 </span><span class="kw">pub struct </span>RemoteGenerateSigningKey;
 
 <span class="attribute">#[async_trait]
-</span><span class="kw">impl</span>&lt;DB: DataStore&gt; Operation&lt;DB&gt; <span class="kw">for </span>RemoteGenerateSigningKey {
+</span><span class="kw">impl</span>&lt;DB: DataStore&gt; Operation&lt;Authenticated&lt;StdRng&gt;, DB&gt; <span class="kw">for </span>RemoteGenerateSigningKey {
     <span class="doccomment">/// Remote generation protocol works as follows:
     /// 1) Receive remote generate message from client.
     /// 2) Generate key ID and new signing key pair (private and public key).
@@ -101,7 +101,7 @@
     </span><span class="attribute">#[instrument(skip_all, err(Debug))]
     </span><span class="kw">async fn </span>operation(
         <span class="self">self</span>,
-        channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;StdRng&gt;,
+        channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;Authenticated&lt;StdRng&gt;&gt;,
         context: <span class="kw-2">&amp;mut </span>Context&lt;DB&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
         <span class="macro">info!</span>(<span class="string">&quot;Starting remote generate protocol.&quot;</span>);

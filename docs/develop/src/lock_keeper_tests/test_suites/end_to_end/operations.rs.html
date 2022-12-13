@@ -186,7 +186,7 @@
     // authenticating
     </span><span class="kw">let </span>fourth_last = audit_event_log
         .len()
-        .checked_sub(<span class="number">4</span>)
+        .checked_sub(<span class="number">6</span>)
         .map(|i| <span class="kw-2">&amp;</span>audit_event_log[i]);
     <span class="macro">assert!</span>(fourth_last.is_some());
 

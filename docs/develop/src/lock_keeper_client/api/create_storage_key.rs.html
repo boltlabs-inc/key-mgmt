@@ -68,7 +68,7 @@
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{client::LockKeeperClient, LockKeeperClientError};
 <span class="kw">use </span>lock_keeper::{
     crypto::MasterKey,
-    infrastructure::channel::ClientChannel,
+    infrastructure::channel::{Authenticated, ClientChannel},
     types::{
         database::user::{AccountName, UserId},
         operations::create_storage_key::{client, server},
@@ -81,7 +81,7 @@
 <span class="kw">impl </span>LockKeeperClient {
     <span class="doccomment">/// Creates a storage key and sends it to the key server
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>handle_create_storage_key&lt;T: CryptoRng + RngCore&gt;(
-        <span class="kw-2">mut </span>channel: ClientChannel&lt;StdRng&gt;,
+        <span class="kw-2">mut </span>channel: ClientChannel&lt;Authenticated&lt;StdRng&gt;&gt;,
         rng: Arc&lt;Mutex&lt;T&gt;&gt;,
         account_name: <span class="kw-2">&amp;</span>AccountName,
         master_key: MasterKey,
@@ -94,7 +94,7 @@
 }
 
 <span class="kw">async fn </span>request_user_id(
-    channel: <span class="kw-2">&amp;mut </span>ClientChannel&lt;StdRng&gt;,
+    channel: <span class="kw-2">&amp;mut </span>ClientChannel&lt;Authenticated&lt;StdRng&gt;&gt;,
     account_name: <span class="kw-2">&amp;</span>AccountName,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;UserId, LockKeeperClientError&gt; {
     <span class="kw">let </span>response = client::RequestUserId {
@@ -108,7 +108,7 @@
 }
 
 <span class="kw">async fn </span>create_and_send_storage_key&lt;T: CryptoRng + RngCore&gt;(
-    channel: <span class="kw-2">&amp;mut </span>ClientChannel&lt;StdRng&gt;,
+    channel: <span class="kw-2">&amp;mut </span>ClientChannel&lt;Authenticated&lt;StdRng&gt;&gt;,
     rng: Arc&lt;Mutex&lt;T&gt;&gt;,
     user_id: UserId,
     master_key: MasterKey,
