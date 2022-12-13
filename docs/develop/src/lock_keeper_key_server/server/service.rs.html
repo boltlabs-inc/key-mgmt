@@ -115,6 +115,14 @@
 <span id="115">115</span>
 <span id="116">116</span>
 <span id="117">117</span>
+<span id="118">118</span>
+<span id="119">119</span>
+<span id="120">120</span>
+<span id="121">121</span>
+<span id="122">122</span>
+<span id="123">123</span>
+<span id="124">124</span>
+<span id="125">125</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{
     config::Config,
     database::DataStore,
@@ -173,7 +181,10 @@
     <span class="kw">let </span>db = db.clone();
     <span class="kw">let </span>session_key_cache = session_key_cache.clone();
 
-    <span class="kw">let </span>tls = config.tls_config.clone();
+    <span class="kw">let </span>tls_acceptor = config
+        .tls_config
+        .clone()
+        .map(|tls| TlsAcceptor::from(Arc::new(tls)));
 
     <span class="kw">let </span>rpc_server = LockKeeperKeyServer::new(db, session_key_cache, config)<span class="question-mark">?</span>;
     <span class="kw">let </span>addr = rpc_server.config.address;
@@ -188,7 +199,6 @@
     <span class="kw">let _ </span>= http.http2_only(<span class="bool-val">true</span>);
 
     <span class="kw">let </span>listener = TcpListener::bind(SocketAddr::new(addr, port)).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let </span>tls_acceptor = TlsAcceptor::from(Arc::new(tls));
 
     <span class="comment">// Spawn a task to accept connections
     </span><span class="kw">let _ </span>= tokio::spawn(<span class="kw">async move </span>{
@@ -223,12 +233,18 @@
 </span><span class="kw">async fn </span>handle_connection(
     http: Http,
     connection: TcpStream,
-    tls_acceptor: TlsAcceptor,
+    tls_acceptor: <span class="prelude-ty">Option</span>&lt;TlsAcceptor&gt;,
     service: Routes,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
-    <span class="kw">let </span>conn = tls_acceptor.accept(connection).<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="kw">let </span>svc = tower::ServiceBuilder::new().service(service);
-    http.serve_connection(conn, svc).<span class="kw">await</span><span class="question-mark">?</span>;
+
+    <span class="kw">match </span>tls_acceptor {
+        <span class="prelude-val">Some</span>(tls_acceptor) =&gt; {
+            <span class="kw">let </span>conn = tls_acceptor.accept(connection).<span class="kw">await</span><span class="question-mark">?</span>;
+            http.serve_connection(conn, svc).<span class="kw">await</span><span class="question-mark">?</span>;
+        }
+        <span class="prelude-val">None </span>=&gt; http.serve_connection(connection, svc).<span class="kw">await</span><span class="question-mark">?</span>,
+    }
 
     <span class="prelude-val">Ok</span>(())
 }

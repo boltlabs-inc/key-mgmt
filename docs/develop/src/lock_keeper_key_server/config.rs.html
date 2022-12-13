@@ -214,6 +214,18 @@
 <span id="214">214</span>
 <span id="215">215</span>
 <span id="216">216</span>
+<span id="217">217</span>
+<span id="218">218</span>
+<span id="219">219</span>
+<span id="220">220</span>
+<span id="221">221</span>
+<span id="222">222</span>
+<span id="223">223</span>
+<span id="224">224</span>
+<span id="225">225</span>
+<span id="226">226</span>
+<span id="227">227</span>
+<span id="228">228</span>
 </pre><pre class="rust"><code><span class="kw">use </span>lock_keeper::{config::opaque::OpaqueCipherSuite, infrastructure::pem_utils};
 <span class="kw">use </span>opaque_ke::{keypair::PrivateKey, Ristretto255, ServerSetup};
 <span class="kw">use </span>rand::{rngs::StdRng, SeedableRng};
@@ -237,7 +249,7 @@
     <span class="kw">pub </span>address: IpAddr,
     <span class="kw">pub </span>port: u16,
     <span class="kw">pub </span>session_timeout: Duration,
-    <span class="kw">pub </span>tls_config: ServerConfig,
+    <span class="kw">pub </span>tls_config: <span class="prelude-ty">Option</span>&lt;ServerConfig&gt;,
     <span class="kw">pub </span>opaque_server_setup: ServerSetup&lt;OpaqueCipherSuite, PrivateKey&lt;Ristretto255&gt;&gt;,
     <span class="kw">pub </span>database: DatabaseSpec,
     <span class="kw">pub </span>logging: LoggingConfig,
@@ -259,11 +271,16 @@
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, LockKeeperServerError&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>rng = StdRng::from_entropy();
 
+        <span class="kw">let </span>tls_config = config
+            .tls_config
+            .map(|tc| tc.into_rustls_config(private_key_bytes))
+            .transpose()<span class="question-mark">?</span>;
+
         <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
             address: config.address,
             port: config.port,
             session_timeout: config.session_timeout,
-            tls_config: config.tls_config(private_key_bytes)<span class="question-mark">?</span>,
+            tls_config,
             opaque_server_setup: create_or_retrieve_server_key_opaque(
                 <span class="kw-2">&amp;mut </span>rng,
                 config.opaque_server_key,
@@ -296,16 +313,11 @@
     <span class="attribute">#[serde(default)]
     #[serde(with = <span class="string">&quot;humantime_serde&quot;</span>)]
     </span><span class="kw">pub </span>session_timeout: Duration,
-    <span class="doccomment">/// The private key can be provided as a file or passed to the
-    /// [`Config`] constructors.
-    </span><span class="kw">pub </span>private_key: <span class="prelude-ty">Option</span>&lt;PathBuf&gt;,
-    <span class="kw">pub </span>certificate_chain: PathBuf,
-    <span class="attribute">#[serde(default)]
-    </span><span class="kw">pub </span>client_auth: bool,
     <span class="kw">pub </span>opaque_path: PathBuf,
     <span class="kw">pub </span>opaque_server_key: PathBuf,
     <span class="kw">pub </span>database: DatabaseSpec,
     <span class="kw">pub </span>logging: LoggingConfig,
+    <span class="kw">pub </span>tls_config: <span class="prelude-ty">Option</span>&lt;TlsConfig&gt;,
 }
 
 <span class="kw">impl </span>FromStr <span class="kw">for </span>ConfigFile {
@@ -324,14 +336,17 @@
 }
 
 <span class="attribute">#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(deny_unknown_fields, rename_all = <span class="string">&quot;snake_case&quot;</span>)]
-</span><span class="kw">pub struct </span>DatabaseSpec {
-    <span class="kw">pub </span>mongodb_uri: String,
-    <span class="kw">pub </span>db_name: String,
+</span><span class="kw">pub struct </span>TlsConfig {
+    <span class="doccomment">/// The private key can be provided as a file or passed to the
+    /// [`Config`] constructors.
+    </span><span class="kw">pub </span>private_key: <span class="prelude-ty">Option</span>&lt;PathBuf&gt;,
+    <span class="kw">pub </span>certificate_chain: PathBuf,
+    <span class="attribute">#[serde(default)]
+    </span><span class="kw">pub </span>client_auth: bool,
 }
 
-<span class="kw">impl </span>ConfigFile {
-    <span class="kw">pub fn </span>tls_config(
+<span class="kw">impl </span>TlsConfig {
+    <span class="kw">pub fn </span>into_rustls_config(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         private_key_bytes: <span class="prelude-ty">Option</span>&lt;Vec&lt;u8&gt;&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;ServerConfig, LockKeeperServerError&gt; {
@@ -366,6 +381,13 @@
     }
 }
 
+<span class="attribute">#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = <span class="string">&quot;snake_case&quot;</span>)]
+</span><span class="kw">pub struct </span>DatabaseSpec {
+    <span class="kw">pub </span>mongodb_uri: String,
+    <span class="kw">pub </span>db_name: String,
+}
+
 <span class="attribute">#[cfg(test)]
 </span><span class="kw">mod </span>tests {
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
@@ -377,11 +399,13 @@
             address = &quot;127.0.0.2&quot;
             port = 1114
             session_timeout = &quot;60s&quot;
+            opaque_path = &quot;tests/gen/opaque&quot;
+            opaque_server_key = &quot;tests/gen/opaque/server_setup&quot;
+
+            [tls_config]
             private_key = &quot;test.key&quot;
             certificate_chain = &quot;test.crt&quot;
             client_auth = false
-            opaque_path = &quot;tests/gen/opaque&quot;
-            opaque_server_key = &quot;tests/gen/opaque/server_setup&quot;
 
             [database]
             mongodb_uri = &quot;mongodb://localhost:27017&quot;
@@ -397,9 +421,7 @@
             address,
             port,
             session_timeout,
-            private_key,
-            certificate_chain,
-            client_auth,
+            tls_config,
             opaque_path,
             opaque_server_key,
             database:
@@ -410,14 +432,16 @@
             logging,
         } = ConfigFile::from_str(config_str).unwrap();
 
+        <span class="kw">let </span>tls_config = tls_config.unwrap();
+
         <span class="macro">assert_eq!</span>(mongodb_uri, <span class="string">&quot;mongodb://localhost:27017&quot;</span>);
         <span class="macro">assert_eq!</span>(db_name, <span class="string">&quot;lock-keeper-test-db&quot;</span>);
         <span class="macro">assert_eq!</span>(address, IpAddr::from_str(<span class="string">&quot;127.0.0.2&quot;</span>).unwrap());
         <span class="macro">assert_eq!</span>(port, <span class="number">1114</span>);
         <span class="macro">assert_eq!</span>(session_timeout, Duration::from_secs(<span class="number">60</span>));
-        <span class="macro">assert_eq!</span>(private_key, <span class="prelude-val">Some</span>(PathBuf::from(<span class="string">&quot;test.key&quot;</span>)));
-        <span class="macro">assert_eq!</span>(certificate_chain, PathBuf::from(<span class="string">&quot;test.crt&quot;</span>));
-        <span class="macro">assert!</span>(!client_auth);
+        <span class="macro">assert_eq!</span>(tls_config.private_key, <span class="prelude-val">Some</span>(PathBuf::from(<span class="string">&quot;test.key&quot;</span>)));
+        <span class="macro">assert_eq!</span>(tls_config.certificate_chain, PathBuf::from(<span class="string">&quot;test.crt&quot;</span>));
+        <span class="macro">assert!</span>(!tls_config.client_auth);
         <span class="macro">assert_eq!</span>(opaque_path, PathBuf::from(<span class="string">&quot;tests/gen/opaque&quot;</span>));
         <span class="macro">assert_eq!</span>(
             opaque_server_key,

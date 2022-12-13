@@ -186,6 +186,10 @@
 <span id="186">186</span>
 <span id="187">187</span>
 <span id="188">188</span>
+<span id="189">189</span>
+<span id="190">190</span>
+<span id="191">191</span>
+<span id="192">192</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Config file tests that depend on files to exist at specific paths.
 //! If the paths listed in these tests change, the tests will fail.
 
@@ -312,10 +316,12 @@ private_key = &quot;dev/test-pki/gen/certs/client.key&quot;
 <span class="kw">const </span>SERVER_CONFIG_NO_KEY: <span class="kw-2">&amp;</span>str = <span class="string">r#&quot;
 address = &quot;127.0.0.1&quot;
 port = 1114
-certificate_chain = &quot;dev/test-pki/gen/certs/server.chain&quot;
-client_auth = true
 opaque_path = &quot;dev/opaque&quot;
 opaque_server_key = &quot;dev/opaque/server_setup&quot;
+
+[tls_config]
+certificate_chain = &quot;dev/test-pki/gen/certs/server.chain&quot;
+client_auth = true
 
 [database]
 mongodb_uri = &#39;mongodb://localhost:27017&#39;
@@ -329,11 +335,13 @@ all_logs_file_name = &quot;/app/logs/all.log&quot;
 <span class="kw">const </span>SERVER_CONFIG_WITH_KEY: <span class="kw-2">&amp;</span>str = <span class="string">r#&quot;
 address = &quot;127.0.0.1&quot;
 port = 1114
-certificate_chain = &quot;dev/test-pki/gen/certs/server.chain&quot;
-private_key = &quot;dev/test-pki/gen/certs/server.key&quot;
-client_auth = true
 opaque_path = &quot;dev/opaque&quot;
 opaque_server_key = &quot;dev/opaque/server_setup&quot;
+
+[tls_config]
+private_key = &quot;dev/test-pki/gen/certs/server.key&quot;
+certificate_chain = &quot;dev/test-pki/gen/certs/server.chain&quot;
+client_auth = true
 
 [database]
 mongodb_uri = &#39;mongodb://localhost:27017&#39;
