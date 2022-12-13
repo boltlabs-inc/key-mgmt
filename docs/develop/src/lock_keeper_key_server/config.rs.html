@@ -225,7 +225,6 @@
 <span id="225">225</span>
 <span id="226">226</span>
 <span id="227">227</span>
-<span id="228">228</span>
 </pre><pre class="rust"><code><span class="kw">use </span>lock_keeper::{config::opaque::OpaqueCipherSuite, infrastructure::pem_utils};
 <span class="kw">use </span>opaque_ke::{keypair::PrivateKey, Ristretto255, ServerSetup};
 <span class="kw">use </span>rand::{rngs::StdRng, SeedableRng};
@@ -310,8 +309,7 @@
 </span><span class="kw">pub struct </span>ConfigFile {
     <span class="kw">pub </span>address: IpAddr,
     <span class="kw">pub </span>port: u16,
-    <span class="attribute">#[serde(default)]
-    #[serde(with = <span class="string">&quot;humantime_serde&quot;</span>)]
+    <span class="attribute">#[serde(with = <span class="string">&quot;humantime_serde&quot;</span>)]
     </span><span class="kw">pub </span>session_timeout: Duration,
     <span class="kw">pub </span>opaque_path: PathBuf,
     <span class="kw">pub </span>opaque_server_key: PathBuf,
