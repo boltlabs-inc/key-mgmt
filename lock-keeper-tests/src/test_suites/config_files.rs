@@ -124,6 +124,7 @@ private_key = "dev/test-pki/gen/certs/client.key"
 const SERVER_CONFIG_NO_KEY: &str = r#"
 address = "127.0.0.1"
 port = 1114
+session_timeout = "60s"
 opaque_path = "dev/opaque"
 opaque_server_key = "dev/opaque/server_setup"
 
@@ -143,6 +144,7 @@ all_logs_file_name = "/app/logs/all.log"
 const SERVER_CONFIG_WITH_KEY: &str = r#"
 address = "127.0.0.1"
 port = 1114
+session_timeout = "60s"
 opaque_path = "dev/opaque"
 opaque_server_key = "dev/opaque/server_setup"
 

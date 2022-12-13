@@ -82,7 +82,6 @@ impl std::fmt::Debug for Config {
 pub struct ConfigFile {
     pub address: IpAddr,
     pub port: u16,
-    #[serde(default)]
     #[serde(with = "humantime_serde")]
     pub session_timeout: Duration,
     pub opaque_path: PathBuf,
