@@ -3,10 +3,10 @@ port = 1114
 session_timeout = "60s"
 opaque_path = "/app/opaque"
 opaque_server_key = "/app/opaque/server_setup"
+remote_storage_key = "/app/remote-storage-key/gen/remote_storage.key"
 
 [tls_config]
 private_key = "/app/test-pki/gen/certs/server.key"
-remote_storage_key = "/app/remote-storage-key/gen/remote_storage.key"
 certificate_chain = "/app/test-pki/gen/certs/server.chain"
 client_auth = true
 

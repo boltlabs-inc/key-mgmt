@@ -48,17 +48,18 @@ impl Config {
     ) -> Result<Self, LockKeeperServerError> {
         let mut rng = StdRng::from_entropy();
 
+        let remote_storage_key = config.remote_storage_key_config(remote_storage_key_bytes)?;
         let tls_config = config
             .tls_config
             .map(|tc| tc.into_rustls_config(private_key_bytes))
             .transpose()?;
 
         Ok(Self {
+            remote_storage_key,
             address: config.address,
             port: config.port,
             session_timeout: config.session_timeout,
             tls_config,
-            remote_storage_key: config.remote_storage_key_config(remote_storage_key_bytes)?,
             opaque_server_setup: create_or_retrieve_server_key_opaque(
                 &mut rng,
                 config.opaque_server_key,
@@ -105,6 +106,23 @@ impl FromStr for ConfigFile {
 
     fn from_str(config_string: &str) -> Result<Self, Self::Err> {
         Ok(toml::from_str(config_string)?)
+    }
+}
+
+impl ConfigFile {
+    pub fn remote_storage_key_config(
+        &self,
+        remote_storage_key_bytes: Option<Vec<u8>>,
+    ) -> Result<RemoteStorageKey, LockKeeperServerError> {
+        let key = if let Some(bytes) = remote_storage_key_bytes {
+            RemoteStorageKey::from_bytes(&bytes)?
+        } else if let Some(key_path) = &self.remote_storage_key {
+            RemoteStorageKey::read_from_file(key_path)?
+        } else {
+            return Err(LockKeeperServerError::RemoteStorageKeyMissing);
+        };
+
+        Ok(key)
     }
 }
 
@@ -159,21 +177,6 @@ impl TlsConfig {
 
         Ok(tls)
     }
-
-    pub fn remote_storage_key_config(
-        &self,
-        remote_storage_key_bytes: Option<Vec<u8>>,
-    ) -> Result<RemoteStorageKey, LockKeeperServerError> {
-        let key = if let Some(bytes) = remote_storage_key_bytes {
-            RemoteStorageKey::from_bytes(&bytes)?
-        } else if let Some(key_path) = &self.remote_storage_key {
-            RemoteStorageKey::read_from_file(key_path)?
-        } else {
-            return Err(LockKeeperServerError::RemoteStorageKeyMissing);
-        };
-
-        Ok(key)
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -196,10 +199,10 @@ mod tests {
             session_timeout = "60s"
             opaque_path = "tests/gen/opaque"
             opaque_server_key = "tests/gen/opaque/server_setup"
+            remote_storage_key = "test_sse.key"
 
             [tls_config]
             private_key = "test.key"
-            remote_storage_key = "test_sse.key"
             certificate_chain = "test.crt"
             client_auth = false
 

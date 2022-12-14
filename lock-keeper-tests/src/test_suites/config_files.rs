@@ -177,6 +177,7 @@ opaque_path = "dev/opaque"
 opaque_server_key = "dev/opaque/server_setup"
 
 [tls_config]
+private_key = "dev/test-pki/gen/certs/server.key"
 certificate_chain = "dev/test-pki/gen/certs/server.chain"
 client_auth = true
 
