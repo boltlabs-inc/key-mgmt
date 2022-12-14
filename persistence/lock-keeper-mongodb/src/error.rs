@@ -10,5 +10,9 @@ pub enum Error {
     #[error(transparent)]
     Bson(#[from] mongodb::bson::ser::Error),
     #[error(transparent)]
+    Io(#[from] std::io::Error),
+    #[error(transparent)]
     MongoDb(#[from] mongodb::error::Error),
+    #[error(transparent)]
+    Toml(#[from] toml::de::Error),
 }

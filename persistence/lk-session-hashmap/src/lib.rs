@@ -5,5 +5,8 @@
 #![forbid(rustdoc::broken_intra_doc_links)]
 
 pub mod api;
+pub mod config;
+pub mod error;
 
 pub use api::HashmapKeyCache;
+pub use error::Error;

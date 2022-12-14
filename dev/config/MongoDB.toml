@@ -1,0 +1,2 @@
+mongodb_uri = 'mongodb://mongodb:27017'
+db_name = 'lock-keeper-test-db'

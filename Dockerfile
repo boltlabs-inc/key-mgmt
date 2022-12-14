@@ -1,5 +1,5 @@
 FROM rust:1.65
-ENV CONFIG="./dev/docker/Server.toml"
+ENV CONFIG="dev/config/docker/Binary.toml"
 
 RUN apt-get update && apt-get install -y protobuf-compiler && rm -rf /var/lib/apt/lists/*
 WORKDIR /usr/src/lock-keeper-key-server

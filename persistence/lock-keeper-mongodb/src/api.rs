@@ -1,4 +1,5 @@
 use crate::{
+    config::Config,
     constants::{SECRETS, USERS},
     error::Error,
 };
@@ -16,10 +17,7 @@ use lock_keeper::{
         operations::ClientAction,
     },
 };
-use lock_keeper_key_server::{
-    config::DatabaseSpec,
-    database::{DataStore, SecretFilter},
-};
+use lock_keeper_key_server::database::{DataStore, SecretFilter};
 use mongodb::{
     bson::doc,
     options::{ClientOptions, IndexOptions},
@@ -40,14 +38,14 @@ pub struct Database {
 }
 
 impl Database {
-    /// Connect to the MongoDB instance specified by the given [`DatabaseSpec`]
-    pub async fn connect(database_spec: &DatabaseSpec) -> Result<Self, Error> {
+    /// Connect to the MongoDB instance specified by the given [`Config`]
+    pub async fn connect(config: Config) -> Result<Self, Error> {
         // Parse a connection string into an options struct
-        let client_options = ClientOptions::parse(&database_spec.mongodb_uri).await?;
+        let client_options = ClientOptions::parse(&config.mongodb_uri).await?;
         // Get a handle to the deployment
         let client = Client::with_options(client_options)?;
         // Get a handle to the database
-        let db = client.database(&database_spec.db_name);
+        let db = client.database(&config.db_name);
 
         // Enforce that the user ID is unique
         let enforce_uniqueness = IndexOptions::builder().unique(true).build();

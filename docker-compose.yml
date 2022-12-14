@@ -15,7 +15,7 @@ services:
     volumes:
       - ./dev:/app
     environment:
-      CONFIG: "/app/docker/Server.toml"
+      CONFIG: "/app/config/docker/Binary.toml"
     ports:
       - 1113:1113
     depends_on:
@@ -31,7 +31,7 @@ services:
     # We'll override the entrypoint and pass a different config instead of
     # dealing with multiple Dockerfiles.
     environment:
-      CONFIG: "/app/docker/ServerMutualAuth.toml"
+      CONFIG: "/app/config/docker-mutual-auth/Binary.toml"
     ports:
       - 1114:1114
     depends_on:

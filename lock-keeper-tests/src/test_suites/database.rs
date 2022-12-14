@@ -16,8 +16,8 @@ use lock_keeper::{
     crypto::{Encrypted, MasterKey, StorageKey},
     types::database::user::{AccountName, UserId},
 };
-use lock_keeper_key_server::{config::DatabaseSpec, database::DataStore};
-use lock_keeper_mongodb::Database;
+use lock_keeper_key_server::database::DataStore;
+use lock_keeper_mongodb::{config::Config as DatabaseConfig, Database};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
 use crate::utils::{server_registration, tagged};
@@ -53,7 +53,7 @@ pub async fn run_tests(config: &Config) -> Result<Vec<TestResult>> {
 #[derive(Clone, Debug)]
 pub struct TestDatabase {
     pub db: Database,
-    pub spec: DatabaseSpec,
+    pub config: DatabaseConfig,
     /// Direct connection to MongoDB for actions that we don't provide in
     /// [`Database`]
     pub mongo: mongodb::Database,
@@ -82,18 +82,26 @@ impl TestDatabase {
 
         let mongodb_uri = "mongodb://localhost:27017";
 
-        let spec = DatabaseSpec {
-            mongodb_uri: mongodb_uri.to_string(),
-            db_name: db_name.into(),
-        };
+        let config_str = format!(
+            r#"
+mongodb_uri = "mongodb://localhost:27017"
+db_name = "{}"
+"#,
+            db_name.into()
+        );
 
-        let db = Database::connect(&spec).await?;
+        let db_config = DatabaseConfig::from_str(&config_str).unwrap();
+        let db = Database::connect(db_config.clone()).await?;
 
         let client_options = ClientOptions::parse(&mongodb_uri).await?;
         let client = Client::with_options(client_options)?;
-        let mongo = client.database(&spec.db_name);
+        let mongo = client.database(&db_config.db_name);
 
-        let result = TestDatabase { db, spec, mongo };
+        let result = TestDatabase {
+            db,
+            config: db_config,
+            mongo,
+        };
 
         Ok(result)
     }
