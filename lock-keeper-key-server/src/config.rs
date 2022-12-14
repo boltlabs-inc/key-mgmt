@@ -1,4 +1,6 @@
-use lock_keeper::{config::opaque::OpaqueCipherSuite, infrastructure::pem_utils};
+use lock_keeper::{
+    config::opaque::OpaqueCipherSuite, crypto::RemoteStorageKey, infrastructure::pem_utils,
+};
 use opaque_ke::{keypair::PrivateKey, Ristretto255, ServerSetup};
 use rand::{rngs::StdRng, SeedableRng};
 use rustls::{
@@ -23,6 +25,7 @@ pub struct Config {
     pub session_timeout: Duration,
     pub tls_config: Option<ServerConfig>,
     pub opaque_server_setup: ServerSetup<OpaqueCipherSuite, PrivateKey<Ristretto255>>,
+    pub remote_storage_key: RemoteStorageKey,
     pub database: DatabaseSpec,
     pub logging: LoggingConfig,
 }
@@ -31,24 +34,28 @@ impl Config {
     pub fn from_file(
         config_path: impl AsRef<Path>,
         private_key_bytes: Option<Vec<u8>>,
+        remote_storage_key_bytes: Option<Vec<u8>>,
     ) -> Result<Self, LockKeeperServerError> {
         let config_string = std::fs::read_to_string(&config_path)?;
         let config_file = ConfigFile::from_str(&config_string)?;
-        Self::from_config_file(config_file, private_key_bytes)
+        Self::from_config_file(config_file, private_key_bytes, remote_storage_key_bytes)
     }
 
     pub fn from_config_file(
         config: ConfigFile,
         private_key_bytes: Option<Vec<u8>>,
+        remote_storage_key_bytes: Option<Vec<u8>>,
     ) -> Result<Self, LockKeeperServerError> {
         let mut rng = StdRng::from_entropy();
 
+        let remote_storage_key = config.remote_storage_key_config(remote_storage_key_bytes)?;
         let tls_config = config
             .tls_config
             .map(|tc| tc.into_rustls_config(private_key_bytes))
             .transpose()?;
 
         Ok(Self {
+            remote_storage_key,
             address: config.address,
             port: config.port,
             session_timeout: config.session_timeout,
@@ -84,6 +91,9 @@ pub struct ConfigFile {
     pub port: u16,
     #[serde(with = "humantime_serde")]
     pub session_timeout: Duration,
+    /// The remote storage key can be provided as a file or passed to
+    /// the [`Config`] constructors.
+    pub remote_storage_key: Option<PathBuf>,
     pub opaque_path: PathBuf,
     pub opaque_server_key: PathBuf,
     pub database: DatabaseSpec,
@@ -96,6 +106,23 @@ impl FromStr for ConfigFile {
 
     fn from_str(config_string: &str) -> Result<Self, Self::Err> {
         Ok(toml::from_str(config_string)?)
+    }
+}
+
+impl ConfigFile {
+    pub fn remote_storage_key_config(
+        &self,
+        remote_storage_key_bytes: Option<Vec<u8>>,
+    ) -> Result<RemoteStorageKey, LockKeeperServerError> {
+        let key = if let Some(bytes) = remote_storage_key_bytes {
+            RemoteStorageKey::from_bytes(&bytes)?
+        } else if let Some(key_path) = &self.remote_storage_key {
+            RemoteStorageKey::read_from_file(key_path)?
+        } else {
+            return Err(LockKeeperServerError::RemoteStorageKeyMissing);
+        };
+
+        Ok(key)
     }
 }
 
@@ -172,6 +199,7 @@ mod tests {
             session_timeout = "60s"
             opaque_path = "tests/gen/opaque"
             opaque_server_key = "tests/gen/opaque/server_setup"
+            remote_storage_key = "test_sse.key"
 
             [tls_config]
             private_key = "test.key"
@@ -192,6 +220,7 @@ mod tests {
             address,
             port,
             session_timeout,
+            remote_storage_key,
             tls_config,
             opaque_path,
             opaque_server_key,
@@ -210,6 +239,7 @@ mod tests {
         assert_eq!(address, IpAddr::from_str("127.0.0.2").unwrap());
         assert_eq!(port, 1114);
         assert_eq!(session_timeout, Duration::from_secs(60));
+        assert_eq!(remote_storage_key, Some(PathBuf::from("test_sse.key")));
         assert_eq!(tls_config.private_key, Some(PathBuf::from("test.key")));
         assert_eq!(tls_config.certificate_chain, PathBuf::from("test.crt"));
         assert!(!tls_config.client_auth);

@@ -2,6 +2,7 @@
 *.key
 *.log
 dev/test-pki/gen
+dev/remote-storage-key/gen
 dev/opaque
 */lk_client_cli_data
 dev/logs

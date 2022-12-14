@@ -8,7 +8,7 @@ use crate::{
 use crate::database::DataStore;
 use async_trait::async_trait;
 use lock_keeper::{
-    crypto::{PlaceholderEncryptedSigningKeyPair, Signable, SigningKeyPair},
+    crypto::{Encrypted, Signable, SigningKeyPair},
     infrastructure::channel::{Authenticated, ServerChannel},
     types::operations::remote_sign_bytes::{client, server},
 };
@@ -33,7 +33,7 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for RemoteSignBytes {
     ) -> Result<(), LockKeeperServerError> {
         info!("Starting remote sign protocol.");
         let request: client::RequestRemoteSign = channel.receive().await?;
-        let key_pair: PlaceholderEncryptedSigningKeyPair = context
+        let encrypted_key: Encrypted<SigningKeyPair> = context
             .db
             .get_user_secret(&request.user_id, &request.key_id, Default::default())
             .await
@@ -41,8 +41,11 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for RemoteSignBytes {
             .try_into()?;
         info!("Signing key found. Signing...");
 
-        // Pretend to decrypt our placeholder type
-        let key: SigningKeyPair = key_pair.try_into()?;
+        let key = encrypted_key.decrypt_signing_key_by_server(
+            &context.config.remote_storage_key,
+            request.user_id,
+            request.key_id,
+        )?;
 
         let signature = request.data.sign(&key);
         let response = server::ReturnSignature { signature };

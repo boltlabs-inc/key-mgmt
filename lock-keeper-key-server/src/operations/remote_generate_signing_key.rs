@@ -8,7 +8,7 @@ use crate::{
 use crate::database::DataStore;
 use async_trait::async_trait;
 use lock_keeper::{
-    crypto::{KeyId, PlaceholderEncryptedSigningKeyPair, SigningKeyPair},
+    crypto::{KeyId, SigningKeyPair},
     infrastructure::channel::{Authenticated, ServerChannel},
     types::{
         database::secrets::StoredSecret,
@@ -48,10 +48,17 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for RemoteGenerateSigni
 
         let public_key = key_pair.public_key();
 
-        let secret = StoredSecret::from_remote_signing_key_pair(
-            key_id.clone(),
-            PlaceholderEncryptedSigningKeyPair::from(key_pair),
-        )?;
+        // encrypt key_pair
+        let encrypted_key_pair = {
+            let mut rng = context.rng.lock().await;
+            context
+                .config
+                .remote_storage_key
+                .encrypt_signing_key_pair(&mut *rng, key_pair)?
+        };
+
+        let secret =
+            StoredSecret::from_remote_signing_key_pair(key_id.clone(), encrypted_key_pair)?;
 
         // Store key in database
         context

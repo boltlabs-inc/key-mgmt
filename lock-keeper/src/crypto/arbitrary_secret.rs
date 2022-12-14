@@ -9,6 +9,7 @@ use zeroize::ZeroizeOnDrop;
 
 use crate::crypto::{
     generic::{self, AssociatedData, CryptoError},
+    signing_key::generation_types::{CLIENT_GENERATED, IMPORTED},
     Encrypted, KeyId, StorageKey,
 };
 
@@ -47,7 +48,7 @@ impl Encrypted<Secret> {
     ///
     /// This must be run by the client.
     pub fn decrypt_secret(self, storage_key: StorageKey) -> Result<Secret, LockKeeperError> {
-        let decrypted = self.decrypt(&storage_key.0)?;
+        let decrypted = self.decrypt_inner(&storage_key.0)?;
         Ok(decrypted)
     }
 }
@@ -68,7 +69,7 @@ impl Secret {
         let context = AssociatedData::new()
             .with_bytes(user_id.clone())
             .with_bytes(key_id.clone())
-            .with_str("client-generated");
+            .with_str(CLIENT_GENERATED);
         let secret = Secret(generic::Secret::generate(rng, 32, context.clone()));
 
         Ok((
@@ -92,7 +93,7 @@ impl Secret {
         let context = AssociatedData::new()
             .with_bytes(user_id.clone())
             .with_bytes(key_id.clone())
-            .with_str("imported key");
+            .with_str(IMPORTED);
 
         let secret = Secret(generic::Secret::from_parts(secret_material, &context));
 
@@ -222,8 +223,8 @@ mod test {
 
         // Create and encrypt a secret -- not imported.
         let (secret, _) = Secret::create_and_encrypt(&mut rng, &storage_key, &user_id, &key_id)?;
-        assert!(!contains_str(secret.clone(), "imported"));
-        assert!(contains_str(secret, "client-generated"));
+        assert!(!contains_str(secret.clone(), IMPORTED));
+        assert!(contains_str(secret, CLIENT_GENERATED));
 
         // Use the local-import creation function
         let secret_material: [u8; 32] = rng.gen();
@@ -234,8 +235,8 @@ mod test {
             &user_id,
             &key_id,
         )?;
-        assert!(!contains_str(imported_secret.clone(), "client-generated"));
-        assert!(contains_str(imported_secret, "imported"));
+        assert!(!contains_str(imported_secret.clone(), CLIENT_GENERATED));
+        assert!(contains_str(imported_secret, IMPORTED));
 
         Ok(())
     }

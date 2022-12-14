@@ -1,7 +1,7 @@
 //! Database models for secrets
 
 use crate::{
-    crypto::{Encrypted, KeyId, PlaceholderEncryptedSigningKeyPair, Secret, SigningKeyPair},
+    crypto::{Encrypted, KeyId, Secret, SigningKeyPair},
     LockKeeperError,
 };
 use serde::{Deserialize, Serialize};
@@ -57,7 +57,7 @@ impl StoredSecret {
 
     pub fn from_remote_signing_key_pair(
         key_id: KeyId,
-        secret: PlaceholderEncryptedSigningKeyPair,
+        secret: Encrypted<SigningKeyPair>,
     ) -> Result<Self, LockKeeperError> {
         Ok(Self {
             key_id,
@@ -74,35 +74,13 @@ pub mod secret_types {
     pub const REMOTE_SIGNING_KEY: &str = "remote_signing_key";
 }
 
-impl TryFrom<StoredSecret> for Encrypted<Secret> {
-    type Error = LockKeeperError;
-
-    fn try_from(secret: StoredSecret) -> Result<Self, Self::Error> {
-        if secret.secret_type == secret_types::ARBITRARY_SECRET {
-            Ok(serde_json::from_slice(&secret.bytes)?)
-        } else {
-            Err(LockKeeperError::InvalidSecretType)
-        }
-    }
-}
-
 impl TryFrom<StoredSecret> for Encrypted<SigningKeyPair> {
     type Error = LockKeeperError;
 
     fn try_from(secret: StoredSecret) -> Result<Self, Self::Error> {
-        if secret.secret_type == secret_types::SIGNING_KEY_PAIR {
-            Ok(serde_json::from_slice(&secret.bytes)?)
-        } else {
-            Err(LockKeeperError::InvalidSecretType)
-        }
-    }
-}
-
-impl TryFrom<StoredSecret> for PlaceholderEncryptedSigningKeyPair {
-    type Error = LockKeeperError;
-
-    fn try_from(secret: StoredSecret) -> Result<Self, Self::Error> {
-        if secret.secret_type == secret_types::REMOTE_SIGNING_KEY {
+        if secret.secret_type == secret_types::SIGNING_KEY_PAIR
+            || secret.secret_type == secret_types::REMOTE_SIGNING_KEY
+        {
             Ok(serde_json::from_slice(&secret.bytes)?)
         } else {
             Err(LockKeeperError::InvalidSecretType)

@@ -53,10 +53,11 @@ async fn mutual_auth_required_not_provided(config: Config) -> Result<()> {
     client_config.tls_config = config.client_config.tls_config;
 
     let result = LockKeeperClient::health(&client_config).await;
-    assert!(matches!(
-        result,
-        Err(LockKeeperClientError::ClientAuthMissing)
-    ));
+    assert!(
+        matches!(result, Err(LockKeeperClientError::ClientAuthMissing)),
+        "{:?}",
+        result.unwrap_err()
+    );
 
     Ok(())
 }

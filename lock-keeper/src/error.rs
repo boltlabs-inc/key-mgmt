@@ -37,6 +37,10 @@ pub enum LockKeeperError {
     #[error("Invalid private key")]
     InvalidPrivateKey,
 
+    // Server side encryption error
+    #[error("Invalid remote storage key")]
+    InvalidRemoteStorageKey,
+
     // Wrapped errors
     #[error(transparent)]
     Io(#[from] std::io::Error),
@@ -80,6 +84,7 @@ impl From<LockKeeperError> for Status {
             | LockKeeperError::Crypto(_)
             | LockKeeperError::Io(_)
             | LockKeeperError::InvalidPrivateKey
+            | LockKeeperError::InvalidRemoteStorageKey
             | LockKeeperError::OpaqueProtocol(_)
             | LockKeeperError::SerdeJson(_)
             | LockKeeperError::TokioSender(_)
