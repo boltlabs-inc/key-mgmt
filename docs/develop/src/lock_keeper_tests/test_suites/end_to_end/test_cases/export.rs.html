@@ -156,6 +156,10 @@
 <span id="156">156</span>
 <span id="157">157</span>
 <span id="158">158</span>
+<span id="159">159</span>
+<span id="160">160</span>
+<span id="161">161</span>
+<span id="162">162</span>
 </pre><pre class="rust"><code><span class="kw">use </span>colored::Colorize;
 <span class="kw">use </span>lock_keeper::{
     crypto::Secret,
@@ -261,7 +265,11 @@
 
     <span class="kw">let </span>(key_id, bytes_original) = import_signing_key(<span class="kw-2">&amp;</span>client).<span class="kw">await</span><span class="question-mark">?</span>.into_inner();
     <span class="kw">let </span>export_res = client.export_signing_key(<span class="kw-2">&amp;</span>key_id).<span class="kw">await</span>;
-    <span class="macro">assert!</span>(export_res.is_ok());
+    <span class="macro">assert!</span>(
+        export_res.is_ok(),
+        <span class="string">&quot;Export failed: {}&quot;</span>,
+        export_res.unwrap_err()
+    );
 
     <span class="kw">let </span>export = export_res<span class="question-mark">?</span>.into_inner();
     <span class="macro">assert_eq!</span>(export.key_material, bytes_original);

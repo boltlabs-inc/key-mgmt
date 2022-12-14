@@ -287,6 +287,17 @@
 <span id="287">287</span>
 <span id="288">288</span>
 <span id="289">289</span>
+<span id="290">290</span>
+<span id="291">291</span>
+<span id="292">292</span>
+<span id="293">293</span>
+<span id="294">294</span>
+<span id="295">295</span>
+<span id="296">296</span>
+<span id="297">297</span>
+<span id="298">298</span>
+<span id="299">299</span>
+<span id="300">300</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Implementation of our LockKeeper server.
 //!
 //! ## Logging
@@ -469,6 +480,9 @@
     <span class="doccomment">/// Base64 encoded private key data
     </span><span class="attribute">#[clap(long)]
     </span><span class="kw">pub </span>private_key: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    <span class="doccomment">/// Base64 encoded remote storage key data
+    </span><span class="attribute">#[clap(long)]
+    </span><span class="kw">pub </span>remote_storage_key: <span class="prelude-ty">Option</span>&lt;String&gt;,
 }
 
 <span class="attribute">#[tokio::main]
@@ -481,7 +495,15 @@
         .transpose()
         .unwrap();
 
-    <span class="kw">let </span>config = Config::from_file(<span class="kw-2">&amp;</span>cli.config, private_key_bytes).unwrap();
+    <span class="kw">let </span>remote_storage_key_bytes = cli
+        .remote_storage_key
+        .map(String::into_bytes)
+        .map(base64::decode)
+        .transpose()
+        .unwrap();
+
+    <span class="kw">let </span>config =
+        Config::from_file(<span class="kw-2">&amp;</span>cli.config, private_key_bytes, remote_storage_key_bytes).unwrap();
 
     <span class="comment">// We keep `_logging` around for the lifetime of the server. On drop, this value
     // will ensure that our logs are flushed.

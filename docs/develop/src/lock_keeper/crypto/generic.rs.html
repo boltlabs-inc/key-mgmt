@@ -599,6 +599,10 @@
 <span id="599">599</span>
 <span id="600">600</span>
 <span id="601">601</span>
+<span id="602">602</span>
+<span id="603">603</span>
+<span id="604">604</span>
+<span id="605">605</span>
 </pre><pre class="rust"><code><span class="kw">use </span>chacha20poly1305::{
     aead::{Aead, Payload},
     AeadCore, ChaCha20Poly1305, KeyInit,
@@ -700,11 +704,15 @@
 }
 
 <span class="kw">impl </span>EncryptionKey {
+    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>domain_separator() -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str {
+        <span class="string">&quot;ChaCha20Poly1305 with 96-bit nonce.&quot;
+    </span>}
+
     <span class="doccomment">/// Generate a new symmetric AEAD encryption key from scratch.
     </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>new(rng: <span class="kw-2">&amp;mut </span>(<span class="kw">impl </span>CryptoRng + RngCore)) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
             key: Box::new(ChaCha20Poly1305::generate_key(rng)),
-            context: AssociatedData::new().with_str(<span class="string">&quot;ChaCha20Poly1305 with 96-bit nonce.&quot;</span>),
+            context: AssociatedData::new().with_str(<span class="self">Self</span>::domain_separator()),
         }
     }
 
@@ -820,7 +828,7 @@
     /// Raises a [`CryptoError::DecryptionFailed`] if decryption fails or
     /// [`CryptoError::ConversionError`] if the decrypted plaintext cannot be
     /// converted into `T`.
-    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>decrypt(<span class="self">self</span>, enc_key: <span class="kw-2">&amp;</span>EncryptionKey) -&gt; <span class="prelude-ty">Result</span>&lt;T, CryptoError&gt; {
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>decrypt_inner(<span class="self">self</span>, enc_key: <span class="kw-2">&amp;</span>EncryptionKey) -&gt; <span class="prelude-ty">Result</span>&lt;T, CryptoError&gt; {
         <span class="comment">// Set up cipher with key
         </span><span class="kw">let </span>cipher = ChaCha20Poly1305::new(<span class="kw-2">&amp;</span>enc_key.key);
 
@@ -1115,7 +1123,7 @@
             </span><span class="kw">let </span>expected_aad = AssociatedData::default();
             <span class="macro">assert_eq!</span>(expected_aad, encrypted_bytes.associated_data);
 
-            <span class="kw">let </span>decrypted_bytes = encrypted_bytes.decrypt(<span class="kw-2">&amp;</span>enc_key)<span class="question-mark">?</span>;
+            <span class="kw">let </span>decrypted_bytes = encrypted_bytes.decrypt_inner(<span class="kw-2">&amp;</span>enc_key)<span class="question-mark">?</span>;
             <span class="comment">// Make sure decryption works
             </span><span class="macro">assert_eq!</span>(bytes, decrypted_bytes);
         }
@@ -1142,7 +1150,7 @@
         <span class="kw">for _ in </span><span class="number">0</span>..<span class="number">100 </span>{
             <span class="kw">let </span>(<span class="kw">_</span>, <span class="kw-2">mut </span>encrypted_bytes, enc_key) = encrypt_random_bytes(<span class="kw-2">&amp;mut </span>rng);
             encrypted_bytes.nonce = ChaCha20Poly1305::generate_nonce(<span class="kw-2">&amp;mut </span>rng);
-            <span class="macro">assert!</span>(encrypted_bytes.decrypt(<span class="kw-2">&amp;</span>enc_key).is_err());
+            <span class="macro">assert!</span>(encrypted_bytes.decrypt_inner(<span class="kw-2">&amp;</span>enc_key).is_err());
         }
     }
 
@@ -1153,7 +1161,7 @@
             <span class="kw">let </span>(<span class="kw">_</span>, encrypted_bytes, <span class="kw">_</span>) = encrypt_random_bytes(<span class="kw-2">&amp;mut </span>rng);
             <span class="kw">let </span>wrong_key = EncryptionKey::new(<span class="kw-2">&amp;mut </span>rand::thread_rng());
 
-            <span class="macro">assert!</span>(encrypted_bytes.decrypt(<span class="kw-2">&amp;</span>wrong_key).is_err());
+            <span class="macro">assert!</span>(encrypted_bytes.decrypt_inner(<span class="kw-2">&amp;</span>wrong_key).is_err());
         }
     }
 
@@ -1164,7 +1172,7 @@
         encrypted_bytes.associated_data =
             AssociatedData::new().with_str(<span class="string">&quot;Here is some incorrect data&quot;</span>);
 
-        <span class="macro">assert!</span>(encrypted_bytes.decrypt(<span class="kw-2">&amp;</span>enc_key).is_err())
+        <span class="macro">assert!</span>(encrypted_bytes.decrypt_inner(<span class="kw-2">&amp;</span>enc_key).is_err())
     }
 
     <span class="attribute">#[test]
@@ -1174,16 +1182,16 @@
         <span class="kw">for _ in </span><span class="number">0</span>..<span class="number">100 </span>{
             <span class="kw">let </span>(<span class="kw">_</span>, <span class="kw-2">mut </span>encrypted_bytes, enc_key) = encrypt_random_bytes(<span class="kw-2">&amp;mut </span>rng);
             encrypted_bytes.ciphertext[<span class="number">0</span>] ^= <span class="number">1</span>;
-            <span class="macro">assert!</span>(encrypted_bytes.decrypt(<span class="kw-2">&amp;</span>enc_key).is_err());
+            <span class="macro">assert!</span>(encrypted_bytes.decrypt_inner(<span class="kw-2">&amp;</span>enc_key).is_err());
 
             <span class="kw">let </span>(<span class="kw">_</span>, <span class="kw-2">mut </span>encrypted_bytes, enc_key) = encrypt_random_bytes(<span class="kw-2">&amp;mut </span>rng);
             <span class="kw">let </span>len = encrypted_bytes.ciphertext.len();
             encrypted_bytes.ciphertext[len - <span class="number">1</span>] ^= <span class="number">1</span>;
-            <span class="macro">assert!</span>(encrypted_bytes.decrypt(<span class="kw-2">&amp;</span>enc_key).is_err());
+            <span class="macro">assert!</span>(encrypted_bytes.decrypt_inner(<span class="kw-2">&amp;</span>enc_key).is_err());
 
             <span class="kw">let </span>(<span class="kw">_</span>, <span class="kw-2">mut </span>encrypted_bytes, enc_key) = encrypt_random_bytes(<span class="kw-2">&amp;mut </span>rng);
             encrypted_bytes.ciphertext[len / <span class="number">2</span>] ^= <span class="number">1</span>;
-            <span class="macro">assert!</span>(encrypted_bytes.decrypt(<span class="kw-2">&amp;</span>enc_key).is_err());
+            <span class="macro">assert!</span>(encrypted_bytes.decrypt_inner(<span class="kw-2">&amp;</span>enc_key).is_err());
         }
     }
 

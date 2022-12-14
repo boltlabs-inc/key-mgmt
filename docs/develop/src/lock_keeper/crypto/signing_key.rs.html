@@ -804,13 +804,15 @@
 <span id="804">804</span>
 <span id="805">805</span>
 <span id="806">806</span>
-<span id="807">807</span>
-<span id="808">808</span>
-<span id="809">809</span>
-<span id="810">810</span>
-<span id="811">811</span>
-<span id="812">812</span>
-</pre><pre class="rust"><code><span class="kw">use crate</span>::{types::database::user::UserId, LockKeeperError};
+</pre><pre class="rust"><code><span class="kw">use crate</span>::{
+    crypto::{
+        generic::EncryptionKey,
+        signing_key::generation_types::{CLIENT_GENERATED, IMPORTED, SERVER_GENERATED},
+        RemoteStorageKey,
+    },
+    types::database::user::UserId,
+    LockKeeperError,
+};
 <span class="kw">use </span>k256::ecdsa::{
     <span class="self">self</span>,
     signature::{Signer, Verifier},
@@ -871,6 +873,12 @@
     }
 }
 
+<span class="kw">pub mod </span>generation_types {
+    <span class="kw">pub const </span>SERVER_GENERATED: <span class="kw-2">&amp;</span>str = <span class="string">&quot;server-generated&quot;</span>;
+    <span class="kw">pub const </span>CLIENT_GENERATED: <span class="kw-2">&amp;</span>str = <span class="string">&quot;client-generated&quot;</span>;
+    <span class="kw">pub const </span>IMPORTED: <span class="kw-2">&amp;</span>str = <span class="string">&quot;imported key&quot;</span>;
+}
+
 <span class="doccomment">/// An ECDSA signing key pair, including a public component for verifying
 /// signatures, a private component for creating them, and context about the key
 /// pair.
@@ -887,38 +895,6 @@
 </span><span class="attribute">#[allow(unused)]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 </span><span class="kw">pub struct </span>SigningPublicKey(VerifyingKey);
-
-<span class="doccomment">/// Temporary type to represent a remotely generated encrypted
-/// [`SigningKeyPair`].
-///
-/// This can only be &quot;decrypted&quot; by the server.
-/// TODO #307: Replace this placeholder with actual encryption.
-</span><span class="attribute">#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize, ZeroizeOnDrop)]
-</span><span class="kw">pub struct </span>PlaceholderEncryptedSigningKeyPair {
-    signing_key: Vec&lt;u8&gt;,
-    <span class="attribute">#[zeroize(skip)]
-    </span>context: AssociatedData,
-}
-
-<span class="kw">impl </span>From&lt;SigningKeyPair&gt; <span class="kw">for </span>PlaceholderEncryptedSigningKeyPair {
-    <span class="kw">fn </span>from(key_pair: SigningKeyPair) -&gt; <span class="self">Self </span>{
-        <span class="self">Self </span>{
-            signing_key: key_pair.signing_key.to_bytes().to_vec(),
-            context: key_pair.context.to_owned(),
-        }
-    }
-}
-
-<span class="kw">impl </span>TryFrom&lt;PlaceholderEncryptedSigningKeyPair&gt; <span class="kw">for </span>SigningKeyPair {
-    <span class="kw">type </span>Error = LockKeeperError;
-    <span class="kw">fn </span>try_from(key_pair: PlaceholderEncryptedSigningKeyPair) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
-        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
-            signing_key: SigningKey::from_bytes(key_pair.signing_key.as_slice())
-                .map_err(|<span class="kw">_</span>| CryptoError::ConversionError)<span class="question-mark">?</span>,
-            context: key_pair.context.to_owned(),
-        })
-    }
-}
 
 <span class="kw">impl </span>SigningKeyPair {
     <span class="doccomment">/// Create a new `SigningKeyPair` with the given associated data.
@@ -940,8 +916,7 @@
     }
 
     <span class="doccomment">/// Retrieve the context associated with the signing key.
-    </span><span class="attribute">#[cfg(test)]
-    </span><span class="kw">fn </span>context(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>AssociatedData {
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>context(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>AssociatedData {
         <span class="kw-2">&amp;</span><span class="self">self</span>.context
     }
 
@@ -954,7 +929,7 @@
         <span class="kw">let </span>context = AssociatedData::new()
             .with_bytes(user_id.clone())
             .with_bytes(key_id.clone())
-            .with_str(<span class="string">&quot;server-generated&quot;</span>);
+            .with_str(SERVER_GENERATED);
         <span class="self">Self</span>::generate(rng, <span class="kw-2">&amp;</span>context)
     }
 
@@ -982,7 +957,7 @@
         <span class="kw">let </span>context = AssociatedData::new()
             .with_bytes(user_id.clone())
             .with_bytes(key_id.clone())
-            .with_str(<span class="string">&quot;imported key&quot;</span>);
+            .with_str(IMPORTED);
 
         <span class="kw">let </span>signing_key = <span class="self">Self </span>{
             signing_key: SigningKey::from_bytes(key_material)
@@ -1015,7 +990,7 @@
         <span class="kw">let </span>context = AssociatedData::new()
             .with_bytes(user_id.clone())
             .with_bytes(key_id.clone())
-            .with_str(<span class="string">&quot;client-generated&quot;</span>);
+            .with_str(CLIENT_GENERATED);
         <span class="kw">let </span>signing_key = SigningKeyPair::generate(rng, <span class="kw-2">&amp;</span>context);
 
         <span class="prelude-val">Ok</span>((
@@ -1036,14 +1011,45 @@
         user_id: UserId,
         key_id: KeyId,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;SigningKeyPair, LockKeeperError&gt; {
+        <span class="self">self</span>.decrypt(
+            <span class="kw-2">&amp;</span>storage_key.<span class="number">0</span>,
+            user_id,
+            key_id,
+            <span class="macro">vec!</span>[IMPORTED, CLIENT_GENERATED],
+        )
+    }
+
+    <span class="doccomment">/// Decrypt a signing key. This should be run by the server as part of the
+    /// subprotocol to retrieve a signing key from the server.
+    </span><span class="kw">pub fn </span>decrypt_signing_key_by_server(
+        <span class="self">self</span>,
+        remote_storage_key: <span class="kw-2">&amp;</span>RemoteStorageKey,
+        user_id: UserId,
+        key_id: KeyId,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;SigningKeyPair, LockKeeperError&gt; {
+        <span class="self">self</span>.decrypt(
+            <span class="kw-2">&amp;</span>remote_storage_key.<span class="number">0</span>,
+            user_id,
+            key_id,
+            <span class="macro">vec!</span>[IMPORTED, SERVER_GENERATED],
+        )
+    }
+
+    <span class="kw">fn </span>decrypt(
+        <span class="self">self</span>,
+        encryption_key: <span class="kw-2">&amp;</span>EncryptionKey,
+        user_id: UserId,
+        key_id: KeyId,
+        possible_context_strings: Vec&lt;<span class="kw-2">&amp;</span>str&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;SigningKeyPair, LockKeeperError&gt; {
         <span class="kw">let </span>identifying_context = AssociatedData::new().with_bytes(user_id).with_bytes(key_id);
 
-        <span class="kw">let </span>import_context = identifying_context.clone().with_str(<span class="string">&quot;imported key&quot;</span>);
-        <span class="kw">let </span>client_context = identifying_context.with_str(<span class="string">&quot;client-generated&quot;</span>);
-
-        <span class="comment">// Keys encrypted under a storage key are either client-generated or imported.
-        </span><span class="kw">if </span><span class="self">self</span>.associated_data == import_context || <span class="self">self</span>.associated_data == client_context {
-            <span class="prelude-val">Ok</span>(<span class="self">self</span>.decrypt(<span class="kw-2">&amp;</span>storage_key.<span class="number">0</span>)<span class="question-mark">?</span>)
+        <span class="kw">if </span>possible_context_strings
+            .iter()
+            .map(|context| identifying_context.clone().with_str(context))
+            .any(|x| x == <span class="self">self</span>.associated_data)
+        {
+            <span class="prelude-val">Ok</span>(<span class="self">self</span>.decrypt_inner(encryption_key)<span class="question-mark">?</span>)
         } <span class="kw">else </span>{
             <span class="prelude-val">Err</span>(CryptoError::DecryptionFailed.into())
         }
@@ -1095,7 +1101,7 @@
         <span class="kw">let </span>context = AssociatedData::new()
             .with_bytes(user_id.clone())
             .with_bytes(key_id.clone())
-            .with_str(<span class="string">&quot;imported key&quot;</span>);
+            .with_str(IMPORTED);
 
         <span class="kw">let </span>signing_key =
             SigningKey::from_bytes(<span class="kw-2">&amp;</span><span class="self">self</span>.key_material).map_err(|<span class="kw">_</span>| CryptoError::ConversionError)<span class="question-mark">?</span>;
@@ -1284,7 +1290,7 @@
         </span><span class="kw">let </span>bad_extra_context = AssociatedData::new()
             .with_bytes(user_id.clone())
             .with_bytes(key_id.clone())
-            .with_str(<span class="string">&quot;server-generated&quot;</span>);
+            .with_str(SERVER_GENERATED);
         encrypted_key.associated_data = bad_extra_context;
         <span class="macro">assert!</span>(encrypted_key
             .clone()
@@ -1319,7 +1325,7 @@
 
         check_context(
             encrypted_client_key,
-            <span class="string">&quot;client-generated&quot;</span>,
+            CLIENT_GENERATED,
             user_id,
             key_id,
             storage_key,
@@ -1343,13 +1349,7 @@
             <span class="kw-2">&amp;</span>user_id,
             <span class="kw-2">&amp;</span>key_id,
         )<span class="question-mark">?</span>;
-        check_context(
-            encrypted_import_key,
-            <span class="string">&quot;imported key&quot;</span>,
-            user_id,
-            key_id,
-            storage_key,
-        )
+        check_context(encrypted_import_key, IMPORTED, user_id, key_id, storage_key)
     }
 
     <span class="attribute">#[test]
@@ -1361,7 +1361,7 @@
         <span class="kw">let </span>context = AssociatedData::new()
             .with_bytes(user_id.clone())
             .with_bytes(key_id.clone())
-            .with_str(<span class="string">&quot;imported key&quot;</span>);
+            .with_str(IMPORTED);
 
         <span class="kw">let </span>key = SigningKeyPair::generate(<span class="kw-2">&amp;mut </span>rng, <span class="kw-2">&amp;</span>context);
 
@@ -1374,18 +1374,6 @@
         // Note that `context` above is the expected AD for an imported key.
         </span><span class="macro">assert_eq!</span>(key, output_key);
         <span class="prelude-val">Ok</span>(())
-    }
-
-    <span class="attribute">#[test]
-    </span><span class="kw">fn </span>placeholder_encryption_conversion_works() {
-        <span class="kw">let </span><span class="kw-2">mut </span>rng = rand::thread_rng();
-        <span class="kw">let </span>context = AssociatedData::new().with_str(<span class="string">&quot;a key to fake-encrypt&quot;</span>);
-        <span class="kw">let </span>key = SigningKeyPair::generate(<span class="kw-2">&amp;mut </span>rng, <span class="kw-2">&amp;</span>context);
-
-        <span class="kw">let </span>placeholder: PlaceholderEncryptedSigningKeyPair = key.clone().into();
-        <span class="kw">let </span>output_key: SigningKeyPair = placeholder.try_into().unwrap();
-
-        <span class="macro">assert_eq!</span>(key, output_key);
     }
 
     <span class="attribute">#[test]
@@ -1558,15 +1546,15 @@
         <span class="comment">// Create and encrypt a key pair - client side
         </span><span class="kw">let </span>(secret, <span class="kw">_</span>) =
             SigningKeyPair::create_and_encrypt(<span class="kw-2">&amp;mut </span>rng, <span class="kw-2">&amp;</span>storage_key, <span class="kw-2">&amp;</span>user_id, <span class="kw-2">&amp;</span>key_id)<span class="question-mark">?</span>;
-        <span class="macro">assert!</span>(!contains_str(secret.clone(), <span class="string">&quot;imported&quot;</span>));
-        <span class="macro">assert!</span>(!contains_str(secret.clone(), <span class="string">&quot;server-generated&quot;</span>));
-        <span class="macro">assert!</span>(contains_str(secret, <span class="string">&quot;client-generated&quot;</span>));
+        <span class="macro">assert!</span>(!contains_str(secret.clone(), IMPORTED));
+        <span class="macro">assert!</span>(!contains_str(secret.clone(), SERVER_GENERATED));
+        <span class="macro">assert!</span>(contains_str(secret, CLIENT_GENERATED));
 
         <span class="comment">// Remote generate a key pair -- not imported.
         </span><span class="kw">let </span>secret = SigningKeyPair::remote_generate(<span class="kw-2">&amp;mut </span>rng, <span class="kw-2">&amp;</span>user_id, <span class="kw-2">&amp;</span>key_id);
-        <span class="macro">assert!</span>(!contains_str(secret.clone(), <span class="string">&quot;imported&quot;</span>));
-        <span class="macro">assert!</span>(!contains_str(secret.clone(), <span class="string">&quot;client-generated&quot;</span>));
-        <span class="macro">assert!</span>(contains_str(secret, <span class="string">&quot;server-generated&quot;</span>));
+        <span class="macro">assert!</span>(!contains_str(secret.clone(), IMPORTED));
+        <span class="macro">assert!</span>(!contains_str(secret.clone(), CLIENT_GENERATED));
+        <span class="macro">assert!</span>(contains_str(secret, SERVER_GENERATED));
 
         <span class="comment">// Use the local-import creation function
         </span><span class="kw">let </span>key_material = SigningKey::random(rng.clone()).to_bytes();
@@ -1577,16 +1565,16 @@
             <span class="kw-2">&amp;</span>user_id,
             <span class="kw-2">&amp;</span>key_id,
         )<span class="question-mark">?</span>;
-        <span class="macro">assert!</span>(!contains_str(imported_secret.clone(), <span class="string">&quot;client-generated&quot;</span>));
-        <span class="macro">assert!</span>(!contains_str(imported_secret.clone(), <span class="string">&quot;server-generated&quot;</span>));
-        <span class="macro">assert!</span>(contains_str(imported_secret, <span class="string">&quot;imported&quot;</span>));
+        <span class="macro">assert!</span>(!contains_str(imported_secret.clone(), CLIENT_GENERATED));
+        <span class="macro">assert!</span>(!contains_str(imported_secret.clone(), SERVER_GENERATED));
+        <span class="macro">assert!</span>(contains_str(imported_secret, IMPORTED));
 
         <span class="comment">// Use the remote-import creation function
         </span><span class="kw">let </span>import: Import = key_material.as_slice().try_into()<span class="question-mark">?</span>;
         <span class="kw">let </span>key_pair = import.into_signing_key(<span class="kw-2">&amp;</span>user_id, <span class="kw-2">&amp;</span>key_id)<span class="question-mark">?</span>;
-        <span class="macro">assert!</span>(!contains_str(key_pair.clone(), <span class="string">&quot;client-generated&quot;</span>));
-        <span class="macro">assert!</span>(!contains_str(key_pair.clone(), <span class="string">&quot;server-generated&quot;</span>));
-        <span class="macro">assert!</span>(contains_str(key_pair, <span class="string">&quot;imported&quot;</span>));
+        <span class="macro">assert!</span>(!contains_str(key_pair.clone(), CLIENT_GENERATED));
+        <span class="macro">assert!</span>(!contains_str(key_pair.clone(), SERVER_GENERATED));
+        <span class="macro">assert!</span>(contains_str(key_pair, IMPORTED));
 
         <span class="prelude-val">Ok</span>(())
     }

@@ -68,6 +68,13 @@
 <span id="68">68</span>
 <span id="69">69</span>
 <span id="70">70</span>
+<span id="71">71</span>
+<span id="72">72</span>
+<span id="73">73</span>
+<span id="74">74</span>
+<span id="75">75</span>
+<span id="76">76</span>
+<span id="77">77</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Client has asked server to generate a new signing key and store it in the
 //! server.
 </span><span class="kw">use crate</span>::{
@@ -78,7 +85,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::database::DataStore;
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>lock_keeper::{
-    crypto::{KeyId, PlaceholderEncryptedSigningKeyPair, SigningKeyPair},
+    crypto::{KeyId, SigningKeyPair},
     infrastructure::channel::{Authenticated, ServerChannel},
     types::{
         database::secrets::StoredSecret,
@@ -118,10 +125,17 @@
 
         <span class="kw">let </span>public_key = key_pair.public_key();
 
-        <span class="kw">let </span>secret = StoredSecret::from_remote_signing_key_pair(
-            key_id.clone(),
-            PlaceholderEncryptedSigningKeyPair::from(key_pair),
-        )<span class="question-mark">?</span>;
+        <span class="comment">// encrypt key_pair
+        </span><span class="kw">let </span>encrypted_key_pair = {
+            <span class="kw">let </span><span class="kw-2">mut </span>rng = context.rng.lock().<span class="kw">await</span>;
+            context
+                .config
+                .remote_storage_key
+                .encrypt_signing_key_pair(<span class="kw-2">&amp;mut *</span>rng, key_pair)<span class="question-mark">?
+        </span>};
+
+        <span class="kw">let </span>secret =
+            StoredSecret::from_remote_signing_key_pair(key_id.clone(), encrypted_key_pair)<span class="question-mark">?</span>;
 
         <span class="comment">// Store key in database
         </span>context

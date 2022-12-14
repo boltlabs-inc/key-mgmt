@@ -52,6 +52,9 @@
 <span id="52">52</span>
 <span id="53">53</span>
 <span id="54">54</span>
+<span id="55">55</span>
+<span id="56">56</span>
+<span id="57">57</span>
 </pre><pre class="rust"><code><span class="doccomment">//! This operation allows client to specify a key ID for a key that was remotely
 //! generated on the server and use this key to sign a message.
 </span><span class="kw">use crate</span>::{
@@ -62,7 +65,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::database::DataStore;
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>lock_keeper::{
-    crypto::{PlaceholderEncryptedSigningKeyPair, Signable, SigningKeyPair},
+    crypto::{Encrypted, Signable, SigningKeyPair},
     infrastructure::channel::{Authenticated, ServerChannel},
     types::operations::remote_sign_bytes::{client, server},
 };
@@ -87,7 +90,7 @@
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
         <span class="macro">info!</span>(<span class="string">&quot;Starting remote sign protocol.&quot;</span>);
         <span class="kw">let </span>request: client::RequestRemoteSign = channel.receive().<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="kw">let </span>key_pair: PlaceholderEncryptedSigningKeyPair = context
+        <span class="kw">let </span>encrypted_key: Encrypted&lt;SigningKeyPair&gt; = context
             .db
             .get_user_secret(<span class="kw-2">&amp;</span>request.user_id, <span class="kw-2">&amp;</span>request.key_id, Default::default())
             .<span class="kw">await
@@ -95,8 +98,11 @@
             </span>.try_into()<span class="question-mark">?</span>;
         <span class="macro">info!</span>(<span class="string">&quot;Signing key found. Signing...&quot;</span>);
 
-        <span class="comment">// Pretend to decrypt our placeholder type
-        </span><span class="kw">let </span>key: SigningKeyPair = key_pair.try_into()<span class="question-mark">?</span>;
+        <span class="kw">let </span>key = encrypted_key.decrypt_signing_key_by_server(
+            <span class="kw-2">&amp;</span>context.config.remote_storage_key,
+            request.user_id,
+            request.key_id,
+        )<span class="question-mark">?</span>;
 
         <span class="kw">let </span>signature = request.data.sign(<span class="kw-2">&amp;</span>key);
         <span class="kw">let </span>response = server::ReturnSignature { signature };
