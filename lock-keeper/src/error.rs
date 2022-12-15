@@ -16,6 +16,8 @@ pub enum LockKeeperError {
     UnknownSecretType(String),
     #[error("Invalid secret type")]
     InvalidSecretType,
+    #[error("Invalid KeyId length")]
+    InvalidKeyIdLength,
 
     // Request errors
     #[error("Invalid client action")]
@@ -42,6 +44,8 @@ pub enum LockKeeperError {
     InvalidRemoteStorageKey,
 
     // Wrapped errors
+    #[error(transparent)]
+    Hex(#[from] hex::FromHexError),
     #[error(transparent)]
     Io(#[from] std::io::Error),
     #[error("OPAQUE protocol error: {}", .0)]
@@ -82,7 +86,9 @@ impl From<LockKeeperError> for Status {
             | LockKeeperError::AlreadyAuthenticated
             | LockKeeperError::ShouldBeAuthenticated
             | LockKeeperError::Crypto(_)
+            | LockKeeperError::Hex(_)
             | LockKeeperError::Io(_)
+            | LockKeeperError::InvalidKeyIdLength
             | LockKeeperError::InvalidPrivateKey
             | LockKeeperError::InvalidRemoteStorageKey
             | LockKeeperError::OpaqueProtocol(_)

@@ -4,14 +4,14 @@
 //! transformations between them. Public functions here are mostly wrappers
 //! around multiple low-level cryptographic steps.
 
-use crate::LockKeeperError;
+use crate::{types::database::HexBytes, LockKeeperError};
 use generic_array::{typenum::U64, GenericArray};
 use hkdf::{hmac::digest::Output, Hkdf};
 use k256::sha2::Sha512;
 use rand::{CryptoRng, Rng, RngCore};
 use serde::{Deserialize, Serialize};
 use sha3::{Digest, Sha3_256};
-use std::{array::IntoIter, convert::TryFrom};
+use std::{array::IntoIter, convert::TryFrom, fmt::Debug};
 use tracing::error;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
@@ -207,7 +207,9 @@ impl From<Message> for Vec<u8> {
 }
 
 /// Universally unique identifier for a stored secret or signing key.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+/// Wrapped in a `Box` to avoid stack overflows during heavy traffic.
+#[derive(Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(try_from = "HexBytes", into = "HexBytes")]
 pub struct KeyId(Box<[u8; 32]>);
 
 impl IntoIterator for KeyId {
@@ -259,6 +261,27 @@ impl KeyId {
     // Returns a slice of the contained bytes.
     pub fn as_bytes(&self) -> &[u8] {
         &*self.0
+    }
+}
+
+impl Debug for KeyId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let hex = hex::encode(*self.0);
+        f.debug_tuple("KeyId").field(&hex).finish()
+    }
+}
+
+impl From<KeyId> for HexBytes {
+    fn from(key_id: KeyId) -> Self {
+        (*key_id.0).into()
+    }
+}
+
+impl TryFrom<HexBytes> for KeyId {
+    type Error = LockKeeperError;
+
+    fn try_from(bytes: HexBytes) -> Result<Self, Self::Error> {
+        Ok(KeyId(Box::new(bytes.try_into()?)))
     }
 }
 

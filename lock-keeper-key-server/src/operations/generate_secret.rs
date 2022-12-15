@@ -82,12 +82,16 @@ async fn store_key<DB: DataStore>(
 ) -> Result<(), LockKeeperServerError> {
     // Receive Encrypted<Secret> from client
     let store_message: client::Store = channel.receive().await?;
-    let secret = StoredSecret::from_arbitrary_secret(key_id.clone(), store_message.ciphertext)?;
+    let secret = StoredSecret::from_arbitrary_secret(
+        key_id.clone(),
+        store_message.user_id,
+        store_message.ciphertext,
+    )?;
 
     // Check validity of ciphertext and store in DB
     context
         .db
-        .add_user_secret(&store_message.user_id, secret)
+        .add_user_secret(secret)
         .await
         .map_err(LockKeeperServerError::database)?;
     info!("Client's cypher text stored successfully.");

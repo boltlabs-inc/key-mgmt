@@ -1,8 +1,11 @@
-use crate::{constants::USERS, error::Error};
+use crate::{
+    constants::{SECRETS, USERS},
+    error::Error,
+};
 use async_trait::async_trait;
 use lock_keeper::{
     config::opaque::OpaqueCipherSuite,
-    constants::{ACCOUNT_NAME, USER_ID},
+    constants::{ACCOUNT_NAME, KEY_ID, USER_ID},
     crypto::{Encrypted, KeyId, StorageKey},
     types::{
         audit_event::{AuditEvent, AuditEventOptions, EventStatus, EventType},
@@ -66,6 +69,19 @@ impl Database {
             .create_indexes([user_id_index, account_name_index], None)
             .await?;
 
+        // Enforce that the key ID is unique
+        let enforce_uniqueness = IndexOptions::builder().unique(true).build();
+        let key_id_index = IndexModel::builder()
+            .keys(doc! {KEY_ID: 1})
+            .options(enforce_uniqueness)
+            .build();
+
+        // Apply uniqueness to the database
+        let _created_indices = db
+            .collection::<StoredSecret>(SECRETS)
+            .create_indexes([key_id_index], None)
+            .await?;
+
         Ok(Self { handle: db })
     }
 }
@@ -101,12 +117,8 @@ impl DataStore for Database {
     }
 
     #[instrument(skip_all, err(Debug), fields(user_id))]
-    async fn add_user_secret(
-        &self,
-        user_id: &UserId,
-        secret: StoredSecret,
-    ) -> Result<(), Self::Error> {
-        self.add_user_secret(user_id, secret).await?;
+    async fn add_user_secret(&self, secret: StoredSecret) -> Result<(), Self::Error> {
+        self.add_user_secret(secret).await?;
         Ok(())
     }
 

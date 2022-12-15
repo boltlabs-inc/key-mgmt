@@ -3,6 +3,7 @@
 /* TABLE NAMES */
 pub(crate) const AUDIT_EVENTS: &str = "audit_events";
 pub(crate) const USERS: &str = "users";
+pub(crate) const SECRETS: &str = "secrets";
 
 /* FIELD NAMES */
 pub(crate) const ACTION: &str = "action";
