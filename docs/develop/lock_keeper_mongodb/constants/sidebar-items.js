@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":[["ACTION",""],["ACTOR",""],["AUDIT_EVENTS",""],["DATE",""],["MAX_AUDIT_ENTRIES",""],["SECRET_ID",""],["STORAGE_KEY",""],["USERS",""]]};
+window.SIDEBAR_ITEMS = {"constant":[["ACTION",""],["ACTOR",""],["AUDIT_EVENTS",""],["DATE",""],["MAX_AUDIT_ENTRIES",""],["SECRETS",""],["SECRET_ID",""],["STORAGE_KEY",""],["USERS",""]]};

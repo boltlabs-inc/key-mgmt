@@ -98,6 +98,9 @@
 <span id="98">98</span>
 <span id="99">99</span>
 <span id="100">100</span>
+<span id="101">101</span>
+<span id="102">102</span>
+<span id="103">103</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Operations on users in the database.
 //!
 //! Functions in this module are used to perform CRUD operations
@@ -153,7 +156,8 @@
     <span class="doccomment">/// Find a [`User`] by their machine-readable [`UserId`].
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>find_user_by_id(<span class="kw-2">&amp;</span><span class="self">self</span>, user_id: <span class="kw-2">&amp;</span>UserId) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;User&gt;, Error&gt; {
         <span class="kw">let </span>collection = <span class="self">self</span>.handle.collection::&lt;User&gt;(USERS);
-        <span class="kw">let </span>query = <span class="macro">doc! </span>{ USER_ID: user_id };
+        <span class="kw">let </span>user_id_bson = mongodb::bson::to_bson(user_id)<span class="question-mark">?</span>;
+        <span class="kw">let </span>query = <span class="macro">doc! </span>{ USER_ID: user_id_bson };
         <span class="kw">let </span>user = collection.find_one(query, <span class="prelude-val">None</span>).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(user)
     }
@@ -161,7 +165,8 @@
     <span class="doccomment">/// Delete a [`User`] by their [`UserId`]
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>delete_user(<span class="kw-2">&amp;</span><span class="self">self</span>, user_id: <span class="kw-2">&amp;</span>UserId) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
         <span class="kw">let </span>collection = <span class="self">self</span>.handle.collection::&lt;User&gt;(USERS);
-        <span class="kw">let </span>query = <span class="macro">doc! </span>{ USER_ID: user_id };
+        <span class="kw">let </span>user_id_bson = mongodb::bson::to_bson(user_id)<span class="question-mark">?</span>;
+        <span class="kw">let </span>query = <span class="macro">doc! </span>{ USER_ID: user_id_bson };
         <span class="kw">let </span>result = collection.delete_one(query, <span class="prelude-val">None</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="kw">if </span>result.deleted_count == <span class="number">0 </span>{
@@ -186,7 +191,8 @@
         <span class="kw">let </span>storage_key_bson = mongodb::bson::to_bson(<span class="kw-2">&amp;</span>storage_key)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>collection = <span class="self">self</span>.handle.collection::&lt;User&gt;(USERS);
-        <span class="kw">let </span>filter = <span class="macro">doc! </span>{ USER_ID: user_id };
+        <span class="kw">let </span>user_id_bson = mongodb::bson::to_bson(user_id)<span class="question-mark">?</span>;
+        <span class="kw">let </span>filter = <span class="macro">doc! </span>{ USER_ID: user_id_bson };
         <span class="kw">let </span>update = <span class="macro">doc! </span>{ <span class="string">&quot;$set&quot;</span>: { STORAGE_KEY: storage_key_bson } };
 
         <span class="kw">let </span>user = collection.find_one_and_update(filter, update, <span class="prelude-val">None</span>).<span class="kw">await</span><span class="question-mark">?</span>;

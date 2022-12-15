@@ -77,6 +77,9 @@
 <span id="77">77</span>
 <span id="78">78</span>
 <span id="79">79</span>
+<span id="80">80</span>
+<span id="81">81</span>
+<span id="82">82</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Import signing key operation. This protocol allows the client to import a
 //! key into the server.
 </span><span class="kw">use crate</span>::{
@@ -133,13 +136,16 @@
                 .encrypt_signing_key_pair(<span class="kw-2">&amp;mut *</span>rng, signing_key)<span class="question-mark">?
         </span>};
 
-        <span class="kw">let </span>secret =
-            StoredSecret::from_remote_signing_key_pair(key_id.clone(), encrypted_key_pair)<span class="question-mark">?</span>;
+        <span class="kw">let </span>secret = StoredSecret::from_remote_signing_key_pair(
+            key_id.clone(),
+            encrypted_key_pair,
+            request.user_id,
+        )<span class="question-mark">?</span>;
 
         <span class="comment">// Check validity of ciphertext and store in DB
         </span>context
             .db
-            .add_user_secret(<span class="kw-2">&amp;</span>request.user_id, secret)
+            .add_user_secret(secret)
             .<span class="kw">await
             </span>.map_err(LockKeeperServerError::database)<span class="question-mark">?</span>;
 

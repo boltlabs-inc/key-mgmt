@@ -161,11 +161,26 @@
 <span id="161">161</span>
 <span id="162">162</span>
 <span id="163">163</span>
-</pre><pre class="rust"><code><span class="kw">use crate</span>::{constants::USERS, error::Error};
+<span id="164">164</span>
+<span id="165">165</span>
+<span id="166">166</span>
+<span id="167">167</span>
+<span id="168">168</span>
+<span id="169">169</span>
+<span id="170">170</span>
+<span id="171">171</span>
+<span id="172">172</span>
+<span id="173">173</span>
+<span id="174">174</span>
+<span id="175">175</span>
+</pre><pre class="rust"><code><span class="kw">use crate</span>::{
+    constants::{SECRETS, USERS},
+    error::Error,
+};
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>lock_keeper::{
     config::opaque::OpaqueCipherSuite,
-    constants::{ACCOUNT_NAME, USER_ID},
+    constants::{ACCOUNT_NAME, KEY_ID, USER_ID},
     crypto::{Encrypted, KeyId, StorageKey},
     types::{
         audit_event::{AuditEvent, AuditEventOptions, EventStatus, EventType},
@@ -229,6 +244,19 @@
             .create_indexes([user_id_index, account_name_index], <span class="prelude-val">None</span>)
             .<span class="kw">await</span><span class="question-mark">?</span>;
 
+        <span class="comment">// Enforce that the key ID is unique
+        </span><span class="kw">let </span>enforce_uniqueness = IndexOptions::builder().unique(<span class="bool-val">true</span>).build();
+        <span class="kw">let </span>key_id_index = IndexModel::builder()
+            .keys(<span class="macro">doc! </span>{KEY_ID: <span class="number">1</span>})
+            .options(enforce_uniqueness)
+            .build();
+
+        <span class="comment">// Apply uniqueness to the database
+        </span><span class="kw">let </span>_created_indices = db
+            .collection::&lt;StoredSecret&gt;(SECRETS)
+            .create_indexes([key_id_index], <span class="prelude-val">None</span>)
+            .<span class="kw">await</span><span class="question-mark">?</span>;
+
         <span class="prelude-val">Ok</span>(<span class="self">Self </span>{ handle: db })
     }
 }
@@ -264,12 +292,8 @@
     }
 
     <span class="attribute">#[instrument(skip_all, err(Debug), fields(user_id))]
-    </span><span class="kw">async fn </span>add_user_secret(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
-        user_id: <span class="kw-2">&amp;</span>UserId,
-        secret: StoredSecret,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt; {
-        <span class="self">self</span>.add_user_secret(user_id, secret).<span class="kw">await</span><span class="question-mark">?</span>;
+    </span><span class="kw">async fn </span>add_user_secret(<span class="kw-2">&amp;</span><span class="self">self</span>, secret: StoredSecret) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt; {
+        <span class="self">self</span>.add_user_secret(secret).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
     }
 

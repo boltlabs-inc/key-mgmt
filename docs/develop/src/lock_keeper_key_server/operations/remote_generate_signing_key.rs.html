@@ -75,6 +75,9 @@
 <span id="75">75</span>
 <span id="76">76</span>
 <span id="77">77</span>
+<span id="78">78</span>
+<span id="79">79</span>
+<span id="80">80</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Client has asked server to generate a new signing key and store it in the
 //! server.
 </span><span class="kw">use crate</span>::{
@@ -134,13 +137,16 @@
                 .encrypt_signing_key_pair(<span class="kw-2">&amp;mut *</span>rng, key_pair)<span class="question-mark">?
         </span>};
 
-        <span class="kw">let </span>secret =
-            StoredSecret::from_remote_signing_key_pair(key_id.clone(), encrypted_key_pair)<span class="question-mark">?</span>;
+        <span class="kw">let </span>secret = StoredSecret::from_remote_signing_key_pair(
+            key_id.clone(),
+            encrypted_key_pair,
+            request.user_id,
+        )<span class="question-mark">?</span>;
 
         <span class="comment">// Store key in database
         </span>context
             .db
-            .add_user_secret(<span class="kw-2">&amp;</span>request.user_id, secret)
+            .add_user_secret(secret)
             .<span class="kw">await
             </span>.map_err(LockKeeperServerError::database)<span class="question-mark">?</span>;
 

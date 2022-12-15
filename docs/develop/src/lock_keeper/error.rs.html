@@ -93,6 +93,12 @@
 <span id="93">93</span>
 <span id="94">94</span>
 <span id="95">95</span>
+<span id="96">96</span>
+<span id="97">97</span>
+<span id="98">98</span>
+<span id="99">99</span>
+<span id="100">100</span>
+<span id="101">101</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Error type for all errors returned to code outside of this crate.
 
 </span><span class="kw">use </span>thiserror::Error;
@@ -111,6 +117,8 @@
     </span>UnknownSecretType(String),
     <span class="attribute">#[error(<span class="string">&quot;Invalid secret type&quot;</span>)]
     </span>InvalidSecretType,
+    <span class="attribute">#[error(<span class="string">&quot;Invalid KeyId length&quot;</span>)]
+    </span>InvalidKeyIdLength,
 
     <span class="comment">// Request errors
     </span><span class="attribute">#[error(<span class="string">&quot;Invalid client action&quot;</span>)]
@@ -138,6 +146,8 @@
 
     <span class="comment">// Wrapped errors
     </span><span class="attribute">#[error(transparent)]
+    </span>Hex(<span class="attribute">#[from] </span>hex::FromHexError),
+    <span class="attribute">#[error(transparent)]
     </span>Io(<span class="attribute">#[from] </span>std::io::Error),
     <span class="attribute">#[error(<span class="string">&quot;OPAQUE protocol error: {}&quot;</span>, .<span class="number">0</span>)]
     </span>OpaqueProtocol(opaque_ke::errors::ProtocolError),
@@ -177,7 +187,9 @@
             | LockKeeperError::AlreadyAuthenticated
             | LockKeeperError::ShouldBeAuthenticated
             | LockKeeperError::Crypto(<span class="kw">_</span>)
+            | LockKeeperError::Hex(<span class="kw">_</span>)
             | LockKeeperError::Io(<span class="kw">_</span>)
+            | LockKeeperError::InvalidKeyIdLength
             | LockKeeperError::InvalidPrivateKey
             | LockKeeperError::InvalidRemoteStorageKey
             | LockKeeperError::OpaqueProtocol(<span class="kw">_</span>)

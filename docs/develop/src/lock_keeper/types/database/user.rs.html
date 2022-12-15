@@ -127,6 +127,22 @@
 <span id="127">127</span>
 <span id="128">128</span>
 <span id="129">129</span>
+<span id="130">130</span>
+<span id="131">131</span>
+<span id="132">132</span>
+<span id="133">133</span>
+<span id="134">134</span>
+<span id="135">135</span>
+<span id="136">136</span>
+<span id="137">137</span>
+<span id="138">138</span>
+<span id="139">139</span>
+<span id="140">140</span>
+<span id="141">141</span>
+<span id="142">142</span>
+<span id="143">143</span>
+<span id="144">144</span>
+<span id="145">145</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Database models for users and user-related fields
 
 </span><span class="kw">use crate</span>::{
@@ -135,14 +151,16 @@
     LockKeeperError,
 };
 
-<span class="kw">use </span>bson::Bson;
 <span class="kw">use </span>opaque_ke::ServerRegistration;
 <span class="kw">use </span>rand::{CryptoRng, Rng, RngCore};
 <span class="kw">use </span>serde::{Deserialize, Serialize};
-<span class="kw">use </span>std::{fmt::Display, str::FromStr, vec::IntoIter};
-<span class="kw">use </span>uuid::Uuid;
+<span class="kw">use </span>std::{
+    array::IntoIter,
+    fmt::{Debug, Display},
+    str::FromStr,
+};
 
-<span class="kw">use </span><span class="kw">super</span>::secrets::StoredSecret;
+<span class="kw">use </span><span class="kw">super</span>::HexBytes;
 
 <span class="doccomment">/// One user with a set of arbitrary secrets and a [`ServerRegistration`] to
 /// authenticate with.
@@ -151,7 +169,6 @@
     <span class="kw">pub </span>user_id: UserId,
     <span class="kw">pub </span>account_name: AccountName,
     <span class="kw">pub </span>storage_key: <span class="prelude-ty">Option</span>&lt;Encrypted&lt;StorageKey&gt;&gt;,
-    <span class="kw">pub </span>secrets: Vec&lt;StoredSecret&gt;,
     <span class="kw">pub </span>server_registration: ServerRegistration&lt;OpaqueCipherSuite&gt;,
 }
 
@@ -165,7 +182,6 @@
             user_id,
             account_name,
             storage_key: <span class="prelude-val">None</span>,
-            secrets: Vec::new(),
             server_registration,
         }
     }
@@ -176,19 +192,19 @@
 }
 
 <span class="doccomment">/// Unique ID for a user.
-</span><span class="attribute">#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
-</span><span class="kw">pub struct </span>UserId(String);
+/// Wrapped in a `Box` to avoid stack overflows during heavy traffic.
+</span><span class="attribute">#[derive(Clone, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
+#[serde(try_from = <span class="string">&quot;HexBytes&quot;</span>, into = <span class="string">&quot;HexBytes&quot;</span>)]
+</span><span class="kw">pub struct </span>UserId(Box&lt;[u8; <span class="number">16</span>]&gt;);
 
 <span class="kw">impl </span>UserId {
     <span class="kw">pub fn </span>new(rng: <span class="kw-2">&amp;mut </span>(<span class="kw">impl </span>CryptoRng + RngCore)) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, LockKeeperError&gt; {
-        <span class="comment">// Generate a UUID from bytes
+        <span class="comment">// Generate random bytes
         </span><span class="kw">let </span><span class="kw-2">mut </span>id = [<span class="number">0_u8</span>; <span class="number">16</span>];
         rng.try_fill(<span class="kw-2">&amp;mut </span>id)
             .map_err(|<span class="kw">_</span>| CryptoError::RandomNumberGeneratorFailed)<span class="question-mark">?</span>;
-        <span class="kw">let </span>uuid = Uuid::from_bytes(id);
 
-        <span class="comment">// Store the UUID as a string to simplify database queries
-        </span><span class="prelude-val">Ok</span>(<span class="self">Self</span>(uuid.to_string()))
+        <span class="prelude-val">Ok</span>(<span class="self">Self</span>(Box::new(id)))
     }
 
     <span class="kw">pub fn </span>as_bytes(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[u8] {
@@ -202,22 +218,38 @@
 
 <span class="kw">impl </span>IntoIterator <span class="kw">for </span>UserId {
     <span class="kw">type </span>Item = u8;
-    <span class="kw">type </span>IntoIter = IntoIter&lt;u8&gt;;
+    <span class="kw">type </span>IntoIter = IntoIter&lt;u8, <span class="number">16</span>&gt;;
 
     <span class="kw">fn </span>into_iter(<span class="self">self</span>) -&gt; <span class="self">Self</span>::IntoIter {
-        <span class="self">self</span>.<span class="number">0</span>.into_bytes().into_iter()
+        <span class="self">self</span>.<span class="number">0</span>.into_iter()
+    }
+}
+
+<span class="kw">impl </span>Debug <span class="kw">for </span>UserId {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; std::fmt::Result {
+        <span class="kw">let </span>hex = hex::encode(<span class="kw-2">*</span><span class="self">self</span>.<span class="number">0</span>);
+        f.debug_tuple(<span class="string">&quot;UserId&quot;</span>).field(<span class="kw-2">&amp;</span>hex).finish()
     }
 }
 
 <span class="kw">impl </span>Display <span class="kw">for </span>UserId {
     <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; std::fmt::Result {
-        <span class="macro">write!</span>(f, <span class="string">&quot;{:?}&quot;</span>, <span class="self">self</span>.<span class="number">0</span>)
+        <span class="kw">let </span>hex = hex::encode(<span class="kw-2">*</span><span class="self">self</span>.<span class="number">0</span>);
+        <span class="macro">write!</span>(f, <span class="string">&quot;{hex}&quot;</span>)
     }
 }
 
-<span class="kw">impl </span>From&lt;UserId&gt; <span class="kw">for </span>Bson {
-    <span class="kw">fn </span>from(user_id: UserId) -&gt; <span class="self">Self </span>{
-        Bson::String(user_id.<span class="number">0</span>)
+<span class="kw">impl </span>From&lt;UserId&gt; <span class="kw">for </span>HexBytes {
+    <span class="kw">fn </span>from(key_id: UserId) -&gt; <span class="self">Self </span>{
+        (<span class="kw-2">*</span>key_id.<span class="number">0</span>).into()
+    }
+}
+
+<span class="kw">impl </span>TryFrom&lt;HexBytes&gt; <span class="kw">for </span>UserId {
+    <span class="kw">type </span>Error = LockKeeperError;
+
+    <span class="kw">fn </span>try_from(bytes: HexBytes) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
+        <span class="prelude-val">Ok</span>(UserId(Box::new(bytes.try_into()<span class="question-mark">?</span>)))
     }
 }
 

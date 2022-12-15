@@ -414,20 +414,43 @@
 <span id="414">414</span>
 <span id="415">415</span>
 <span id="416">416</span>
+<span id="417">417</span>
+<span id="418">418</span>
+<span id="419">419</span>
+<span id="420">420</span>
+<span id="421">421</span>
+<span id="422">422</span>
+<span id="423">423</span>
+<span id="424">424</span>
+<span id="425">425</span>
+<span id="426">426</span>
+<span id="427">427</span>
+<span id="428">428</span>
+<span id="429">429</span>
+<span id="430">430</span>
+<span id="431">431</span>
+<span id="432">432</span>
+<span id="433">433</span>
+<span id="434">434</span>
+<span id="435">435</span>
+<span id="436">436</span>
+<span id="437">437</span>
+<span id="438">438</span>
+<span id="439">439</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Application-specific cryptographic types and operations.
 //!
 //! Defines and implements keys and secret types, and the appropriate
 //! transformations between them. Public functions here are mostly wrappers
 //! around multiple low-level cryptographic steps.
 
-</span><span class="kw">use </span><span class="kw">crate</span>::LockKeeperError;
+</span><span class="kw">use crate</span>::{types::database::HexBytes, LockKeeperError};
 <span class="kw">use </span>generic_array::{typenum::U64, GenericArray};
 <span class="kw">use </span>hkdf::{hmac::digest::Output, Hkdf};
 <span class="kw">use </span>k256::sha2::Sha512;
 <span class="kw">use </span>rand::{CryptoRng, Rng, RngCore};
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>sha3::{Digest, Sha3_256};
-<span class="kw">use </span>std::{array::IntoIter, convert::TryFrom};
+<span class="kw">use </span>std::{array::IntoIter, convert::TryFrom, fmt::Debug};
 <span class="kw">use </span>tracing::error;
 <span class="kw">use </span>zeroize::{Zeroize, ZeroizeOnDrop};
 
@@ -623,7 +646,9 @@
 }
 
 <span class="doccomment">/// Universally unique identifier for a stored secret or signing key.
-</span><span class="attribute">#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+/// Wrapped in a `Box` to avoid stack overflows during heavy traffic.
+</span><span class="attribute">#[derive(Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(try_from = <span class="string">&quot;HexBytes&quot;</span>, into = <span class="string">&quot;HexBytes&quot;</span>)]
 </span><span class="kw">pub struct </span>KeyId(Box&lt;[u8; <span class="number">32</span>]&gt;);
 
 <span class="kw">impl </span>IntoIterator <span class="kw">for </span>KeyId {
@@ -676,6 +701,27 @@
     </span><span class="kw">pub fn </span>as_bytes(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[u8] {
         <span class="kw-2">&amp;*</span><span class="self">self</span>.<span class="number">0
     </span>}
+}
+
+<span class="kw">impl </span>Debug <span class="kw">for </span>KeyId {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; std::fmt::Result {
+        <span class="kw">let </span>hex = hex::encode(<span class="kw-2">*</span><span class="self">self</span>.<span class="number">0</span>);
+        f.debug_tuple(<span class="string">&quot;KeyId&quot;</span>).field(<span class="kw-2">&amp;</span>hex).finish()
+    }
+}
+
+<span class="kw">impl </span>From&lt;KeyId&gt; <span class="kw">for </span>HexBytes {
+    <span class="kw">fn </span>from(key_id: KeyId) -&gt; <span class="self">Self </span>{
+        (<span class="kw-2">*</span>key_id.<span class="number">0</span>).into()
+    }
+}
+
+<span class="kw">impl </span>TryFrom&lt;HexBytes&gt; <span class="kw">for </span>KeyId {
+    <span class="kw">type </span>Error = LockKeeperError;
+
+    <span class="kw">fn </span>try_from(bytes: HexBytes) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
+        <span class="prelude-val">Ok</span>(KeyId(Box::new(bytes.try_into()<span class="question-mark">?</span>)))
+    }
 }
 
 <span class="doccomment">/// Raw material for an exported signing key.
