@@ -38,7 +38,9 @@ impl MongodbSessionCache {
     }
 
     /// Connect to the MongoDB instance specified by the given [`Config`]
+    #[instrument(err(Debug))]
     async fn connect(config: &Config) -> Result<MongoDB, Error> {
+        info!("Connecting");
         // Parse a connection string into an options struct
         let client_options = ClientOptions::parse(&config.mongodb_uri).await?;
         // Get a handle to the MongoDB client

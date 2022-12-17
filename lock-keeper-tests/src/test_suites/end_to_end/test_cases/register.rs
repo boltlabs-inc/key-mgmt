@@ -26,7 +26,7 @@ pub async fn run_tests(config: &Config, filters: &TestFilters) -> Result<Vec<Tes
 }
 
 async fn register_same_user_twice_fails(config: Config) -> Result<()> {
-    let account_name = AccountName::from_str(tagged("user").as_str())?;
+    let account_name = AccountName::from(tagged("user").as_str());
     let password = Password::from_str(tagged("password").as_str())?;
     LockKeeperClient::register(&account_name, &password, &config)
         .await

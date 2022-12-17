@@ -6,7 +6,7 @@ pub mod session_cache;
 pub(crate) use operation::Operation;
 pub use service::start_lock_keeper_server;
 use tokio_stream::wrappers::ReceiverStream;
-use tracing::{info, instrument};
+use tracing::{debug, instrument};
 
 use crate::{config::Config, error::LockKeeperServerError, operations};
 
@@ -168,7 +168,7 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
 
         let user_id = context
             .db
-            .find_user(metadata.account_name())
+            .find_account(metadata.account_name())
             .await
             .map_err(LockKeeperServerError::database)?
             .ok_or(LockKeeperServerError::InvalidAccount)?
@@ -271,7 +271,7 @@ impl<DB: DataStore> LockKeeperKeyServer<DB> {
         request: Request<Streaming<Message>>,
     ) -> Result<(ServerChannel<Unauthenticated>, Response<MessageStream>), LockKeeperServerError>
     {
-        info!("Handling new client request.");
+        debug!("Creating new unauthenticated channel.");
         let (channel, rx) = ServerChannel::new(request)?;
         let response = Response::new(ReceiverStream::new(rx));
 
@@ -289,7 +289,7 @@ impl<DB: DataStore> LockKeeperKeyServer<DB> {
         ),
         LockKeeperServerError,
     > {
-        info!("Handling new client request.");
+        debug!("Creating new authenticated channel.");
         let (channel, response) = self.create_unauthenticated_channel(request).await?;
 
         // Upgrade channel to be authenticated

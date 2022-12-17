@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+
 use lock_keeper::{
     infrastructure::{channel::ServerChannel, logging},
     types::audit_event::EventStatus,

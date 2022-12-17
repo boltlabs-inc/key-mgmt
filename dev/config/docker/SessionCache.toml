@@ -1,0 +1,5 @@
+# This file is meant to be used with our `docker compose` instance of mongod, so both lock-keepr server and
+# session cache are running on docker instances.
+mongodb_uri = 'mongodb://mongodb:27017'
+db_name = 'lock-keeper-test-db'
+session_expiration = "60s"

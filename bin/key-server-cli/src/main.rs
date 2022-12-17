@@ -170,10 +170,11 @@ use lk_session_mongodb::{config::Config as SessionConfig, MongodbSessionCache};
 use lock_keeper_key_server::{
     config::Config as ServerConfig, server::start_lock_keeper_server, LockKeeperServerError,
 };
-use lock_keeper_mongodb::{config::Config as DatabaseConfig, Database};
+
 use tracing::{info, Level};
 use tracing_appender::{self, non_blocking::WorkerGuard};
 
+use lock_keeper_postgres::{ConfigFile as DatabaseConfigFile, PostgresDB};
 use tracing_subscriber::{filter::Targets, prelude::*};
 
 #[derive(Debug, Parser)]
@@ -222,13 +223,20 @@ pub async fn main() {
     info!("Sever started!");
     info!("Logging config settings: {:?}", server_config.logging);
 
-    let database_config = DatabaseConfig::from_file(config.database).unwrap();
-    let mongo = Database::connect(database_config.clone()).await.unwrap();
+    let db_config_file = DatabaseConfigFile::from_file(config.database).unwrap();
+    let database_config = TryFrom::try_from(db_config_file).unwrap();
+
     info!("Database config Settings: {:?}", database_config);
 
+    let postgres = PostgresDB::connect(database_config).await.unwrap();
     let session_config = SessionConfig::from_file(config.session_cache).unwrap();
+
+    info!(
+        "Creating new MongoDB session cache object: {:?}",
+        session_config
+    );
     let session_cache = MongodbSessionCache::new(session_config).await.unwrap();
-    start_lock_keeper_server(server_config, mongo, session_cache)
+    start_lock_keeper_server(server_config, postgres, session_cache)
         .await
         .unwrap();
 }
@@ -254,17 +262,21 @@ fn init_logging(all_logs: &Path, server_logs: &Path) -> Result<Logging, LockKeep
     let (all_logs_dir, all_logs_file) = get_paths(all_logs)?;
     let (server_logs_dir, server_logs_file) = get_paths(server_logs)?;
 
-    // Initialize logging. Three different files:
+    // Initialize logging. With our three different layers.
+
+    // Log info level events generated from lock keeper into stdout.
     let stdout_layer = tracing_subscriber::fmt::layer()
         .pretty()
         .with_filter(our_targets_filter(Level::INFO));
 
+    // This layers logs all events into a file.
     let all_appender = tracing_appender::rolling::hourly(all_logs_dir, all_logs_file);
     let (non_blocking, _all_layer_guard) = tracing_appender::non_blocking(all_appender);
     let all_layer = tracing_subscriber::fmt::layer()
         .json()
         .with_writer(non_blocking);
 
+    // Log all events generated from lock keeper into a file.
     let server_appender = tracing_appender::rolling::hourly(server_logs_dir, server_logs_file);
     let (non_blocking, _server_layer_guard) = tracing_appender::non_blocking(server_appender);
     let server_layer = tracing_subscriber::fmt::layer()
@@ -272,6 +284,7 @@ fn init_logging(all_logs: &Path, server_logs: &Path) -> Result<Logging, LockKeep
         .with_writer(non_blocking)
         .with_filter(our_targets_filter(Level::TRACE));
 
+    // Build our logging subscriber with all three of our layers.
     tracing_subscriber::registry()
         .with(stdout_layer)
         .with(server_layer)
@@ -304,5 +317,6 @@ fn init_logging(all_logs: &Path, server_logs: &Path) -> Result<Logging, LockKeep
             .with_target("key_server_cli", level)
             .with_target("lock_keeper_key_server", level)
             .with_target("lock_keeper", level)
+            .with_target("lk_session_mongodb", level)
     }
 }

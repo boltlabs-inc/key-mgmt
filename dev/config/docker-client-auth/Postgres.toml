@@ -1,0 +1,8 @@
+# This file is meant to be used with our `docker compose` instance of postgres, so both lock-keepr server and
+# database are running on docker instances.
+username = 'test'
+password = 'test_password'
+address = 'postgres'
+db_name = 'test'
+max_connections = 5
+connecting_timeout_seconds = 3

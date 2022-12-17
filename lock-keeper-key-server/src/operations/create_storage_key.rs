@@ -53,7 +53,7 @@ async fn send_user_id<DB: DataStore>(
 
     let user = context
         .db
-        .find_user(&request.account_name)
+        .find_account(&request.account_name)
         .await
         .map_err(LockKeeperServerError::database)?
         .ok_or(LockKeeperServerError::InvalidAccount)?;
@@ -102,7 +102,7 @@ async fn store_storage_key<DB: DataStore>(
         error!("Failed to set storage key for user.");
         context
             .db
-            .delete_user(&user_id)
+            .delete_account(&user_id)
             .await
             .map_err(LockKeeperServerError::database)?;
         info!("Deleted user due to failure to set storage key.");

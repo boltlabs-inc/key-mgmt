@@ -34,7 +34,7 @@ pub struct Authenticate;
 impl<DB: DataStore> Operation<Unauthenticated, DB> for Authenticate {
     /// Executes the sever-side opaque authentication protocol. This establishes
     /// a session key for client and server to use for secure communication.
-    #[instrument(skip_all, err(Debug), fields(account_name))] // TODO: Record account name.
+    #[instrument(skip_all, err(Debug), fields(account_name))]
     async fn operation(
         self,
         channel: &mut ServerChannel<Unauthenticated>,
@@ -64,7 +64,7 @@ async fn authenticate_start<DB: DataStore>(
     // server_registration
     let (server_registration, user_id) = match context
         .db
-        .find_user(&start_message.account_name)
+        .find_account(&start_message.account_name)
         .await
         .map_err(LockKeeperServerError::database)?
     {

@@ -25,7 +25,7 @@ pub const RNG_SEED: &[u8; 32] = b"we love deterministic testing!!!";
 /// ```
 /// let user = tagged("user");
 /// println!("{user}");
-/// // Prints something like "user-1h65k35"
+/// // Prints something like "user_1h65k35"
 /// ```
 pub fn tagged(text: impl AsRef<str>) -> String {
     let text = text.as_ref();
@@ -35,7 +35,7 @@ pub fn tagged(text: impl AsRef<str>) -> String {
         .map(char::from)
         .collect();
 
-    format!("{text}-{tag}")
+    format!("{text}_{tag}")
 }
 
 /// Locally simulates OPAQUE registration to get a valid

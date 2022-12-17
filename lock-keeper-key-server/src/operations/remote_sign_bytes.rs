@@ -7,6 +7,7 @@ use crate::{
 
 use crate::database::DataStore;
 use async_trait::async_trait;
+
 use lock_keeper::{
     crypto::{Encrypted, Signable, SigningKeyPair},
     infrastructure::channel::{Authenticated, ServerChannel},

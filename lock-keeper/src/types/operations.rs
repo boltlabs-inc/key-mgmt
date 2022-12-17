@@ -31,7 +31,7 @@ use super::Message;
 
 /// Options for actions the Lock Keeper client can take.
 #[derive(
-    Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq, Display, EnumIter, EnumString,
+    Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq, Display, EnumIter, EnumString, Hash,
 )]
 pub enum ClientAction {
     Authenticate,
@@ -48,6 +48,7 @@ pub enum ClientAction {
     RetrieveSecret,
     RetrieveAuditEvents,
     RetrieveSigningKey,
+    // System only.
     RetrieveStorageKey,
 }
 

@@ -1,0 +1,4 @@
+# This is for running the Server locally with a dockerized instance of the mongodb server.
+mongodb_uri = 'mongodb://localhost:27017'
+db_name = 'lock-keeper-test-db'
+session_expiration = "60s"

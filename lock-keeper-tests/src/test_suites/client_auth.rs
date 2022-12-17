@@ -7,14 +7,12 @@ use crate::{
     config::Environments,
     error::Result,
     run_parallel,
-    test_suites::database::TestDatabase,
     utils::{report_test_results, TestResult},
 };
 
 pub async fn run_tests(environments: &Environments) -> Result<Vec<TestResult>> {
     println!("{}", "Running client auth tests".cyan());
 
-    let db = TestDatabase::new("client_auth_tests").await?;
     let results = run_parallel!(
         &environments.filters,
         client_auth_not_required(environments.clone()),
@@ -22,8 +20,6 @@ pub async fn run_tests(environments: &Environments) -> Result<Vec<TestResult>> {
         client_auth_required_not_provided(environments.clone()),
         client_auth_not_required_but_provided(environments.clone()),
     )?;
-
-    db.drop().await?;
 
     println!("client auth tests: {}", report_test_results(&results));
 

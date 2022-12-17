@@ -2,17 +2,20 @@
 //!
 //! Includes possible events to log and statuses of those events
 
-use crate::types::{database::user::AccountName, operations::ClientAction};
+use crate::{
+    crypto::KeyId,
+    types::{database::user::AccountName, operations::ClientAction},
+};
 
-use crate::crypto::KeyId;
-use bson::DateTime;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display, Formatter};
 use strum::{Display, EnumString};
+use time::OffsetDateTime;
 use uuid::Uuid;
 
 /// Options for the outcome of a given action in a [`AuditEvent`]
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize, Display)]
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize, Display, EnumString)]
 pub enum EventStatus {
     Started,
     Successful,
@@ -20,38 +23,24 @@ pub enum EventStatus {
 }
 
 /// A single entry that specifies the actor, action, outcome, and
-/// any related key for a logged audit event
+/// any related key for a logged audit event.
+/// We expect database implementors to create [AuditEvent] instances for us. So
+/// we make all fields public.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AuditEvent {
-    request_id: String,
-    actor: AccountName,
-    secret_id: Option<KeyId>,
-    date: DateTime,
-    action: ClientAction,
-    status: EventStatus,
+    pub audit_event_id: i64,
+    pub account_name: AccountName,
+    pub request_id: Uuid,
+    pub key_id: Option<KeyId>,
+    /// We use [OffsetDateTime] as this is compatible with SQLx. Easily
+    /// convertible to a postgres' TIMESTAMPTZ type.
+    pub timestamp: OffsetDateTime,
+    pub action: ClientAction,
+    pub status: EventStatus,
 }
 
 impl AuditEvent {
-    pub fn new(
-        request_id: Uuid,
-        actor: AccountName,
-        secret_id: Option<KeyId>,
-        action: ClientAction,
-        status: EventStatus,
-    ) -> Self {
-        AuditEvent {
-            request_id: request_id.to_string(),
-            actor,
-            secret_id,
-            date: DateTime::now(),
-            action,
-            status,
-        }
-    }
-}
-
-impl AuditEvent {
-    pub fn request_id(&self) -> &str {
+    pub fn request_id(&self) -> &Uuid {
         &self.request_id
     }
 
@@ -60,11 +49,11 @@ impl AuditEvent {
     }
 
     pub fn key_id(&self) -> Option<&KeyId> {
-        self.secret_id.as_ref()
+        self.key_id.as_ref()
     }
 
-    pub fn date(&self) -> DateTime {
-        self.date
+    pub fn date(&self) -> OffsetDateTime {
+        self.timestamp
     }
 
     pub fn status(&self) -> EventStatus {
@@ -145,9 +134,9 @@ impl EventType {
 /// Optional parameters to filter [`AuditEvent`]s by
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct AuditEventOptions {
-    pub key_ids: Option<Vec<KeyId>>,
-    pub after_date: Option<DateTime>,
-    pub before_date: Option<DateTime>,
+    pub key_ids: Vec<KeyId>,
+    pub after_date: Option<OffsetDateTime>,
+    pub before_date: Option<OffsetDateTime>,
     pub request_id: Option<Uuid>,
 }
 

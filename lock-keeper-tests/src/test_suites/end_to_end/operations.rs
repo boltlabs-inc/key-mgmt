@@ -27,10 +27,17 @@ pub(crate) fn compare_errors<T, E>(result: LockKeeperResponse<T>, expected_error
 where
     E: Into<LockKeeperClientError> + Display,
 {
-    assert!(result.result.is_err());
+    assert!(
+        result.result.is_err(),
+        "Expected error. Found value instead."
+    );
 
     let actual_error = result.result.err().unwrap();
-    assert_eq!(actual_error.to_string(), expected_error.to_string());
+    assert_eq!(
+        actual_error.to_string(),
+        expected_error.to_string(),
+        "Wrong error found."
+    );
 }
 
 /// Helper to compare status errors.
@@ -49,8 +56,9 @@ pub(crate) fn compare_status_errors<T>(
     Ok(())
 }
 
-/// Make sure the last audit log for the tested operation has the correct status
-/// and action.
+/// Fetch relevant events based on request_id. Ensure that some event on the
+/// list matches the expected_status and expected_action. Note: we cannot rely
+/// on the ordering of the audit events.
 pub(crate) async fn check_audit_events(
     state: &TestState,
     expected_status: EventStatus,
@@ -72,14 +80,17 @@ pub(crate) async fn check_audit_events(
         .await
         .result?;
 
-    // Get the last event in the list of events
-    let last_event = audit_event_log.last().unwrap();
+    // Get all events that match given expected values.
+    let matching_events = audit_event_log
+        .into_iter()
+        .filter(|event| event.status == expected_status && event.action == expected_action);
 
-    // Check that expected status and action match
-    let actual_status = last_event.status();
-    let actual_action = last_event.action();
-    assert_eq!(expected_status, actual_status);
-    assert_eq!(expected_action, actual_action);
+    assert_eq!(
+        matching_events.count(),
+        1,
+        "Exactly one audit event should have matched."
+    );
+
     Ok(())
 }
 

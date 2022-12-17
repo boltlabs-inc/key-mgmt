@@ -1,0 +1,8 @@
+# This is for running the Server locally with a dockerized instance of the postgres server.
+# Default name and password as set by the docker-compose.yml postgres service.
+username = 'test'
+password = 'test_password'
+address = 'localhost'
+db_name = 'test'
+max_connections = 5
+connecting_timeout_seconds = 3

@@ -11,7 +11,7 @@ use lock_keeper::{
         audit_event::{AuditEvent, AuditEventOptions, EventStatus, EventType},
         database::{
             secrets::StoredSecret,
-            user::{AccountName, User, UserId},
+            user::{Account, AccountName, UserId},
         },
         operations::ClientAction,
     },
@@ -26,13 +26,13 @@ use uuid::Uuid;
 #[async_trait]
 pub trait DataStore: Send + Sync + 'static {
     type Error: std::error::Error + Send + Sync + 'static;
-    // Audit event
+
     /// Create a new [`AuditEvent`] for the given actor, action, and outcome
     async fn create_audit_event(
         &self,
         request_id: Uuid,
-        actor: &AccountName,
-        secret_id: &Option<KeyId>,
+        account_name: &AccountName,
+        key_id: &Option<KeyId>,
         action: ClientAction,
         status: EventStatus,
     ) -> Result<(), Self::Error>;
@@ -47,11 +47,11 @@ pub trait DataStore: Send + Sync + 'static {
     ) -> Result<Vec<AuditEvent>, Self::Error>;
 
     // Secret
-    /// Add a [`StoredSecret`] to a [`User`]'s list of arbitrary
+    /// Add a [`StoredSecret`] to a [`Account`]'s list of arbitrary
     /// secrets
     async fn add_user_secret(&self, secret: StoredSecret) -> Result<(), Self::Error>;
 
-    /// Get a [`User`]'s [`StoredSecret`] based on its [`KeyId`].
+    /// Get a [`Account`]'s [`StoredSecret`] based on its [`KeyId`].
     /// A [`StoredSecret`] will only be returned if it matches the given
     /// [`SecretFilter`].
     async fn get_user_secret(
@@ -62,25 +62,28 @@ pub trait DataStore: Send + Sync + 'static {
     ) -> Result<StoredSecret, Self::Error>;
 
     // User
-    /// Create a new [`User`] with their authentication information and insert
-    /// it into the database.
-    async fn create_user(
+    /// Create a new [`Account`] with their authentication information and
+    /// insert it into the database.
+    async fn create_account(
         &self,
         user_id: &UserId,
         account_name: &AccountName,
         server_registration: &ServerRegistration<OpaqueCipherSuite>,
-    ) -> Result<User, Self::Error>;
+    ) -> Result<Account, Self::Error>;
 
-    /// Find a [`User`] by their human-readable [`AccountName`].
-    async fn find_user(&self, account_name: &AccountName) -> Result<Option<User>, Self::Error>;
+    /// Find a [`Account`] by their human-readable [`AccountName`].
+    async fn find_account(
+        &self,
+        account_name: &AccountName,
+    ) -> Result<Option<Account>, Self::Error>;
 
-    /// Find a [`User`] by their machine-readable [`UserId`].
-    async fn find_user_by_id(&self, user_id: &UserId) -> Result<Option<User>, Self::Error>;
+    /// Find a [`Account`] by their machine-readable [`UserId`].
+    async fn find_account_by_id(&self, user_id: &UserId) -> Result<Option<Account>, Self::Error>;
 
-    /// Delete a [`User`] by their [`UserId`]
-    async fn delete_user(&self, user_id: &UserId) -> Result<(), Self::Error>;
+    /// Delete a [`Account`] by their [`UserId`]
+    async fn delete_account(&self, user_id: &UserId) -> Result<(), Self::Error>;
 
-    /// Set the `storage_key` field for the [`User`] associated with a given
+    /// Set the `storage_key` field for the [`Account`] associated with a given
     /// [`UserId`]
     /// Returns a `LockKeeperServerError::InvalidAccount` if the given
     /// `user_id` does not exist.

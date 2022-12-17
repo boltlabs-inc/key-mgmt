@@ -30,7 +30,7 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for RetrieveStorageKey 
         // Find user by user ID.
         let user = context
             .db
-            .find_user_by_id(&request.user_id)
+            .find_account_by_id(&request.user_id)
             .await
             .map_err(LockKeeperServerError::database)?
             .ok_or(LockKeeperServerError::InvalidAccount)?;

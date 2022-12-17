@@ -11,7 +11,11 @@ use k256::sha2::Sha512;
 use rand::{CryptoRng, Rng, RngCore};
 use serde::{Deserialize, Serialize};
 use sha3::{Digest, Sha3_256};
-use std::{array::IntoIter, convert::TryFrom, fmt::Debug};
+use std::{
+    array::{IntoIter, TryFromSliceError},
+    convert::TryFrom,
+    fmt::Debug,
+};
 use tracing::error;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
@@ -259,6 +263,8 @@ impl From<Message> for Vec<u8> {
 
 /// Universally unique identifier for a stored secret or signing key.
 /// Wrapped in a `Box` to avoid stack overflows during heavy traffic.
+/// [KeyId]s are created by implementors of our DataStore trait. So we expose
+/// the internal as pub.
 #[derive(Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(try_from = "HexBytes", into = "HexBytes")]
 pub struct KeyId(Box<[u8; 32]>);
@@ -269,6 +275,14 @@ impl IntoIterator for KeyId {
 
     fn into_iter(self) -> Self::IntoIter {
         self.0.into_iter()
+    }
+}
+
+impl TryFrom<&[u8]> for KeyId {
+    type Error = TryFromSliceError;
+
+    fn try_from(id: &[u8]) -> Result<Self, Self::Error> {
+        Ok(KeyId(Box::new(<[u8; 32]>::try_from(id)?)))
     }
 }
 

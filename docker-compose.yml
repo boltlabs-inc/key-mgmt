@@ -6,9 +6,27 @@ services:
     container_name: mongodb
     restart: always
     ports:
-      - 27017:27017
+      - "27017:27017"
     stdin_open: true
     tty: true
+
+  postgres:
+      image: postgres
+      container_name: postgres
+      restart: always
+      environment:
+        # The container will create a postgres user with this name and password. We use these to connect to our DB.
+        - POSTGRES_USER=test
+        - POSTGRES_PASSWORD=test_password
+      ports:
+        - "5432:5432"
+      volumes:
+          # This postgres image will automatically look in the `/docker-entrypoint-initdb.d/` directory for any
+          # SQL files and execute them during container initialization. So our container will be all set up after
+          # it runs this script.
+          - ./persistence/lock-keeper-sql/migrations/:/docker-entrypoint-initdb.d/
+      stdin_open: true
+      tty: true
 
   nginx:
     image: nginx:latest
@@ -49,7 +67,7 @@ services:
     environment:
       CONFIG: "/app/config/docker-client-auth/Binary.toml"
     ports:
-      - 1114:1114
+      - "1114:1114"
     healthcheck:
       test: "sh ./healthcheck.sh http://localhost:1114"
       interval: 10s
