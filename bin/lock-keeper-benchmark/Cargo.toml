@@ -1,0 +1,11 @@
+[package]
+name = "lock-keeper-benchmark"
+version.workspace = true
+edition = "2021"
+
+
+[dependencies]
+lock-keeper = { version = "0.2.0", path = "../../lock-keeper" }
+lock-keeper-client = { version = "0.2.0", path = "../../lock-keeper-client" }
+
+tokio.workspace = true

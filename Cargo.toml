@@ -1,9 +1,10 @@
 [workspace]
 members = [
     "bin/key-server-cli",
+    "bin/lock-keeper-client-cli",
+    "bin/lock-keeper-benchmark",
     "lock-keeper",
     "lock-keeper-client",
-    "bin/lock-keeper-client-cli",
     "lock-keeper-key-server",
     "lock-keeper-tests",
     "persistence/lock-keeper-mongodb",
