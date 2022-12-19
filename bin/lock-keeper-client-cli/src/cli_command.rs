@@ -2,6 +2,7 @@ pub mod authenticate;
 pub mod export;
 pub mod generate;
 pub mod get_audit_events;
+pub mod health;
 pub mod help;
 pub mod import;
 pub mod list;
@@ -17,6 +18,7 @@ pub use authenticate::Authenticate;
 pub use export::Export;
 pub use generate::Generate;
 pub use get_audit_events::GetAuditEvents;
+pub use health::Health;
 pub use help::Help;
 pub use import::Import;
 pub use list::List;
@@ -115,6 +117,7 @@ pub fn get_cmd_functions<F: GetCmdFunction>() -> Vec<F::FunctionSignature> {
         F::get_function::<Export>(),
         F::get_function::<Generate>(),
         F::get_function::<GetAuditEvents>(),
+        F::get_function::<Health>(),
         F::get_function::<Help>(),
         F::get_function::<Import>(),
         F::get_function::<List>(),
