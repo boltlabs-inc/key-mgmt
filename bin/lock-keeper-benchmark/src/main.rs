@@ -9,6 +9,7 @@ async fn main() {
     let password = Password::from_str("password").unwrap();
     let config = Config::from_file("dev/config/local/Client.toml", None).unwrap();
 
+    // Registration will fail if the user exists. Ignore it and proceed to log in.
     let _ = LockKeeperClient::register(&account_name, &password, &config).await;
     let client = LockKeeperClient::authenticated_client(&account_name, &password, &config).await.unwrap().data;
 
