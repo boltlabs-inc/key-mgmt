@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":[["api",""],["constants","Constants used throughout the database API."],["error",""]]};
+window.SIDEBAR_ITEMS = {"mod":[["api",""],["config","Config for database."],["constants","Constants used throughout the database API."],["error",""]]};

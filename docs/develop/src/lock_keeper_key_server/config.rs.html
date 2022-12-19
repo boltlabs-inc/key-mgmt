@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `lock-keeper-key-server/src/config.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>config.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../lock_keeper_key_server/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../lock_keeper_key_server/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../lock_keeper_key_server/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `lock-keeper-key-server/src/config.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>config.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../lock_keeper_key_server/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -225,36 +225,6 @@
 <span id="225">225</span>
 <span id="226">226</span>
 <span id="227">227</span>
-<span id="228">228</span>
-<span id="229">229</span>
-<span id="230">230</span>
-<span id="231">231</span>
-<span id="232">232</span>
-<span id="233">233</span>
-<span id="234">234</span>
-<span id="235">235</span>
-<span id="236">236</span>
-<span id="237">237</span>
-<span id="238">238</span>
-<span id="239">239</span>
-<span id="240">240</span>
-<span id="241">241</span>
-<span id="242">242</span>
-<span id="243">243</span>
-<span id="244">244</span>
-<span id="245">245</span>
-<span id="246">246</span>
-<span id="247">247</span>
-<span id="248">248</span>
-<span id="249">249</span>
-<span id="250">250</span>
-<span id="251">251</span>
-<span id="252">252</span>
-<span id="253">253</span>
-<span id="254">254</span>
-<span id="255">255</span>
-<span id="256">256</span>
-<span id="257">257</span>
 </pre><pre class="rust"><code><span class="kw">use </span>lock_keeper::{
     config::opaque::OpaqueCipherSuite, crypto::RemoteStorageKey, infrastructure::pem_utils,
 };
@@ -269,7 +239,6 @@
     net::IpAddr,
     path::{Path, PathBuf},
     str::FromStr,
-    time::Duration,
 };
 
 <span class="kw">use crate</span>::{server::opaque_storage::create_or_retrieve_server_key_opaque, LockKeeperServerError};
@@ -279,11 +248,9 @@
 </span><span class="kw">pub struct </span>Config {
     <span class="kw">pub </span>address: IpAddr,
     <span class="kw">pub </span>port: u16,
-    <span class="kw">pub </span>session_timeout: Duration,
     <span class="kw">pub </span>tls_config: <span class="prelude-ty">Option</span>&lt;ServerConfig&gt;,
     <span class="kw">pub </span>opaque_server_setup: ServerSetup&lt;OpaqueCipherSuite, PrivateKey&lt;Ristretto255&gt;&gt;,
     <span class="kw">pub </span>remote_storage_key: RemoteStorageKey,
-    <span class="kw">pub </span>database: DatabaseSpec,
     <span class="kw">pub </span>logging: LoggingConfig,
 }
 
@@ -315,13 +282,11 @@
             remote_storage_key,
             address: config.address,
             port: config.port,
-            session_timeout: config.session_timeout,
             tls_config,
             opaque_server_setup: create_or_retrieve_server_key_opaque(
                 <span class="kw-2">&amp;mut </span>rng,
                 config.opaque_server_key,
             )<span class="question-mark">?</span>,
-            database: config.database,
             logging: config.logging,
         })
     }
@@ -334,7 +299,6 @@
             .field(<span class="string">&quot;port&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.port)
             .field(<span class="string">&quot;tls_config&quot;</span>, <span class="kw-2">&amp;</span><span class="string">&quot;[Does not implement Debug]&quot;</span>)
             .field(<span class="string">&quot;opaque_server_setup&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.opaque_server_setup)
-            .field(<span class="string">&quot;database&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.database)
             .finish()
     }
 }
@@ -346,14 +310,11 @@
 </span><span class="kw">pub struct </span>ConfigFile {
     <span class="kw">pub </span>address: IpAddr,
     <span class="kw">pub </span>port: u16,
-    <span class="attribute">#[serde(with = <span class="string">&quot;humantime_serde&quot;</span>)]
-    </span><span class="kw">pub </span>session_timeout: Duration,
     <span class="doccomment">/// The remote storage key can be provided as a file or passed to
     /// the [`Config`] constructors.
     </span><span class="kw">pub </span>remote_storage_key: <span class="prelude-ty">Option</span>&lt;PathBuf&gt;,
     <span class="kw">pub </span>opaque_path: PathBuf,
     <span class="kw">pub </span>opaque_server_key: PathBuf,
-    <span class="kw">pub </span>database: DatabaseSpec,
     <span class="kw">pub </span>logging: LoggingConfig,
     <span class="kw">pub </span>tls_config: <span class="prelude-ty">Option</span>&lt;TlsConfig&gt;,
 }
@@ -436,13 +397,6 @@
     }
 }
 
-<span class="attribute">#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(deny_unknown_fields, rename_all = <span class="string">&quot;snake_case&quot;</span>)]
-</span><span class="kw">pub struct </span>DatabaseSpec {
-    <span class="kw">pub </span>mongodb_uri: String,
-    <span class="kw">pub </span>db_name: String,
-}
-
 <span class="attribute">#[cfg(test)]
 </span><span class="kw">mod </span>tests {
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
@@ -453,7 +407,6 @@
         <span class="kw">let </span>config_str = <span class="string">r#&quot;
             address = &quot;127.0.0.2&quot;
             port = 1114
-            session_timeout = &quot;60s&quot;
             opaque_path = &quot;tests/gen/opaque&quot;
             opaque_server_key = &quot;tests/gen/opaque/server_setup&quot;
             remote_storage_key = &quot;test_sse.key&quot;
@@ -462,10 +415,6 @@
             private_key = &quot;test.key&quot;
             certificate_chain = &quot;test.crt&quot;
             client_auth = false
-
-            [database]
-            mongodb_uri = &quot;mongodb://localhost:27017&quot;
-            db_name = &quot;lock-keeper-test-db&quot;
 
             [logging]
             lock_keeper_logs_file_name = &quot;./dev/logs/server.log&quot;
@@ -476,26 +425,17 @@
         </span><span class="kw">let </span>ConfigFile {
             address,
             port,
-            session_timeout,
             remote_storage_key,
             tls_config,
             opaque_path,
             opaque_server_key,
-            database:
-                DatabaseSpec {
-                    mongodb_uri,
-                    db_name,
-                },
             logging,
         } = ConfigFile::from_str(config_str).unwrap();
 
         <span class="kw">let </span>tls_config = tls_config.unwrap();
 
-        <span class="macro">assert_eq!</span>(mongodb_uri, <span class="string">&quot;mongodb://localhost:27017&quot;</span>);
-        <span class="macro">assert_eq!</span>(db_name, <span class="string">&quot;lock-keeper-test-db&quot;</span>);
         <span class="macro">assert_eq!</span>(address, IpAddr::from_str(<span class="string">&quot;127.0.0.2&quot;</span>).unwrap());
         <span class="macro">assert_eq!</span>(port, <span class="number">1114</span>);
-        <span class="macro">assert_eq!</span>(session_timeout, Duration::from_secs(<span class="number">60</span>));
         <span class="macro">assert_eq!</span>(remote_storage_key, <span class="prelude-val">Some</span>(PathBuf::from(<span class="string">&quot;test_sse.key&quot;</span>)));
         <span class="macro">assert_eq!</span>(tls_config.private_key, <span class="prelude-val">Some</span>(PathBuf::from(<span class="string">&quot;test.key&quot;</span>)));
         <span class="macro">assert_eq!</span>(tls_config.certificate_chain, PathBuf::from(<span class="string">&quot;test.crt&quot;</span>));
@@ -513,4 +453,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="lock_keeper_key_server" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="lock_keeper_key_server" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0 (69f9c33d7 2022-12-12)" ></div></body></html>
