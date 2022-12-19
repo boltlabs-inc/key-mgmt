@@ -1,7 +1,6 @@
 //! Client object to interact with the key server.
 
 use crate::{config::Config, LockKeeperClientError, LockKeeperResponse, Result};
-use http::uri::Scheme;
 use http_body::combinators::UnsyncBoxBody;
 use hyper::client::HttpConnector;
 use hyper_rustls::HttpsConnector;
@@ -100,13 +99,9 @@ impl LockKeeperClient {
     pub(crate) async fn connect(
         config: &Config,
     ) -> Result<LockKeeperRpcClient<LockKeeperRpcClientInner>> {
-        if config.server_uri.scheme() != Some(&Scheme::HTTPS) {
-            return Err(LockKeeperClientError::HttpNotAllowed);
-        }
-
         let connector = hyper_rustls::HttpsConnectorBuilder::new()
             .with_tls_config(config.tls_config.clone())
-            .https_only()
+            .https_or_http()
             .enable_http2()
             .build();
 

@@ -4,26 +4,23 @@ use colored::Colorize;
 use lock_keeper_client::{LockKeeperClient, LockKeeperClientError};
 
 use crate::{
-    config::Config,
+    config::Environments,
     error::Result,
     run_parallel,
     test_suites::database::TestDatabase,
-    utils::{report_test_results, wait_for_server, TestResult},
+    utils::{report_test_results, TestResult},
 };
 
-pub async fn run_tests(config: &Config) -> Result<Vec<TestResult>> {
-    println!("Checking that client auth enabled server is running...");
-    wait_for_server(&config.client_auth_client_config).await?;
-
+pub async fn run_tests(environments: &Environments) -> Result<Vec<TestResult>> {
     println!("{}", "Running client auth tests".cyan());
 
     let db = TestDatabase::new("client_auth_tests").await?;
     let results = run_parallel!(
-        config.clone(),
-        client_auth_not_required(config.clone()),
-        client_auth_required(config.clone()),
-        client_auth_required_not_provided(config.clone()),
-        client_auth_not_required_but_provided(config.clone()),
+        &environments.filters,
+        client_auth_not_required(environments.clone()),
+        client_auth_required(environments.clone()),
+        client_auth_required_not_provided(environments.clone()),
+        client_auth_not_required_but_provided(environments.clone()),
     )?;
 
     db.drop().await?;
@@ -33,24 +30,24 @@ pub async fn run_tests(config: &Config) -> Result<Vec<TestResult>> {
     Ok(results)
 }
 
-async fn client_auth_not_required(config: Config) -> Result<()> {
-    let result = LockKeeperClient::health(&config.client_config).await;
+async fn client_auth_not_required(environments: Environments) -> Result<()> {
+    let result = LockKeeperClient::health(environments.standard_config()?).await;
     assert!(result.is_ok());
 
     Ok(())
 }
 
-async fn client_auth_required(config: Config) -> Result<()> {
-    let result = LockKeeperClient::health(&config.client_auth_client_config).await;
+async fn client_auth_required(environments: Environments) -> Result<()> {
+    let result = LockKeeperClient::health(environments.client_auth_config()?).await;
     assert!(result.is_ok());
 
     Ok(())
 }
 
-async fn client_auth_required_not_provided(config: Config) -> Result<()> {
+async fn client_auth_required_not_provided(environments: Environments) -> Result<()> {
     // Point to client auth server but remove auth from client
-    let mut client_config = config.client_auth_client_config;
-    client_config.tls_config = config.client_config.tls_config;
+    let mut client_config = environments.client_auth_config()?.clone();
+    client_config.tls_config = environments.standard_config()?.tls_config.clone();
 
     let result = LockKeeperClient::health(&client_config).await;
     assert!(
@@ -62,10 +59,10 @@ async fn client_auth_required_not_provided(config: Config) -> Result<()> {
     Ok(())
 }
 
-async fn client_auth_not_required_but_provided(config: Config) -> Result<()> {
+async fn client_auth_not_required_but_provided(environments: Environments) -> Result<()> {
     // Point to no auth client but add auth
-    let mut client_config = config.client_config;
-    client_config.tls_config = config.client_auth_client_config.tls_config;
+    let mut client_config = environments.standard_config()?.clone();
+    client_config.tls_config = environments.client_auth_config()?.tls_config.clone();
 
     let result = LockKeeperClient::health(&client_config).await;
     assert!(result.is_ok());

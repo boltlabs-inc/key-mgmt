@@ -18,13 +18,13 @@ pub(crate) struct TestState {
     pub(crate) config: Config,
 }
 
-pub(crate) async fn init_test_state(config: Config) -> Result<TestState, LockKeeperClientError> {
+pub(crate) async fn init_test_state(config: &Config) -> Result<TestState, LockKeeperClientError> {
     let account_name = AccountName::from_str(tagged("user").as_str())?;
     let password = Password::from_str(tagged("password").as_str())?;
-    LockKeeperClient::register(&account_name, &password, &config).await?;
+    LockKeeperClient::register(&account_name, &password, config).await?;
     Ok(TestState {
         account_name,
         password,
-        config,
+        config: config.clone(),
     })
 }

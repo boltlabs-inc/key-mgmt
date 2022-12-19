@@ -8,7 +8,20 @@ services:
     ports:
       - 27017:27017
     stdin_open: true
-    tty: true 
+    tty: true
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx_tls
+    restart: always
+    ports:
+      - 1115:1115
+    depends_on:
+      - "ks_nginx"
+    volumes:
+      - ./dev/config/nginx-tls/nginx.conf:/etc/nginx/nginx.conf
+      - ./dev/test-pki/gen/certs/server.key:/etc/ssl/certs/server.key
+      - ./dev/test-pki/gen/certs/server.chain:/etc/ssl/certs/server.crt
 
   key_server:
     build: .
@@ -20,7 +33,7 @@ services:
     ports:
       - 1113:1113
     healthcheck:
-      test: "chmod +x healthcheck.sh && ./healthcheck.sh http://localhost:1113"
+      test: "sh ./healthcheck.sh http://localhost:1113"
       interval: 10s
       timeout: 5s
     depends_on:
@@ -28,20 +41,32 @@ services:
     stdin_open: true
     tty: true 
 
-  key_server_client_auth:
+  ks_client_auth:
     build: .
     restart: always
     volumes:
       - ./dev:/app
-    # The main difference for this service is the config file.
-    # We'll override the entrypoint and pass a different config instead of
-    # dealing with multiple Dockerfiles.
     environment:
       CONFIG: "/app/config/docker-client-auth/Binary.toml"
     ports:
       - 1114:1114
     healthcheck:
-      test: "chmod +x healthcheck.sh && ./healthcheck.sh http://localhost:1114"
+      test: "sh ./healthcheck.sh http://localhost:1114"
+      interval: 10s
+      timeout: 5s
+    depends_on:
+      - "mongodb"
+    stdin_open: true
+    tty: true
+
+  ks_nginx:
+    build: .
+    volumes:
+      - ./dev:/app
+    environment:
+      CONFIG: "/app/config/nginx-tls/Binary.toml"
+    healthcheck:
+      test: "sh ./healthcheck.sh http://localhost:1113"
       interval: 10s
       timeout: 5s
     depends_on:

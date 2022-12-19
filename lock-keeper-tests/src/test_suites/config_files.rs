@@ -8,19 +8,19 @@ use lock_keeper_client::LockKeeperClientError;
 use lock_keeper_key_server::LockKeeperServerError;
 
 use crate::{
-    config::Config,
+    config::TestFilters,
     error::Result,
     run_parallel,
     test_suites::database::TestDatabase,
     utils::{report_test_results, TestResult},
 };
 
-pub async fn run_tests(config: &Config) -> Result<Vec<TestResult>> {
+pub async fn run_tests(filters: &TestFilters) -> Result<Vec<TestResult>> {
     println!("{}", "Running config file tests".cyan());
 
     let db = TestDatabase::new("config_file_tests").await?;
     let results = run_parallel!(
-        config.clone(),
+        filters,
         client_config_with_file_private_key_works(),
         client_config_with_manual_private_key_works(),
         client_config_without_private_key_fails(),

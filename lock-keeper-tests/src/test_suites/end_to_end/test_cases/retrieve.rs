@@ -7,6 +7,7 @@ use lock_keeper_client::{api::GenerateResult, Config};
 use tonic::Status;
 
 use crate::{
+    config::TestFilters,
     error::Result,
     run_parallel,
     test_suites::end_to_end::{
@@ -17,25 +18,24 @@ use crate::{
         test_cases::init_test_state,
     },
     utils::TestResult,
-    Config as TestConfig,
 };
 
-pub async fn run_tests(config: TestConfig) -> Result<Vec<TestResult>> {
+pub async fn run_tests(config: &Config, filters: &TestFilters) -> Result<Vec<TestResult>> {
     println!("{}", "Running retrieve tests".cyan());
 
     let result = run_parallel!(
-        config.clone(),
-        retrieve_local_only_works(config.client_config.clone()),
-        retrieve_null_works(config.client_config.clone()),
-        cannot_retrieve_fake_key(config.client_config.clone()),
-        cannot_retrieve_after_logout(config.client_config.clone()),
+        filters,
+        retrieve_local_only_works(config.clone()),
+        retrieve_null_works(config.clone()),
+        cannot_retrieve_fake_key(config.clone()),
+        cannot_retrieve_after_logout(config.clone()),
     )?;
 
     Ok(result)
 }
 
 async fn retrieve_local_only_works(config: Config) -> Result<()> {
-    let state = init_test_state(config).await?;
+    let state = init_test_state(&config).await?;
     let client = authenticate(&state).await?;
 
     let GenerateResult {
@@ -63,7 +63,7 @@ async fn retrieve_local_only_works(config: Config) -> Result<()> {
 }
 
 async fn retrieve_null_works(config: Config) -> Result<()> {
-    let state = init_test_state(config).await?;
+    let state = init_test_state(&config).await?;
     let client = authenticate(&state).await?;
 
     let GenerateResult {
@@ -86,7 +86,7 @@ async fn retrieve_null_works(config: Config) -> Result<()> {
 }
 
 async fn cannot_retrieve_fake_key(config: Config) -> Result<()> {
-    let state = init_test_state(config).await?;
+    let state = init_test_state(&config).await?;
     let client = authenticate(&state).await?;
 
     let fake_key_id = generate_fake_key_id(&client).await?;
@@ -100,7 +100,7 @@ async fn cannot_retrieve_fake_key(config: Config) -> Result<()> {
 }
 
 async fn cannot_retrieve_after_logout(config: Config) -> Result<()> {
-    let state = init_test_state(config).await?;
+    let state = init_test_state(&config).await?;
     let client = authenticate(&state).await?;
 
     // Generate a secret before waiting out the timeout

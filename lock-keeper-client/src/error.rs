@@ -8,8 +8,6 @@ pub type Result<T> = std::result::Result<T, LockKeeperClientError>;
 pub enum LockKeeperClientError {
     #[error("Health check failed: {0}")]
     HealthCheckFailed(String),
-    #[error("Tried to connect to a server without an https link")]
-    HttpNotAllowed,
     #[error("Server returned failure")]
     ServerReturnedFailure,
     #[error("This key server requires TLS client authentication.")]

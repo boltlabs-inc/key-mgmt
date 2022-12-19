@@ -7,6 +7,7 @@ use std::str::FromStr;
 use tonic::Status;
 
 use crate::{
+    config::TestFilters,
     error::Result,
     run_parallel,
     test_suites::end_to_end::{
@@ -14,16 +15,12 @@ use crate::{
         test_cases::TestState,
     },
     utils::{tagged, TestResult},
-    Config as TestConfig,
 };
 
-pub async fn run_tests(config: TestConfig) -> Result<Vec<TestResult>> {
+pub async fn run_tests(config: &Config, filters: &TestFilters) -> Result<Vec<TestResult>> {
     println!("{}", "Running register tests".cyan());
 
-    let result = run_parallel!(
-        config.clone(),
-        register_same_user_twice_fails(config.client_config.clone()),
-    )?;
+    let result = run_parallel!(filters, register_same_user_twice_fails(config.clone()),)?;
 
     Ok(result)
 }

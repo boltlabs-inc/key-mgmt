@@ -9,21 +9,21 @@ use lock_keeper_mongodb::error::Error;
 use rand::{rngs::StdRng, SeedableRng};
 
 use crate::{
+    config::TestFilters,
     error::Result,
     run_parallel,
     test_suites::database::USERS_TABLE,
     utils::{server_registration, tagged, TestResult},
-    Config,
 };
 
 use super::TestDatabase;
 
-pub async fn run_tests(config: Config) -> Result<Vec<TestResult>> {
+pub async fn run_tests(filters: &TestFilters) -> Result<Vec<TestResult>> {
     println!("{}", "Running user tests".cyan());
 
     let db = TestDatabase::new("user_tests").await?;
     let result = run_parallel!(
-        config.clone(),
+        filters,
         user_findable_by_account_name(db.clone()),
         user_findable_by_id(db.clone()),
         multiple_connections_do_not_overwrite_db(),
