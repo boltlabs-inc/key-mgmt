@@ -70,7 +70,7 @@ impl LockKeeperClient {
         let client_channel = Self::create_authenticated_channel(
             &mut self.tonic_client(),
             &metadata,
-            self.session_key.clone(),
+            self.session_key().clone(),
             self.rng.clone(),
         )
         .await?;
@@ -105,7 +105,7 @@ impl LockKeeperClient {
     ) -> Result<LockKeeperResponse<()>, LockKeeperClientError> {
         let rng = StdRng::from_entropy();
         let mut client = Self::connect(config).await?;
-        let metadata = RequestMetadata::new(account_name, ClientAction::Register, None);
+        let metadata = RequestMetadata::new(account_name, ClientAction::Register, None, None);
         let rng_arc_mutex = Arc::new(Mutex::new(rng));
         let client_channel = Self::create_channel(&mut client, &metadata).await?;
         let result = Self::handle_registration(
@@ -127,7 +127,7 @@ impl LockKeeperClient {
                 let client_channel = LockKeeperClient::create_authenticated_channel(
                     &mut client.tonic_client(),
                     &request_metadata,
-                    client.session_key,
+                    client.session_key().clone(),
                     rng_arc_mutex.clone(),
                 )
                 .await?;
@@ -164,7 +164,7 @@ impl LockKeeperClient {
         let client_channel = Self::create_authenticated_channel(
             &mut self.tonic_client(),
             &metadata,
-            self.session_key.clone(),
+            self.session_key().clone(),
             self.rng.clone(),
         )
         .await?;
@@ -195,7 +195,7 @@ impl LockKeeperClient {
         let client_channel = Self::create_authenticated_channel(
             &mut self.tonic_client(),
             &metadata,
-            self.session_key.clone(),
+            self.session_key().clone(),
             self.rng.clone(),
         )
         .await?;
@@ -222,7 +222,7 @@ impl LockKeeperClient {
         let client_channel = Self::create_authenticated_channel(
             &mut self.tonic_client(),
             &metadata,
-            self.session_key.clone(),
+            self.session_key().clone(),
             self.rng.clone(),
         )
         .await?;
@@ -239,7 +239,7 @@ impl LockKeeperClient {
         let client_channel = Self::create_authenticated_channel(
             &mut self.tonic_client(),
             &metadata,
-            self.session_key.clone(),
+            self.session_key().clone(),
             self.rng.clone(),
         )
         .await?;
@@ -259,7 +259,7 @@ impl LockKeeperClient {
         let client_channel = Self::create_authenticated_channel(
             &mut self.tonic_client(),
             &metadata,
-            self.session_key.clone(),
+            self.session_key().clone(),
             self.rng.clone(),
         )
         .await?;
@@ -276,7 +276,7 @@ impl LockKeeperClient {
         let client_channel = Self::create_authenticated_channel(
             &mut self.tonic_client(),
             &metadata,
-            self.session_key.clone(),
+            self.session_key().clone(),
             self.rng.clone(),
         )
         .await?;
@@ -297,7 +297,7 @@ impl LockKeeperClient {
         let client_channel = Self::create_authenticated_channel(
             &mut self.tonic_client(),
             &metadata,
-            self.session_key.clone(),
+            self.session_key().clone(),
             self.rng.clone(),
         )
         .await?;
@@ -331,7 +331,7 @@ impl LockKeeperClient {
         let client_channel = Self::create_authenticated_channel(
             &mut self.tonic_client(),
             &metadata,
-            self.session_key.clone(),
+            self.session_key().clone(),
             self.rng.clone(),
         )
         .await?;

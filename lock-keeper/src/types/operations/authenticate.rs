@@ -19,7 +19,7 @@ pub mod client {
 }
 
 pub mod server {
-    use crate::config::opaque::OpaqueCipherSuite;
+    use crate::{config::opaque::OpaqueCipherSuite, types::operations::SessionId};
     use opaque_ke::CredentialResponse;
     use serde::{Deserialize, Serialize};
 
@@ -32,6 +32,6 @@ pub mod server {
     #[derive(Debug, Deserialize, Serialize)]
     /// Return true if successful.
     pub struct AuthenticateFinish {
-        pub success: bool,
+        pub session_id: SessionId,
     }
 }

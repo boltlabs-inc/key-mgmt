@@ -7,7 +7,7 @@ members = [
     "lock-keeper-key-server",
     "lock-keeper-tests",
     "persistence/lock-keeper-mongodb",
-    "persistence/lk-session-hashmap",
+    "persistence/lk-session-mongodb",
 ]
 
 [workspace.package]

@@ -6,7 +6,7 @@ use super::{
     generic::{AssociatedData, EncryptionKey},
     CryptoError, Encrypted, MasterKey, SigningKeyPair,
 };
-use crate::{types::database::user::UserId, LockKeeperError};
+use crate::{crypto::OpaqueSessionKey, types::database::user::UserId, LockKeeperError};
 use rand::{CryptoRng, RngCore};
 use std::path::Path;
 use zeroize::{Zeroize, ZeroizeOnDrop};
@@ -58,6 +58,17 @@ impl RemoteStorageKey {
             signing_key_pair.context(),
         )
         .map_err(LockKeeperError::Crypto)
+    }
+
+    /// Encrypt the given [`OpaqueSessionKey`] under the
+    /// [`RemoteStorageKey`] using an AEAD scheme.
+    pub fn encrypt_session_key(
+        &self,
+        rng: &mut (impl CryptoRng + RngCore),
+        session_key: OpaqueSessionKey,
+    ) -> Result<Encrypted<OpaqueSessionKey>, LockKeeperError> {
+        Encrypted::encrypt(rng, &self.0, session_key.clone(), session_key.context())
+            .map_err(LockKeeperError::Crypto)
     }
 }
 
@@ -147,6 +158,7 @@ impl Encrypted<StorageKey> {
 pub(super) mod test {
     use super::*;
     use crate::crypto::KeyId;
+    use generic_array::GenericArray;
     use rand::{rngs::StdRng, Rng, SeedableRng};
     use std::collections::HashSet;
 
@@ -319,6 +331,18 @@ pub(super) mod test {
 
         let result = encrypted.decrypt_signing_key_by_server(&encryption_key, user_id, key_id)?;
         assert_eq!(result, signing_key);
+        Ok(())
+    }
+
+    #[test]
+    fn session_key_encryption_works() -> Result<(), LockKeeperError> {
+        let mut rng = rand::thread_rng();
+        let encryption_key = RemoteStorageKey::generate(&mut rng);
+        let session_key = OpaqueSessionKey::try_from(GenericArray::from([42; 64]))?;
+        let encrypted = encryption_key.encrypt_session_key(&mut rng, session_key.clone())?;
+
+        let result = encrypted.decrypt_session_key(&encryption_key)?;
+        assert_eq!(result, session_key);
         Ok(())
     }
 }

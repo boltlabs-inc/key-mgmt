@@ -8,6 +8,8 @@ use crate::Error;
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct Config {
+    pub mongodb_uri: String,
+    pub db_name: String,
     #[serde(with = "humantime_serde")]
     pub session_expiration: Duration,
 }

@@ -101,7 +101,7 @@
 //!     in lock_keeper_key_server::server::operation::handle_request with request_id: "52ad8008-1eb9-4ad5-8bce-0344a958fd1e"
 //! ```
 //!
-//! Notice we have recorded the `action` and `request_id` fields by the time
+//! Notice we have not recorded the `action` and `request_id` fields by the time
 //! this event is logged, so these fields are not included. Span fields can be
 //! recorded later as long as they are declared along with the span.
 //!
@@ -167,7 +167,7 @@ use std::{
 use config::Config;
 
 use clap::Parser;
-use lk_session_hashmap::{config::Config as SessionConfig, HashmapKeyCache};
+use lk_session_mongodb::{config::Config as SessionConfig, MongodbSessionCache};
 use lock_keeper_key_server::{
     config::Config as ServerConfig, server::start_lock_keeper_server, LockKeeperServerError,
 };
@@ -228,8 +228,8 @@ pub async fn main() {
     info!("Database config Settings: {:?}", database_config);
 
     let session_config = SessionConfig::from_file(config.session_cache).unwrap();
-    let hashmap_cache = HashmapKeyCache::new(session_config);
-    start_lock_keeper_server(server_config, mongo, hashmap_cache)
+    let session_cache = MongodbSessionCache::new(session_config).await.unwrap();
+    start_lock_keeper_server(server_config, mongo, session_cache)
         .await
         .unwrap();
 }

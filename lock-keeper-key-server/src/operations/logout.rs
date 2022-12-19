@@ -3,11 +3,11 @@ use crate::{
     LockKeeperServerError,
 };
 
-use crate::database::DataStore;
+use crate::{database::DataStore, server::session_cache::SessionCacheError};
 use async_trait::async_trait;
 use lock_keeper::{
     infrastructure::channel::{Authenticated, ServerChannel},
-    types::operations::logout::{client, server},
+    types::operations::logout::server,
 };
 use rand::rngs::StdRng;
 
@@ -22,15 +22,19 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for Logout {
         context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
         // Receive UserId from client
-        let request: client::Request = channel.receive().await?;
+        let session_id = channel
+            .metadata()
+            .session_id()
+            .ok_or(SessionCacheError::MissingSession)?;
 
         // Expire the user's session key
         {
             context
-                .session_key_cache
+                .session_cache
                 .lock()
                 .await
-                .delete_session(request.user_id)?;
+                .delete_session(session_id.clone())
+                .await?;
         }
 
         let reply = server::Response { success: true };

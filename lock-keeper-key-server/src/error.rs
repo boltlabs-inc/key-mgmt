@@ -1,4 +1,4 @@
-use crate::server::session_key_cache::SessionCacheError;
+use crate::server::session_cache::SessionCacheError;
 use std::path::PathBuf;
 use thiserror::Error;
 use tonic::Status;
@@ -32,6 +32,8 @@ pub enum LockKeeperServerError {
     StorageKeyNotSet,
     #[error("Key ID does not match any stored arbitrary key")]
     KeyNotFound,
+    #[error("Session ID was not found in request metadata")]
+    SessionIdNotFound,
 
     // Wrapped errors
     #[error(transparent)]
@@ -76,16 +78,17 @@ impl From<opaque_ke::errors::ProtocolError> for LockKeeperServerError {
 
 impl From<LockKeeperServerError> for Status {
     fn from(error: LockKeeperServerError) -> Status {
-        use crate::server::session_key_cache::SessionCacheError::*;
+        use crate::server::session_cache::SessionCacheError::*;
 
         match error {
-            LockKeeperServerError::SessionCache(ExpiredSessionKey)
-            | LockKeeperServerError::SessionCache(MissingSessionKey) => {
+            LockKeeperServerError::SessionCache(ExpiredSession)
+            | LockKeeperServerError::SessionCache(MissingSession) => {
                 Status::unauthenticated("No session key for this user")
             }
             // Errors that are safe to return to the client
             LockKeeperServerError::AccountAlreadyRegistered
             | LockKeeperServerError::InvalidAccount
+            | LockKeeperServerError::SessionIdNotFound
             | LockKeeperServerError::KeyNotFound => Status::invalid_argument(error.to_string()),
 
             LockKeeperServerError::StorageKeyAlreadySet

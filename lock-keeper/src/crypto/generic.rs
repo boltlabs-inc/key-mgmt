@@ -95,7 +95,7 @@ pub(super) struct EncryptionKey {
 
     #[allow(unused)]
     #[zeroize(skip)]
-    context: AssociatedData,
+    pub(super) context: AssociatedData,
 }
 
 impl EncryptionKey {

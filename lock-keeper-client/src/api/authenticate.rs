@@ -14,9 +14,7 @@ use lock_keeper::{
         operations::authenticate::{client, server},
     },
 };
-use opaque_ke::{
-    ClientLogin, ClientLoginFinishParameters, ClientLoginFinishResult, ClientLoginStartResult,
-};
+use opaque_ke::{ClientLogin, ClientLoginFinishParameters, ClientLoginStartResult};
 use rand::rngs::StdRng;
 use tokio::sync::Mutex;
 
@@ -37,7 +35,7 @@ impl LockKeeperClient {
             authenticate_start(&mut channel, &client_login_start_result, account_name).await?;
 
         // Handle finish step
-        let client_login_finish_result = authenticate_finish(
+        let auth_result = authenticate_finish(
             &mut channel,
             account_name,
             password,
@@ -46,16 +44,7 @@ impl LockKeeperClient {
         )
         .await?;
 
-        let session_key: OpaqueSessionKey = client_login_finish_result.session_key.try_into()?;
-
-        let master_key = MasterKey::derive_master_key(client_login_finish_result.export_key)?;
-        Ok(LockKeeperResponse::from_channel(
-            channel,
-            AuthenticateResult {
-                session_key,
-                master_key,
-            },
-        ))
+        Ok(LockKeeperResponse::from_channel(channel, auth_result))
     }
 }
 
@@ -80,7 +69,7 @@ async fn authenticate_finish(
     password: &Password,
     client_start_result: ClientLoginStartResult<OpaqueCipherSuite>,
     server_start_result: server::AuthenticateStart,
-) -> Result<ClientLoginFinishResult<OpaqueCipherSuite>, LockKeeperClientError> {
+) -> Result<AuthenticateResult, LockKeeperClientError> {
     let client_login_finish_result = client_start_result.state.finish(
         password.as_bytes(),
         server_start_result.credential_response,
@@ -96,9 +85,12 @@ async fn authenticate_finish(
 
     let server_finish: server::AuthenticateFinish = channel.receive().await?;
 
-    if server_finish.success {
-        Ok(client_login_finish_result)
-    } else {
-        Err(LockKeeperClientError::ServerReturnedFailure)
-    }
+    let session_key: OpaqueSessionKey = client_login_finish_result.session_key.try_into()?;
+    let master_key = MasterKey::derive_master_key(client_login_finish_result.export_key)?;
+
+    Ok(AuthenticateResult {
+        session_id: server_finish.session_id,
+        session_key,
+        master_key,
+    })
 }
