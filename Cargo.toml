@@ -3,7 +3,7 @@ members = [
     "bin/key-server-cli",
     "lock-keeper",
     "lock-keeper-client",
-    "lock-keeper-client-cli",
+    "bin/lock-keeper-client-cli",
     "lock-keeper-key-server",
     "lock-keeper-tests",
     "persistence/lock-keeper-mongodb",

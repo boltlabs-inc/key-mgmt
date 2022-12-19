@@ -151,7 +151,6 @@ private_key = "dev/test-pki/gen/certs/client.key"
 const SERVER_CONFIG_NO_KEY: &str = r#"
 address = "127.0.0.1"
 port = 1114
-session_timeout = "60s"
 opaque_path = "dev/opaque"
 opaque_server_key = "dev/opaque/server_setup"
 remote_storage_key = "dev/remote-storage-key/gen/remote_storage.key"
@@ -159,10 +158,6 @@ remote_storage_key = "dev/remote-storage-key/gen/remote_storage.key"
 [tls_config]
 certificate_chain = "dev/test-pki/gen/certs/server.chain"
 client_auth = true
-
-[database]
-mongodb_uri = 'mongodb://localhost:27017'
-db_name = 'lock-keeper-test-db'
 
 [logging]
 lock_keeper_logs_file_name = "/app/logs/server.log"
@@ -172,7 +167,6 @@ all_logs_file_name = "/app/logs/all.log"
 const SERVER_CONFIG_NO_SSE_KEY: &str = r#"
 address = "127.0.0.1"
 port = 1114
-session_timeout = "60s"
 opaque_path = "dev/opaque"
 opaque_server_key = "dev/opaque/server_setup"
 
@@ -180,10 +174,6 @@ opaque_server_key = "dev/opaque/server_setup"
 private_key = "dev/test-pki/gen/certs/server.key"
 certificate_chain = "dev/test-pki/gen/certs/server.chain"
 client_auth = true
-
-[database]
-mongodb_uri = 'mongodb://localhost:27017'
-db_name = 'lock-keeper-test-db'
 
 [logging]
 lock_keeper_logs_file_name = "/app/logs/server.log"
@@ -193,7 +183,6 @@ all_logs_file_name = "/app/logs/all.log"
 const SERVER_CONFIG_WITH_KEY: &str = r#"
 address = "127.0.0.1"
 port = 1114
-session_timeout = "60s"
 opaque_path = "dev/opaque"
 opaque_server_key = "dev/opaque/server_setup"
 remote_storage_key = "dev/remote-storage-key/gen/remote_storage.key"
@@ -202,10 +191,6 @@ remote_storage_key = "dev/remote-storage-key/gen/remote_storage.key"
 private_key = "dev/test-pki/gen/certs/server.key"
 certificate_chain = "dev/test-pki/gen/certs/server.chain"
 client_auth = true
-
-[database]
-mongodb_uri = 'mongodb://localhost:27017'
-db_name = 'lock-keeper-test-db'
 
 [logging]
 lock_keeper_logs_file_name = "/app/logs/server.log"

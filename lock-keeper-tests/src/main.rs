@@ -11,9 +11,9 @@ use std::{path::PathBuf, str::FromStr};
 
 #[derive(Debug, Parser)]
 pub struct Cli {
-    #[clap(default_value = "./dev/local/Client.toml")]
+    #[clap(default_value = "./dev/config/local/Client.toml")]
     pub client_config: PathBuf,
-    #[clap(default_value = "./dev/local/ClientMutualAuth.toml")]
+    #[clap(default_value = "./dev/config/local-mutual-auth/Client.toml")]
     pub mutual_auth_client_config: PathBuf,
     #[clap(long = "filter")]
     pub filters: Option<Vec<String>>,

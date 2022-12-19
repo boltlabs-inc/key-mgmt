@@ -97,7 +97,7 @@ async fn multiple_connections_do_not_overwrite_db() -> Result<()> {
     );
 
     // Reconnect and make sure it still has two users.
-    let reconnected_db = TestDatabase::from_db_name(&db.spec.db_name).await?;
+    let reconnected_db = TestDatabase::from_db_name(&db.config.db_name).await?;
     assert_eq!(
         2,
         reconnected_db

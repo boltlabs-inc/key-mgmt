@@ -6,8 +6,8 @@ edition = "2021"
 
 [dependencies]
 # Git dependencies
-lock-keeper = { version = "0.2.0", path = "../lock-keeper" }
-lock-keeper-client = { version = "0.2.0", path = "../lock-keeper-client" }
+lock-keeper = { version = "0.2.0", path = "../../lock-keeper" }
+lock-keeper-client = { version = "0.2.0", path = "../../lock-keeper-client" }
 
 # Workspace dependencies
 clap.workspace = true

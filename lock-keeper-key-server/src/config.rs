@@ -12,7 +12,6 @@ use std::{
     net::IpAddr,
     path::{Path, PathBuf},
     str::FromStr,
-    time::Duration,
 };
 
 use crate::{server::opaque_storage::create_or_retrieve_server_key_opaque, LockKeeperServerError};
@@ -22,11 +21,9 @@ use crate::{server::opaque_storage::create_or_retrieve_server_key_opaque, LockKe
 pub struct Config {
     pub address: IpAddr,
     pub port: u16,
-    pub session_timeout: Duration,
     pub tls_config: Option<ServerConfig>,
     pub opaque_server_setup: ServerSetup<OpaqueCipherSuite, PrivateKey<Ristretto255>>,
     pub remote_storage_key: RemoteStorageKey,
-    pub database: DatabaseSpec,
     pub logging: LoggingConfig,
 }
 
@@ -58,13 +55,11 @@ impl Config {
             remote_storage_key,
             address: config.address,
             port: config.port,
-            session_timeout: config.session_timeout,
             tls_config,
             opaque_server_setup: create_or_retrieve_server_key_opaque(
                 &mut rng,
                 config.opaque_server_key,
             )?,
-            database: config.database,
             logging: config.logging,
         })
     }
@@ -77,7 +72,6 @@ impl std::fmt::Debug for Config {
             .field("port", &self.port)
             .field("tls_config", &"[Does not implement Debug]")
             .field("opaque_server_setup", &self.opaque_server_setup)
-            .field("database", &self.database)
             .finish()
     }
 }
@@ -89,14 +83,11 @@ impl std::fmt::Debug for Config {
 pub struct ConfigFile {
     pub address: IpAddr,
     pub port: u16,
-    #[serde(with = "humantime_serde")]
-    pub session_timeout: Duration,
     /// The remote storage key can be provided as a file or passed to
     /// the [`Config`] constructors.
     pub remote_storage_key: Option<PathBuf>,
     pub opaque_path: PathBuf,
     pub opaque_server_key: PathBuf,
-    pub database: DatabaseSpec,
     pub logging: LoggingConfig,
     pub tls_config: Option<TlsConfig>,
 }
@@ -179,13 +170,6 @@ impl TlsConfig {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(deny_unknown_fields, rename_all = "snake_case")]
-pub struct DatabaseSpec {
-    pub mongodb_uri: String,
-    pub db_name: String,
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -196,7 +180,6 @@ mod tests {
         let config_str = r#"
             address = "127.0.0.2"
             port = 1114
-            session_timeout = "60s"
             opaque_path = "tests/gen/opaque"
             opaque_server_key = "tests/gen/opaque/server_setup"
             remote_storage_key = "test_sse.key"
@@ -205,10 +188,6 @@ mod tests {
             private_key = "test.key"
             certificate_chain = "test.crt"
             client_auth = false
-
-            [database]
-            mongodb_uri = "mongodb://localhost:27017"
-            db_name = "lock-keeper-test-db"
 
             [logging]
             lock_keeper_logs_file_name = "./dev/logs/server.log"
@@ -219,26 +198,17 @@ mod tests {
         let ConfigFile {
             address,
             port,
-            session_timeout,
             remote_storage_key,
             tls_config,
             opaque_path,
             opaque_server_key,
-            database:
-                DatabaseSpec {
-                    mongodb_uri,
-                    db_name,
-                },
             logging,
         } = ConfigFile::from_str(config_str).unwrap();
 
         let tls_config = tls_config.unwrap();
 
-        assert_eq!(mongodb_uri, "mongodb://localhost:27017");
-        assert_eq!(db_name, "lock-keeper-test-db");
         assert_eq!(address, IpAddr::from_str("127.0.0.2").unwrap());
         assert_eq!(port, 1114);
-        assert_eq!(session_timeout, Duration::from_secs(60));
         assert_eq!(remote_storage_key, Some(PathBuf::from("test_sse.key")));
         assert_eq!(tls_config.private_key, Some(PathBuf::from("test.key")));
         assert_eq!(tls_config.certificate_chain, PathBuf::from("test.crt"));

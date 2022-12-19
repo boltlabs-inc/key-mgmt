@@ -60,7 +60,7 @@ pub trait CliCommand {
     where
         Self: Sized;
 
-    /// Convert a string into a Box<dyn Command> suitable for dynamically
+    /// Convert a string into a `Box<dyn Command>` suitable for dynamically
     /// dispatching the execute function.
     fn to_dyn(self) -> DynCommand
     where

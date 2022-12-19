@@ -1,0 +1,4 @@
+# Docker server, no mutual auth, mongo DB
+server = "/app/config/docker/Server.toml"
+database = "/app/config/MongoDB.toml"
+session_cache = "/app/config/SessionCache.toml"

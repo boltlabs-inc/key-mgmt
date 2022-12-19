@@ -1,3 +1,4 @@
+use crate::config::Config;
 use lock_keeper::{crypto::OpaqueSessionKey, types::database::user::UserId};
 use lock_keeper_key_server::server::session_key_cache::{SessionCache, SessionCacheError};
 use std::{
@@ -13,7 +14,7 @@ pub struct HashmapKeyCache {
     /// Map from user ids to (timestamp, keys).
     cache: HashMap<UserId, (Instant, OpaqueSessionKey)>,
     /// Time a key is considered valid for.
-    expiration: Duration,
+    session_expiration: Duration,
 }
 
 impl Drop for HashmapKeyCache {
@@ -26,10 +27,10 @@ impl Drop for HashmapKeyCache {
 
 impl HashmapKeyCache {
     /// Create a new [`HashmapKeyCache`] with the given `expiration` interval.
-    pub fn new(expiration: Duration) -> Self {
+    pub fn new(config: Config) -> Self {
         Self {
             cache: HashMap::new(),
-            expiration,
+            session_expiration: config.session_expiration,
         }
     }
 }
@@ -55,7 +56,7 @@ impl SessionCache for HashmapKeyCache {
                 let (timestamp, key) = entry.get();
 
                 // If key is expired remove it and report an error.
-                if timestamp.elapsed() >= self.expiration {
+                if timestamp.elapsed() >= self.session_expiration {
                     tracing::info!("Session key is expired.");
                     // We don't care about this expired key.
                     let _ = entry.remove();
@@ -78,7 +79,7 @@ impl SessionCache for HashmapKeyCache {
 
 #[cfg(test)]
 mod tests {
-    use crate::HashmapKeyCache;
+    use crate::{config::Config, HashmapKeyCache};
     use generic_array::GenericArray;
     use lock_keeper::{crypto::OpaqueSessionKey, types::database::user::UserId};
     use lock_keeper_key_server::{
@@ -86,15 +87,26 @@ mod tests {
         LockKeeperServerError,
     };
     use rand::{prelude::StdRng, SeedableRng};
-    use std::{thread, time::Duration};
+    use std::{str::FromStr, thread, time::Duration};
 
     type Result<T> = std::result::Result<T, LockKeeperServerError>;
 
-    const TEST_EXPIRATION_TIME: Duration = Duration::from_secs(60);
+    const TEST_CONFIG: &str = r#"
+session_expiration = "60s"
+"#;
+
+    const ZERO_EXPIRATION: &str = r#"
+session_expiration = "0s"
+"#;
+
+    const SHORT_EXPIRATION: &str = r#"
+session_expiration = "10ms"
+"#;
 
     #[test]
     fn key_does_not_exist() -> Result<()> {
-        let mut cache = HashmapKeyCache::new(TEST_EXPIRATION_TIME);
+        let config = Config::from_str(TEST_CONFIG).unwrap();
+        let mut cache = HashmapKeyCache::new(config);
         let id = get_temp_user_id()?;
 
         match cache.find_session(id) {
@@ -112,7 +124,8 @@ mod tests {
     /// Ensure we can get the key back without encountering expiration error.
     #[test]
     fn get_key_back() -> Result<()> {
-        let mut cache = HashmapKeyCache::new(TEST_EXPIRATION_TIME);
+        let config = Config::from_str(TEST_CONFIG).unwrap();
+        let mut cache = HashmapKeyCache::new(config);
         let id = get_temp_user_id()?;
         let key = get_temp_session_key()?;
 
@@ -126,7 +139,8 @@ mod tests {
     /// Insert key twice and ensure code runs all the way.
     #[test]
     fn overwrite_existing_key() -> Result<()> {
-        let mut cache = HashmapKeyCache::new(TEST_EXPIRATION_TIME);
+        let config = Config::from_str(TEST_CONFIG).unwrap();
+        let mut cache = HashmapKeyCache::new(config);
         let id = get_temp_user_id()?;
         let key = get_temp_session_key()?;
 
@@ -142,7 +156,8 @@ mod tests {
     #[test]
     fn key_expired() -> Result<()> {
         // Keys expire instantly
-        let mut cache = HashmapKeyCache::new(Duration::from_secs(0));
+        let config = Config::from_str(ZERO_EXPIRATION).unwrap();
+        let mut cache = HashmapKeyCache::new(config);
         let id = get_temp_user_id()?;
         let key = get_temp_session_key()?;
         cache.create_session(id.clone(), key);
@@ -166,7 +181,8 @@ mod tests {
     #[ignore]
     fn key_expired2() -> Result<()> {
         // Handle a longer timeout.
-        let mut cache = HashmapKeyCache::new(Duration::from_millis(10));
+        let config = Config::from_str(SHORT_EXPIRATION).unwrap();
+        let mut cache = HashmapKeyCache::new(config);
         let id = get_temp_user_id()?;
         let key = get_temp_session_key()?;
         cache.create_session(id.clone(), key);

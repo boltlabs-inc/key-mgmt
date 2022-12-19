@@ -157,17 +157,21 @@
 //!   of a program at a
 //! fine granularity, e.g. program control flow.
 
+mod config;
+
 use std::{
     ffi::OsStr,
     path::{Path, PathBuf},
 };
 
+use config::Config;
+
 use clap::Parser;
-use lk_session_hashmap::HashmapKeyCache;
+use lk_session_hashmap::{config::Config as SessionConfig, HashmapKeyCache};
 use lock_keeper_key_server::{
-    config::Config, server::start_lock_keeper_server, LockKeeperServerError,
+    config::Config as ServerConfig, server::start_lock_keeper_server, LockKeeperServerError,
 };
-use lock_keeper_mongodb::Database;
+use lock_keeper_mongodb::{config::Config as DatabaseConfig, Database};
 use tracing::{info, Level};
 use tracing_appender::{self, non_blocking::WorkerGuard};
 
@@ -202,25 +206,30 @@ pub async fn main() {
         .transpose()
         .unwrap();
 
-    let config =
-        Config::from_file(&cli.config, private_key_bytes, remote_storage_key_bytes).unwrap();
+    let config = Config::from_file(&cli.config);
+
+    let server_config =
+        ServerConfig::from_file(config.server, private_key_bytes, remote_storage_key_bytes)
+            .unwrap();
 
     // We keep `_logging` around for the lifetime of the server. On drop, this value
     // will ensure that our logs are flushed.
     let _logging = init_logging(
-        &config.logging.all_logs_file_name,
-        &config.logging.lock_keeper_logs_file_name,
+        &server_config.logging.all_logs_file_name,
+        &server_config.logging.lock_keeper_logs_file_name,
     )
     .unwrap();
 
     info!("Sever started!");
-    info!("Logging config settings: {:?}", config.logging);
+    info!("Logging config settings: {:?}", server_config.logging);
 
-    let mongo = Database::connect(&config.database).await.unwrap();
-    info!("Database config Settings: {:?}", config.database);
+    let database_config = DatabaseConfig::from_file(config.database).unwrap();
+    let mongo = Database::connect(database_config.clone()).await.unwrap();
+    info!("Database config Settings: {:?}", database_config);
 
-    let hashmap_cache = HashmapKeyCache::new(config.session_timeout);
-    start_lock_keeper_server(config, mongo, hashmap_cache)
+    let session_config = SessionConfig::from_file(config.session_cache).unwrap();
+    let hashmap_cache = HashmapKeyCache::new(session_config);
+    start_lock_keeper_server(server_config, mongo, hashmap_cache)
         .await
         .unwrap();
 }

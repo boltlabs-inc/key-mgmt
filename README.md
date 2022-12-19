@@ -114,12 +114,12 @@ To run the server locally, first make sure MongoDB is running. You can run Mongo
 
 Then run:
 ```bash
-cargo run --bin key-server-cli ./dev/local/Server.toml
+cargo run --bin key-server-cli ./dev/config/Binary.toml
 ```
 
 ## TLS mutual authentication
 
-Mutual authentication can be enabled in server and client configs. See `ServerMutualAuth.toml` and `ClientMutualAuth.toml` 
+Mutual authentication can be enabled in server and client configs. See the config files in `dev/config/docker-mutual-auth` or `dev/config/local-mutual-auth`
 for examples.
 
 # Private key security
@@ -134,7 +134,7 @@ key as a base64 string.
 Example:
 
 ```bash
-cargo run --bin key-server-cli dev/local/ServerMutualAuth.toml --private-key "$(cat dev/test-pki/gen/certs/server.key | base64)"
+cargo run --bin key-server-cli dev/config/local-mutual-auth/Binary.toml --private-key "$(cat dev/test-pki/gen/certs/server.key | base64)"
 ```
 
 `LockKeeperClient` requires a private key if client authentication is enabled. 
@@ -151,7 +151,7 @@ The command line argument for the `key-server-cli` binary included with the `loc
 Example:
 
 ```bash
-cargo run --bin key-server-cli dev/local/ServerMutualAuth.toml --remote_storage_key "$(cat dev/remote-storage-key/gen/remote_storage.key | base64)"
+cargo run --bin key-server-cli dev/config/local-mutual-auth/Binary.toml --remote_storage_key "$(cat dev/remote-storage-key/gen/remote_storage.key | base64)"
 ```
 
 Important to note is that this key encrypts all signing keys on the server, therefore, loss of this key would mean loss of all signing keys.
