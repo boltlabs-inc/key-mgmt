@@ -148,10 +148,14 @@
 <span id="148">148</span>
 <span id="149">149</span>
 <span id="150">150</span>
+<span id="151">151</span>
+<span id="152">152</span>
+<span id="153">153</span>
 </pre><pre class="rust"><code><span class="kw">pub mod </span>authenticate;
 <span class="kw">pub mod </span>export;
 <span class="kw">pub mod </span>generate;
 <span class="kw">pub mod </span>get_audit_events;
+<span class="kw">pub mod </span>health;
 <span class="kw">pub mod </span>help;
 <span class="kw">pub mod </span>import;
 <span class="kw">pub mod </span>list;
@@ -167,6 +171,7 @@
 <span class="kw">pub use </span>export::Export;
 <span class="kw">pub use </span>generate::Generate;
 <span class="kw">pub use </span>get_audit_events::GetAuditEvents;
+<span class="kw">pub use </span>health::Health;
 <span class="kw">pub use </span>help::Help;
 <span class="kw">pub use </span>import::Import;
 <span class="kw">pub use </span>list::List;
@@ -265,6 +270,7 @@
         F::get_function::&lt;Export&gt;(),
         F::get_function::&lt;Generate&gt;(),
         F::get_function::&lt;GetAuditEvents&gt;(),
+        F::get_function::&lt;Health&gt;(),
         F::get_function::&lt;Help&gt;(),
         F::get_function::&lt;Import&gt;(),
         F::get_function::&lt;List&gt;(),
