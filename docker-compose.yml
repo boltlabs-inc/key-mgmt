@@ -12,12 +12,17 @@ services:
 
   key_server:
     build: .
+    restart: always
     volumes:
       - ./dev:/app
     environment:
       CONFIG: "/app/config/docker/Binary.toml"
     ports:
       - 1113:1113
+    healthcheck:
+      test: "chmod +x healthcheck.sh && ./healthcheck.sh http://localhost:1113"
+      interval: 10s
+      timeout: 5s
     depends_on:
       - "mongodb"
     stdin_open: true
@@ -25,6 +30,7 @@ services:
 
   key_server_mutual_auth:
     build: .
+    restart: always
     volumes:
       - ./dev:/app
     # The main difference for this service is the config file.
@@ -34,6 +40,10 @@ services:
       CONFIG: "/app/config/docker-mutual-auth/Binary.toml"
     ports:
       - 1114:1114
+    healthcheck:
+      test: "chmod +x healthcheck.sh && ./healthcheck.sh http://localhost:1114"
+      interval: 10s
+      timeout: 5s
     depends_on:
       - "mongodb"
     stdin_open: true
