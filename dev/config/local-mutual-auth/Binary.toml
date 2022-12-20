@@ -1,4 +1,0 @@
-# Local server, with mutual auth, mongo DB
-server = "dev/config/local-mutual-auth/Server.toml"
-database = "dev/config/MongoDB.toml"
-session_cache = "dev/config/SessionCache.toml"

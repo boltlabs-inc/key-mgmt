@@ -1,0 +1,4 @@
+# Local server, with client auth, mongo DB
+server = "dev/config/local-client-auth/Server.toml"
+database = "dev/config/MongoDB.toml"
+session_cache = "dev/config/SessionCache.toml"

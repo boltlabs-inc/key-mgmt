@@ -1,0 +1,4 @@
+# Docker server, with client auth, mongo DB
+server = "/app/config/docker-client-auth/Server.toml"
+database = "/app/config/MongoDB.toml"
+session_cache = "/app/config/SessionCache.toml"

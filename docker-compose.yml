@@ -28,7 +28,7 @@ services:
     stdin_open: true
     tty: true 
 
-  key_server_mutual_auth:
+  key_server_client_auth:
     build: .
     restart: always
     volumes:
@@ -37,7 +37,7 @@ services:
     # We'll override the entrypoint and pass a different config instead of
     # dealing with multiple Dockerfiles.
     environment:
-      CONFIG: "/app/config/docker-mutual-auth/Binary.toml"
+      CONFIG: "/app/config/docker-client-auth/Binary.toml"
     ports:
       - 1114:1114
     healthcheck:

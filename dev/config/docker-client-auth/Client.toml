@@ -1,4 +1,4 @@
-server_uri = "https://key_server_mutual_auth:1114"
+server_uri = "https://ks_client_auth:1114"
 ca_chain = "dev/test-pki/gen/ca/signing-ca.chain"
 
 [client_auth]
