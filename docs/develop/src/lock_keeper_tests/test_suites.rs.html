@@ -43,16 +43,16 @@
     utils::{report_test_results, TestResult},
 };
 
+<span class="kw">pub mod </span>client_auth;
 <span class="kw">pub mod </span>config_files;
 <span class="kw">pub mod </span>database;
 <span class="kw">pub mod </span>end_to_end;
-<span class="kw">pub mod </span>mutual_auth;
 
 <span class="kw">pub async fn </span>run_all(config: <span class="kw-2">&amp;</span>Config) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;TestResult&gt;&gt; {
     <span class="kw">let </span>config_file_results = config_files::run_tests(config).<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="kw">let </span>database_results = database::run_tests(config).<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="kw">let </span>end_to_end_results = end_to_end::run_tests(config).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let </span>mutual_auth_results = mutual_auth::run_tests(config).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>client_auth_results = client_auth::run_tests(config).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="macro">println!</span>(
         <span class="string">&quot;config file tests: {}&quot;</span>,
@@ -64,15 +64,15 @@
         report_test_results(<span class="kw-2">&amp;</span>end_to_end_results)
     );
     <span class="macro">println!</span>(
-        <span class="string">&quot;mutual auth tests: {}&quot;</span>,
-        report_test_results(<span class="kw-2">&amp;</span>mutual_auth_results)
+        <span class="string">&quot;client auth tests: {}&quot;</span>,
+        report_test_results(<span class="kw-2">&amp;</span>client_auth_results)
     );
 
     <span class="prelude-val">Ok</span>([
         config_file_results,
         database_results,
         end_to_end_results,
-        mutual_auth_results,
+        client_auth_results,
     ]
     .concat())
 }

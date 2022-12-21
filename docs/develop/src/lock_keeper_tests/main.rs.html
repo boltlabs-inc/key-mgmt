@@ -95,8 +95,8 @@
 </span><span class="kw">pub struct </span>Cli {
     <span class="attribute">#[clap(default_value = <span class="string">&quot;./dev/config/local/Client.toml&quot;</span>)]
     </span><span class="kw">pub </span>client_config: PathBuf,
-    <span class="attribute">#[clap(default_value = <span class="string">&quot;./dev/config/local-mutual-auth/Client.toml&quot;</span>)]
-    </span><span class="kw">pub </span>mutual_auth_client_config: PathBuf,
+    <span class="attribute">#[clap(default_value = <span class="string">&quot;./dev/config/local-client-auth/Client.toml&quot;</span>)]
+    </span><span class="kw">pub </span>client_auth_client_config: PathBuf,
     <span class="attribute">#[clap(long = <span class="string">&quot;filter&quot;</span>)]
     </span><span class="kw">pub </span>filters: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
     <span class="attribute">#[clap(long, default_value = <span class="string">&quot;all&quot;</span>)]
@@ -150,7 +150,7 @@
 
             results.extend(test_suites::config_files::run_tests(<span class="kw-2">&amp;</span>config).<span class="kw">await</span><span class="question-mark">?</span>);
             results.extend(test_suites::database::run_tests(<span class="kw-2">&amp;</span>config).<span class="kw">await</span><span class="question-mark">?</span>);
-            results.extend(test_suites::mutual_auth::run_tests(<span class="kw-2">&amp;</span>config).<span class="kw">await</span><span class="question-mark">?</span>);
+            results.extend(test_suites::client_auth::run_tests(<span class="kw-2">&amp;</span>config).<span class="kw">await</span><span class="question-mark">?</span>);
 
             results
         }

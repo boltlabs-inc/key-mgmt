@@ -67,8 +67,8 @@
 </span><span class="kw">pub struct </span>Config {
     <span class="kw">pub </span>client_config: ClientConfig,
     <span class="kw">pub </span>client_config_path: PathBuf,
-    <span class="kw">pub </span>mutual_auth_client_config: ClientConfig,
-    <span class="kw">pub </span>mutual_auth_client_config_path: PathBuf,
+    <span class="kw">pub </span>client_auth_client_config: ClientConfig,
+    <span class="kw">pub </span>client_auth_client_config_path: PathBuf,
     <span class="kw">pub </span>filters: TestFilters,
 }
 
@@ -77,13 +77,13 @@
 
     <span class="kw">fn </span>try_from(cli: Cli) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
         <span class="kw">let </span>client_config = ClientConfig::from_file(<span class="kw-2">&amp;</span>cli.client_config, <span class="prelude-val">None</span>)<span class="question-mark">?</span>;
-        <span class="kw">let </span>mutual_auth_client_config =
-            ClientConfig::from_file(<span class="kw-2">&amp;</span>cli.mutual_auth_client_config, <span class="prelude-val">None</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>client_auth_client_config =
+            ClientConfig::from_file(<span class="kw-2">&amp;</span>cli.client_auth_client_config, <span class="prelude-val">None</span>)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
             client_config,
             client_config_path: cli.client_config.clone(),
-            mutual_auth_client_config,
-            mutual_auth_client_config_path: cli.mutual_auth_client_config.clone(),
+            client_auth_client_config,
+            client_auth_client_config_path: cli.client_auth_client_config.clone(),
             filters: cli.filters.unwrap_or_default().into(),
         })
     }
