@@ -59,6 +59,7 @@
 <span class="kw">use </span>tonic::Status;
 
 <span class="kw">use crate</span>::{
+    config::TestFilters,
     error::Result,
     run_parallel,
     test_suites::end_to_end::{
@@ -66,23 +67,22 @@
         test_cases::init_test_state,
     },
     utils::TestResult,
-    Config <span class="kw">as </span>TestConfig,
 };
 
-<span class="kw">pub async fn </span>run_tests(config: TestConfig) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;TestResult&gt;&gt; {
+<span class="kw">pub async fn </span>run_tests(config: <span class="kw-2">&amp;</span>Config, filters: <span class="kw-2">&amp;</span>TestFilters) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;TestResult&gt;&gt; {
     <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, <span class="string">&quot;Running import tests&quot;</span>.cyan());
 
     <span class="kw">let </span>result = <span class="macro">run_parallel!</span>(
-        config.clone(),
-        import_works(config.client_config.clone()),
-        cannot_import_after_logout(config.client_config.clone())
+        filters,
+        import_works(config.clone()),
+        cannot_import_after_logout(config.clone())
     )<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(result)
 }
 
 <span class="kw">async fn </span>import_works(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    <span class="kw">let </span>state = init_test_state(config).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>state = init_test_state(<span class="kw-2">&amp;</span>config).<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="kw">let </span>client = authenticate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="kw">let </span>import_res = import_signing_key(<span class="kw-2">&amp;</span>client).<span class="kw">await</span>;
@@ -98,7 +98,7 @@
 }
 
 <span class="kw">async fn </span>cannot_import_after_logout(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    <span class="kw">let </span>state = init_test_state(config).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>state = init_test_state(<span class="kw-2">&amp;</span>config).<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="kw">let </span>client = authenticate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>;
 
     client.logout().<span class="kw">await</span><span class="question-mark">?</span>;

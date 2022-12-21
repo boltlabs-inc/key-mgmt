@@ -180,9 +180,9 @@
 <span class="kw">use </span>std::{ops::Deref, str::FromStr};
 
 <span class="kw">use crate</span>::{
+    config::TestFilters,
     error::Result,
     utils::{report_test_results, TestResult},
-    Config,
 };
 <span class="kw">use </span>lock_keeper::{
     crypto::{Encrypted, MasterKey, StorageKey},
@@ -196,12 +196,12 @@
 
 <span class="kw">pub const </span>USERS_TABLE: <span class="kw-2">&amp;</span>str = <span class="string">&quot;users&quot;</span>;
 
-<span class="kw">pub async fn </span>run_tests(config: <span class="kw-2">&amp;</span>Config) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;TestResult&gt;&gt; {
+<span class="kw">pub async fn </span>run_tests(filters: <span class="kw-2">&amp;</span>TestFilters) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;TestResult&gt;&gt; {
     <span class="macro">println!</span>(<span class="string">&quot;Running database tests&quot;</span>);
 
-    <span class="kw">let </span>audit_event_results = audit_event::run_tests(config.clone()).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let </span>user_results = user::run_tests(config.clone()).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let </span>secret_results = secret::run_tests(config.clone()).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>audit_event_results = audit_event::run_tests(filters).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>user_results = user::run_tests(filters).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>secret_results = secret::run_tests(filters).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="comment">// Report results after all tests finish so results show up together
     </span><span class="macro">println!</span>(

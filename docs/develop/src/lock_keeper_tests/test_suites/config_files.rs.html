@@ -239,19 +239,19 @@
 <span class="kw">use </span>lock_keeper_key_server::LockKeeperServerError;
 
 <span class="kw">use crate</span>::{
-    config::Config,
+    config::TestFilters,
     error::Result,
     run_parallel,
     test_suites::database::TestDatabase,
     utils::{report_test_results, TestResult},
 };
 
-<span class="kw">pub async fn </span>run_tests(config: <span class="kw-2">&amp;</span>Config) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;TestResult&gt;&gt; {
+<span class="kw">pub async fn </span>run_tests(filters: <span class="kw-2">&amp;</span>TestFilters) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;TestResult&gt;&gt; {
     <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, <span class="string">&quot;Running config file tests&quot;</span>.cyan());
 
     <span class="kw">let </span>db = TestDatabase::new(<span class="string">&quot;config_file_tests&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="kw">let </span>results = <span class="macro">run_parallel!</span>(
-        config.clone(),
+        filters,
         client_config_with_file_private_key_works(),
         client_config_with_manual_private_key_works(),
         client_config_without_private_key_fails(),

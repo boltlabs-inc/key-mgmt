@@ -81,6 +81,7 @@
 <span class="kw">use </span>std::str::FromStr;
 
 <span class="kw">use crate</span>::{
+    config::TestFilters,
     error::Result,
     run_parallel,
     test_suites::end_to_end::{
@@ -88,24 +89,23 @@
         test_cases::{init_test_state, TestState},
     },
     utils::{tagged, TestResult},
-    Config <span class="kw">as </span>TestConfig,
 };
 
-<span class="kw">pub async fn </span>run_tests(config: TestConfig) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;TestResult&gt;&gt; {
+<span class="kw">pub async fn </span>run_tests(config: <span class="kw-2">&amp;</span>Config, filters: <span class="kw-2">&amp;</span>TestFilters) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;TestResult&gt;&gt; {
     <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, <span class="string">&quot;Running authenticate tests&quot;</span>.cyan());
 
     <span class="kw">let </span>result = <span class="macro">run_parallel!</span>(
-        config.clone(),
-        multiple_sessions_from_same_client_allowed(config.client_config.clone()),
-        cannot_authenticate_with_wrong_password(config.client_config.clone()),
-        authenticate_before_register_fails(config.client_config.clone()),
+        filters,
+        multiple_sessions_from_same_client_allowed(config.clone()),
+        cannot_authenticate_with_wrong_password(config.clone()),
+        authenticate_before_register_fails(config.clone()),
     )<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(result)
 }
 
 <span class="kw">async fn </span>multiple_sessions_from_same_client_allowed(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    <span class="kw">let </span>state = init_test_state(config).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>state = init_test_state(<span class="kw-2">&amp;</span>config).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="kw">let </span>_first_login = authenticate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="kw">let </span>_second_login = authenticate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>;
@@ -119,7 +119,7 @@
 }
 
 <span class="kw">async fn </span>cannot_authenticate_with_wrong_password(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    <span class="kw">let </span>state = init_test_state(config.clone()).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>state = init_test_state(<span class="kw-2">&amp;</span>config).<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="kw">let </span>wrong_password = Password::from_str(tagged(<span class="string">&quot;wrong_password&quot;</span>).as_str())<span class="question-mark">?</span>;
 
     <span class="kw">let </span>fake_state = TestState {

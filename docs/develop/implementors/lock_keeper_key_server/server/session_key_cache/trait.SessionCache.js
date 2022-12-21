@@ -1,3 +1,3 @@
 (function() {var implementors = {
-"lk_session_hashmap":[["impl <a class=\"trait\" href=\"lock_keeper_key_server/server/session_key_cache/trait.SessionCache.html\" title=\"trait lock_keeper_key_server::server::session_key_cache::SessionCache\">SessionCache</a> for <a class=\"struct\" href=\"lk_session_hashmap/api/struct.HashmapKeyCache.html\" title=\"struct lk_session_hashmap::api::HashmapKeyCache\">HashmapKeyCache</a>"]]
+"lk_session_hashmap":[["impl SessionCache for <a class=\"struct\" href=\"lk_session_hashmap/api/struct.HashmapKeyCache.html\" title=\"struct lk_session_hashmap::api::HashmapKeyCache\">HashmapKeyCache</a>"]]
 };if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

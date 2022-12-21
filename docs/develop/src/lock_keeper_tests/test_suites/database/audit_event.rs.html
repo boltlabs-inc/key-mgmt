@@ -219,16 +219,16 @@
 };
 <span class="kw">use </span>strum::IntoEnumIterator;
 
-<span class="kw">use crate</span>::{error::Result, run_parallel, utils::TestResult, Config};
+<span class="kw">use crate</span>::{config::TestFilters, error::Result, run_parallel, utils::TestResult};
 
 <span class="kw">use </span><span class="kw">super</span>::TestDatabase;
 
-<span class="kw">pub async fn </span>run_tests(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;TestResult&gt;&gt; {
+<span class="kw">pub async fn </span>run_tests(filters: <span class="kw-2">&amp;</span>TestFilters) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;TestResult&gt;&gt; {
     <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, <span class="string">&quot;Running audit event tests&quot;</span>.cyan());
 
     <span class="kw">let </span>db = TestDatabase::new(<span class="string">&quot;audit_event_tests&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="kw">let </span>result = <span class="macro">run_parallel!</span>(
-        config.clone(),
+        filters,
         event_type_filter_works(db.clone()),
         key_id_filter_works(db.clone()),
         after_date_filter_works(db.clone()),

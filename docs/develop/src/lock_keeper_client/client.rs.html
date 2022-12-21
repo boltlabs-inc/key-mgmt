@@ -328,15 +328,9 @@
 <span id="328">328</span>
 <span id="329">329</span>
 <span id="330">330</span>
-<span id="331">331</span>
-<span id="332">332</span>
-<span id="333">333</span>
-<span id="334">334</span>
-<span id="335">335</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Client object to interact with the key server.
 
 </span><span class="kw">use crate</span>::{config::Config, LockKeeperClientError, LockKeeperResponse, <span class="prelude-ty">Result</span>};
-<span class="kw">use </span>http::uri::Scheme;
 <span class="kw">use </span>http_body::combinators::UnsyncBoxBody;
 <span class="kw">use </span>hyper::client::HttpConnector;
 <span class="kw">use </span>hyper_rustls::HttpsConnector;
@@ -435,13 +429,9 @@
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>connect(
         config: <span class="kw-2">&amp;</span>Config,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperRpcClient&lt;LockKeeperRpcClientInner&gt;&gt; {
-        <span class="kw">if </span>config.server_uri.scheme() != <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>Scheme::HTTPS) {
-            <span class="kw">return </span><span class="prelude-val">Err</span>(LockKeeperClientError::HttpNotAllowed);
-        }
-
         <span class="kw">let </span>connector = hyper_rustls::HttpsConnectorBuilder::new()
             .with_tls_config(config.tls_config.clone())
-            .https_only()
+            .https_or_http()
             .enable_http2()
             .build();
 
