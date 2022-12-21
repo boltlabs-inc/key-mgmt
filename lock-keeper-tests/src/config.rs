@@ -9,8 +9,8 @@ use lock_keeper_client::Config as ClientConfig;
 pub struct Config {
     pub client_config: ClientConfig,
     pub client_config_path: PathBuf,
-    pub mutual_auth_client_config: ClientConfig,
-    pub mutual_auth_client_config_path: PathBuf,
+    pub client_auth_client_config: ClientConfig,
+    pub client_auth_client_config_path: PathBuf,
     pub filters: TestFilters,
 }
 
@@ -19,13 +19,13 @@ impl TryFrom<Cli> for Config {
 
     fn try_from(cli: Cli) -> Result<Self, Self::Error> {
         let client_config = ClientConfig::from_file(&cli.client_config, None)?;
-        let mutual_auth_client_config =
-            ClientConfig::from_file(&cli.mutual_auth_client_config, None)?;
+        let client_auth_client_config =
+            ClientConfig::from_file(&cli.client_auth_client_config, None)?;
         Ok(Self {
             client_config,
             client_config_path: cli.client_config.clone(),
-            mutual_auth_client_config,
-            mutual_auth_client_config_path: cli.mutual_auth_client_config.clone(),
+            client_auth_client_config,
+            client_auth_client_config_path: cli.client_auth_client_config.clone(),
             filters: cli.filters.unwrap_or_default().into(),
         })
     }

@@ -27,9 +27,9 @@ dependencies = ["teardown", "start"]
 [tasks.start-server-attached]
 command = "docker"
 args = ["compose", "up",
-        "--build", "mongodb", "key_server", "key_server_mutual_auth",
+        "--build", "mongodb", "key_server", "key_server_client_auth",
         "--attach", "key_server", 
-        "--attach", "key_server_mutual_auth"
+        "--attach", "key_server_client_auth"
 ]
 dependencies = ["certs", "remote-storage-key"]
 
@@ -37,7 +37,7 @@ dependencies = ["certs", "remote-storage-key"]
 [tasks.start-server-detached]
 command = "docker"
 args = ["compose", "up", 
-        "--build", "mongodb", "key_server", "key_server_mutual_auth",
+        "--build", "mongodb", "key_server", "key_server_client_auth",
         "--wait"
 ]
 dependencies = ["certs", "remote-storage-key"]

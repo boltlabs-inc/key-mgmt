@@ -13,8 +13,8 @@ use std::{path::PathBuf, str::FromStr};
 pub struct Cli {
     #[clap(default_value = "./dev/config/local/Client.toml")]
     pub client_config: PathBuf,
-    #[clap(default_value = "./dev/config/local-mutual-auth/Client.toml")]
-    pub mutual_auth_client_config: PathBuf,
+    #[clap(default_value = "./dev/config/local-client-auth/Client.toml")]
+    pub client_auth_client_config: PathBuf,
     #[clap(long = "filter")]
     pub filters: Option<Vec<String>>,
     #[clap(long, default_value = "all")]
@@ -68,7 +68,7 @@ async fn run_tests(test_type: TestType, config: Config) -> Result<(), LockKeeper
 
             results.extend(test_suites::config_files::run_tests(&config).await?);
             results.extend(test_suites::database::run_tests(&config).await?);
-            results.extend(test_suites::mutual_auth::run_tests(&config).await?);
+            results.extend(test_suites::client_auth::run_tests(&config).await?);
 
             results
         }
