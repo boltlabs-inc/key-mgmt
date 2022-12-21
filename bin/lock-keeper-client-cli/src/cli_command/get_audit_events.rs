@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use crate::{cli_command::CliCommand, state::State};
 use anyhow::Error;
 use async_trait::async_trait;
@@ -7,9 +9,10 @@ pub struct GetAuditEvents {}
 
 #[async_trait]
 impl CliCommand for GetAuditEvents {
-    async fn execute(self: Box<Self>, _state: &mut State) -> Result<(), Error> {
+    async fn execute(self: Box<Self>, _state: &mut State) -> Result<Duration, Error> {
         println!("{:?}: Not implemented", GetAuditEvents {});
-        Ok(())
+        // Return zero duration since this command is not implemented
+        Ok(Duration::ZERO)
     }
 
     fn parse_command_args(slice: &[&str]) -> Option<Self> {

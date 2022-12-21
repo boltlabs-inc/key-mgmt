@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use crate::{cli_command::CliCommand, state::State};
 use anyhow::Error;
 use async_trait::async_trait;
@@ -7,7 +9,7 @@ pub struct Quit {}
 
 #[async_trait]
 impl CliCommand for Quit {
-    async fn execute(self: Box<Self>, _state: &mut State) -> Result<(), Error> {
+    async fn execute(self: Box<Self>, _state: &mut State) -> Result<Duration, Error> {
         std::process::exit(0)
     }
 

@@ -1,14 +1,14 @@
-use anyhow::anyhow;
 use lock_keeper_client::Config;
 
 use std::{
     io::{self, Write},
     path::PathBuf,
+    time::SystemTime,
 };
-use tracing::info;
 
 use crate::{
-    cli_command::{get_cmd_functions, CliCommand, DynCommand, GetCmdFunction},
+    cli_command::{parse_cli_command, CliCommand},
+    scripting::Script,
     state::State,
 };
 
@@ -31,6 +31,29 @@ pub async fn run(config: Config, storage_path: PathBuf) -> anyhow::Result<()> {
     }
 }
 
+/// Runs the interactive client
+pub async fn run_script(
+    config: Config,
+    storage_path: PathBuf,
+    script: Script,
+) -> anyhow::Result<()> {
+    let mut state = State::new(config, storage_path)?;
+
+    let now = SystemTime::now();
+    let elapsed = script.execute(&mut state).await?;
+    let total_script_time = now.elapsed()?;
+
+    println!();
+    println!("Script completed successfully");
+    println!("Client operations completed in {} ms", elapsed.as_millis());
+    println!(
+        "Total script execution completed in {} ms",
+        total_script_time.as_millis()
+    );
+
+    Ok(())
+}
+
 /// Reads next command from standard input.
 ///
 /// Returns a dynamic trait representing the parsed command or an error if no
@@ -50,32 +73,4 @@ fn parse_input(state: &State) -> anyhow::Result<Box<dyn CliCommand>> {
     let command = parse_cli_command(&input)?;
 
     Ok(command)
-}
-
-// Iterate through our registered commands and see if any of them can parse this
-// command.
-fn parse_cli_command(input: &str) -> Result<DynCommand, anyhow::Error> {
-    info!("Attempting to parse user input string: {}", input);
-
-    let parsers = get_cmd_functions::<Parse>();
-    for cmd_parse in parsers {
-        if let Ok(c) = cmd_parse(input) {
-            return Ok(c);
-        }
-    }
-
-    Err(anyhow!("No matching command."))
-}
-
-/// Helper type to implement [GetCmdFunction]. This returns the parsing
-/// function for all commands and allows the [parse_cli_command] to iterate
-/// through these functions.
-struct Parse;
-
-impl GetCmdFunction for Parse {
-    type FunctionSignature = fn(&str) -> Result<DynCommand, anyhow::Error>;
-
-    fn get_function<T: CliCommand + 'static>() -> Self::FunctionSignature {
-        |s| T::from_str(s).map(|c| c.to_dyn())
-    }
 }

@@ -1,3 +1,5 @@
+use std::time::{Duration, SystemTime};
+
 use crate::{cli_command::CliCommand, state::State};
 use anyhow::Error;
 use async_trait::async_trait;
@@ -12,7 +14,7 @@ pub struct Import {
 
 #[async_trait]
 impl CliCommand for Import {
-    async fn execute(self: Box<Self>, state: &mut State) -> Result<(), Error> {
+    async fn execute(self: Box<Self>, state: &mut State) -> Result<Duration, Error> {
         let credentials = state.get_credentials()?;
 
         // Authenticate user to the key server
@@ -26,15 +28,18 @@ impl CliCommand for Import {
 
         let random_bytes = rand::thread_rng().gen::<[u8; 32]>().to_vec();
         let import = LkImport::new(random_bytes)?;
+
+        let now = SystemTime::now();
         let key_id = lock_keeper_client
             .import_signing_key(import)
             .await
             .result
             .map_err(|e| anyhow::anyhow!("Failed to import signing key. Error: {:?}", e))?;
+        let elapsed = now.elapsed()?;
 
         let stored = state.store_entry(self.name, key_id)?;
         println!("Stored: {stored}");
-        Ok(())
+        Ok(elapsed)
     }
 
     fn parse_command_args(slice: &[&str]) -> Option<Self> {

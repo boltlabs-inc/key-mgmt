@@ -1,3 +1,5 @@
+use std::time::{Duration, SystemTime};
+
 use crate::{cli_command::CliCommand, state::State};
 use anyhow::Error;
 use async_trait::async_trait;
@@ -8,8 +10,12 @@ pub struct Health;
 
 #[async_trait]
 impl CliCommand for Health {
-    async fn execute(self: Box<Self>, state: &mut State) -> Result<(), Error> {
-        match LockKeeperClient::health(&state.config).await {
+    async fn execute(self: Box<Self>, state: &mut State) -> Result<Duration, Error> {
+        let now = SystemTime::now();
+        let result = LockKeeperClient::health(&state.config).await;
+        let elapsed = now.elapsed()?;
+
+        match result {
             Ok(()) => println!("Health check passed"),
             Err(e) => {
                 println!("Health check failed");
@@ -17,7 +23,7 @@ impl CliCommand for Health {
             }
         }
 
-        Ok(())
+        Ok(elapsed)
     }
 
     fn parse_command_args(slice: &[&str]) -> Option<Self> {

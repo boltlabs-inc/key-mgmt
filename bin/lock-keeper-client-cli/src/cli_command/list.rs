@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use crate::{cli_command::CliCommand, state::State};
 use anyhow::Error;
 use async_trait::async_trait;
@@ -7,10 +9,11 @@ pub struct List {}
 
 #[async_trait]
 impl CliCommand for List {
-    async fn execute(self: Box<Self>, state: &mut State) -> Result<(), Error> {
+    async fn execute(self: Box<Self>, state: &mut State) -> Result<Duration, Error> {
         let credentials = state.get_credentials()?;
         state.storage.list(&credentials.account_name)?;
-        Ok(())
+        // Return zero duration since this command doesn't call the client.
+        Ok(Duration::ZERO)
     }
 
     fn parse_command_args(slice: &[&str]) -> Option<Self> {
