@@ -1,0 +1,6 @@
+server_uri = "https://localhost:1115"
+ca_chain = "dev/test-pki/gen/ca/signing-ca.chain"
+
+[client_auth]
+certificate_chain = "dev/test-pki/gen/certs/client.chain"
+private_key = "dev/test-pki/gen/certs/client.key"

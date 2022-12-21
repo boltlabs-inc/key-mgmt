@@ -7,6 +7,7 @@ use lock_keeper_client::{api::GenerateResult, Config};
 use tonic::Status;
 
 use crate::{
+    config::TestFilters,
     error::Result,
     run_parallel,
     test_suites::end_to_end::{
@@ -17,29 +18,28 @@ use crate::{
         test_cases::init_test_state,
     },
     utils::TestResult,
-    Config as TestConfig,
 };
 
-pub async fn run_tests(config: TestConfig) -> Result<Vec<TestResult>> {
+pub async fn run_tests(config: &Config, filters: &TestFilters) -> Result<Vec<TestResult>> {
     println!("{}", "Running export tests".cyan());
 
     let result = run_parallel!(
-        config.clone(),
-        export_works(config.client_config.clone()),
-        cannot_export_fake_key(config.client_config.clone()),
-        cannot_export_signing_key_as_secret(config.client_config.clone()),
-        cannot_export_after_logout(config.client_config.clone()),
-        export_signing_key_works(config.client_config.clone()),
-        cannot_export_fake_signing_key(config.client_config.clone()),
-        cannot_export_secret_as_signing_key(config.client_config.clone()),
-        cannot_export_signing_key_after_logout(config.client_config.clone()),
+        filters,
+        export_works(config.clone()),
+        cannot_export_fake_key(config.clone()),
+        cannot_export_signing_key_as_secret(config.clone()),
+        cannot_export_after_logout(config.clone()),
+        export_signing_key_works(config.clone()),
+        cannot_export_fake_signing_key(config.clone()),
+        cannot_export_secret_as_signing_key(config.clone()),
+        cannot_export_signing_key_after_logout(config.clone()),
     )?;
 
     Ok(result)
 }
 
 async fn export_works(config: Config) -> Result<()> {
-    let state = init_test_state(config).await?;
+    let state = init_test_state(&config).await?;
     let client = authenticate(&state).await?;
 
     let GenerateResult {
@@ -58,7 +58,7 @@ async fn export_works(config: Config) -> Result<()> {
 }
 
 async fn cannot_export_fake_key(config: Config) -> Result<()> {
-    let state = init_test_state(config).await?;
+    let state = init_test_state(&config).await?;
     let client = authenticate(&state).await?;
 
     let fake_key_id = generate_fake_key_id(&client).await?;
@@ -70,7 +70,7 @@ async fn cannot_export_fake_key(config: Config) -> Result<()> {
 }
 
 async fn cannot_export_signing_key_as_secret(config: Config) -> Result<()> {
-    let state = init_test_state(config).await?;
+    let state = init_test_state(&config).await?;
     let client = authenticate(&state).await?;
 
     let (key_id, _) = import_signing_key(&client).await?.into_inner();
@@ -82,7 +82,7 @@ async fn cannot_export_signing_key_as_secret(config: Config) -> Result<()> {
 }
 
 async fn cannot_export_after_logout(config: Config) -> Result<()> {
-    let state = init_test_state(config).await?;
+    let state = init_test_state(&config).await?;
     let client = authenticate(&state).await?;
 
     let GenerateResult {
@@ -98,7 +98,7 @@ async fn cannot_export_after_logout(config: Config) -> Result<()> {
 }
 
 async fn export_signing_key_works(config: Config) -> Result<()> {
-    let state = init_test_state(config).await?;
+    let state = init_test_state(&config).await?;
     let client = authenticate(&state).await?;
 
     let (key_id, bytes_original) = import_signing_key(&client).await?.into_inner();
@@ -122,7 +122,7 @@ async fn export_signing_key_works(config: Config) -> Result<()> {
 }
 
 async fn cannot_export_fake_signing_key(config: Config) -> Result<()> {
-    let state = init_test_state(config).await?;
+    let state = init_test_state(&config).await?;
     let client = authenticate(&state).await?;
 
     let fake_key_id = generate_fake_key_id(&client).await?;
@@ -134,7 +134,7 @@ async fn cannot_export_fake_signing_key(config: Config) -> Result<()> {
 }
 
 async fn cannot_export_secret_as_signing_key(config: Config) -> Result<()> {
-    let state = init_test_state(config).await?;
+    let state = init_test_state(&config).await?;
     let client = authenticate(&state).await?;
 
     let GenerateResult {
@@ -149,7 +149,7 @@ async fn cannot_export_secret_as_signing_key(config: Config) -> Result<()> {
 }
 
 async fn cannot_export_signing_key_after_logout(config: Config) -> Result<()> {
-    let state = init_test_state(config).await?;
+    let state = init_test_state(&config).await?;
     let client = authenticate(&state).await?;
 
     let (key_id, _) = import_signing_key(&client).await?.into_inner();

@@ -6,8 +6,8 @@ use std::{
 };
 
 use crate::{
+    config::TestFilters,
     error::{LockKeeperTestError, Result},
-    Config,
 };
 use colored::Colorize;
 use futures::Future;
@@ -78,17 +78,17 @@ pub fn random_bytes(mut rng: impl Rng, len: usize) -> Vec<u8> {
 /// ```
 #[macro_export]
 macro_rules! run_parallel {
-    ($config:expr, $($task:expr),+,) => {
-        run_parallel!($config, $($task),+)
+    ($filters:expr, $($task:expr),+,) => {
+        run_parallel!($filters, $($task),+)
     };
-    ($config:expr, $($task:expr),+) => {
+    ($filters:expr, $($task:expr),+) => {
         // Stick this in a scope so it can return a result
         {
             use std::sync::{Arc, Mutex};
             use $crate::{error::LockKeeperTestError, utils::TestResult};
 
             let results = Arc::new(Mutex::new(Vec::new()));
-            tokio::try_join!($($crate::utils::run_test_case($config, stringify!($task), $task, results.clone())),+)?;
+            tokio::try_join!($($crate::utils::run_test_case($filters, stringify!($task), $task, results.clone())),+)?;
 
             let results = results.lock().unwrap().clone();
 
@@ -100,7 +100,7 @@ macro_rules! run_parallel {
 /// Runs a test case and manually handles any panics triggered by `assert`
 /// macros.
 pub async fn run_test_case(
-    config: Config,
+    filters: &TestFilters,
     name: &str,
     task: impl Future<Output = Result<()>> + Send + 'static,
     results: Arc<Mutex<Vec<TestResult>>>,
@@ -118,7 +118,7 @@ pub async fn run_test_case(
         .expect("Function has at least one character");
     test_result.push_str(&format!("\n{name}:\n"));
 
-    if !config.filters.matches(name) {
+    if !filters.matches(name) {
         let mut results = results.lock().unwrap();
         results.push(Skipped);
         test_result.push_str(&format!("{}", "skipped\n".bright_blue()));

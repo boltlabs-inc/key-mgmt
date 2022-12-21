@@ -8,9 +8,9 @@ use generic_array::{typenum::U64, GenericArray};
 use std::{ops::Deref, str::FromStr};
 
 use crate::{
+    config::TestFilters,
     error::Result,
     utils::{report_test_results, TestResult},
-    Config,
 };
 use lock_keeper::{
     crypto::{Encrypted, MasterKey, StorageKey},
@@ -24,12 +24,12 @@ use crate::utils::{server_registration, tagged};
 
 pub const USERS_TABLE: &str = "users";
 
-pub async fn run_tests(config: &Config) -> Result<Vec<TestResult>> {
+pub async fn run_tests(filters: &TestFilters) -> Result<Vec<TestResult>> {
     println!("Running database tests");
 
-    let audit_event_results = audit_event::run_tests(config.clone()).await?;
-    let user_results = user::run_tests(config.clone()).await?;
-    let secret_results = secret::run_tests(config.clone()).await?;
+    let audit_event_results = audit_event::run_tests(filters).await?;
+    let user_results = user::run_tests(filters).await?;
+    let secret_results = secret::run_tests(filters).await?;
 
     // Report results after all tests finish so results show up together
     println!(

@@ -4,6 +4,7 @@ use lock_keeper_client::Config;
 use tonic::Status;
 
 use crate::{
+    config::TestFilters,
     error::Result,
     run_parallel,
     test_suites::end_to_end::{
@@ -11,23 +12,22 @@ use crate::{
         test_cases::init_test_state,
     },
     utils::TestResult,
-    Config as TestConfig,
 };
 
-pub async fn run_tests(config: TestConfig) -> Result<Vec<TestResult>> {
+pub async fn run_tests(config: &Config, filters: &TestFilters) -> Result<Vec<TestResult>> {
     println!("{}", "Running import tests".cyan());
 
     let result = run_parallel!(
-        config.clone(),
-        import_works(config.client_config.clone()),
-        cannot_import_after_logout(config.client_config.clone())
+        filters,
+        import_works(config.clone()),
+        cannot_import_after_logout(config.clone())
     )?;
 
     Ok(result)
 }
 
 async fn import_works(config: Config) -> Result<()> {
-    let state = init_test_state(config).await?;
+    let state = init_test_state(&config).await?;
     let client = authenticate(&state).await?;
 
     let import_res = import_signing_key(&client).await;
@@ -43,7 +43,7 @@ async fn import_works(config: Config) -> Result<()> {
 }
 
 async fn cannot_import_after_logout(config: Config) -> Result<()> {
-    let state = init_test_state(config).await?;
+    let state = init_test_state(&config).await?;
     let client = authenticate(&state).await?;
 
     client.logout().await?;

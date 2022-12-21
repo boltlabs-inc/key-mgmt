@@ -9,16 +9,16 @@ use lock_keeper_key_server::database::DataStore;
 use lock_keeper_mongodb::Database;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
-use crate::{error::Result, run_parallel, utils::TestResult, Config};
+use crate::{config::TestFilters, error::Result, run_parallel, utils::TestResult};
 
 use super::TestDatabase;
 
-pub async fn run_tests(config: Config) -> Result<Vec<TestResult>> {
+pub async fn run_tests(filters: &TestFilters) -> Result<Vec<TestResult>> {
     println!("{}", "Running secret tests".cyan());
 
     let db = TestDatabase::new("secret_tests").await?;
     let result = run_parallel!(
-        config.clone(),
+        filters,
         user_is_serializable_after_adding_secrets(db.clone()),
         cannot_get_another_users_secrets(db.clone()),
     )?;

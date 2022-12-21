@@ -4,16 +4,24 @@ pub type Result<T> = std::result::Result<T, LockKeeperTestError>;
 
 #[derive(Debug, Error)]
 pub enum LockKeeperTestError {
+    #[error("Client config missing for required environment: \"{0}\". Check TestEnvironments.toml if you're using the default environment config.")]
+    MissingRequiredConfig(String),
     #[error("Invalid test type: {0}")]
     InvalidTestType(String),
     #[error("One or more test cases failed.")]
     TestFailed,
+    #[error("Undefined environment: {0}")]
+    UndefinedEnvironment(String),
+    #[error("Could not contact environment {0}")]
+    WaitForEnvironmentFailed(String),
     #[error("Failed to contact key server after maximum number of retries.")]
     WaitForServerTimedOut,
     #[error("Wrong error returned")]
     WrongErrorReturned,
 
     // Wrapped Errors
+    #[error(transparent)]
+    Clap(#[from] clap::Error),
     #[error(transparent)]
     Io(#[from] std::io::Error),
     #[error("LockKeeperError: {0:?}")]
@@ -28,4 +36,6 @@ pub enum LockKeeperTestError {
     MongoDb(#[from] mongodb::error::Error),
     #[error("RandError: {0:?}")]
     Rand(#[from] rand::Error),
+    #[error(transparent)]
+    Toml(#[from] toml::de::Error),
 }

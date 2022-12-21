@@ -8,6 +8,7 @@ use rand::{rngs::StdRng, SeedableRng};
 use tonic::Status;
 
 use crate::{
+    config::TestFilters,
     error::Result,
     run_parallel,
     test_suites::end_to_end::{
@@ -15,23 +16,22 @@ use crate::{
         test_cases::init_test_state,
     },
     utils::{self, TestResult, RNG_SEED},
-    Config as TestConfig,
 };
 
-pub async fn run_tests(config: TestConfig) -> Result<Vec<TestResult>> {
+pub async fn run_tests(config: &Config, filters: &TestFilters) -> Result<Vec<TestResult>> {
     println!("{}", "Running remote sign tests".cyan());
 
     let result = run_parallel!(
-        config.clone(),
-        remote_sign_works(config.client_config.clone()),
-        cannot_remote_sign_after_logout(config.client_config.clone()),
+        filters,
+        remote_sign_works(config.clone()),
+        cannot_remote_sign_after_logout(config.clone()),
     )?;
 
     Ok(result)
 }
 
 async fn remote_sign_works(config: Config) -> Result<()> {
-    let state = init_test_state(config).await?;
+    let state = init_test_state(&config).await?;
     let client = authenticate(&state).await?;
 
     let RemoteGenerateResult { key_id, public_key } = client.remote_generate().await?.into_inner();
@@ -61,7 +61,7 @@ async fn remote_sign_works(config: Config) -> Result<()> {
 }
 
 async fn cannot_remote_sign_after_logout(config: Config) -> Result<()> {
-    let state = init_test_state(config).await?;
+    let state = init_test_state(&config).await?;
     let client = authenticate(&state).await?;
 
     // Remote generate before waiting out the timeout
