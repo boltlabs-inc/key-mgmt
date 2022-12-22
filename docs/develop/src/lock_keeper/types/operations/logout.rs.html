@@ -7,29 +7,7 @@
 <span id="7">7</span>
 <span id="8">8</span>
 <span id="9">9</span>
-<span id="10">10</span>
-<span id="11">11</span>
-<span id="12">12</span>
-<span id="13">13</span>
-<span id="14">14</span>
-<span id="15">15</span>
-<span id="16">16</span>
-<span id="17">17</span>
-<span id="18">18</span>
-<span id="19">19</span>
-<span id="20">20</span>
-</pre><pre class="rust"><code><span class="kw">pub mod </span>client {
-    <span class="kw">use </span><span class="kw">crate</span>::types::database::user::UserId;
-    <span class="kw">use </span>serde::{Deserialize, Serialize};
-
-    <span class="attribute">#[derive(Debug, Deserialize, Serialize)]
-    </span><span class="doccomment">/// send user ID and material to import
-    </span><span class="kw">pub struct </span>Request {
-        <span class="kw">pub </span>user_id: UserId,
-    }
-}
-
-<span class="kw">pub mod </span>server {
+</pre><pre class="rust"><code><span class="kw">pub mod </span>server {
     <span class="kw">use </span>serde::{Deserialize, Serialize};
 
     <span class="attribute">#[derive(Debug, Deserialize, Serialize)]

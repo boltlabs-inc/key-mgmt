@@ -315,10 +315,23 @@
 <span id="315">315</span>
 <span id="316">316</span>
 <span id="317">317</span>
+<span id="318">318</span>
+<span id="319">319</span>
+<span id="320">320</span>
+<span id="321">321</span>
+<span id="322">322</span>
+<span id="323">323</span>
+<span id="324">324</span>
+<span id="325">325</span>
+<span id="326">326</span>
+<span id="327">327</span>
+<span id="328">328</span>
+<span id="329">329</span>
+<span id="330">330</span>
 </pre><pre class="rust"><code><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>opaque_storage;
 <span class="kw">mod </span>operation;
 <span class="kw">mod </span>service;
-<span class="kw">pub mod </span>session_key_cache;
+<span class="kw">pub mod </span>session_cache;
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use </span>operation::Operation;
 <span class="kw">pub use </span>service::start_lock_keeper_server;
@@ -339,7 +352,7 @@
     },
 };
 
-<span class="kw">use crate</span>::{database::DataStore, server::session_key_cache::SessionCache};
+<span class="kw">use crate</span>::{database::DataStore, server::session_cache::SessionCache};
 <span class="kw">use </span>rand::{rngs::StdRng, SeedableRng};
 <span class="kw">use </span>std::sync::Arc;
 <span class="kw">use </span>tokio::sync::Mutex;
@@ -349,7 +362,7 @@
     config: Arc&lt;Config&gt;,
     db: Arc&lt;DB&gt;,
     rng: Arc&lt;Mutex&lt;StdRng&gt;&gt;,
-    session_key_cache: Arc&lt;Mutex&lt;<span class="kw">dyn </span>SessionCache&gt;&gt;,
+    session_cache: Arc&lt;Mutex&lt;<span class="kw">dyn </span>SessionCache&gt;&gt;,
 }
 
 <span class="kw">impl</span>&lt;DB: DataStore&gt; LockKeeperKeyServer&lt;DB&gt; {
@@ -364,7 +377,7 @@
             config: Arc::new(config),
             db,
             rng: Arc::new(Mutex::new(rng)),
-            session_key_cache,
+            session_cache: session_key_cache,
         })
     }
 
@@ -374,7 +387,7 @@
             db: <span class="self">self</span>.db.clone(),
             rng: <span class="self">self</span>.rng.clone(),
             key_id: <span class="prelude-val">None</span>,
-            session_key_cache: <span class="self">self</span>.session_key_cache.clone(),
+            session_cache: <span class="self">self</span>.session_cache.clone(),
         }
     }
 }
@@ -385,7 +398,7 @@
     <span class="kw">pub </span>rng: Arc&lt;Mutex&lt;StdRng&gt;&gt;,
     <span class="kw">pub </span>key_id: <span class="prelude-ty">Option</span>&lt;KeyId&gt;,
     <span class="doccomment">/// Our user session keys are held in this cache after authentication.
-    </span><span class="kw">pub </span>session_key_cache: Arc&lt;Mutex&lt;<span class="kw">dyn </span>SessionCache&gt;&gt;,
+    </span><span class="kw">pub </span>session_cache: Arc&lt;Mutex&lt;<span class="kw">dyn </span>SessionCache&gt;&gt;,
 }
 
 <span class="attribute">#[tonic::async_trait]
@@ -482,6 +495,11 @@
             </span>.ok_or(lock_keeper::LockKeeperError::MetadataNotFound)<span class="question-mark">?
             </span>.try_into()<span class="question-mark">?</span>;
 
+        <span class="kw">let </span>session_id = metadata
+            .session_id()
+            .ok_or(LockKeeperServerError::SessionIdNotFound)<span class="question-mark">?
+            </span>.clone();
+
         <span class="kw">let </span>user_id = context
             .db
             .find_user(metadata.account_name())
@@ -494,10 +512,12 @@
         </span><span class="kw">let </span>(channel, response) = <span class="self">self</span>.create_unauthenticated_channel(request).<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="kw">let </span>session_key = {
-            <span class="kw">let </span><span class="kw-2">mut </span>session_cache = context.session_key_cache.lock().<span class="kw">await</span>;
-            session_cache
-                .find_session(user_id.clone())
-                .map_err(|e| Status::internal(e.to_string()))<span class="question-mark">?
+            <span class="kw">let </span>session_cache = context.session_cache.lock().<span class="kw">await</span>;
+            <span class="kw">let </span>session = session_cache
+                .find_session(session_id, user_id.clone())
+                .<span class="kw">await
+                </span>.map_err(|e| Status::internal(e.to_string()))<span class="question-mark">?</span>;
+            session.session_key(<span class="kw-2">&amp;</span>context)<span class="question-mark">?
         </span>};
 
         <span class="kw">let </span><span class="kw-2">mut </span>channel = channel.into_authenticated(session_key, context.rng.clone());
@@ -620,11 +640,17 @@
             .user_id()
             .ok_or(LockKeeperServerError::InvalidAccount)<span class="question-mark">?
             </span>.clone();
+        <span class="kw">let </span>session_id = channel
+            .metadata()
+            .session_id()
+            .ok_or(LockKeeperServerError::SessionIdNotFound)<span class="question-mark">?
+            </span>.clone();
         <span class="kw">let </span>context = <span class="self">self</span>.context();
 
         <span class="kw">let </span>session_key = {
-            <span class="kw">let </span><span class="kw-2">mut </span>session_cache = context.session_key_cache.lock().<span class="kw">await</span>;
-            session_cache.find_session(user_id)<span class="question-mark">?
+            <span class="kw">let </span>session_cache = context.session_cache.lock().<span class="kw">await</span>;
+            <span class="kw">let </span>session = session_cache.find_session(session_id, user_id).<span class="kw">await</span><span class="question-mark">?</span>;
+            session.session_key(<span class="kw-2">&amp;</span>context)<span class="question-mark">?
         </span>};
 
         <span class="kw">let </span>channel = channel.into_authenticated(session_key, context.rng.clone());

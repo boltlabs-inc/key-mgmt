@@ -56,7 +56,7 @@
 }
 
 <span class="kw">pub mod </span>server {
-    <span class="kw">use </span><span class="kw">crate</span>::config::opaque::OpaqueCipherSuite;
+    <span class="kw">use crate</span>::{config::opaque::OpaqueCipherSuite, types::operations::SessionId};
     <span class="kw">use </span>opaque_ke::CredentialResponse;
     <span class="kw">use </span>serde::{Deserialize, Serialize};
 
@@ -69,7 +69,7 @@
     <span class="attribute">#[derive(Debug, Deserialize, Serialize)]
     </span><span class="doccomment">/// Return true if successful.
     </span><span class="kw">pub struct </span>AuthenticateFinish {
-        <span class="kw">pub </span>success: bool,
+        <span class="kw">pub </span>session_id: SessionId,
     }
 }
 </code></pre></div>

@@ -410,7 +410,7 @@
 //!     in lock_keeper_key_server::server::operation::handle_request with request_id: &quot;52ad8008-1eb9-4ad5-8bce-0344a958fd1e&quot;
 //! ```
 //!
-//! Notice we have recorded the `action` and `request_id` fields by the time
+//! Notice we have not recorded the `action` and `request_id` fields by the time
 //! this event is logged, so these fields are not included. Span fields can be
 //! recorded later as long as they are declared along with the span.
 //!
@@ -476,7 +476,7 @@
 <span class="kw">use </span>config::Config;
 
 <span class="kw">use </span>clap::Parser;
-<span class="kw">use </span>lk_session_hashmap::{config::Config <span class="kw">as </span>SessionConfig, HashmapKeyCache};
+<span class="kw">use </span>lk_session_mongodb::{config::Config <span class="kw">as </span>SessionConfig, MongodbSessionCache};
 <span class="kw">use </span>lock_keeper_key_server::{
     config::Config <span class="kw">as </span>ServerConfig, server::start_lock_keeper_server, LockKeeperServerError,
 };
@@ -537,8 +537,8 @@
     <span class="macro">info!</span>(<span class="string">&quot;Database config Settings: {:?}&quot;</span>, database_config);
 
     <span class="kw">let </span>session_config = SessionConfig::from_file(config.session_cache).unwrap();
-    <span class="kw">let </span>hashmap_cache = HashmapKeyCache::new(session_config);
-    start_lock_keeper_server(server_config, mongo, hashmap_cache)
+    <span class="kw">let </span>session_cache = MongodbSessionCache::new(session_config).<span class="kw">await</span>.unwrap();
+    start_lock_keeper_server(server_config, mongo, session_cache)
         .<span class="kw">await
         </span>.unwrap();
 }

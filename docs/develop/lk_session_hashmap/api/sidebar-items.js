@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"struct":[["HashmapKeyCache","Cache holding session keys, per user, after authentication. Maps [`UserId`]s to [`OpaqueSessionKey`]s. Keys are tagged with a timestamp. A key is considered invalid after the `expiration` time has elapsed."]]};

@@ -322,6 +322,30 @@
 <span id="322">322</span>
 <span id="323">323</span>
 <span id="324">324</span>
+<span id="325">325</span>
+<span id="326">326</span>
+<span id="327">327</span>
+<span id="328">328</span>
+<span id="329">329</span>
+<span id="330">330</span>
+<span id="331">331</span>
+<span id="332">332</span>
+<span id="333">333</span>
+<span id="334">334</span>
+<span id="335">335</span>
+<span id="336">336</span>
+<span id="337">337</span>
+<span id="338">338</span>
+<span id="339">339</span>
+<span id="340">340</span>
+<span id="341">341</span>
+<span id="342">342</span>
+<span id="343">343</span>
+<span id="344">344</span>
+<span id="345">345</span>
+<span id="346">346</span>
+<span id="347">347</span>
+<span id="348">348</span>
 </pre><pre class="rust"><code><span class="doccomment">/// This module provides the necessary encryption keys to securely encrypt
 /// secrets in storage.
 /// A [`StorageKey`] that can be used by the client to encrypt secrets and
@@ -330,7 +354,7 @@
     generic::{AssociatedData, EncryptionKey},
     CryptoError, Encrypted, MasterKey, SigningKeyPair,
 };
-<span class="kw">use crate</span>::{types::database::user::UserId, LockKeeperError};
+<span class="kw">use crate</span>::{crypto::OpaqueSessionKey, types::database::user::UserId, LockKeeperError};
 <span class="kw">use </span>rand::{CryptoRng, RngCore};
 <span class="kw">use </span>std::path::Path;
 <span class="kw">use </span>zeroize::{Zeroize, ZeroizeOnDrop};
@@ -382,6 +406,17 @@
             signing_key_pair.context(),
         )
         .map_err(LockKeeperError::Crypto)
+    }
+
+    <span class="doccomment">/// Encrypt the given [`OpaqueSessionKey`] under the
+    /// [`RemoteStorageKey`] using an AEAD scheme.
+    </span><span class="kw">pub fn </span>encrypt_session_key(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        rng: <span class="kw-2">&amp;mut </span>(<span class="kw">impl </span>CryptoRng + RngCore),
+        session_key: OpaqueSessionKey,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Encrypted&lt;OpaqueSessionKey&gt;, LockKeeperError&gt; {
+        Encrypted::encrypt(rng, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, session_key.clone(), session_key.context())
+            .map_err(LockKeeperError::Crypto)
     }
 }
 
@@ -471,6 +506,7 @@
 </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">mod </span>test {
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="kw">use </span><span class="kw">crate</span>::crypto::KeyId;
+    <span class="kw">use </span>generic_array::GenericArray;
     <span class="kw">use </span>rand::{rngs::StdRng, Rng, SeedableRng};
     <span class="kw">use </span>std::collections::HashSet;
 
@@ -643,6 +679,18 @@
 
         <span class="kw">let </span>result = encrypted.decrypt_signing_key_by_server(<span class="kw-2">&amp;</span>encryption_key, user_id, key_id)<span class="question-mark">?</span>;
         <span class="macro">assert_eq!</span>(result, signing_key);
+        <span class="prelude-val">Ok</span>(())
+    }
+
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>session_key_encryption_works() -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperError&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>rng = rand::thread_rng();
+        <span class="kw">let </span>encryption_key = RemoteStorageKey::generate(<span class="kw-2">&amp;mut </span>rng);
+        <span class="kw">let </span>session_key = OpaqueSessionKey::try_from(GenericArray::from([<span class="number">42</span>; <span class="number">64</span>]))<span class="question-mark">?</span>;
+        <span class="kw">let </span>encrypted = encryption_key.encrypt_session_key(<span class="kw-2">&amp;mut </span>rng, session_key.clone())<span class="question-mark">?</span>;
+
+        <span class="kw">let </span>result = encrypted.decrypt_session_key(<span class="kw-2">&amp;</span>encryption_key)<span class="question-mark">?</span>;
+        <span class="macro">assert_eq!</span>(result, session_key);
         <span class="prelude-val">Ok</span>(())
     }
 }

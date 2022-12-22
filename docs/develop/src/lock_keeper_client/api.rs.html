@@ -411,7 +411,7 @@
         <span class="kw">let </span>client_channel = <span class="self">Self</span>::create_authenticated_channel(
             <span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(),
             <span class="kw-2">&amp;</span>metadata,
-            <span class="self">self</span>.session_key.clone(),
+            <span class="self">self</span>.session_key().clone(),
             <span class="self">self</span>.rng.clone(),
         )
         .<span class="kw">await</span><span class="question-mark">?</span>;
@@ -446,7 +446,7 @@
     ) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperResponse&lt;()&gt;, LockKeeperClientError&gt; {
         <span class="kw">let </span>rng = StdRng::from_entropy();
         <span class="kw">let </span><span class="kw-2">mut </span>client = <span class="self">Self</span>::connect(config).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="kw">let </span>metadata = RequestMetadata::new(account_name, ClientAction::Register, <span class="prelude-val">None</span>);
+        <span class="kw">let </span>metadata = RequestMetadata::new(account_name, ClientAction::Register, <span class="prelude-val">None</span>, <span class="prelude-val">None</span>);
         <span class="kw">let </span>rng_arc_mutex = Arc::new(Mutex::new(rng));
         <span class="kw">let </span>client_channel = <span class="self">Self</span>::create_channel(<span class="kw-2">&amp;mut </span>client, <span class="kw-2">&amp;</span>metadata).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">let </span>result = <span class="self">Self</span>::handle_registration(
@@ -468,7 +468,7 @@
                 <span class="kw">let </span>client_channel = LockKeeperClient::create_authenticated_channel(
                     <span class="kw-2">&amp;mut </span>client.tonic_client(),
                     <span class="kw-2">&amp;</span>request_metadata,
-                    client.session_key,
+                    client.session_key().clone(),
                     rng_arc_mutex.clone(),
                 )
                 .<span class="kw">await</span><span class="question-mark">?</span>;
@@ -505,7 +505,7 @@
         <span class="kw">let </span>client_channel = <span class="self">Self</span>::create_authenticated_channel(
             <span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(),
             <span class="kw-2">&amp;</span>metadata,
-            <span class="self">self</span>.session_key.clone(),
+            <span class="self">self</span>.session_key().clone(),
             <span class="self">self</span>.rng.clone(),
         )
         .<span class="kw">await</span><span class="question-mark">?</span>;
@@ -536,7 +536,7 @@
         <span class="kw">let </span>client_channel = <span class="self">Self</span>::create_authenticated_channel(
             <span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(),
             <span class="kw-2">&amp;</span>metadata,
-            <span class="self">self</span>.session_key.clone(),
+            <span class="self">self</span>.session_key().clone(),
             <span class="self">self</span>.rng.clone(),
         )
         .<span class="kw">await</span><span class="question-mark">?</span>;
@@ -563,7 +563,7 @@
         <span class="kw">let </span>client_channel = <span class="self">Self</span>::create_authenticated_channel(
             <span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(),
             <span class="kw-2">&amp;</span>metadata,
-            <span class="self">self</span>.session_key.clone(),
+            <span class="self">self</span>.session_key().clone(),
             <span class="self">self</span>.rng.clone(),
         )
         .<span class="kw">await</span><span class="question-mark">?</span>;
@@ -580,7 +580,7 @@
         <span class="kw">let </span>client_channel = <span class="self">Self</span>::create_authenticated_channel(
             <span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(),
             <span class="kw-2">&amp;</span>metadata,
-            <span class="self">self</span>.session_key.clone(),
+            <span class="self">self</span>.session_key().clone(),
             <span class="self">self</span>.rng.clone(),
         )
         .<span class="kw">await</span><span class="question-mark">?</span>;
@@ -600,7 +600,7 @@
         <span class="kw">let </span>client_channel = <span class="self">Self</span>::create_authenticated_channel(
             <span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(),
             <span class="kw-2">&amp;</span>metadata,
-            <span class="self">self</span>.session_key.clone(),
+            <span class="self">self</span>.session_key().clone(),
             <span class="self">self</span>.rng.clone(),
         )
         .<span class="kw">await</span><span class="question-mark">?</span>;
@@ -617,7 +617,7 @@
         <span class="kw">let </span>client_channel = <span class="self">Self</span>::create_authenticated_channel(
             <span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(),
             <span class="kw-2">&amp;</span>metadata,
-            <span class="self">self</span>.session_key.clone(),
+            <span class="self">self</span>.session_key().clone(),
             <span class="self">self</span>.rng.clone(),
         )
         .<span class="kw">await</span><span class="question-mark">?</span>;
@@ -638,7 +638,7 @@
         <span class="kw">let </span>client_channel = <span class="self">Self</span>::create_authenticated_channel(
             <span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(),
             <span class="kw-2">&amp;</span>metadata,
-            <span class="self">self</span>.session_key.clone(),
+            <span class="self">self</span>.session_key().clone(),
             <span class="self">self</span>.rng.clone(),
         )
         .<span class="kw">await</span><span class="question-mark">?</span>;
@@ -672,7 +672,7 @@
         <span class="kw">let </span>client_channel = <span class="self">Self</span>::create_authenticated_channel(
             <span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(),
             <span class="kw-2">&amp;</span>metadata,
-            <span class="self">self</span>.session_key.clone(),
+            <span class="self">self</span>.session_key().clone(),
             <span class="self">self</span>.rng.clone(),
         )
         .<span class="kw">await</span><span class="question-mark">?</span>;

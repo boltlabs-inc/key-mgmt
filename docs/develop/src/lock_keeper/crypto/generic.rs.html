@@ -700,7 +700,7 @@
 
     <span class="attribute">#[allow(unused)]
     #[zeroize(skip)]
-    </span>context: AssociatedData,
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) context: AssociatedData,
 }
 
 <span class="kw">impl </span>EncryptionKey {

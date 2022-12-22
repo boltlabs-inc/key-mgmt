@@ -94,14 +94,6 @@
 <span id="94">94</span>
 <span id="95">95</span>
 <span id="96">96</span>
-<span id="97">97</span>
-<span id="98">98</span>
-<span id="99">99</span>
-<span id="100">100</span>
-<span id="101">101</span>
-<span id="102">102</span>
-<span id="103">103</span>
-<span id="104">104</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{
     client::{AuthenticateResult, LockKeeperClient, Password},
     LockKeeperResponse,
@@ -118,9 +110,7 @@
         operations::authenticate::{client, server},
     },
 };
-<span class="kw">use </span>opaque_ke::{
-    ClientLogin, ClientLoginFinishParameters, ClientLoginFinishResult, ClientLoginStartResult,
-};
+<span class="kw">use </span>opaque_ke::{ClientLogin, ClientLoginFinishParameters, ClientLoginStartResult};
 <span class="kw">use </span>rand::rngs::StdRng;
 <span class="kw">use </span>tokio::sync::Mutex;
 
@@ -141,7 +131,7 @@
             authenticate_start(<span class="kw-2">&amp;mut </span>channel, <span class="kw-2">&amp;</span>client_login_start_result, account_name).<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="comment">// Handle finish step
-        </span><span class="kw">let </span>client_login_finish_result = authenticate_finish(
+        </span><span class="kw">let </span>auth_result = authenticate_finish(
             <span class="kw-2">&amp;mut </span>channel,
             account_name,
             password,
@@ -150,16 +140,7 @@
         )
         .<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="kw">let </span>session_key: OpaqueSessionKey = client_login_finish_result.session_key.try_into()<span class="question-mark">?</span>;
-
-        <span class="kw">let </span>master_key = MasterKey::derive_master_key(client_login_finish_result.export_key)<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(LockKeeperResponse::from_channel(
-            channel,
-            AuthenticateResult {
-                session_key,
-                master_key,
-            },
-        ))
+        <span class="prelude-val">Ok</span>(LockKeeperResponse::from_channel(channel, auth_result))
     }
 }
 
@@ -184,7 +165,7 @@
     password: <span class="kw-2">&amp;</span>Password,
     client_start_result: ClientLoginStartResult&lt;OpaqueCipherSuite&gt;,
     server_start_result: server::AuthenticateStart,
-) -&gt; <span class="prelude-ty">Result</span>&lt;ClientLoginFinishResult&lt;OpaqueCipherSuite&gt;, LockKeeperClientError&gt; {
+) -&gt; <span class="prelude-ty">Result</span>&lt;AuthenticateResult, LockKeeperClientError&gt; {
     <span class="kw">let </span>client_login_finish_result = client_start_result.state.finish(
         password.as_bytes(),
         server_start_result.credential_response,
@@ -200,11 +181,14 @@
 
     <span class="kw">let </span>server_finish: server::AuthenticateFinish = channel.receive().<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">if </span>server_finish.success {
-        <span class="prelude-val">Ok</span>(client_login_finish_result)
-    } <span class="kw">else </span>{
-        <span class="prelude-val">Err</span>(LockKeeperClientError::ServerReturnedFailure)
-    }
+    <span class="kw">let </span>session_key: OpaqueSessionKey = client_login_finish_result.session_key.try_into()<span class="question-mark">?</span>;
+    <span class="kw">let </span>master_key = MasterKey::derive_master_key(client_login_finish_result.export_key)<span class="question-mark">?</span>;
+
+    <span class="prelude-val">Ok</span>(AuthenticateResult {
+        session_id: server_finish.session_id,
+        session_key,
+        master_key,
+    })
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="lock_keeper_client" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0 (69f9c33d7 2022-12-12)" ></div></body></html>

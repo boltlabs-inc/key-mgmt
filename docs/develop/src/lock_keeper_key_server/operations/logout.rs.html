@@ -38,16 +38,20 @@
 <span id="38">38</span>
 <span id="39">39</span>
 <span id="40">40</span>
+<span id="41">41</span>
+<span id="42">42</span>
+<span id="43">43</span>
+<span id="44">44</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{
     server::{Context, Operation},
     LockKeeperServerError,
 };
 
-<span class="kw">use </span><span class="kw">crate</span>::database::DataStore;
+<span class="kw">use crate</span>::{database::DataStore, server::session_cache::SessionCacheError};
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>lock_keeper::{
     infrastructure::channel::{Authenticated, ServerChannel},
-    types::operations::logout::{client, server},
+    types::operations::logout::server,
 };
 <span class="kw">use </span>rand::rngs::StdRng;
 
@@ -62,15 +66,19 @@
         context: <span class="kw-2">&amp;mut </span>Context&lt;DB&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
         <span class="comment">// Receive UserId from client
-        </span><span class="kw">let </span>request: client::Request = channel.receive().<span class="kw">await</span><span class="question-mark">?</span>;
+        </span><span class="kw">let </span>session_id = channel
+            .metadata()
+            .session_id()
+            .ok_or(SessionCacheError::MissingSession)<span class="question-mark">?</span>;
 
         <span class="comment">// Expire the user&#39;s session key
         </span>{
             context
-                .session_key_cache
+                .session_cache
                 .lock()
                 .<span class="kw">await
-                </span>.delete_session(request.user_id)<span class="question-mark">?</span>;
+                </span>.delete_session(session_id.clone())
+                .<span class="kw">await</span><span class="question-mark">?</span>;
         }
 
         <span class="kw">let </span>reply = server::Response { success: <span class="bool-val">true </span>};

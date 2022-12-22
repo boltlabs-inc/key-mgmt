@@ -116,7 +116,10 @@
 <span id="116">116</span>
 <span id="117">117</span>
 <span id="118">118</span>
-</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::server::session_key_cache::SessionCacheError;
+<span id="119">119</span>
+<span id="120">120</span>
+<span id="121">121</span>
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::server::session_cache::SessionCacheError;
 <span class="kw">use </span>std::path::PathBuf;
 <span class="kw">use </span>thiserror::Error;
 <span class="kw">use </span>tonic::Status;
@@ -150,6 +153,8 @@
     </span>StorageKeyNotSet,
     <span class="attribute">#[error(<span class="string">&quot;Key ID does not match any stored arbitrary key&quot;</span>)]
     </span>KeyNotFound,
+    <span class="attribute">#[error(<span class="string">&quot;Session ID was not found in request metadata&quot;</span>)]
+    </span>SessionIdNotFound,
 
     <span class="comment">// Wrapped errors
     </span><span class="attribute">#[error(transparent)]
@@ -194,16 +199,17 @@
 
 <span class="kw">impl </span>From&lt;LockKeeperServerError&gt; <span class="kw">for </span>Status {
     <span class="kw">fn </span>from(error: LockKeeperServerError) -&gt; Status {
-        <span class="kw">use </span><span class="kw">crate</span>::server::session_key_cache::SessionCacheError::<span class="kw-2">*</span>;
+        <span class="kw">use </span><span class="kw">crate</span>::server::session_cache::SessionCacheError::<span class="kw-2">*</span>;
 
         <span class="kw">match </span>error {
-            LockKeeperServerError::SessionCache(ExpiredSessionKey)
-            | LockKeeperServerError::SessionCache(MissingSessionKey) =&gt; {
+            LockKeeperServerError::SessionCache(ExpiredSession)
+            | LockKeeperServerError::SessionCache(MissingSession) =&gt; {
                 Status::unauthenticated(<span class="string">&quot;No session key for this user&quot;</span>)
             }
             <span class="comment">// Errors that are safe to return to the client
             </span>LockKeeperServerError::AccountAlreadyRegistered
             | LockKeeperServerError::InvalidAccount
+            | LockKeeperServerError::SessionIdNotFound
             | LockKeeperServerError::KeyNotFound =&gt; Status::invalid_argument(error.to_string()),
 
             LockKeeperServerError::StorageKeyAlreadySet

@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"struct":[["Request","send user ID and material to import"]]};
