@@ -8,7 +8,7 @@ edition = "2021"
 lock-keeper = { version = "0.2.0", path = "../../lock-keeper" }
 lock-keeper-key-server = { version = "0.2.0", path = "../../lock-keeper-key-server" }
 lock-keeper-mongodb = { version = "0.2.0", path = "../../persistence/lock-keeper-mongodb" }
-lk-session-hashmap = { version = "0.2.0", path = "../../persistence/lk-session-hashmap" }
+lk-session-mongodb = { version = "0.2.0", path = "../../persistence/lk-session-mongodb" }
 tracing-appender = "0.2"
 
 # Workspace dependencies

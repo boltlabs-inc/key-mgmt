@@ -39,14 +39,14 @@ pub use storage_key::{RemoteStorageKey, StorageKey};
 /// This key should not be stored or saved beyond the lifetime of a single
 /// authentication session. It should not be passed out to the local calling
 /// application.
-#[derive(Debug, Clone, Zeroize, ZeroizeOnDrop)]
+#[derive(Debug, Clone, PartialEq, Eq, Zeroize, ZeroizeOnDrop)]
 pub struct OpaqueSessionKey(EncryptionKey);
 
 impl TryFrom<GenericArray<u8, U64>> for OpaqueSessionKey {
     type Error = LockKeeperError;
 
     fn try_from(arr: GenericArray<u8, U64>) -> Result<Self, Self::Error> {
-        let context = AssociatedData::new().with_str("OPAQUE-derived Lock Keeper session key");
+        let context = AssociatedData::new().with_str(Self::domain_separator());
         Ok(Self(EncryptionKey::from_bytes(
             arr[..32]
                 .try_into()
@@ -65,6 +65,57 @@ impl OpaqueSessionKey {
         message: Message,
     ) -> Result<Encrypted<Message>, CryptoError> {
         Encrypted::encrypt(rng, &self.0, message, &AssociatedData::new())
+    }
+
+    fn context(&self) -> &AssociatedData {
+        &self.0.context
+    }
+
+    pub(crate) fn domain_separator() -> &'static str {
+        "OPAQUE-derived Lock Keeper session key"
+    }
+}
+
+impl From<OpaqueSessionKey> for Vec<u8> {
+    fn from(key: OpaqueSessionKey) -> Self {
+        OpaqueSessionKey::domain_separator()
+            .as_bytes()
+            .iter()
+            .copied()
+            .chain::<Vec<u8>>(key.0.to_owned().into())
+            .collect()
+    }
+}
+
+impl TryFrom<Vec<u8>> for OpaqueSessionKey {
+    type Error = CryptoError;
+    fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
+        let expected_domain_sep = OpaqueSessionKey::domain_separator().as_bytes();
+        let domain_separator = bytes
+            .get(0..expected_domain_sep.len())
+            .ok_or(CryptoError::ConversionError)?;
+        if expected_domain_sep != domain_separator {
+            return Err(CryptoError::ConversionError);
+        }
+
+        // Take off the domain separator
+        let key_bytes = bytes
+            .get(expected_domain_sep.len()..)
+            .ok_or(CryptoError::ConversionError)?
+            .to_vec();
+
+        Ok(Self(key_bytes.try_into()?))
+    }
+}
+
+impl Encrypted<OpaqueSessionKey> {
+    /// Decrypt a session key server-side.
+    pub fn decrypt_session_key(
+        self,
+        remote_storage_key: &RemoteStorageKey,
+    ) -> Result<OpaqueSessionKey, LockKeeperError> {
+        let decrypted = self.decrypt_inner(&remote_storage_key.0)?;
+        Ok(decrypted)
     }
 }
 
@@ -434,6 +485,19 @@ mod test {
 
         assert_eq!(encrypted_message, result_from_message.unwrap());
 
+        Ok(())
+    }
+
+    #[test]
+    fn session_key_to_vec_u8_conversion_works() -> Result<(), LockKeeperError> {
+        for _ in 0..1000 {
+            let session_key = OpaqueSessionKey::try_from(GenericArray::from([42; 64]))?;
+
+            let vec: Vec<u8> = session_key.clone().into();
+            let output_session_key = vec.try_into()?;
+
+            assert_eq!(session_key, output_session_key);
+        }
         Ok(())
     }
 }

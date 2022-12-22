@@ -8,5 +8,5 @@ pub mod api;
 pub mod config;
 pub mod error;
 
-pub use api::HashmapKeyCache;
+pub use api::MongodbSessionCache;
 pub use error::Error;

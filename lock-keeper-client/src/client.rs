@@ -12,9 +12,9 @@ use lock_keeper::{
     types::{
         database::user::{AccountName, UserId},
         operations::{
-            logout::{client as logout_client, server as logout_server},
+            logout::server as logout_server,
             retrieve_storage_key::{client, server},
-            ClientAction, RequestMetadata,
+            ClientAction, RequestMetadata, SessionId,
         },
     },
 };
@@ -43,6 +43,13 @@ impl Password {
     }
 }
 
+/// A single session with the LockKeeper key server.
+#[derive(Debug)]
+pub(crate) struct Session {
+    session_id: SessionId,
+    session_key: OpaqueSessionKey,
+}
+
 /// A `LockKeeperClient` is an abstraction over client operations; that is, it
 /// wraps around the state and infrastructure necessary to make requests to the
 /// key server. It handles confidentiality, integrity, and authentication of
@@ -54,7 +61,7 @@ impl Password {
 #[derive(Debug)]
 #[allow(unused)]
 pub struct LockKeeperClient {
-    pub(crate) session_key: OpaqueSessionKey,
+    session: Session,
     config: Config,
     account_name: AccountName,
     user_id: UserId,
@@ -72,6 +79,7 @@ type LockKeeperRpcClientInner = hyper::Client<
 >;
 
 pub(crate) struct AuthenticateResult {
+    pub(crate) session_id: SessionId,
     pub(crate) session_key: OpaqueSessionKey,
     pub(crate) master_key: MasterKey,
 }
@@ -86,6 +94,11 @@ impl LockKeeperClient {
     /// Get [`AccountName`] for the authenticated client.
     pub fn account_name(&self) -> &AccountName {
         &self.account_name
+    }
+
+    /// Get [`OpaqueSessionKey`] for the authenticated client.
+    pub fn session_key(&self) -> &OpaqueSessionKey {
+        &self.session.session_key
     }
 
     pub(crate) fn tonic_client(&self) -> LockKeeperRpcClient<LockKeeperRpcClientInner> {
@@ -119,7 +132,7 @@ impl LockKeeperClient {
     ) -> Result<LockKeeperResponse<Self>> {
         // Authenticate with key server
         let mut rng = StdRng::from_entropy();
-        let metadata = RequestMetadata::new(account_name, ClientAction::Authenticate, None);
+        let metadata = RequestMetadata::new(account_name, ClientAction::Authenticate, None, None);
         let rng_arc_mutex = Arc::new(Mutex::new(rng));
         let mut client_channel = Self::create_channel(&mut client, &metadata).await?;
         let mut auth_result = Self::handle_authentication(
@@ -131,7 +144,12 @@ impl LockKeeperClient {
         .await?;
 
         // Get user ID over an authenticated channel
-        let metadata = RequestMetadata::new(account_name, ClientAction::GetUserId, None);
+        let metadata = RequestMetadata::new(
+            account_name,
+            ClientAction::GetUserId,
+            None,
+            Some(&auth_result.data.session_id),
+        );
         let mut authenticated_channel = Self::create_authenticated_channel(
             &mut client,
             &metadata,
@@ -140,10 +158,14 @@ impl LockKeeperClient {
         )
         .await?;
         let user_id = Self::handle_get_user_id(authenticated_channel).await?;
+        let session = Session {
+            session_id: auth_result.data.session_id,
+            session_key: auth_result.data.session_key,
+        };
 
         // Create and return `LockKeeperClient`
         let client = LockKeeperClient {
-            session_key: auth_result.data.session_key,
+            session,
             config: config.clone(),
             tonic_client: client,
             rng: rng_arc_mutex,
@@ -161,7 +183,12 @@ impl LockKeeperClient {
     }
 
     pub(crate) fn create_metadata(&self, action: ClientAction) -> RequestMetadata {
-        RequestMetadata::new(self.account_name(), action, Some(self.user_id()))
+        RequestMetadata::new(
+            self.account_name(),
+            action,
+            Some(self.user_id()),
+            Some(&self.session.session_id),
+        )
     }
 
     /// Helper to create the appropriate [`ClientChannel`] to send to tonic
@@ -266,12 +293,6 @@ impl LockKeeperClient {
         &self,
         mut channel: ClientChannel<Authenticated<StdRng>>,
     ) -> Result<LockKeeperResponse<()>> {
-        // Send UserId to server
-        let request = logout_client::Request {
-            user_id: self.user_id().clone(),
-        };
-        channel.send(request).await?;
-
         // Get encrypted storage key from server
         let response: logout_server::Response = channel.receive().await?;
         if response.success {
@@ -289,7 +310,7 @@ impl LockKeeperClient {
         let mut channel = Self::create_authenticated_channel(
             &mut self.tonic_client(),
             &metadata,
-            self.session_key.clone(),
+            self.session_key().clone(),
             self.rng.clone(),
         )
         .await?;

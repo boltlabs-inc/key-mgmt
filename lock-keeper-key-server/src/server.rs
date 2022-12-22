@@ -1,7 +1,7 @@
 pub(crate) mod opaque_storage;
 mod operation;
 mod service;
-pub mod session_key_cache;
+pub mod session_cache;
 
 pub(crate) use operation::Operation;
 pub use service::start_lock_keeper_server;
@@ -22,7 +22,7 @@ use lock_keeper::{
     },
 };
 
-use crate::{database::DataStore, server::session_key_cache::SessionCache};
+use crate::{database::DataStore, server::session_cache::SessionCache};
 use rand::{rngs::StdRng, SeedableRng};
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -32,7 +32,7 @@ pub struct LockKeeperKeyServer<DB: DataStore> {
     config: Arc<Config>,
     db: Arc<DB>,
     rng: Arc<Mutex<StdRng>>,
-    session_key_cache: Arc<Mutex<dyn SessionCache>>,
+    session_cache: Arc<Mutex<dyn SessionCache>>,
 }
 
 impl<DB: DataStore> LockKeeperKeyServer<DB> {
@@ -47,7 +47,7 @@ impl<DB: DataStore> LockKeeperKeyServer<DB> {
             config: Arc::new(config),
             db,
             rng: Arc::new(Mutex::new(rng)),
-            session_key_cache,
+            session_cache: session_key_cache,
         })
     }
 
@@ -57,7 +57,7 @@ impl<DB: DataStore> LockKeeperKeyServer<DB> {
             db: self.db.clone(),
             rng: self.rng.clone(),
             key_id: None,
-            session_key_cache: self.session_key_cache.clone(),
+            session_cache: self.session_cache.clone(),
         }
     }
 }
@@ -68,7 +68,7 @@ pub(crate) struct Context<DB: DataStore> {
     pub rng: Arc<Mutex<StdRng>>,
     pub key_id: Option<KeyId>,
     /// Our user session keys are held in this cache after authentication.
-    pub session_key_cache: Arc<Mutex<dyn SessionCache>>,
+    pub session_cache: Arc<Mutex<dyn SessionCache>>,
 }
 
 #[tonic::async_trait]
@@ -165,6 +165,11 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
             .ok_or(lock_keeper::LockKeeperError::MetadataNotFound)?
             .try_into()?;
 
+        let session_id = metadata
+            .session_id()
+            .ok_or(LockKeeperServerError::SessionIdNotFound)?
+            .clone();
+
         let user_id = context
             .db
             .find_user(metadata.account_name())
@@ -177,10 +182,12 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         let (channel, response) = self.create_unauthenticated_channel(request).await?;
 
         let session_key = {
-            let mut session_cache = context.session_key_cache.lock().await;
-            session_cache
-                .find_session(user_id.clone())
-                .map_err(|e| Status::internal(e.to_string()))?
+            let session_cache = context.session_cache.lock().await;
+            let session = session_cache
+                .find_session(session_id, user_id.clone())
+                .await
+                .map_err(|e| Status::internal(e.to_string()))?;
+            session.session_key(&context)?
         };
 
         let mut channel = channel.into_authenticated(session_key, context.rng.clone());
@@ -303,11 +310,17 @@ impl<DB: DataStore> LockKeeperKeyServer<DB> {
             .user_id()
             .ok_or(LockKeeperServerError::InvalidAccount)?
             .clone();
+        let session_id = channel
+            .metadata()
+            .session_id()
+            .ok_or(LockKeeperServerError::SessionIdNotFound)?
+            .clone();
         let context = self.context();
 
         let session_key = {
-            let mut session_cache = context.session_key_cache.lock().await;
-            session_cache.find_session(user_id)?
+            let session_cache = context.session_cache.lock().await;
+            let session = session_cache.find_session(session_id, user_id).await?;
+            session.session_key(&context)?
         };
 
         let channel = channel.into_authenticated(session_key, context.rng.clone());

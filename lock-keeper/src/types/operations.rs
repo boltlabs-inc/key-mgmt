@@ -14,9 +14,14 @@ pub mod retrieve_secret;
 pub mod retrieve_storage_key;
 
 use crate::{
-    types::database::user::{AccountName, UserId},
+    crypto::CryptoError,
+    types::database::{
+        user::{AccountName, UserId},
+        HexBytes,
+    },
     LockKeeperError,
 };
+use rand::{CryptoRng, Rng, RngCore};
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumIter, EnumString};
 use tonic::metadata::{Ascii, MetadataValue};
@@ -62,19 +67,55 @@ pub trait ConvertMessage: Sized + for<'a> Deserialize<'a> + Serialize {
 // `Deserialize`.
 impl<T: for<'a> Deserialize<'a> + Serialize> ConvertMessage for T {}
 
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(try_from = "HexBytes", into = "HexBytes")]
+pub struct SessionId(Box<[u8; 16]>);
+
+impl SessionId {
+    pub fn new(rng: &mut (impl CryptoRng + RngCore)) -> Result<Self, LockKeeperError> {
+        // Generate random bytes
+        let mut id = [0_u8; 16];
+        rng.try_fill(&mut id)
+            .map_err(|_| CryptoError::RandomNumberGeneratorFailed)?;
+
+        Ok(Self(Box::new(id)))
+    }
+}
+
+impl From<SessionId> for HexBytes {
+    fn from(session_id: SessionId) -> Self {
+        (*session_id.0).into()
+    }
+}
+
+impl TryFrom<HexBytes> for SessionId {
+    type Error = LockKeeperError;
+
+    fn try_from(bytes: HexBytes) -> Result<Self, Self::Error> {
+        Ok(SessionId(Box::new(bytes.try_into()?)))
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct RequestMetadata {
     account_name: AccountName,
     action: ClientAction,
     user_id: Option<UserId>,
+    session_id: Option<SessionId>,
 }
 
 impl RequestMetadata {
-    pub fn new(account_name: &AccountName, action: ClientAction, user_id: Option<&UserId>) -> Self {
+    pub fn new(
+        account_name: &AccountName,
+        action: ClientAction,
+        user_id: Option<&UserId>,
+        session_id: Option<&SessionId>,
+    ) -> Self {
         Self {
             account_name: account_name.clone(),
             action,
             user_id: user_id.cloned(),
+            session_id: session_id.cloned(),
         }
     }
 
@@ -88,6 +129,10 @@ impl RequestMetadata {
 
     pub fn user_id(&self) -> Option<&UserId> {
         self.user_id.as_ref()
+    }
+
+    pub fn session_id(&self) -> Option<&SessionId> {
+        self.session_id.as_ref()
     }
 
     pub fn set_user_id(&mut self, user_id: UserId) {
@@ -135,5 +180,25 @@ impl TryFrom<&MetadataValue<Ascii>> for ResponseMetadata {
         let bytes = value.as_bytes();
         let metadata = serde_json::from_slice(bytes)?;
         Ok(metadata)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn session_key_to_hex_bytes_conversion_works() -> Result<(), LockKeeperError> {
+        let mut rng = rand::thread_rng();
+
+        for _ in 0..1000 {
+            let session_id = SessionId::new(&mut rng)?;
+
+            let bytes: HexBytes = session_id.clone().into();
+            let output_session_id = bytes.try_into()?;
+
+            assert_eq!(session_id, output_session_id);
+        }
+        Ok(())
     }
 }

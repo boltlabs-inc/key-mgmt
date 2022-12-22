@@ -114,7 +114,7 @@ To run the server locally, first make sure MongoDB is running. You can run Mongo
 
 Then run:
 ```bash
-cargo run --bin key-server-cli ./dev/config/Binary.toml
+cargo run --bin key-server-cli ./dev/config/local/Binary.toml
 ```
 
 ## TLS client authentication

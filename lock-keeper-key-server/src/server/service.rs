@@ -2,7 +2,7 @@ use crate::{
     config::Config,
     database::DataStore,
     error::LockKeeperServerError,
-    server::{session_key_cache::SessionCache, LockKeeperKeyServer},
+    server::{session_cache::SessionCache, LockKeeperKeyServer},
 };
 
 use hyper::server::conn::Http;

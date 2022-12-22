@@ -32,8 +32,12 @@ pub enum LockKeeperTestError {
     LockKeeperServer(#[from] lock_keeper_key_server::LockKeeperServerError),
     #[error("LockKeeperMongoDb error: {0:?}")]
     LockKeeperMongoDb(#[from] lock_keeper_mongodb::error::Error),
+    #[error("LockKeeperMongoDb error: {0:?}")]
+    LkSessionMongodb(#[from] lk_session_mongodb::Error),
     #[error("MongoDB error: {0:?}")]
     MongoDb(#[from] mongodb::error::Error),
+    #[error("RandError: {0:?}")]
+    SessionCache(#[from] lock_keeper_key_server::server::session_cache::SessionCacheError),
     #[error("RandError: {0:?}")]
     Rand(#[from] rand::Error),
     #[error(transparent)]
