@@ -1,4 +1,4 @@
-use crate::{api::LocalStorage, LockKeeperClient, LockKeeperClientError, LockKeeperResponse};
+use crate::{api::LocalStorage, LockKeeperClient, LockKeeperClientError};
 use lock_keeper::{
     crypto::{KeyId, Secret, StorageKey},
     infrastructure::channel::{Authenticated, ClientChannel},
@@ -10,6 +10,7 @@ use lock_keeper::{
 use rand::rngs::StdRng;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use uuid::Uuid;
 
 #[derive(Debug)]
 pub struct GenerateResult {
@@ -21,9 +22,10 @@ impl LockKeeperClient {
     pub(crate) async fn handle_generate_secret(
         &self,
         mut channel: ClientChannel<Authenticated<StdRng>>,
-    ) -> Result<LockKeeperResponse<GenerateResult>, LockKeeperClientError> {
+        request_id: Uuid,
+    ) -> Result<GenerateResult, LockKeeperClientError> {
         // Retrieve the storage key
-        let storage_key = self.retrieve_storage_key().await?;
+        let storage_key = self.retrieve_storage_key(request_id).await?;
 
         // Generate step: get new KeyId from server
         let key_id = get_key_id(&mut channel, self.user_id()).await?;
@@ -37,12 +39,10 @@ impl LockKeeperClient {
         )
         .await?;
 
-        let result = GenerateResult {
+        Ok(GenerateResult {
             key_id,
             local_storage: wrapped_secret,
-        };
-
-        Ok(LockKeeperResponse::from_channel(channel, result))
+        })
     }
 }
 

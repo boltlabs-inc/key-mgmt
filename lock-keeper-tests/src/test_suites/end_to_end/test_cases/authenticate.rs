@@ -32,13 +32,21 @@ pub async fn run_tests(config: &Config, filters: &TestFilters) -> Result<Vec<Tes
 async fn multiple_sessions_from_same_client_allowed(config: Config) -> Result<()> {
     let state = init_test_state(&config).await?;
 
-    let _first_login = authenticate(&state).await?;
-    let _second_login = authenticate(&state).await?;
+    let _first_login = authenticate(&state).await.result?;
+    let second_login = authenticate(&state).await;
+    let _ = second_login.result?;
+    let request_id = second_login.metadata.unwrap().request_id;
     // TODO: Successful authentication now ends with the `GetUserId` action.
     // At some point we need to update the audit event checks so that they're not
     // based on the order of audit events. Once that happens, we can change this
     // back to `Authenticate`.
-    check_audit_events(&state, EventStatus::Successful, ClientAction::GetUserId).await?;
+    check_audit_events(
+        &state,
+        EventStatus::Successful,
+        ClientAction::GetUserId,
+        request_id,
+    )
+    .await?;
 
     Ok(())
 }
@@ -53,8 +61,15 @@ async fn cannot_authenticate_with_wrong_password(config: Config) -> Result<()> {
         config,
     };
     let login = authenticate(&fake_state).await;
+    let request_id = login.metadata.clone().unwrap().request_id;
     compare_errors(login, LockKeeperClientError::InvalidLogin);
-    check_audit_events(&state, EventStatus::Failed, ClientAction::Authenticate).await?;
+    check_audit_events(
+        &state,
+        EventStatus::Failed,
+        ClientAction::Authenticate,
+        request_id,
+    )
+    .await?;
 
     Ok(())
 }

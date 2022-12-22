@@ -1,6 +1,6 @@
 //! Client object to interact with the key server.
 
-use crate::{config::Config, LockKeeperClientError, LockKeeperResponse, Result};
+use crate::{config::Config, LockKeeperClientError, Result};
 use http_body::combinators::UnsyncBoxBody;
 use hyper::client::HttpConnector;
 use hyper_rustls::HttpsConnector;
@@ -23,6 +23,7 @@ use std::{str::FromStr, sync::Arc};
 use tokio::sync::{mpsc, Mutex};
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::Request;
+use uuid::Uuid;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
 // TODO: password security, e.g. memory management, etc... #54
@@ -125,14 +126,26 @@ impl LockKeeperClient {
     }
 
     pub(crate) async fn authenticate(
-        mut client: LockKeeperRpcClient<LockKeeperRpcClientInner>,
+        mut client: Option<LockKeeperRpcClient<LockKeeperRpcClientInner>>,
         account_name: &AccountName,
         password: &Password,
         config: &Config,
-    ) -> Result<LockKeeperResponse<Self>> {
+        request_id: Uuid,
+    ) -> Result<Self> {
         // Authenticate with key server
+        let mut client = match client {
+            Some(client) => client,
+            None => Self::connect(config).await?,
+        };
+
+        let metadata = RequestMetadata::new(
+            account_name,
+            ClientAction::Authenticate,
+            None,
+            None,
+            request_id,
+        );
         let mut rng = StdRng::from_entropy();
-        let metadata = RequestMetadata::new(account_name, ClientAction::Authenticate, None, None);
         let rng_arc_mutex = Arc::new(Mutex::new(rng));
         let mut client_channel = Self::create_channel(&mut client, &metadata).await?;
         let mut auth_result = Self::handle_authentication(
@@ -148,19 +161,20 @@ impl LockKeeperClient {
             account_name,
             ClientAction::GetUserId,
             None,
-            Some(&auth_result.data.session_id),
+            Some(&auth_result.session_id),
+            request_id,
         );
         let mut authenticated_channel = Self::create_authenticated_channel(
             &mut client,
             &metadata,
-            auth_result.data.session_key.clone(),
+            auth_result.session_key.clone(),
             rng_arc_mutex.clone(),
         )
         .await?;
         let user_id = Self::handle_get_user_id(authenticated_channel).await?;
         let session = Session {
-            session_id: auth_result.data.session_id,
-            session_key: auth_result.data.session_key,
+            session_id: auth_result.session_id,
+            session_key: auth_result.session_key,
         };
 
         // Create and return `LockKeeperClient`
@@ -171,23 +185,22 @@ impl LockKeeperClient {
             rng: rng_arc_mutex,
             account_name: account_name.clone(),
             user_id,
-            master_key: auth_result.data.master_key,
+            master_key: auth_result.master_key,
         };
-
-        let metadata = auth_result.metadata;
-
-        Ok(LockKeeperResponse {
-            data: client,
-            metadata,
-        })
+        Ok(client)
     }
 
-    pub(crate) fn create_metadata(&self, action: ClientAction) -> RequestMetadata {
+    pub(crate) fn create_metadata(
+        &self,
+        action: ClientAction,
+        request_id: Uuid,
+    ) -> RequestMetadata {
         RequestMetadata::new(
             self.account_name(),
             action,
             Some(self.user_id()),
             Some(&self.session.session_id),
+            request_id,
         )
     }
 
@@ -289,14 +302,18 @@ impl LockKeeperClient {
     /// Close a session.
     ///
     /// Outputs: None, if successful.
-    pub(crate) async fn handle_logout(
-        &self,
-        mut channel: ClientChannel<Authenticated<StdRng>>,
-    ) -> Result<LockKeeperResponse<()>> {
-        // Get encrypted storage key from server
-        let response: logout_server::Response = channel.receive().await?;
+    pub(crate) async fn handle_logout(&self, request_id: Uuid) -> Result<()> {
+        let metadata = self.create_metadata(ClientAction::Logout, request_id);
+        let mut client_channel = Self::create_authenticated_channel(
+            &mut self.tonic_client(),
+            &metadata,
+            self.session.session_key.clone(),
+            self.rng.clone(),
+        )
+        .await?;
+        let response: logout_server::Response = client_channel.receive().await?;
         if response.success {
-            Ok(LockKeeperResponse::from_channel(channel, ()))
+            Ok(())
         } else {
             Err(LockKeeperClientError::LogoutFailed)
         }
@@ -304,9 +321,9 @@ impl LockKeeperClient {
 
     /// Retrieve the [`lock_keeper::crypto::Encrypted<StorageKey>`] that belongs
     /// to the user specified by `user_id`
-    pub(crate) async fn retrieve_storage_key(&self) -> Result<StorageKey> {
+    pub(crate) async fn retrieve_storage_key(&self, request_id: Uuid) -> Result<StorageKey> {
         // Create channel to send messages to server
-        let metadata = self.create_metadata(ClientAction::RetrieveStorageKey);
+        let metadata = self.create_metadata(ClientAction::RetrieveStorageKey, request_id);
         let mut channel = Self::create_authenticated_channel(
             &mut self.tonic_client(),
             &metadata,

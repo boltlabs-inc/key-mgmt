@@ -9,6 +9,7 @@ pub(crate) const SECRETS: &str = "secrets";
 pub(crate) const ACTION: &str = "action";
 pub(crate) const ACTOR: &str = "actor";
 pub(crate) const DATE: &str = "date";
+pub(crate) const REQUEST_ID: &str = "request_id";
 pub(crate) const SECRET_ID: &str = "secret_id";
 pub(crate) const STORAGE_KEY: &str = "storage_key";
 

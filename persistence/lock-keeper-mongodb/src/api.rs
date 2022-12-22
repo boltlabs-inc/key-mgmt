@@ -25,6 +25,7 @@ use mongodb::{
 };
 use opaque_ke::ServerRegistration;
 use tracing::instrument;
+use uuid::Uuid;
 
 mod audit_event;
 mod secret;
@@ -91,12 +92,13 @@ impl DataStore for Database {
     #[instrument(skip_all, err(Debug), fields(actor, secret_id, action, status))]
     async fn create_audit_event(
         &self,
+        request_id: Uuid,
         actor: &AccountName,
         secret_id: &Option<KeyId>,
         action: ClientAction,
         status: EventStatus,
     ) -> Result<(), Self::Error> {
-        self.create_audit_event(actor, secret_id, action, status)
+        self.create_audit_event(request_id, actor, secret_id, action, status)
             .await?;
         Ok(())
     }

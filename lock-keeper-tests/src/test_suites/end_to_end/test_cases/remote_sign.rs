@@ -6,6 +6,7 @@ use lock_keeper::{
 use lock_keeper_client::{api::RemoteGenerateResult, Config};
 use rand::{rngs::StdRng, SeedableRng};
 use tonic::Status;
+use uuid::Uuid;
 
 use crate::{
     config::TestFilters,
@@ -32,20 +33,21 @@ pub async fn run_tests(config: &Config, filters: &TestFilters) -> Result<Vec<Tes
 
 async fn remote_sign_works(config: Config) -> Result<()> {
     let state = init_test_state(&config).await?;
-    let client = authenticate(&state).await?;
+    let client = authenticate(&state).await.result?;
 
-    let RemoteGenerateResult { key_id, public_key } = client.remote_generate().await?.into_inner();
+    let RemoteGenerateResult { key_id, public_key } = client.remote_generate().await.result?;
 
     let mut rng = StdRng::from_seed(*RNG_SEED);
+    let mut request_id = Uuid::nil();
 
     for _ in 0..10 {
         let data = SignableBytes(utils::random_bytes(&mut rng, 100));
-        let signature = client
-            .remote_sign_bytes(key_id.clone(), data.clone())
-            .await?;
+        let signature_response = client.remote_sign_bytes(key_id.clone(), data.clone()).await;
         // Verify that the data was signed with the generated key
+        let signature = signature_response.result?;
+        request_id = signature_response.metadata.unwrap().request_id;
         assert!(
-            data.verify(&public_key, &signature.into_inner()).is_ok(),
+            data.verify(&public_key, &signature).is_ok(),
             "original bytes: {data:?}"
         );
     }
@@ -54,6 +56,7 @@ async fn remote_sign_works(config: Config) -> Result<()> {
         &state,
         EventStatus::Successful,
         ClientAction::RemoteSignBytes,
+        request_id,
     )
     .await?;
 
@@ -62,11 +65,11 @@ async fn remote_sign_works(config: Config) -> Result<()> {
 
 async fn cannot_remote_sign_after_logout(config: Config) -> Result<()> {
     let state = init_test_state(&config).await?;
-    let client = authenticate(&state).await?;
+    let client = authenticate(&state).await.result?;
 
     // Remote generate before waiting out the timeout
-    let res = client.remote_generate().await?.into_inner();
-    client.logout().await?;
+    let res = client.remote_generate().await.result?;
+    client.logout().await.result?;
 
     let mut rng = StdRng::from_seed(*RNG_SEED);
     let data = SignableBytes(utils::random_bytes(&mut rng, 100));

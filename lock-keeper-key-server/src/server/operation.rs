@@ -5,7 +5,6 @@ use lock_keeper::{
 };
 use std::time::Duration;
 use tracing::{error, info, instrument, Instrument};
-use uuid::Uuid;
 
 use crate::{database::DataStore, server::Context, LockKeeperServerError};
 
@@ -33,9 +32,7 @@ pub(crate) trait Operation<AUTH: Send + 'static, DB: DataStore>:
         mut channel: ServerChannel<AUTH>,
     ) -> Result<(), LockKeeperServerError> {
         logging::record_field("metadata", &channel.metadata());
-
-        let request_id = Uuid::new_v4();
-        logging::record_field("request_id", &request_id);
+        logging::record_field("request_id", &channel.metadata().request_id());
         info!("Handling new client request.");
 
         let _ = tokio::spawn(
@@ -80,10 +77,11 @@ async fn audit_event<AUTH, DB: DataStore>(
 ) {
     let account_name = channel.metadata().account_name();
     let action = channel.metadata().action();
+    let request_id = channel.metadata().request_id();
 
     let audit_event = context
         .db
-        .create_audit_event(account_name, &context.key_id, action, status)
+        .create_audit_event(request_id, account_name, &context.key_id, action, status)
         .await
         .map_err(|e| LockKeeperServerError::Database(Box::new(e)));
     if let Err(e) = audit_event {

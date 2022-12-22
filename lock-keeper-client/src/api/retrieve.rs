@@ -1,4 +1,4 @@
-use crate::{api::LocalStorage, LockKeeperClient, LockKeeperClientError, LockKeeperResponse};
+use crate::{api::LocalStorage, LockKeeperClient, LockKeeperClientError};
 use lock_keeper::{
     crypto::{Encrypted, KeyId, Secret, SigningKeyPair},
     infrastructure::channel::{Authenticated, ClientChannel},
@@ -8,6 +8,7 @@ use lock_keeper::{
     },
 };
 use rand::rngs::StdRng;
+use uuid::Uuid;
 
 impl LockKeeperClient {
     /// Handles the retrieval of arbitrary secrets
@@ -17,9 +18,10 @@ impl LockKeeperClient {
         mut channel: ClientChannel<Authenticated<StdRng>>,
         key_id: &KeyId,
         context: RetrieveContext,
-    ) -> Result<LockKeeperResponse<Option<LocalStorage<Secret>>>, LockKeeperClientError> {
+        request_id: Uuid,
+    ) -> Result<Option<LocalStorage<Secret>>, LockKeeperClientError> {
         // Retrieve the storage key
-        let storage_key = self.retrieve_storage_key().await?;
+        let storage_key = self.retrieve_storage_key(request_id).await?;
 
         // TODO spec#39 look up key ID in local storage before making request to server
 
@@ -47,7 +49,7 @@ impl LockKeeperClient {
             }
         };
 
-        Ok(LockKeeperResponse::from_channel(channel, result))
+        Ok(result)
     }
 
     /// Handles the retrieval of signing keys
@@ -57,8 +59,7 @@ impl LockKeeperClient {
         mut channel: ClientChannel<Authenticated<StdRng>>,
         key_id: &KeyId,
         context: RetrieveContext,
-    ) -> Result<LockKeeperResponse<Option<LocalStorage<SigningKeyPair>>>, LockKeeperClientError>
-    {
+    ) -> Result<Option<LocalStorage<SigningKeyPair>>, LockKeeperClientError> {
         // TODO spec#39 look up key ID in local storage before making request to server
 
         // Send UserId to server
@@ -83,6 +84,6 @@ impl LockKeeperClient {
             }
         };
 
-        Ok(LockKeeperResponse::from_channel(channel, result))
+        Ok(result)
     }
 }

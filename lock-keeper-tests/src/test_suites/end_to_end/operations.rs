@@ -10,6 +10,7 @@ use lock_keeper_client::{LockKeeperClient, LockKeeperClientError, LockKeeperResp
 use rand::{prelude::StdRng, Rng, SeedableRng};
 use std::fmt::Display;
 use tonic::Status;
+use uuid::Uuid;
 
 /// Generate a fake key ID to test retrieve/export failure cases.
 pub(crate) async fn generate_fake_key_id(
@@ -22,22 +23,22 @@ pub(crate) async fn generate_fake_key_id(
 }
 
 /// Helper to compare result errors.
-pub(crate) fn compare_errors<T, E>(result: Result<T, LockKeeperClientError>, expected_error: E)
+pub(crate) fn compare_errors<T, E>(result: LockKeeperResponse<T>, expected_error: E)
 where
     E: Into<LockKeeperClientError> + Display,
 {
-    assert!(result.is_err());
+    assert!(result.result.is_err());
 
-    let actual_error = result.err().unwrap();
+    let actual_error = result.result.err().unwrap();
     assert_eq!(actual_error.to_string(), expected_error.to_string());
 }
 
 /// Helper to compare status errors.
 pub(crate) fn compare_status_errors<T>(
-    res: Result<T, LockKeeperClientError>,
+    res: LockKeeperResponse<T>,
     expected: Status,
 ) -> Result<(), LockKeeperTestError> {
-    let actual = match res.err().unwrap() {
+    let actual = match res.result.err().unwrap() {
         LockKeeperClientError::TonicStatus(status) => Ok(status),
         _ => Err(LockKeeperTestError::WrongErrorReturned),
     }?;
@@ -54,62 +55,53 @@ pub(crate) async fn check_audit_events(
     state: &TestState,
     expected_status: EventStatus,
     expected_action: ClientAction,
+    request_id: Uuid,
 ) -> Result<(), LockKeeperClientError> {
     // Authenticate to LockKeeperClient
     let lock_keeper_client =
         LockKeeperClient::authenticated_client(&state.account_name, &state.password, &state.config)
-            .await?
-            .into_inner();
-
-    // Get audit event log
+            .await
+            .result?;
+    // Get audit event log for the specific request
+    let options = AuditEventOptions {
+        request_id: Some(request_id),
+        ..Default::default()
+    };
     let audit_event_log = lock_keeper_client
-        .retrieve_audit_event_log(EventType::All, AuditEventOptions::default())
-        .await?
-        .data;
+        .retrieve_audit_event_log(EventType::All, options)
+        .await
+        .result?;
 
-    // Get the fourth last event, the last 3 are for retrieving audit logs and
-    // authenticating
-    let fourth_last = audit_event_log
-        .len()
-        .checked_sub(6)
-        .map(|i| &audit_event_log[i]);
-    assert!(fourth_last.is_some());
+    // Get the last event in the list of events
+    let last_event = audit_event_log.last().unwrap();
 
-    let fourth_last = fourth_last.unwrap();
     // Check that expected status and action match
-    let actual_status = fourth_last.status();
-    let actual_action = fourth_last.action();
+    let actual_status = last_event.status();
+    let actual_action = last_event.action();
     assert_eq!(expected_status, actual_status);
     assert_eq!(expected_action, actual_action);
     Ok(())
 }
 
 /// Authenticate to the LockKeeper key server and get a LockKeeperClient.
-pub(crate) async fn authenticate(
-    state: &TestState,
-) -> Result<LockKeeperClient, LockKeeperClientError> {
-    let client =
-        LockKeeperClient::authenticated_client(&state.account_name, &state.password, &state.config)
-            .await?;
-    Ok(client.into_inner())
+pub(crate) async fn authenticate(state: &TestState) -> LockKeeperResponse<LockKeeperClient> {
+    LockKeeperClient::authenticated_client(&state.account_name, &state.password, &state.config)
+        .await
 }
 
 /// Authenticate and import a signing key.
 pub(crate) async fn import_signing_key(
     client: &LockKeeperClient,
-) -> Result<LockKeeperResponse<(KeyId, Vec<u8>)>, LockKeeperClientError> {
+) -> LockKeeperResponse<(KeyId, Vec<u8>)> {
     // Authenticate and run generate
     let random_bytes = rand::thread_rng().gen::<[u8; 32]>().to_vec();
-    let import = Import::new(random_bytes.clone())?;
-    let LockKeeperResponse {
-        data: key_id,
-        metadata,
-    } = client.import_signing_key(import).await?;
+    let import = Import::new(random_bytes.clone()).unwrap();
+    let LockKeeperResponse { result, metadata } = client.import_signing_key(import).await;
 
-    let result = LockKeeperResponse {
-        data: (key_id, random_bytes),
-        metadata,
+    let result = match result {
+        Ok(key_id) => Ok((key_id, random_bytes)),
+        Err(e) => Err(e),
     };
 
-    Ok(result)
+    LockKeeperResponse { result, metadata }
 }

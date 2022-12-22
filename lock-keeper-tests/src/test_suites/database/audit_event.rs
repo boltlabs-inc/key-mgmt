@@ -18,6 +18,7 @@ use rand::{
     SeedableRng,
 };
 use strum::IntoEnumIterator;
+use uuid::Uuid;
 
 use crate::{config::TestFilters, error::Result, run_parallel, utils::TestResult};
 
@@ -32,7 +33,8 @@ pub async fn run_tests(filters: &TestFilters) -> Result<Vec<TestResult>> {
         event_type_filter_works(db.clone()),
         key_id_filter_works(db.clone()),
         after_date_filter_works(db.clone()),
-        before_date_filter_works(db.clone())
+        before_date_filter_works(db.clone()),
+        request_id_filter_works(db.clone()),
     )?;
 
     db.drop().await?;
@@ -42,51 +44,6 @@ pub async fn run_tests(filters: &TestFilters) -> Result<Vec<TestResult>> {
 
 const NUM_LOGS: u32 = 10;
 const NUM_SAMPLE: usize = NUM_LOGS as usize / 2;
-
-async fn create_random_audit_events(
-    account_name: &AccountName,
-    user_id: &UserId,
-    db: &Database,
-) -> Result<Vec<KeyId>> {
-    let mut rng = StdRng::from_entropy();
-
-    let action_list = ClientAction::iter().collect::<Vec<_>>();
-    let mut key_ids = Vec::new();
-    for _ in 0..NUM_LOGS {
-        let key_id = KeyId::generate(&mut rng, user_id)?;
-        let key_id_copy = key_id.clone();
-        let action = action_list.choose(&mut rng).unwrap();
-        db.create_audit_event(account_name, &Some(key_id), *action, EventStatus::Started)
-            .await?;
-        key_ids.push(key_id_copy);
-    }
-    Ok(key_ids)
-}
-
-fn compare_actions(audit_events: Vec<AuditEvent>, event_type: EventType) {
-    let actual_actions: Vec<ClientAction> = audit_events.iter().map(|a| a.action()).collect();
-    let expected_actions = event_type.into_client_actions();
-    assert!(actual_actions
-        .iter()
-        .all(|item| expected_actions.contains(item)));
-}
-
-fn compare_key_ids(audit_events: Vec<AuditEvent>, expected_key_ids: Vec<KeyId>) {
-    let actual_key_ids: Vec<&KeyId> = audit_events.iter().map(|a| a.key_id().unwrap()).collect();
-    assert!(actual_key_ids
-        .iter()
-        .all(|item| expected_key_ids.contains(item)));
-}
-
-fn check_after_date(audit_events: Vec<AuditEvent>, after_date: DateTime) {
-    let actual_dates: Vec<DateTime> = audit_events.iter().map(|a| a.date()).collect();
-    assert!(actual_dates.iter().all(|item| after_date <= *item));
-}
-
-fn check_before_date(audit_events: Vec<AuditEvent>, before_date: DateTime) {
-    let actual_dates: Vec<DateTime> = audit_events.iter().map(|a| a.date()).collect();
-    assert!(actual_dates.iter().all(|item| before_date >= *item));
-}
 
 async fn event_type_filter_works(db: TestDatabase) -> Result<()> {
     let (user_id, account_name) = db.create_test_user().await?;
@@ -124,24 +81,28 @@ async fn event_type_filter_works(db: TestDatabase) -> Result<()> {
 async fn key_id_filter_works(db: TestDatabase) -> Result<()> {
     let (user_id, account_name) = db.create_test_user().await?;
 
-    let key_ids = create_random_audit_events(&account_name, &user_id, &db).await?;
+    let id_tuple_vec = create_random_audit_events(&account_name, &user_id, &db).await?;
 
-    let sample = {
+    let sample: Vec<KeyId> = {
         let mut rng = rand::thread_rng();
-        key_ids.into_iter().choose_multiple(&mut rng, NUM_SAMPLE)
+        id_tuple_vec
+            .into_iter()
+            .choose_multiple(&mut rng, NUM_SAMPLE)
+            .into_iter()
+            .map(|tuple| tuple.0)
+            .collect()
     };
 
     // Retrieve audits for just one key
     let options = AuditEventOptions {
         key_ids: Some(sample.clone()),
-        after_date: None,
-        before_date: None,
+        ..Default::default()
     };
     let key_audit = db
         .find_audit_events(&account_name, EventType::All, options)
         .await?;
 
-    // Make sure only the first 5 key IDs are included
+    // Make sure only the sampled key IDs are included
     compare_key_ids(key_audit, sample);
 
     Ok(())
@@ -159,9 +120,8 @@ async fn after_date_filter_works(db: TestDatabase) -> Result<()> {
 
     // Retrieve after the comparison date
     let options = AuditEventOptions {
-        key_ids: None,
         after_date: Some(after_date),
-        before_date: None,
+        ..Default::default()
     };
     let after_date_audit = db
         .find_audit_events(&account_name, EventType::All, options)
@@ -185,9 +145,8 @@ async fn before_date_filter_works(db: TestDatabase) -> Result<()> {
 
     // Retrieve before the comparison date
     let options = AuditEventOptions {
-        key_ids: None,
-        after_date: None,
         before_date: Some(before_date),
+        ..Default::default()
     };
     let before_date_audit = db
         .find_audit_events(&account_name, EventType::All, options)
@@ -197,4 +156,88 @@ async fn before_date_filter_works(db: TestDatabase) -> Result<()> {
     check_before_date(before_date_audit, before_date);
 
     Ok(())
+}
+
+async fn request_id_filter_works(db: TestDatabase) -> Result<()> {
+    let (user_id, account_name) = db.create_test_user().await?;
+
+    let id_tuple_vec = create_random_audit_events(&account_name, &user_id, &db).await?;
+
+    let sample: Uuid = {
+        let mut rng = rand::thread_rng();
+        id_tuple_vec.into_iter().choose(&mut rng).unwrap().1
+    };
+
+    // Retrieve audits for just one key
+    let options = AuditEventOptions {
+        request_id: Some(sample),
+        ..Default::default()
+    };
+    let request_audit = db
+        .find_audit_events(&account_name, EventType::All, options)
+        .await?;
+
+    // Make sure only the sampled request ID is included
+    compare_request_ids(request_audit, sample);
+
+    Ok(())
+}
+
+async fn create_random_audit_events(
+    account_name: &AccountName,
+    user_id: &UserId,
+    db: &Database,
+) -> Result<Vec<(KeyId, Uuid)>> {
+    let mut rng = StdRng::from_entropy();
+
+    let action_list = ClientAction::iter().collect::<Vec<_>>();
+    let mut key_ids = Vec::new();
+    for _ in 0..NUM_LOGS {
+        let key_id = KeyId::generate(&mut rng, user_id)?;
+        let key_id_copy = key_id.clone();
+        let request_id = Uuid::new_v4();
+        let action = action_list.choose(&mut rng).unwrap();
+        db.create_audit_event(
+            request_id,
+            account_name,
+            &Some(key_id),
+            *action,
+            EventStatus::Started,
+        )
+        .await?;
+        key_ids.push((key_id_copy, request_id));
+    }
+    Ok(key_ids)
+}
+
+fn compare_actions(audit_events: Vec<AuditEvent>, event_type: EventType) {
+    let actual_actions: Vec<ClientAction> = audit_events.iter().map(|a| a.action()).collect();
+    let expected_actions = event_type.into_client_actions();
+    assert!(actual_actions
+        .iter()
+        .all(|item| expected_actions.contains(item)));
+}
+
+fn compare_key_ids(audit_events: Vec<AuditEvent>, expected_key_ids: Vec<KeyId>) {
+    let actual_key_ids: Vec<&KeyId> = audit_events.iter().map(|a| a.key_id().unwrap()).collect();
+    assert!(actual_key_ids
+        .iter()
+        .all(|item| expected_key_ids.contains(item)));
+}
+
+fn compare_request_ids(audit_events: Vec<AuditEvent>, expected_request_id: Uuid) {
+    let actual_request_ids = audit_events.iter().map(|a| a.request_id());
+    assert!(actual_request_ids
+        .into_iter()
+        .all(|item| item == expected_request_id.to_string()));
+}
+
+fn check_after_date(audit_events: Vec<AuditEvent>, after_date: DateTime) {
+    let actual_dates: Vec<DateTime> = audit_events.iter().map(|a| a.date()).collect();
+    assert!(actual_dates.iter().all(|item| after_date <= *item));
+}
+
+fn check_before_date(audit_events: Vec<AuditEvent>, before_date: DateTime) {
+    let actual_dates: Vec<DateTime> = audit_events.iter().map(|a| a.date()).collect();
+    assert!(actual_dates.iter().all(|item| before_date >= *item));
 }

@@ -40,56 +40,76 @@ pub async fn run_tests(config: &Config, filters: &TestFilters) -> Result<Vec<Tes
 
 async fn export_works(config: Config) -> Result<()> {
     let state = init_test_state(&config).await?;
-    let client = authenticate(&state).await?;
+    let client = authenticate(&state).await.result?;
 
     let GenerateResult {
         key_id,
         local_storage,
-    } = client.generate_secret().await?.into_inner();
+    } = client.generate_secret().await.result?;
     let bytes_res = client.export_secret(&key_id).await;
-    assert!(bytes_res.is_ok());
 
     // Turn the export back into a Secret and compare directly
-    let exported_secret: Secret = bytes_res?.into_inner().try_into()?;
+    let exported_secret: Secret = bytes_res.result?.try_into()?;
     assert_eq!(exported_secret, local_storage.material);
-    check_audit_events(&state, EventStatus::Successful, ClientAction::ExportSecret).await?;
+    let request_id = bytes_res.metadata.unwrap().request_id;
+    check_audit_events(
+        &state,
+        EventStatus::Successful,
+        ClientAction::ExportSecret,
+        request_id,
+    )
+    .await?;
 
     Ok(())
 }
 
 async fn cannot_export_fake_key(config: Config) -> Result<()> {
     let state = init_test_state(&config).await?;
-    let client = authenticate(&state).await?;
+    let client = authenticate(&state).await.result?;
 
     let fake_key_id = generate_fake_key_id(&client).await?;
     let bytes_res = client.export_secret(&fake_key_id).await;
+    let request_id = bytes_res.metadata.clone().unwrap().request_id;
     compare_errors(bytes_res, Status::internal("Internal server error"));
-    check_audit_events(&state, EventStatus::Failed, ClientAction::ExportSecret).await?;
+    check_audit_events(
+        &state,
+        EventStatus::Failed,
+        ClientAction::ExportSecret,
+        request_id,
+    )
+    .await?;
 
     Ok(())
 }
 
 async fn cannot_export_signing_key_as_secret(config: Config) -> Result<()> {
     let state = init_test_state(&config).await?;
-    let client = authenticate(&state).await?;
+    let client = authenticate(&state).await.result?;
 
-    let (key_id, _) = import_signing_key(&client).await?.into_inner();
+    let (key_id, _) = import_signing_key(&client).await.result?;
     let export_res = client.export_secret(&key_id).await;
+    let request_id = export_res.metadata.clone().unwrap().request_id;
     compare_errors(export_res, Status::internal("Internal server error"));
-    check_audit_events(&state, EventStatus::Failed, ClientAction::ExportSecret).await?;
+    check_audit_events(
+        &state,
+        EventStatus::Failed,
+        ClientAction::ExportSecret,
+        request_id,
+    )
+    .await?;
 
     Ok(())
 }
 
 async fn cannot_export_after_logout(config: Config) -> Result<()> {
     let state = init_test_state(&config).await?;
-    let client = authenticate(&state).await?;
+    let client = authenticate(&state).await.result?;
 
     let GenerateResult {
         key_id,
         local_storage: _,
-    } = client.generate_secret().await?.into_inner();
-    client.logout().await?;
+    } = client.generate_secret().await.result?;
+    client.logout().await.result?;
 
     let res = client.export_secret(&key_id).await;
     compare_status_errors(res, Status::unauthenticated("No session key for this user"))?;
@@ -99,22 +119,24 @@ async fn cannot_export_after_logout(config: Config) -> Result<()> {
 
 async fn export_signing_key_works(config: Config) -> Result<()> {
     let state = init_test_state(&config).await?;
-    let client = authenticate(&state).await?;
+    let client = authenticate(&state).await.result?;
 
-    let (key_id, bytes_original) = import_signing_key(&client).await?.into_inner();
+    let (key_id, bytes_original) = import_signing_key(&client).await.result?;
     let export_res = client.export_signing_key(&key_id).await;
     assert!(
-        export_res.is_ok(),
+        export_res.result.is_ok(),
         "Export failed: {}",
-        export_res.unwrap_err()
+        export_res.result.unwrap_err()
     );
 
-    let export = export_res?.into_inner();
+    let export = export_res.result?;
+    let request_id = export_res.metadata.unwrap().request_id;
     assert_eq!(export.key_material, bytes_original);
     check_audit_events(
         &state,
         EventStatus::Successful,
         ClientAction::ExportSigningKey,
+        request_id,
     )
     .await?;
 
@@ -123,37 +145,51 @@ async fn export_signing_key_works(config: Config) -> Result<()> {
 
 async fn cannot_export_fake_signing_key(config: Config) -> Result<()> {
     let state = init_test_state(&config).await?;
-    let client = authenticate(&state).await?;
+    let client = authenticate(&state).await.result?;
 
     let fake_key_id = generate_fake_key_id(&client).await?;
     let export_res = client.export_signing_key(&fake_key_id).await;
+    let request_id = export_res.metadata.clone().unwrap().request_id;
     compare_errors(export_res, Status::internal("Internal server error"));
-    check_audit_events(&state, EventStatus::Failed, ClientAction::ExportSigningKey).await?;
+    check_audit_events(
+        &state,
+        EventStatus::Failed,
+        ClientAction::ExportSigningKey,
+        request_id,
+    )
+    .await?;
 
     Ok(())
 }
 
 async fn cannot_export_secret_as_signing_key(config: Config) -> Result<()> {
     let state = init_test_state(&config).await?;
-    let client = authenticate(&state).await?;
+    let client = authenticate(&state).await.result?;
 
     let GenerateResult {
         key_id,
         local_storage: _,
-    } = client.generate_secret().await?.into_inner();
+    } = client.generate_secret().await.result?;
     let export_res = client.export_signing_key(&key_id).await;
+    let request_id = export_res.metadata.clone().unwrap().request_id;
     compare_errors(export_res, Status::internal("Internal server error"));
-    check_audit_events(&state, EventStatus::Failed, ClientAction::ExportSigningKey).await?;
+    check_audit_events(
+        &state,
+        EventStatus::Failed,
+        ClientAction::ExportSigningKey,
+        request_id,
+    )
+    .await?;
 
     Ok(())
 }
 
 async fn cannot_export_signing_key_after_logout(config: Config) -> Result<()> {
     let state = init_test_state(&config).await?;
-    let client = authenticate(&state).await?;
+    let client = authenticate(&state).await.result?;
 
-    let (key_id, _) = import_signing_key(&client).await?.into_inner();
-    client.logout().await?;
+    let (key_id, _) = import_signing_key(&client).await.result?;
+    client.logout().await.result?;
 
     let res = client.export_signing_key(&key_id).await;
     compare_status_errors(res, Status::unauthenticated("No session key for this user"))?;

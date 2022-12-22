@@ -20,15 +20,15 @@ impl CliCommand for Retrieve {
             &credentials.password,
             &state.config,
         )
-        .await?
-        .into_inner();
+        .await
+        .result?;
 
         let entry = state.get_key_id(&self.name)?;
         // Retrieve results for specified key.
         let retrieve_result = lock_keeper_client
             .retrieve_secret(&entry.key_id, RetrieveContext::LocalOnly)
-            .await?
-            .into_inner();
+            .await
+            .result?;
 
         println!("Retrieved: {}", self.name);
         println!("{retrieve_result:?}");

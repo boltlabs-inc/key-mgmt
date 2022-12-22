@@ -4,7 +4,7 @@
 //! on the [`AuditEvent`] model in the MongoDB database.
 
 use crate::{
-    constants::{ACTION, ACTOR, AUDIT_EVENTS, DATE, MAX_AUDIT_ENTRIES, SECRET_ID},
+    constants::{ACTION, ACTOR, AUDIT_EVENTS, DATE, MAX_AUDIT_ENTRIES, REQUEST_ID, SECRET_ID},
     error::Error,
 };
 use futures::TryStreamExt;
@@ -20,6 +20,7 @@ use mongodb::{
     bson::{doc, Document},
     options::FindOptions,
 };
+use uuid::Uuid;
 
 use super::Database;
 
@@ -27,13 +28,15 @@ impl Database {
     /// Create a new [`AuditEvent`] for the given actor, action, and outcome
     pub(crate) async fn create_audit_event(
         &self,
+        request_id: Uuid,
         actor: &AccountName,
         secret_id: &Option<KeyId>,
         action: ClientAction,
         status: EventStatus,
     ) -> Result<(), Error> {
         let collection = self.handle.collection::<AuditEvent>(AUDIT_EVENTS);
-        let new_event = AuditEvent::new(actor.clone(), secret_id.clone(), action, status);
+        let new_event =
+            AuditEvent::new(request_id, actor.clone(), secret_id.clone(), action, status);
         let _ = collection.insert_one(new_event, None).await?;
         Ok(())
     }
@@ -69,6 +72,9 @@ fn construct_query_with_options(
     }
     if let Some(before_date) = options.before_date {
         let _ = query.insert(DATE, doc! {"$lte": mongodb::bson::to_bson(&before_date)?});
+    }
+    if let Some(request_id) = options.request_id {
+        let _ = query.insert(REQUEST_ID, request_id.to_string());
     }
 
     Ok(query)

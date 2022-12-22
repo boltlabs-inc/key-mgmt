@@ -21,16 +21,16 @@ impl CliCommand for Import {
             &credentials.password,
             &state.config,
         )
-        .await?
-        .into_inner();
+        .await
+        .result?;
 
         let random_bytes = rand::thread_rng().gen::<[u8; 32]>().to_vec();
         let import = LkImport::new(random_bytes)?;
         let key_id = lock_keeper_client
             .import_signing_key(import)
             .await
-            .map_err(|e| anyhow::anyhow!("Failed to import signing key. Error: {:?}", e))?
-            .into_inner();
+            .result
+            .map_err(|e| anyhow::anyhow!("Failed to import signing key. Error: {:?}", e))?;
 
         let stored = state.store_entry(self.name, key_id)?;
         println!("Stored: {stored}");

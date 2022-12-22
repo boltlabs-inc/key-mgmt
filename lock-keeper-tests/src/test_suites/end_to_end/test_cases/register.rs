@@ -28,9 +28,12 @@ pub async fn run_tests(config: &Config, filters: &TestFilters) -> Result<Vec<Tes
 async fn register_same_user_twice_fails(config: Config) -> Result<()> {
     let account_name = AccountName::from_str(tagged("user").as_str())?;
     let password = Password::from_str(tagged("password").as_str())?;
-    LockKeeperClient::register(&account_name, &password, &config).await?;
+    LockKeeperClient::register(&account_name, &password, &config)
+        .await
+        .result?;
 
     let second_register = LockKeeperClient::register(&account_name, &password, &config).await;
+    let metadata = second_register.metadata.clone().unwrap();
     compare_status_errors(
         second_register,
         Status::invalid_argument("Account already registered."),
@@ -40,7 +43,12 @@ async fn register_same_user_twice_fails(config: Config) -> Result<()> {
         password,
         config,
     };
-    check_audit_events(&state, EventStatus::Failed, ClientAction::Register).await?;
-
+    check_audit_events(
+        &state,
+        EventStatus::Failed,
+        ClientAction::Register,
+        metadata.request_id,
+    )
+    .await?;
     Ok(())
 }

@@ -31,11 +31,11 @@ impl CliCommand for Generate {
             &credentials.password,
             &state.config,
         )
-        .await?
-        .into_inner();
+        .await
+        .result?;
 
         // If successful, proceed to generate a secret with the established session
-        let generate_result = lock_keeper_client.generate_secret().await?.into_inner();
+        let generate_result = lock_keeper_client.generate_secret().await.result?;
 
         // Store Key
         let stored = state.store_entry(self.name, generate_result)?;
