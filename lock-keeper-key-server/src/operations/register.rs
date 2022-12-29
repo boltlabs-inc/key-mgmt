@@ -47,8 +47,10 @@ async fn register_start<DB: DataStore>(
     channel: &mut ServerChannel<Unauthenticated>,
     context: &Context<DB>,
 ) -> Result<AccountName, LockKeeperServerError> {
+    info!("started register");
     // Receive start message from client
     let start_message: client::RegisterStart = channel.receive().await?;
+    info!("received first message");
 
     // Abort registration if UserId already exists
     let user = context
@@ -56,6 +58,7 @@ async fn register_start<DB: DataStore>(
         .find_user(&start_message.account_name)
         .await
         .map_err(LockKeeperServerError::database)?;
+    info!("user from database done");
 
     match user {
         // Abort registration if UserId already exists

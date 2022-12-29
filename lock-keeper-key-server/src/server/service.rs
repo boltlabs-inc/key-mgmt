@@ -17,6 +17,9 @@ use tokio_rustls::TlsAcceptor;
 use tonic::transport::{server::Routes, Server};
 use tracing::{error, info};
 
+pub(crate) const FILE_DESCRIPTOR_SET: &[u8] =
+    include_bytes!("../../../lock-keeper/src/lock_keeper_description.bin");
+
 /// Starts a full Lock Keeper server stack based on the given config.
 pub async fn start_lock_keeper_server<DB: DataStore + Clone, S: SessionCache + 'static>(
     config: Config,
@@ -66,8 +69,13 @@ async fn start_service<DB: DataStore + Clone>(
     let port = rpc_server.config.port;
     info!(?addr, ?port, "Starting server with:");
 
+    let reflection_server = tonic_reflection::server::Builder::configure()
+        .register_encoded_file_descriptor_set(FILE_DESCRIPTOR_SET)
+        .build()
+        .unwrap();
     let svc = Server::builder()
         .add_service(LockKeeperRpcServer::new(rpc_server))
+        .add_service(reflection_server)
         .into_service();
 
     let mut http = Http::new();

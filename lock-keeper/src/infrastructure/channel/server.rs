@@ -6,6 +6,7 @@ use tokio::sync::{
 };
 use tokio_stream::StreamExt;
 use tonic::{Request, Status, Streaming};
+use tracing::info;
 
 use crate::{
     constants::METADATA,
@@ -96,8 +97,10 @@ impl ServerChannel<Unauthenticated> {
 
     /// Receive the next message on the channel and convert it to the type `R`.
     pub async fn receive<R: ConvertMessage>(&mut self) -> Result<R, LockKeeperError> {
+        info!("Receiving message");
         match self.receiver.next().await {
             Some(message) => {
+                info!("Received message");
                 let message = message?;
                 let result =
                     R::from_message(message).map_err(|_| LockKeeperError::InvalidMessage)?;
