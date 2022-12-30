@@ -54,6 +54,8 @@
 <span id="54">54</span>
 <span id="55">55</span>
 <span id="56">56</span>
+<span id="57">57</span>
+<span id="58">58</span>
 </pre><pre class="rust"><code><span class="kw">use </span>colored::Colorize;
 <span class="kw">use </span>lock_keeper::types::{audit_event::EventStatus, operations::ClientAction};
 <span class="kw">use </span>lock_keeper_client::Config;
@@ -84,15 +86,17 @@
 
 <span class="kw">async fn </span>remote_generate_works(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">let </span>state = init_test_state(<span class="kw-2">&amp;</span>config).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let </span>client = authenticate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>client = authenticate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span>.result<span class="question-mark">?</span>;
 
     <span class="kw">let </span>remote_gen_res = client.remote_generate().<span class="kw">await</span>;
-    <span class="macro">assert!</span>(remote_gen_res.is_ok());
+    <span class="kw">let </span>request_id = remote_gen_res.metadata.clone().unwrap().request_id;
+    <span class="macro">assert!</span>(remote_gen_res.result.is_ok());
 
     check_audit_events(
         <span class="kw-2">&amp;</span>state,
         EventStatus::Successful,
         ClientAction::RemoteGenerateSigningKey,
+        request_id,
     )
     .<span class="kw">await</span><span class="question-mark">?</span>;
 
@@ -101,9 +105,9 @@
 
 <span class="kw">async fn </span>cannot_remote_generate_after_logout(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">let </span>state = init_test_state(<span class="kw-2">&amp;</span>config).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let </span>client = authenticate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>client = authenticate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span>.result<span class="question-mark">?</span>;
 
-    client.logout().<span class="kw">await</span><span class="question-mark">?</span>;
+    client.logout().<span class="kw">await</span>.result<span class="question-mark">?</span>;
 
     <span class="kw">let </span>res = client.remote_generate().<span class="kw">await</span>;
     compare_status_errors(res, Status::unauthenticated(<span class="string">&quot;No session key for this user&quot;</span>))<span class="question-mark">?</span>;

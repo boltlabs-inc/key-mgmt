@@ -105,14 +105,6 @@
 <span id="105">105</span>
 <span id="106">106</span>
 <span id="107">107</span>
-<span id="108">108</span>
-<span id="109">109</span>
-<span id="110">110</span>
-<span id="111">111</span>
-<span id="112">112</span>
-<span id="113">113</span>
-<span id="114">114</span>
-<span id="115">115</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{test_suites::end_to_end::test_cases::TestState, LockKeeperTestError};
 <span class="kw">use </span>lock_keeper::{
     crypto::{Import, KeyId},
@@ -125,6 +117,7 @@
 <span class="kw">use </span>rand::{prelude::StdRng, Rng, SeedableRng};
 <span class="kw">use </span>std::fmt::Display;
 <span class="kw">use </span>tonic::Status;
+<span class="kw">use </span>uuid::Uuid;
 
 <span class="doccomment">/// Generate a fake key ID to test retrieve/export failure cases.
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>generate_fake_key_id(
@@ -137,22 +130,22 @@
 }
 
 <span class="doccomment">/// Helper to compare result errors.
-</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>compare_errors&lt;T, E&gt;(result: <span class="prelude-ty">Result</span>&lt;T, LockKeeperClientError&gt;, expected_error: E)
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>compare_errors&lt;T, E&gt;(result: LockKeeperResponse&lt;T&gt;, expected_error: E)
 <span class="kw">where
     </span>E: Into&lt;LockKeeperClientError&gt; + Display,
 {
-    <span class="macro">assert!</span>(result.is_err());
+    <span class="macro">assert!</span>(result.result.is_err());
 
-    <span class="kw">let </span>actual_error = result.err().unwrap();
+    <span class="kw">let </span>actual_error = result.result.err().unwrap();
     <span class="macro">assert_eq!</span>(actual_error.to_string(), expected_error.to_string());
 }
 
 <span class="doccomment">/// Helper to compare status errors.
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>compare_status_errors&lt;T&gt;(
-    res: <span class="prelude-ty">Result</span>&lt;T, LockKeeperClientError&gt;,
+    res: LockKeeperResponse&lt;T&gt;,
     expected: Status,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperTestError&gt; {
-    <span class="kw">let </span>actual = <span class="kw">match </span>res.err().unwrap() {
+    <span class="kw">let </span>actual = <span class="kw">match </span>res.result.err().unwrap() {
         LockKeeperClientError::TonicStatus(status) =&gt; <span class="prelude-val">Ok</span>(status),
         <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(LockKeeperTestError::WrongErrorReturned),
     }<span class="question-mark">?</span>;
@@ -169,64 +162,55 @@
     state: <span class="kw-2">&amp;</span>TestState,
     expected_status: EventStatus,
     expected_action: ClientAction,
+    request_id: Uuid,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperClientError&gt; {
     <span class="comment">// Authenticate to LockKeeperClient
     </span><span class="kw">let </span>lock_keeper_client =
         LockKeeperClient::authenticated_client(<span class="kw-2">&amp;</span>state.account_name, <span class="kw-2">&amp;</span>state.password, <span class="kw-2">&amp;</span>state.config)
-            .<span class="kw">await</span><span class="question-mark">?
-            </span>.into_inner();
+            .<span class="kw">await
+            </span>.result<span class="question-mark">?</span>;
+    <span class="comment">// Get audit event log for the specific request
+    </span><span class="kw">let </span>options = AuditEventOptions {
+        request_id: <span class="prelude-val">Some</span>(request_id),
+        ..Default::default()
+    };
+    <span class="kw">let </span>audit_event_log = lock_keeper_client
+        .retrieve_audit_event_log(EventType::All, options)
+        .<span class="kw">await
+        </span>.result<span class="question-mark">?</span>;
 
-    <span class="comment">// Get audit event log
-    </span><span class="kw">let </span>audit_event_log = lock_keeper_client
-        .retrieve_audit_event_log(EventType::All, AuditEventOptions::default())
-        .<span class="kw">await</span><span class="question-mark">?
-        </span>.data;
+    <span class="comment">// Get the last event in the list of events
+    </span><span class="kw">let </span>last_event = audit_event_log.last().unwrap();
 
-    <span class="comment">// Get the fourth last event, the last 3 are for retrieving audit logs and
-    // authenticating
-    </span><span class="kw">let </span>fourth_last = audit_event_log
-        .len()
-        .checked_sub(<span class="number">6</span>)
-        .map(|i| <span class="kw-2">&amp;</span>audit_event_log[i]);
-    <span class="macro">assert!</span>(fourth_last.is_some());
-
-    <span class="kw">let </span>fourth_last = fourth_last.unwrap();
     <span class="comment">// Check that expected status and action match
-    </span><span class="kw">let </span>actual_status = fourth_last.status();
-    <span class="kw">let </span>actual_action = fourth_last.action();
+    </span><span class="kw">let </span>actual_status = last_event.status();
+    <span class="kw">let </span>actual_action = last_event.action();
     <span class="macro">assert_eq!</span>(expected_status, actual_status);
     <span class="macro">assert_eq!</span>(expected_action, actual_action);
     <span class="prelude-val">Ok</span>(())
 }
 
 <span class="doccomment">/// Authenticate to the LockKeeper key server and get a LockKeeperClient.
-</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>authenticate(
-    state: <span class="kw-2">&amp;</span>TestState,
-) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperClient, LockKeeperClientError&gt; {
-    <span class="kw">let </span>client =
-        LockKeeperClient::authenticated_client(<span class="kw-2">&amp;</span>state.account_name, <span class="kw-2">&amp;</span>state.password, <span class="kw-2">&amp;</span>state.config)
-            .<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="prelude-val">Ok</span>(client.into_inner())
-}
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>authenticate(state: <span class="kw-2">&amp;</span>TestState) -&gt; LockKeeperResponse&lt;LockKeeperClient&gt; {
+    LockKeeperClient::authenticated_client(<span class="kw-2">&amp;</span>state.account_name, <span class="kw-2">&amp;</span>state.password, <span class="kw-2">&amp;</span>state.config)
+        .<span class="kw">await
+</span>}
 
 <span class="doccomment">/// Authenticate and import a signing key.
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>import_signing_key(
     client: <span class="kw-2">&amp;</span>LockKeeperClient,
-) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperResponse&lt;(KeyId, Vec&lt;u8&gt;)&gt;, LockKeeperClientError&gt; {
+) -&gt; LockKeeperResponse&lt;(KeyId, Vec&lt;u8&gt;)&gt; {
     <span class="comment">// Authenticate and run generate
     </span><span class="kw">let </span>random_bytes = rand::thread_rng().gen::&lt;[u8; <span class="number">32</span>]&gt;().to_vec();
-    <span class="kw">let </span>import = Import::new(random_bytes.clone())<span class="question-mark">?</span>;
-    <span class="kw">let </span>LockKeeperResponse {
-        data: key_id,
-        metadata,
-    } = client.import_signing_key(import).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>import = Import::new(random_bytes.clone()).unwrap();
+    <span class="kw">let </span>LockKeeperResponse { result, metadata } = client.import_signing_key(import).<span class="kw">await</span>;
 
-    <span class="kw">let </span>result = LockKeeperResponse {
-        data: (key_id, random_bytes),
-        metadata,
+    <span class="kw">let </span>result = <span class="kw">match </span>result {
+        <span class="prelude-val">Ok</span>(key_id) =&gt; <span class="prelude-val">Ok</span>((key_id, random_bytes)),
+        <span class="prelude-val">Err</span>(e) =&gt; <span class="prelude-val">Err</span>(e),
     };
 
-    <span class="prelude-val">Ok</span>(result)
+    LockKeeperResponse { result, metadata }
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="lock_keeper_tests" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0 (69f9c33d7 2022-12-12)" ></div></body></html>

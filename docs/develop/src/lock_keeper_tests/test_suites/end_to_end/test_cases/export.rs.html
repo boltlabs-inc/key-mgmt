@@ -160,6 +160,42 @@
 <span id="160">160</span>
 <span id="161">161</span>
 <span id="162">162</span>
+<span id="163">163</span>
+<span id="164">164</span>
+<span id="165">165</span>
+<span id="166">166</span>
+<span id="167">167</span>
+<span id="168">168</span>
+<span id="169">169</span>
+<span id="170">170</span>
+<span id="171">171</span>
+<span id="172">172</span>
+<span id="173">173</span>
+<span id="174">174</span>
+<span id="175">175</span>
+<span id="176">176</span>
+<span id="177">177</span>
+<span id="178">178</span>
+<span id="179">179</span>
+<span id="180">180</span>
+<span id="181">181</span>
+<span id="182">182</span>
+<span id="183">183</span>
+<span id="184">184</span>
+<span id="185">185</span>
+<span id="186">186</span>
+<span id="187">187</span>
+<span id="188">188</span>
+<span id="189">189</span>
+<span id="190">190</span>
+<span id="191">191</span>
+<span id="192">192</span>
+<span id="193">193</span>
+<span id="194">194</span>
+<span id="195">195</span>
+<span id="196">196</span>
+<span id="197">197</span>
+<span id="198">198</span>
 </pre><pre class="rust"><code><span class="kw">use </span>colored::Colorize;
 <span class="kw">use </span>lock_keeper::{
     crypto::Secret,
@@ -202,56 +238,76 @@
 
 <span class="kw">async fn </span>export_works(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">let </span>state = init_test_state(<span class="kw-2">&amp;</span>config).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let </span>client = authenticate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>client = authenticate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span>.result<span class="question-mark">?</span>;
 
     <span class="kw">let </span>GenerateResult {
         key_id,
         local_storage,
-    } = client.generate_secret().<span class="kw">await</span><span class="question-mark">?</span>.into_inner();
+    } = client.generate_secret().<span class="kw">await</span>.result<span class="question-mark">?</span>;
     <span class="kw">let </span>bytes_res = client.export_secret(<span class="kw-2">&amp;</span>key_id).<span class="kw">await</span>;
-    <span class="macro">assert!</span>(bytes_res.is_ok());
 
     <span class="comment">// Turn the export back into a Secret and compare directly
-    </span><span class="kw">let </span>exported_secret: Secret = bytes_res<span class="question-mark">?</span>.into_inner().try_into()<span class="question-mark">?</span>;
+    </span><span class="kw">let </span>exported_secret: Secret = bytes_res.result<span class="question-mark">?</span>.try_into()<span class="question-mark">?</span>;
     <span class="macro">assert_eq!</span>(exported_secret, local_storage.material);
-    check_audit_events(<span class="kw-2">&amp;</span>state, EventStatus::Successful, ClientAction::ExportSecret).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>request_id = bytes_res.metadata.unwrap().request_id;
+    check_audit_events(
+        <span class="kw-2">&amp;</span>state,
+        EventStatus::Successful,
+        ClientAction::ExportSecret,
+        request_id,
+    )
+    .<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
 }
 
 <span class="kw">async fn </span>cannot_export_fake_key(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">let </span>state = init_test_state(<span class="kw-2">&amp;</span>config).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let </span>client = authenticate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>client = authenticate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span>.result<span class="question-mark">?</span>;
 
     <span class="kw">let </span>fake_key_id = generate_fake_key_id(<span class="kw-2">&amp;</span>client).<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="kw">let </span>bytes_res = client.export_secret(<span class="kw-2">&amp;</span>fake_key_id).<span class="kw">await</span>;
+    <span class="kw">let </span>request_id = bytes_res.metadata.clone().unwrap().request_id;
     compare_errors(bytes_res, Status::internal(<span class="string">&quot;Internal server error&quot;</span>));
-    check_audit_events(<span class="kw-2">&amp;</span>state, EventStatus::Failed, ClientAction::ExportSecret).<span class="kw">await</span><span class="question-mark">?</span>;
+    check_audit_events(
+        <span class="kw-2">&amp;</span>state,
+        EventStatus::Failed,
+        ClientAction::ExportSecret,
+        request_id,
+    )
+    .<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
 }
 
 <span class="kw">async fn </span>cannot_export_signing_key_as_secret(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">let </span>state = init_test_state(<span class="kw-2">&amp;</span>config).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let </span>client = authenticate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>client = authenticate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span>.result<span class="question-mark">?</span>;
 
-    <span class="kw">let </span>(key_id, <span class="kw">_</span>) = import_signing_key(<span class="kw-2">&amp;</span>client).<span class="kw">await</span><span class="question-mark">?</span>.into_inner();
+    <span class="kw">let </span>(key_id, <span class="kw">_</span>) = import_signing_key(<span class="kw-2">&amp;</span>client).<span class="kw">await</span>.result<span class="question-mark">?</span>;
     <span class="kw">let </span>export_res = client.export_secret(<span class="kw-2">&amp;</span>key_id).<span class="kw">await</span>;
+    <span class="kw">let </span>request_id = export_res.metadata.clone().unwrap().request_id;
     compare_errors(export_res, Status::internal(<span class="string">&quot;Internal server error&quot;</span>));
-    check_audit_events(<span class="kw-2">&amp;</span>state, EventStatus::Failed, ClientAction::ExportSecret).<span class="kw">await</span><span class="question-mark">?</span>;
+    check_audit_events(
+        <span class="kw-2">&amp;</span>state,
+        EventStatus::Failed,
+        ClientAction::ExportSecret,
+        request_id,
+    )
+    .<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
 }
 
 <span class="kw">async fn </span>cannot_export_after_logout(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">let </span>state = init_test_state(<span class="kw-2">&amp;</span>config).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let </span>client = authenticate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>client = authenticate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span>.result<span class="question-mark">?</span>;
 
     <span class="kw">let </span>GenerateResult {
         key_id,
         local_storage: <span class="kw">_</span>,
-    } = client.generate_secret().<span class="kw">await</span><span class="question-mark">?</span>.into_inner();
-    client.logout().<span class="kw">await</span><span class="question-mark">?</span>;
+    } = client.generate_secret().<span class="kw">await</span>.result<span class="question-mark">?</span>;
+    client.logout().<span class="kw">await</span>.result<span class="question-mark">?</span>;
 
     <span class="kw">let </span>res = client.export_secret(<span class="kw-2">&amp;</span>key_id).<span class="kw">await</span>;
     compare_status_errors(res, Status::unauthenticated(<span class="string">&quot;No session key for this user&quot;</span>))<span class="question-mark">?</span>;
@@ -261,22 +317,24 @@
 
 <span class="kw">async fn </span>export_signing_key_works(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">let </span>state = init_test_state(<span class="kw-2">&amp;</span>config).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let </span>client = authenticate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>client = authenticate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span>.result<span class="question-mark">?</span>;
 
-    <span class="kw">let </span>(key_id, bytes_original) = import_signing_key(<span class="kw-2">&amp;</span>client).<span class="kw">await</span><span class="question-mark">?</span>.into_inner();
+    <span class="kw">let </span>(key_id, bytes_original) = import_signing_key(<span class="kw-2">&amp;</span>client).<span class="kw">await</span>.result<span class="question-mark">?</span>;
     <span class="kw">let </span>export_res = client.export_signing_key(<span class="kw-2">&amp;</span>key_id).<span class="kw">await</span>;
     <span class="macro">assert!</span>(
-        export_res.is_ok(),
+        export_res.result.is_ok(),
         <span class="string">&quot;Export failed: {}&quot;</span>,
-        export_res.unwrap_err()
+        export_res.result.unwrap_err()
     );
 
-    <span class="kw">let </span>export = export_res<span class="question-mark">?</span>.into_inner();
+    <span class="kw">let </span>export = export_res.result<span class="question-mark">?</span>;
+    <span class="kw">let </span>request_id = export_res.metadata.unwrap().request_id;
     <span class="macro">assert_eq!</span>(export.key_material, bytes_original);
     check_audit_events(
         <span class="kw-2">&amp;</span>state,
         EventStatus::Successful,
         ClientAction::ExportSigningKey,
+        request_id,
     )
     .<span class="kw">await</span><span class="question-mark">?</span>;
 
@@ -285,37 +343,51 @@
 
 <span class="kw">async fn </span>cannot_export_fake_signing_key(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">let </span>state = init_test_state(<span class="kw-2">&amp;</span>config).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let </span>client = authenticate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>client = authenticate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span>.result<span class="question-mark">?</span>;
 
     <span class="kw">let </span>fake_key_id = generate_fake_key_id(<span class="kw-2">&amp;</span>client).<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="kw">let </span>export_res = client.export_signing_key(<span class="kw-2">&amp;</span>fake_key_id).<span class="kw">await</span>;
+    <span class="kw">let </span>request_id = export_res.metadata.clone().unwrap().request_id;
     compare_errors(export_res, Status::internal(<span class="string">&quot;Internal server error&quot;</span>));
-    check_audit_events(<span class="kw-2">&amp;</span>state, EventStatus::Failed, ClientAction::ExportSigningKey).<span class="kw">await</span><span class="question-mark">?</span>;
+    check_audit_events(
+        <span class="kw-2">&amp;</span>state,
+        EventStatus::Failed,
+        ClientAction::ExportSigningKey,
+        request_id,
+    )
+    .<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
 }
 
 <span class="kw">async fn </span>cannot_export_secret_as_signing_key(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">let </span>state = init_test_state(<span class="kw-2">&amp;</span>config).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let </span>client = authenticate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>client = authenticate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span>.result<span class="question-mark">?</span>;
 
     <span class="kw">let </span>GenerateResult {
         key_id,
         local_storage: <span class="kw">_</span>,
-    } = client.generate_secret().<span class="kw">await</span><span class="question-mark">?</span>.into_inner();
+    } = client.generate_secret().<span class="kw">await</span>.result<span class="question-mark">?</span>;
     <span class="kw">let </span>export_res = client.export_signing_key(<span class="kw-2">&amp;</span>key_id).<span class="kw">await</span>;
+    <span class="kw">let </span>request_id = export_res.metadata.clone().unwrap().request_id;
     compare_errors(export_res, Status::internal(<span class="string">&quot;Internal server error&quot;</span>));
-    check_audit_events(<span class="kw-2">&amp;</span>state, EventStatus::Failed, ClientAction::ExportSigningKey).<span class="kw">await</span><span class="question-mark">?</span>;
+    check_audit_events(
+        <span class="kw-2">&amp;</span>state,
+        EventStatus::Failed,
+        ClientAction::ExportSigningKey,
+        request_id,
+    )
+    .<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
 }
 
 <span class="kw">async fn </span>cannot_export_signing_key_after_logout(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">let </span>state = init_test_state(<span class="kw-2">&amp;</span>config).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let </span>client = authenticate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>client = authenticate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span>.result<span class="question-mark">?</span>;
 
-    <span class="kw">let </span>(key_id, <span class="kw">_</span>) = import_signing_key(<span class="kw-2">&amp;</span>client).<span class="kw">await</span><span class="question-mark">?</span>.into_inner();
-    client.logout().<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>(key_id, <span class="kw">_</span>) = import_signing_key(<span class="kw-2">&amp;</span>client).<span class="kw">await</span>.result<span class="question-mark">?</span>;
+    client.logout().<span class="kw">await</span>.result<span class="question-mark">?</span>;
 
     <span class="kw">let </span>res = client.export_signing_key(<span class="kw-2">&amp;</span>key_id).<span class="kw">await</span>;
     compare_status_errors(res, Status::unauthenticated(<span class="string">&quot;No session key for this user&quot;</span>))<span class="question-mark">?</span>;

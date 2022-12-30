@@ -104,8 +104,8 @@
             <span class="kw-2">&amp;</span>credentials.password,
             <span class="kw-2">&amp;</span>state.config,
         )
-        .<span class="kw">await</span><span class="question-mark">?
-        </span>.into_inner();
+        .<span class="kw">await
+        </span>.result<span class="question-mark">?</span>;
 
         <span class="comment">// Get key_id from storage
         </span><span class="kw">let </span>entry = state.get_key_id(<span class="kw-2">&amp;</span><span class="self">self</span>.name)<span class="question-mark">?</span>;
@@ -113,8 +113,8 @@
         <span class="kw">let </span>export = lock_keeper_client
             .export_signing_key(<span class="kw-2">&amp;</span>entry.key_id)
             .<span class="kw">await
-            </span>.map_err(|e| <span class="macro">anyhow::anyhow!</span>(<span class="string">&quot;Failed to export signing key. Error: {:?}&quot;</span>, e))<span class="question-mark">?
-            </span>.into_inner();
+            </span>.result
+            .map_err(|e| <span class="macro">anyhow::anyhow!</span>(<span class="string">&quot;Failed to export signing key. Error: {:?}&quot;</span>, e))<span class="question-mark">?</span>;
 
         <span class="macro">println!</span>(<span class="string">&quot;Retrieved: {}&quot;</span>, <span class="self">self</span>.name);
         <span class="macro">println!</span>(<span class="string">&quot;{:?}&quot;</span>, export);

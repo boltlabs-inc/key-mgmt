@@ -108,6 +108,15 @@
 <span id="108">108</span>
 <span id="109">109</span>
 <span id="110">110</span>
+<span id="111">111</span>
+<span id="112">112</span>
+<span id="113">113</span>
+<span id="114">114</span>
+<span id="115">115</span>
+<span id="116">116</span>
+<span id="117">117</span>
+<span id="118">118</span>
+<span id="119">119</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Audit events, and associated fields and types
 //!
 //! Includes possible events to log and statuses of those events
@@ -119,6 +128,7 @@
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>std::fmt::{Debug, Display, Formatter};
 <span class="kw">use </span>strum::IntoEnumIterator;
+<span class="kw">use </span>uuid::Uuid;
 
 <span class="doccomment">/// Options for the outcome of a given action in a [`AuditEvent`]
 </span><span class="attribute">#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -132,6 +142,7 @@
 /// any related key for a logged audit event
 </span><span class="attribute">#[derive(Debug, Serialize, Deserialize)]
 </span><span class="kw">pub struct </span>AuditEvent {
+    request_id: String,
     actor: AccountName,
     secret_id: <span class="prelude-ty">Option</span>&lt;KeyId&gt;,
     date: DateTime,
@@ -141,12 +152,14 @@
 
 <span class="kw">impl </span>AuditEvent {
     <span class="kw">pub fn </span>new(
+        request_id: Uuid,
         actor: AccountName,
         secret_id: <span class="prelude-ty">Option</span>&lt;KeyId&gt;,
         action: ClientAction,
         status: EventStatus,
     ) -&gt; <span class="self">Self </span>{
         AuditEvent {
+            request_id: request_id.to_string(),
             actor,
             secret_id,
             date: DateTime::now(),
@@ -157,6 +170,10 @@
 }
 
 <span class="kw">impl </span>AuditEvent {
+    <span class="kw">pub fn </span>request_id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>str {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.request_id
+    }
+
     <span class="kw">pub fn </span>action(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ClientAction {
         <span class="self">self</span>.action
     }
@@ -178,8 +195,8 @@
     <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; std::fmt::Result {
         <span class="macro">write!</span>(
             f,
-            <span class="string">&quot;AuditEvent: User &lt;{:?}&gt; performed action &lt;{:?}&gt; on {} with outcome &lt;{:?}&gt;&quot;</span>,
-            <span class="self">self</span>.actor, <span class="self">self</span>.action, <span class="self">self</span>.date, <span class="self">self</span>.status
+            <span class="string">&quot;AuditEvent: User &lt;{:?}&gt; performed action &lt;{:?}&gt; on {} with outcome &lt;{:?}&gt;. Request ID: {:?}&quot;</span>,
+            <span class="self">self</span>.actor, <span class="self">self</span>.action, <span class="self">self</span>.date, <span class="self">self</span>.status, <span class="self">self</span>.request_id
         )
     }
 }
@@ -217,6 +234,7 @@
     <span class="kw">pub </span>key_ids: <span class="prelude-ty">Option</span>&lt;Vec&lt;KeyId&gt;&gt;,
     <span class="kw">pub </span>after_date: <span class="prelude-ty">Option</span>&lt;DateTime&gt;,
     <span class="kw">pub </span>before_date: <span class="prelude-ty">Option</span>&lt;DateTime&gt;,
+    <span class="kw">pub </span>request_id: <span class="prelude-ty">Option</span>&lt;Uuid&gt;,
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="lock_keeper" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0 (69f9c33d7 2022-12-12)" ></div></body></html>

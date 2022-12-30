@@ -316,18 +316,6 @@
 <span id="316">316</span>
 <span id="317">317</span>
 <span id="318">318</span>
-<span id="319">319</span>
-<span id="320">320</span>
-<span id="321">321</span>
-<span id="322">322</span>
-<span id="323">323</span>
-<span id="324">324</span>
-<span id="325">325</span>
-<span id="326">326</span>
-<span id="327">327</span>
-<span id="328">328</span>
-<span id="329">329</span>
-<span id="330">330</span>
 </pre><pre class="rust"><code><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>opaque_storage;
 <span class="kw">mod </span>operation;
 <span class="kw">mod </span>service;
@@ -337,7 +325,6 @@
 <span class="kw">pub use </span>service::start_lock_keeper_server;
 <span class="kw">use </span>tokio_stream::wrappers::ReceiverStream;
 <span class="kw">use </span>tracing::{info, instrument};
-<span class="kw">use </span>uuid::Uuid;
 
 <span class="kw">use crate</span>::{config::Config, error::LockKeeperServerError, operations};
 
@@ -346,10 +333,7 @@
     crypto::KeyId,
     infrastructure::channel::{Authenticated, ServerChannel, Unauthenticated},
     rpc::{lock_keeper_rpc_server::LockKeeperRpc, HealthCheck},
-    types::{
-        operations::{RequestMetadata, ResponseMetadata},
-        Message, MessageStream,
-    },
+    types::{operations::RequestMetadata, Message, MessageStream},
 };
 
 <span class="kw">use crate</span>::{database::DataStore, server::session_cache::SessionCache};
@@ -607,15 +591,7 @@
     {
         <span class="macro">info!</span>(<span class="string">&quot;Handling new client request.&quot;</span>);
         <span class="kw">let </span>(channel, rx) = ServerChannel::new(request)<span class="question-mark">?</span>;
-
-        <span class="kw">let </span>metadata = ResponseMetadata {
-            request_id: Uuid::new_v4(),
-        };
-
-        <span class="kw">let </span><span class="kw-2">mut </span>response = Response::new(ReceiverStream::new(rx));
-        <span class="kw">let _ </span>= response
-            .metadata_mut()
-            .insert(METADATA, metadata.try_into()<span class="question-mark">?</span>);
+        <span class="kw">let </span>response = Response::new(ReceiverStream::new(rx));
 
         <span class="prelude-val">Ok</span>((channel, response))
     }

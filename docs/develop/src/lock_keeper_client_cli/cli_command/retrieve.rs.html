@@ -84,15 +84,15 @@
             <span class="kw-2">&amp;</span>credentials.password,
             <span class="kw-2">&amp;</span>state.config,
         )
-        .<span class="kw">await</span><span class="question-mark">?
-        </span>.into_inner();
+        .<span class="kw">await
+        </span>.result<span class="question-mark">?</span>;
 
         <span class="kw">let </span>entry = state.get_key_id(<span class="kw-2">&amp;</span><span class="self">self</span>.name)<span class="question-mark">?</span>;
         <span class="comment">// Retrieve results for specified key.
         </span><span class="kw">let </span>retrieve_result = lock_keeper_client
             .retrieve_secret(<span class="kw-2">&amp;</span>entry.key_id, RetrieveContext::LocalOnly)
-            .<span class="kw">await</span><span class="question-mark">?
-            </span>.into_inner();
+            .<span class="kw">await
+            </span>.result<span class="question-mark">?</span>;
 
         <span class="macro">println!</span>(<span class="string">&quot;Retrieved: {}&quot;</span>, <span class="self">self</span>.name);
         <span class="macro">println!</span>(<span class="string">&quot;{retrieve_result:?}&quot;</span>);

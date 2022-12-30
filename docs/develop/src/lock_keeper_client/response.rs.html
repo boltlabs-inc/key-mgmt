@@ -11,36 +11,18 @@
 <span id="11">11</span>
 <span id="12">12</span>
 <span id="13">13</span>
-<span id="14">14</span>
-<span id="15">15</span>
-<span id="16">16</span>
-<span id="17">17</span>
-<span id="18">18</span>
-<span id="19">19</span>
-<span id="20">20</span>
-<span id="21">21</span>
-<span id="22">22</span>
-</pre><pre class="rust"><code><span class="kw">use </span>lock_keeper::{infrastructure::channel::ClientChannel, types::operations::ResponseMetadata};
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::LockKeeperClientError;
+<span class="kw">use </span>uuid::Uuid;
 
 <span class="attribute">#[derive(Clone, Debug)]
-</span><span class="kw">pub struct </span>LockKeeperResponse&lt;T&gt; {
-    <span class="kw">pub </span>data: T,
-    <span class="kw">pub </span>metadata: ResponseMetadata,
+</span><span class="kw">pub struct </span>Metadata {
+    <span class="kw">pub </span>request_id: Uuid,
 }
 
-<span class="kw">impl</span>&lt;T&gt; LockKeeperResponse&lt;T&gt; {
-    <span class="doccomment">/// Consumes a [`ClientChannel`] and returns a response.
-    </span><span class="kw">pub fn </span>from_channel&lt;AUTH&gt;(channel: ClientChannel&lt;AUTH&gt;, data: T) -&gt; <span class="self">Self </span>{
-        <span class="self">Self </span>{
-            data,
-            metadata: channel.into_metadata(),
-        }
-    }
-
-    <span class="doccomment">/// Consumes the response and returns the inner data.
-    </span><span class="kw">pub fn </span>into_inner(<span class="self">self</span>) -&gt; T {
-        <span class="self">self</span>.data
-    }
+<span class="attribute">#[derive(Debug)]
+</span><span class="kw">pub struct </span>LockKeeperResponse&lt;T&gt; {
+    <span class="kw">pub </span>result: <span class="prelude-ty">Result</span>&lt;T, LockKeeperClientError&gt;,
+    <span class="kw">pub </span>metadata: <span class="prelude-ty">Option</span>&lt;Metadata&gt;,
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="lock_keeper_client" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0 (69f9c33d7 2022-12-12)" ></div></body></html>

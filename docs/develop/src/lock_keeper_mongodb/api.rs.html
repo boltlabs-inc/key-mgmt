@@ -171,6 +171,8 @@
 <span id="171">171</span>
 <span id="172">172</span>
 <span id="173">173</span>
+<span id="174">174</span>
+<span id="175">175</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{
     config::Config,
     constants::{SECRETS, USERS},
@@ -198,6 +200,7 @@
 };
 <span class="kw">use </span>opaque_ke::ServerRegistration;
 <span class="kw">use </span>tracing::instrument;
+<span class="kw">use </span>uuid::Uuid;
 
 <span class="kw">mod </span>audit_event;
 <span class="kw">mod </span>secret;
@@ -264,12 +267,13 @@
     <span class="attribute">#[instrument(skip_all, err(Debug), fields(actor, secret_id, action, status))]
     </span><span class="kw">async fn </span>create_audit_event(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
+        request_id: Uuid,
         actor: <span class="kw-2">&amp;</span>AccountName,
         secret_id: <span class="kw-2">&amp;</span><span class="prelude-ty">Option</span>&lt;KeyId&gt;,
         action: ClientAction,
         status: EventStatus,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt; {
-        <span class="self">self</span>.create_audit_event(actor, secret_id, action, status)
+        <span class="self">self</span>.create_audit_event(request_id, actor, secret_id, action, status)
             .<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
     }

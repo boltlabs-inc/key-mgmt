@@ -118,6 +118,8 @@
 <span id="118">118</span>
 <span id="119">119</span>
 <span id="120">120</span>
+<span id="121">121</span>
+<span id="122">122</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Database for key-servers.
 //!
 //! This database will hold information on users and the secret material
@@ -137,6 +139,7 @@
     },
 };
 <span class="kw">use </span>opaque_ke::ServerRegistration;
+<span class="kw">use </span>uuid::Uuid;
 
 <span class="doccomment">/// Defines the expected interface between a key server and its database.
 ///
@@ -149,6 +152,7 @@
     </span><span class="doccomment">/// Create a new [`AuditEvent`] for the given actor, action, and outcome
     </span><span class="kw">async fn </span>create_audit_event(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
+        request_id: Uuid,
         actor: <span class="kw-2">&amp;</span>AccountName,
         secret_id: <span class="kw-2">&amp;</span><span class="prelude-ty">Option</span>&lt;KeyId&gt;,
         action: ClientAction,

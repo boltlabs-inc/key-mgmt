@@ -85,16 +85,16 @@
             <span class="kw-2">&amp;</span>credentials.password,
             <span class="kw-2">&amp;</span>state.config,
         )
-        .<span class="kw">await</span><span class="question-mark">?
-        </span>.into_inner();
+        .<span class="kw">await
+        </span>.result<span class="question-mark">?</span>;
 
         <span class="kw">let </span>bytes = SignableBytes(<span class="self">self</span>.data.into_bytes());
 
         <span class="comment">// If successful, proceed to generate a secret with the established session
         </span><span class="kw">let </span>signature = lock_keeper_client
             .remote_sign_bytes(entry.key_id.clone(), bytes)
-            .<span class="kw">await</span><span class="question-mark">?
-            </span>.into_inner();
+            .<span class="kw">await
+            </span>.result<span class="question-mark">?</span>;
 
         <span class="macro">println!</span>(<span class="string">&quot;Signature: {}&quot;</span>, hex::encode(signature));
         <span class="prelude-val">Ok</span>(())

@@ -91,13 +91,7 @@
 <span id="91">91</span>
 <span id="92">92</span>
 <span id="93">93</span>
-<span id="94">94</span>
-<span id="95">95</span>
-<span id="96">96</span>
-</pre><pre class="rust"><code><span class="kw">use crate</span>::{
-    client::{AuthenticateResult, LockKeeperClient, Password},
-    LockKeeperResponse,
-};
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::client::{AuthenticateResult, LockKeeperClient, Password};
 <span class="kw">use </span>std::sync::Arc;
 
 <span class="kw">use </span><span class="kw">crate</span>::LockKeeperClientError;
@@ -120,7 +114,7 @@
         rng: Arc&lt;Mutex&lt;StdRng&gt;&gt;,
         account_name: <span class="kw-2">&amp;</span>AccountName,
         password: <span class="kw-2">&amp;</span>Password,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperResponse&lt;AuthenticateResult&gt;, LockKeeperClientError&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;AuthenticateResult, LockKeeperClientError&gt; {
         <span class="kw">let </span>client_login_start_result = {
             <span class="kw">let </span><span class="kw-2">mut </span>rng = rng.lock().<span class="kw">await</span>;
             ClientLogin::&lt;OpaqueCipherSuite&gt;::start(<span class="kw-2">&amp;mut *</span>rng, password.as_bytes())<span class="question-mark">?
@@ -140,7 +134,7 @@
         )
         .<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="prelude-val">Ok</span>(LockKeeperResponse::from_channel(channel, auth_result))
+        <span class="prelude-val">Ok</span>(auth_result)
     }
 }
 

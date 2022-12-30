@@ -86,7 +86,8 @@
 <span id="86">86</span>
 <span id="87">87</span>
 <span id="88">88</span>
-</pre><pre class="rust"><code><span class="kw">use crate</span>::{api::LocalStorage, LockKeeperClient, LockKeeperClientError, LockKeeperResponse};
+<span id="89">89</span>
+</pre><pre class="rust"><code><span class="kw">use crate</span>::{api::LocalStorage, LockKeeperClient, LockKeeperClientError};
 <span class="kw">use </span>lock_keeper::{
     crypto::{Encrypted, KeyId, Secret, SigningKeyPair},
     infrastructure::channel::{Authenticated, ClientChannel},
@@ -96,6 +97,7 @@
     },
 };
 <span class="kw">use </span>rand::rngs::StdRng;
+<span class="kw">use </span>uuid::Uuid;
 
 <span class="kw">impl </span>LockKeeperClient {
     <span class="doccomment">/// Handles the retrieval of arbitrary secrets
@@ -105,9 +107,10 @@
         <span class="kw-2">mut </span>channel: ClientChannel&lt;Authenticated&lt;StdRng&gt;&gt;,
         key_id: <span class="kw-2">&amp;</span>KeyId,
         context: RetrieveContext,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperResponse&lt;<span class="prelude-ty">Option</span>&lt;LocalStorage&lt;Secret&gt;&gt;&gt;, LockKeeperClientError&gt; {
+        request_id: Uuid,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;LocalStorage&lt;Secret&gt;&gt;, LockKeeperClientError&gt; {
         <span class="comment">// Retrieve the storage key
-        </span><span class="kw">let </span>storage_key = <span class="self">self</span>.retrieve_storage_key().<span class="kw">await</span><span class="question-mark">?</span>;
+        </span><span class="kw">let </span>storage_key = <span class="self">self</span>.retrieve_storage_key(request_id).<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="comment">// TODO spec#39 look up key ID in local storage before making request to server
 
@@ -135,7 +138,7 @@
             }
         };
 
-        <span class="prelude-val">Ok</span>(LockKeeperResponse::from_channel(channel, result))
+        <span class="prelude-val">Ok</span>(result)
     }
 
     <span class="doccomment">/// Handles the retrieval of signing keys
@@ -145,8 +148,7 @@
         <span class="kw-2">mut </span>channel: ClientChannel&lt;Authenticated&lt;StdRng&gt;&gt;,
         key_id: <span class="kw-2">&amp;</span>KeyId,
         context: RetrieveContext,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperResponse&lt;<span class="prelude-ty">Option</span>&lt;LocalStorage&lt;SigningKeyPair&gt;&gt;&gt;, LockKeeperClientError&gt;
-    {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;LocalStorage&lt;SigningKeyPair&gt;&gt;, LockKeeperClientError&gt; {
         <span class="comment">// TODO spec#39 look up key ID in local storage before making request to server
 
         // Send UserId to server
@@ -171,7 +173,7 @@
             }
         };
 
-        <span class="prelude-val">Ok</span>(LockKeeperResponse::from_channel(channel, result))
+        <span class="prelude-val">Ok</span>(result)
     }
 }
 </code></pre></div>

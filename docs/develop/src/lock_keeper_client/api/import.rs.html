@@ -24,11 +24,7 @@
 <span id="24">24</span>
 <span id="25">25</span>
 <span id="26">26</span>
-<span id="27">27</span>
-<span id="28">28</span>
-<span id="29">29</span>
-<span id="30">30</span>
-</pre><pre class="rust"><code><span class="kw">use crate</span>::{LockKeeperClient, LockKeeperClientError, LockKeeperResponse};
+</pre><pre class="rust"><code><span class="kw">use crate</span>::{LockKeeperClient, LockKeeperClientError};
 <span class="kw">use </span>lock_keeper::{
     crypto::{Import, KeyId},
     infrastructure::channel::{Authenticated, ClientChannel},
@@ -41,7 +37,7 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         <span class="kw-2">mut </span>channel: ClientChannel&lt;Authenticated&lt;StdRng&gt;&gt;,
         key_material: Import,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;LockKeeperResponse&lt;KeyId&gt;, LockKeeperClientError&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;KeyId, LockKeeperClientError&gt; {
         <span class="comment">// Send UserId and key material to server
         </span><span class="kw">let </span>request = client::Request {
             user_id: <span class="self">self</span>.user_id().clone(),
@@ -51,11 +47,7 @@
 
         <span class="comment">// Get KeyId for imported key from server
         </span><span class="kw">let </span>server_response: server::Response = channel.receive().<span class="kw">await</span><span class="question-mark">?</span>;
-
-        <span class="prelude-val">Ok</span>(LockKeeperResponse::from_channel(
-            channel,
-            server_response.key_id,
-        ))
+        <span class="prelude-val">Ok</span>(server_response.key_id)
     }
 }
 </code></pre></div>

@@ -73,13 +73,19 @@
 <span id="73">73</span>
 <span id="74">74</span>
 <span id="75">75</span>
+<span id="76">76</span>
+<span id="77">77</span>
+<span id="78">78</span>
+<span id="79">79</span>
+<span id="80">80</span>
+<span id="81">81</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Operations on audit events in the MongoDB database.
 //!
 //! Functions in this module are used to perform CRUD operations
 //! on the [`AuditEvent`] model in the MongoDB database.
 
 </span><span class="kw">use crate</span>::{
-    constants::{ACTION, ACTOR, AUDIT_EVENTS, DATE, MAX_AUDIT_ENTRIES, SECRET_ID},
+    constants::{ACTION, ACTOR, AUDIT_EVENTS, DATE, MAX_AUDIT_ENTRIES, REQUEST_ID, SECRET_ID},
     error::Error,
 };
 <span class="kw">use </span>futures::TryStreamExt;
@@ -95,6 +101,7 @@
     bson::{doc, Document},
     options::FindOptions,
 };
+<span class="kw">use </span>uuid::Uuid;
 
 <span class="kw">use </span><span class="kw">super</span>::Database;
 
@@ -102,13 +109,15 @@
     <span class="doccomment">/// Create a new [`AuditEvent`] for the given actor, action, and outcome
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>create_audit_event(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
+        request_id: Uuid,
         actor: <span class="kw-2">&amp;</span>AccountName,
         secret_id: <span class="kw-2">&amp;</span><span class="prelude-ty">Option</span>&lt;KeyId&gt;,
         action: ClientAction,
         status: EventStatus,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
         <span class="kw">let </span>collection = <span class="self">self</span>.handle.collection::&lt;AuditEvent&gt;(AUDIT_EVENTS);
-        <span class="kw">let </span>new_event = AuditEvent::new(actor.clone(), secret_id.clone(), action, status);
+        <span class="kw">let </span>new_event =
+            AuditEvent::new(request_id, actor.clone(), secret_id.clone(), action, status);
         <span class="kw">let _ </span>= collection.insert_one(new_event, <span class="prelude-val">None</span>).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
     }
@@ -144,6 +153,9 @@
     }
     <span class="kw">if let </span><span class="prelude-val">Some</span>(before_date) = options.before_date {
         <span class="kw">let _ </span>= query.insert(DATE, <span class="macro">doc! </span>{<span class="string">&quot;$lte&quot;</span>: mongodb::bson::to_bson(<span class="kw-2">&amp;</span>before_date)<span class="question-mark">?</span>});
+    }
+    <span class="kw">if let </span><span class="prelude-val">Some</span>(request_id) = options.request_id {
+        <span class="kw">let _ </span>= query.insert(REQUEST_ID, request_id.to_string());
     }
 
     <span class="prelude-val">Ok</span>(query)
