@@ -5,10 +5,9 @@ use tokio_stream::StreamExt;
 use tonic::{Response, Streaming};
 
 use crate::{
-    constants::METADATA,
     crypto::{Encrypted, OpaqueSessionKey},
     rpc::Message,
-    types::operations::{ConvertMessage, ResponseMetadata},
+    types::operations::ConvertMessage,
     LockKeeperError,
 };
 
@@ -24,22 +23,7 @@ use super::{Authenticated, Unauthenticated};
 pub struct ClientChannel<AUTH> {
     sender: Sender<Message>,
     receiver: Streaming<Message>,
-    metadata: ResponseMetadata,
     auth: AUTH,
-}
-
-impl<AUTH> ClientChannel<AUTH> {
-    /// Returns the metadata associated with this channel.
-    pub fn metadata(&self) -> &ResponseMetadata {
-        &self.metadata
-    }
-
-    /// Consumes the channel and returns the metadata.
-    /// Use this when you're finished with the channel but need to return the
-    /// metadata.
-    pub fn into_metadata(self) -> ResponseMetadata {
-        self.metadata
-    }
 }
 
 impl ClientChannel<Unauthenticated> {
@@ -47,16 +31,9 @@ impl ClientChannel<Unauthenticated> {
         sender: Sender<Message>,
         response: Response<Streaming<Message>>,
     ) -> Result<Self, LockKeeperError> {
-        let metadata = response
-            .metadata()
-            .get(METADATA)
-            .ok_or(LockKeeperError::MetadataNotFound)?
-            .try_into()?;
-
         Ok(Self {
             sender,
             receiver: response.into_inner(),
-            metadata,
             auth: Unauthenticated,
         })
     }
@@ -69,7 +46,6 @@ impl ClientChannel<Unauthenticated> {
         ClientChannel {
             sender: self.sender,
             receiver: self.receiver,
-            metadata: self.metadata,
             auth: Authenticated { session_key, rng },
         }
     }

@@ -17,6 +17,7 @@ use lock_keeper::{
     },
 };
 use opaque_ke::ServerRegistration;
+use uuid::Uuid;
 
 /// Defines the expected interface between a key server and its database.
 ///
@@ -29,6 +30,7 @@ pub trait DataStore: Send + Sync + 'static {
     /// Create a new [`AuditEvent`] for the given actor, action, and outcome
     async fn create_audit_event(
         &self,
+        request_id: Uuid,
         actor: &AccountName,
         secret_id: &Option<KeyId>,
         action: ClientAction,

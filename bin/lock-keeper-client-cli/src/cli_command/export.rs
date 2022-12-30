@@ -26,8 +26,8 @@ impl CliCommand for Export {
             &credentials.password,
             &state.config,
         )
-        .await?
-        .into_inner();
+        .await
+        .result?;
 
         // Get key_id from storage
         let entry = state.get_key_id(&self.name)?;
@@ -35,8 +35,8 @@ impl CliCommand for Export {
         let export = lock_keeper_client
             .export_signing_key(&entry.key_id)
             .await
-            .map_err(|e| anyhow::anyhow!("Failed to export signing key. Error: {:?}", e))?
-            .into_inner();
+            .result
+            .map_err(|e| anyhow::anyhow!("Failed to export signing key. Error: {:?}", e))?;
 
         println!("Retrieved: {}", self.name);
         println!("{:?}", export);

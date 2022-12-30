@@ -1,4 +1,4 @@
-use crate::{LockKeeperClient, LockKeeperClientError, LockKeeperResponse};
+use crate::{LockKeeperClient, LockKeeperClientError};
 use lock_keeper::{
     crypto::{Import, KeyId},
     infrastructure::channel::{Authenticated, ClientChannel},
@@ -11,7 +11,7 @@ impl LockKeeperClient {
         &self,
         mut channel: ClientChannel<Authenticated<StdRng>>,
         key_material: Import,
-    ) -> Result<LockKeeperResponse<KeyId>, LockKeeperClientError> {
+    ) -> Result<KeyId, LockKeeperClientError> {
         // Send UserId and key material to server
         let request = client::Request {
             user_id: self.user_id().clone(),
@@ -21,10 +21,6 @@ impl LockKeeperClient {
 
         // Get KeyId for imported key from server
         let server_response: server::Response = channel.receive().await?;
-
-        Ok(LockKeeperResponse::from_channel(
-            channel,
-            server_response.key_id,
-        ))
+        Ok(server_response.key_id)
     }
 }

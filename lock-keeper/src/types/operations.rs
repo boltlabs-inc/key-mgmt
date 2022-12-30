@@ -102,6 +102,7 @@ pub struct RequestMetadata {
     action: ClientAction,
     user_id: Option<UserId>,
     session_id: Option<SessionId>,
+    request_id: Uuid,
 }
 
 impl RequestMetadata {
@@ -110,12 +111,14 @@ impl RequestMetadata {
         action: ClientAction,
         user_id: Option<&UserId>,
         session_id: Option<&SessionId>,
+        request_id: Uuid,
     ) -> Self {
         Self {
             account_name: account_name.clone(),
             action,
             user_id: user_id.cloned(),
             session_id: session_id.cloned(),
+            request_id,
         }
     }
 
@@ -125,6 +128,10 @@ impl RequestMetadata {
 
     pub fn action(&self) -> ClientAction {
         self.action
+    }
+
+    pub fn request_id(&self) -> Uuid {
+        self.request_id
     }
 
     pub fn user_id(&self) -> Option<&UserId> {
@@ -156,49 +163,5 @@ impl TryFrom<&MetadataValue<Ascii>> for RequestMetadata {
         let bytes = value.as_bytes();
         let metadata = serde_json::from_slice(bytes)?;
         Ok(metadata)
-    }
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct ResponseMetadata {
-    pub request_id: Uuid,
-}
-
-impl TryFrom<ResponseMetadata> for MetadataValue<Ascii> {
-    type Error = LockKeeperError;
-
-    fn try_from(value: ResponseMetadata) -> Result<Self, Self::Error> {
-        let bytes = serde_json::to_vec(&value)?;
-        Ok(MetadataValue::try_from(bytes)?)
-    }
-}
-
-impl TryFrom<&MetadataValue<Ascii>> for ResponseMetadata {
-    type Error = LockKeeperError;
-
-    fn try_from(value: &MetadataValue<Ascii>) -> Result<Self, Self::Error> {
-        let bytes = value.as_bytes();
-        let metadata = serde_json::from_slice(bytes)?;
-        Ok(metadata)
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn session_key_to_hex_bytes_conversion_works() -> Result<(), LockKeeperError> {
-        let mut rng = rand::thread_rng();
-
-        for _ in 0..1000 {
-            let session_id = SessionId::new(&mut rng)?;
-
-            let bytes: HexBytes = session_id.clone().into();
-            let output_session_id = bytes.try_into()?;
-
-            assert_eq!(session_id, output_session_id);
-        }
-        Ok(())
     }
 }

@@ -1,4 +1,4 @@
-use crate::{LockKeeperClient, LockKeeperClientError, LockKeeperResponse};
+use crate::{LockKeeperClient, LockKeeperClientError};
 use lock_keeper::{
     infrastructure::channel::{Authenticated, ClientChannel},
     types::{
@@ -14,7 +14,7 @@ impl LockKeeperClient {
         mut channel: ClientChannel<Authenticated<StdRng>>,
         event_type: EventType,
         options: AuditEventOptions,
-    ) -> Result<LockKeeperResponse<Vec<AuditEvent>>, LockKeeperClientError> {
+    ) -> Result<Vec<AuditEvent>, LockKeeperClientError> {
         // Send audit event request and filters
         let client_request = client::Request {
             event_type,
@@ -24,10 +24,6 @@ impl LockKeeperClient {
 
         // Receive audit event log and return
         let server_response: server::Response = channel.receive().await?;
-
-        Ok(LockKeeperResponse::from_channel(
-            channel,
-            server_response.summary_record,
-        ))
+        Ok(server_response.summary_record)
     }
 }

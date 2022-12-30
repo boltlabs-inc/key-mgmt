@@ -7,7 +7,6 @@ pub(crate) use operation::Operation;
 pub use service::start_lock_keeper_server;
 use tokio_stream::wrappers::ReceiverStream;
 use tracing::{info, instrument};
-use uuid::Uuid;
 
 use crate::{config::Config, error::LockKeeperServerError, operations};
 
@@ -16,10 +15,7 @@ use lock_keeper::{
     crypto::KeyId,
     infrastructure::channel::{Authenticated, ServerChannel, Unauthenticated},
     rpc::{lock_keeper_rpc_server::LockKeeperRpc, HealthCheck},
-    types::{
-        operations::{RequestMetadata, ResponseMetadata},
-        Message, MessageStream,
-    },
+    types::{operations::RequestMetadata, Message, MessageStream},
 };
 
 use crate::{database::DataStore, server::session_cache::SessionCache};
@@ -277,15 +273,7 @@ impl<DB: DataStore> LockKeeperKeyServer<DB> {
     {
         info!("Handling new client request.");
         let (channel, rx) = ServerChannel::new(request)?;
-
-        let metadata = ResponseMetadata {
-            request_id: Uuid::new_v4(),
-        };
-
-        let mut response = Response::new(ReceiverStream::new(rx));
-        let _ = response
-            .metadata_mut()
-            .insert(METADATA, metadata.try_into()?);
+        let response = Response::new(ReceiverStream::new(rx));
 
         Ok((channel, response))
     }

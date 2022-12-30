@@ -9,6 +9,7 @@ use bson::DateTime;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display, Formatter};
 use strum::IntoEnumIterator;
+use uuid::Uuid;
 
 /// Options for the outcome of a given action in a [`AuditEvent`]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -22,6 +23,7 @@ pub enum EventStatus {
 /// any related key for a logged audit event
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AuditEvent {
+    request_id: String,
     actor: AccountName,
     secret_id: Option<KeyId>,
     date: DateTime,
@@ -31,12 +33,14 @@ pub struct AuditEvent {
 
 impl AuditEvent {
     pub fn new(
+        request_id: Uuid,
         actor: AccountName,
         secret_id: Option<KeyId>,
         action: ClientAction,
         status: EventStatus,
     ) -> Self {
         AuditEvent {
+            request_id: request_id.to_string(),
             actor,
             secret_id,
             date: DateTime::now(),
@@ -47,6 +51,10 @@ impl AuditEvent {
 }
 
 impl AuditEvent {
+    pub fn request_id(&self) -> &str {
+        &self.request_id
+    }
+
     pub fn action(&self) -> ClientAction {
         self.action
     }
@@ -68,8 +76,8 @@ impl Display for AuditEvent {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "AuditEvent: User <{:?}> performed action <{:?}> on {} with outcome <{:?}>",
-            self.actor, self.action, self.date, self.status
+            "AuditEvent: User <{:?}> performed action <{:?}> on {} with outcome <{:?}>. Request ID: {:?}",
+            self.actor, self.action, self.date, self.status, self.request_id
         )
     }
 }
@@ -107,4 +115,5 @@ pub struct AuditEventOptions {
     pub key_ids: Option<Vec<KeyId>>,
     pub after_date: Option<DateTime>,
     pub before_date: Option<DateTime>,
+    pub request_id: Option<Uuid>,
 }

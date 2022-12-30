@@ -36,19 +36,18 @@ pub async fn run_tests(config: &Config, filters: &TestFilters) -> Result<Vec<Tes
 
 async fn retrieve_local_only_works(config: Config) -> Result<()> {
     let state = init_test_state(&config).await?;
-    let client = authenticate(&state).await?;
+    let client = authenticate(&state).await.result?;
 
     let GenerateResult {
         key_id,
         local_storage,
-    } = client.generate_secret().await?.into_inner();
+    } = client.generate_secret().await.result?;
     let local_storage_res = client
         .retrieve_secret(&key_id, RetrieveContext::LocalOnly)
         .await;
-    assert!(local_storage_res.is_ok());
 
-    let local_storage_opt = local_storage_res?.into_inner();
-    assert!(local_storage_opt.is_some());
+    let local_storage_opt = local_storage_res.result?;
+    let request_id = local_storage_res.metadata.clone().unwrap().request_id;
 
     let local_storage_new = local_storage_opt.unwrap();
     assert_eq!(local_storage_new.material, local_storage.material);
@@ -56,6 +55,7 @@ async fn retrieve_local_only_works(config: Config) -> Result<()> {
         &state,
         EventStatus::Successful,
         ClientAction::RetrieveSecret,
+        request_id,
     )
     .await?;
 
@@ -64,21 +64,22 @@ async fn retrieve_local_only_works(config: Config) -> Result<()> {
 
 async fn retrieve_null_works(config: Config) -> Result<()> {
     let state = init_test_state(&config).await?;
-    let client = authenticate(&state).await?;
+    let client = authenticate(&state).await.result?;
 
     let GenerateResult {
         key_id,
         local_storage: _,
-    } = client.generate_secret().await?.into_inner();
+    } = client.generate_secret().await.result?;
     let local_storage_res = client.retrieve_secret(&key_id, RetrieveContext::Null).await;
-    assert!(local_storage_res.is_ok());
 
-    let local_storage_opt = local_storage_res?.into_inner();
+    let local_storage_opt = local_storage_res.result?;
+    let request_id = local_storage_res.metadata.unwrap().request_id;
     assert!(local_storage_opt.is_none());
     check_audit_events(
         &state,
         EventStatus::Successful,
         ClientAction::RetrieveSecret,
+        request_id,
     )
     .await?;
 
@@ -87,28 +88,35 @@ async fn retrieve_null_works(config: Config) -> Result<()> {
 
 async fn cannot_retrieve_fake_key(config: Config) -> Result<()> {
     let state = init_test_state(&config).await?;
-    let client = authenticate(&state).await?;
+    let client = authenticate(&state).await.result?;
 
     let fake_key_id = generate_fake_key_id(&client).await?;
     let local_storage_res = client
         .retrieve_secret(&fake_key_id, RetrieveContext::LocalOnly)
         .await;
+    let request_id = local_storage_res.metadata.clone().unwrap().request_id;
     compare_errors(local_storage_res, Status::internal("Internal server error"));
-    check_audit_events(&state, EventStatus::Failed, ClientAction::RetrieveSecret).await?;
+    check_audit_events(
+        &state,
+        EventStatus::Failed,
+        ClientAction::RetrieveSecret,
+        request_id,
+    )
+    .await?;
 
     Ok(())
 }
 
 async fn cannot_retrieve_after_logout(config: Config) -> Result<()> {
     let state = init_test_state(&config).await?;
-    let client = authenticate(&state).await?;
+    let client = authenticate(&state).await.result?;
 
     // Generate a secret before waiting out the timeout
     let GenerateResult {
         key_id,
         local_storage: _,
-    } = client.generate_secret().await?.into_inner();
-    client.logout().await?;
+    } = client.generate_secret().await.result?;
+    client.logout().await.result?;
 
     let res = client.retrieve_secret(&key_id, RetrieveContext::Null).await;
     compare_status_errors(res, Status::unauthenticated("No session key for this user"))?;

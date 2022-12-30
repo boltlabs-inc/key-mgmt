@@ -1,4 +1,4 @@
-use crate::{LockKeeperClient, LockKeeperClientError, LockKeeperResponse};
+use crate::{LockKeeperClient, LockKeeperClientError};
 use lock_keeper::{
     crypto::{KeyId, Signable, SignableBytes, Signature},
     infrastructure::channel::{Authenticated, ClientChannel},
@@ -12,7 +12,7 @@ impl LockKeeperClient {
         mut channel: ClientChannel<Authenticated<StdRng>>,
         key_id: KeyId,
         bytes: impl Signable,
-    ) -> Result<LockKeeperResponse<Signature>, LockKeeperClientError> {
+    ) -> Result<Signature, LockKeeperClientError> {
         let request = client::RequestRemoteSign {
             user_id: self.user_id().clone(),
             key_id,
@@ -23,9 +23,6 @@ impl LockKeeperClient {
 
         let response: server::ReturnSignature = channel.receive().await?;
 
-        Ok(LockKeeperResponse::from_channel(
-            channel,
-            response.signature,
-        ))
+        Ok(response.signature)
     }
 }

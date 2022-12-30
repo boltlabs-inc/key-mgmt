@@ -16,7 +16,8 @@ pub struct Authenticate {
 impl CliCommand for Authenticate {
     async fn execute(self: Box<Self>, state: &mut State) -> Result<(), anyhow::Error> {
         LockKeeperClient::authenticated_client(&self.account_name, &self.password, &state.config)
-            .await?;
+            .await
+            .result?;
 
         println!("Logged in to {}", self.account_name);
         state.credentials = Some(Credentials {

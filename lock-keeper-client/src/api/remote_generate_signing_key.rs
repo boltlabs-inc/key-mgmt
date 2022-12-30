@@ -1,4 +1,4 @@
-use crate::{LockKeeperClient, LockKeeperClientError, LockKeeperResponse};
+use crate::{LockKeeperClient, LockKeeperClientError};
 use lock_keeper::{
     crypto::{KeyId, SigningPublicKey},
     infrastructure::channel::{Authenticated, ClientChannel},
@@ -11,7 +11,7 @@ impl LockKeeperClient {
     pub(crate) async fn handle_remote_generate_signing_key(
         &self,
         mut channel: ClientChannel<Authenticated<StdRng>>,
-    ) -> Result<LockKeeperResponse<RemoteGenerateResult>, LockKeeperClientError> {
+    ) -> Result<RemoteGenerateResult, LockKeeperClientError> {
         let request = client::RequestRemoteGenerate {
             user_id: self.user_id().clone(),
         };
@@ -19,12 +19,10 @@ impl LockKeeperClient {
         channel.send(request).await?;
 
         let response: server::ReturnKeyId = channel.receive().await?;
-        let result = RemoteGenerateResult {
+        Ok(RemoteGenerateResult {
             key_id: response.key_id,
             public_key: response.public_key,
-        };
-
-        Ok(LockKeeperResponse::from_channel(channel, result))
+        })
     }
 }
 

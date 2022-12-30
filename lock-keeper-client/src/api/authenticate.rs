@@ -1,7 +1,4 @@
-use crate::{
-    client::{AuthenticateResult, LockKeeperClient, Password},
-    LockKeeperResponse,
-};
+use crate::client::{AuthenticateResult, LockKeeperClient, Password};
 use std::sync::Arc;
 
 use crate::LockKeeperClientError;
@@ -24,7 +21,7 @@ impl LockKeeperClient {
         rng: Arc<Mutex<StdRng>>,
         account_name: &AccountName,
         password: &Password,
-    ) -> Result<LockKeeperResponse<AuthenticateResult>, LockKeeperClientError> {
+    ) -> Result<AuthenticateResult, LockKeeperClientError> {
         let client_login_start_result = {
             let mut rng = rng.lock().await;
             ClientLogin::<OpaqueCipherSuite>::start(&mut *rng, password.as_bytes())?
@@ -44,7 +41,7 @@ impl LockKeeperClient {
         )
         .await?;
 
-        Ok(LockKeeperResponse::from_channel(channel, auth_result))
+        Ok(auth_result)
     }
 }
 

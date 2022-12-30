@@ -17,7 +17,8 @@ mod retrieve;
 mod retrieve_audit_events;
 
 use crate::{
-    client::Password, config::Config, LockKeeperClient, LockKeeperClientError, LockKeeperResponse,
+    client::Password, config::Config, response::Metadata, LockKeeperClient, LockKeeperClientError,
+    LockKeeperResponse,
 };
 use lock_keeper::{
     crypto::{Export, Import, KeyId, Secret, Signable, Signature},
@@ -31,7 +32,7 @@ use rand::{rngs::StdRng, SeedableRng};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use tracing::error;
+use uuid::Uuid;
 
 pub use self::{
     generate_secret::GenerateResult, remote_generate_signing_key::RemoteGenerateResult,
@@ -64,18 +65,13 @@ impl LockKeeperClient {
     }
 
     /// Expire the current session and session key for this user.
-    pub async fn logout(&self) -> Result<LockKeeperResponse<()>, LockKeeperClientError> {
+    pub async fn logout(&self) -> LockKeeperResponse<()> {
         // Create channel to send messages to server
-        let metadata = self.create_metadata(ClientAction::Logout);
-        let client_channel = Self::create_authenticated_channel(
-            &mut self.tonic_client(),
-            &metadata,
-            self.session_key().clone(),
-            self.rng.clone(),
-        )
-        .await?;
-
-        self.handle_logout(client_channel).await
+        let request_id = Uuid::new_v4();
+        LockKeeperResponse {
+            result: self.handle_logout(request_id).await,
+            metadata: Some(Metadata { request_id }),
+        }
     }
 
     /// Authenticate to the Lock Keeper key server as a previously registered
@@ -86,9 +82,12 @@ impl LockKeeperClient {
         account_name: &AccountName,
         password: &Password,
         config: &Config,
-    ) -> Result<LockKeeperResponse<Self>, LockKeeperClientError> {
-        let rpc_client = Self::connect(config).await?;
-        Self::authenticate(rpc_client, account_name, password, config).await
+    ) -> LockKeeperResponse<Self> {
+        let request_id = Uuid::new_v4();
+        LockKeeperResponse {
+            result: Self::authenticate(None, account_name, password, config, request_id).await,
+            metadata: Some(Metadata { request_id }),
+        }
     }
 
     /// Register a new user who has not yet interacted with the service.
@@ -102,65 +101,68 @@ impl LockKeeperClient {
         account_name: &AccountName,
         password: &Password,
         config: &Config,
-    ) -> Result<LockKeeperResponse<()>, LockKeeperClientError> {
+    ) -> LockKeeperResponse<()> {
+        let request_id = Uuid::new_v4();
+        LockKeeperResponse {
+            result: Self::register_helper(account_name, password, config, request_id).await,
+            metadata: Some(Metadata { request_id }),
+        }
+    }
+
+    async fn register_helper(
+        account_name: &AccountName,
+        password: &Password,
+        config: &Config,
+        request_id: Uuid,
+    ) -> Result<(), LockKeeperClientError> {
         let rng = StdRng::from_entropy();
         let mut client = Self::connect(config).await?;
-        let metadata = RequestMetadata::new(account_name, ClientAction::Register, None, None);
+        let metadata =
+            RequestMetadata::new(account_name, ClientAction::Register, None, None, request_id);
         let rng_arc_mutex = Arc::new(Mutex::new(rng));
         let client_channel = Self::create_channel(&mut client, &metadata).await?;
-        let result = Self::handle_registration(
+        let master_key = Self::handle_registration(
             client_channel,
             rng_arc_mutex.clone(),
             account_name,
             password,
         )
-        .await;
-        match result {
-            Ok(master_key) => {
-                let LockKeeperResponse {
-                    data: client,
-                    metadata: response_metadata,
-                } = Self::authenticate(client, account_name, password, config).await?;
+        .await?;
+        let client =
+            Self::authenticate(Some(client), account_name, password, config, request_id).await?;
+        // After authenticating we can create the storage key
+        let request_metadata = client.create_metadata(ClientAction::CreateStorageKey, request_id);
+        let client_channel = LockKeeperClient::create_authenticated_channel(
+            &mut client.tonic_client(),
+            &request_metadata,
+            client.session_key().clone(),
+            rng_arc_mutex.clone(),
+        )
+        .await?;
+        Self::handle_create_storage_key(client_channel, rng_arc_mutex, account_name, master_key)
+            .await?;
 
-                // After authenticating we can create the storage key
-                let request_metadata = client.create_metadata(ClientAction::CreateStorageKey);
-                let client_channel = LockKeeperClient::create_authenticated_channel(
-                    &mut client.tonic_client(),
-                    &request_metadata,
-                    client.session_key().clone(),
-                    rng_arc_mutex.clone(),
-                )
-                .await?;
-                Self::handle_create_storage_key(
-                    client_channel,
-                    rng_arc_mutex,
-                    account_name,
-                    master_key,
-                )
-                .await?;
-
-                Ok(LockKeeperResponse {
-                    data: (),
-                    metadata: response_metadata,
-                })
-            }
-            Err(e) => {
-                error!("{:?}", e);
-                Err(e)
-            }
-        }
+        Ok(())
     }
 
     /// Export an arbitrary key from the key servers.
     ///
     /// Calling this function on a signing key will generate an error.
     /// Output: If successful, returns the requested key material in byte form.
-    pub async fn export_secret(
+    pub async fn export_secret(&self, key_id: &KeyId) -> LockKeeperResponse<Export> {
+        let request_id = Uuid::new_v4();
+        LockKeeperResponse {
+            result: self.export_secret_helper(key_id, request_id).await,
+            metadata: Some(Metadata { request_id }),
+        }
+    }
+
+    async fn export_secret_helper(
         &self,
         key_id: &KeyId,
-    ) -> Result<LockKeeperResponse<Export>, LockKeeperClientError> {
-        // Create channel: this will internally be a `retrieve` channel
-        let metadata = self.create_metadata(ClientAction::ExportSecret);
+        request_id: Uuid,
+    ) -> Result<Export, LockKeeperClientError> {
+        let metadata = self.create_metadata(ClientAction::ExportSecret, request_id);
         let client_channel = Self::create_authenticated_channel(
             &mut self.tonic_client(),
             &metadata,
@@ -169,29 +171,37 @@ impl LockKeeperClient {
         )
         .await?;
         // Get local-only secret
-        let LockKeeperResponse { data, metadata } = self
-            .handle_retrieve_secret(client_channel, key_id, RetrieveContext::LocalOnly)
-            .await?;
+        let local_storage = self
+            .handle_retrieve_secret(
+                client_channel,
+                key_id,
+                RetrieveContext::LocalOnly,
+                request_id,
+            )
+            .await?
+            .ok_or(LockKeeperClientError::ExportFailed)?;
 
-        let local_storage = data.ok_or(LockKeeperClientError::ExportFailed)?;
-        let exported_secret = Export::from(local_storage.material);
-
-        Ok(LockKeeperResponse {
-            data: exported_secret,
-            metadata,
-        })
+        Ok(Export::from(local_storage.material))
     }
 
     /// Export signing key pair material from the key servers.
     ///
     /// Calling this function on an arbitrary key will generated an error.
     /// Output: If successful, returns the requested key material in byte form.
-    pub async fn export_signing_key(
+    pub async fn export_signing_key(&self, key_id: &KeyId) -> LockKeeperResponse<Export> {
+        let request_id = Uuid::new_v4();
+        LockKeeperResponse {
+            result: self.export_signing_key_helper(key_id, request_id).await,
+            metadata: Some(Metadata { request_id }),
+        }
+    }
+
+    async fn export_signing_key_helper(
         &self,
         key_id: &KeyId,
-    ) -> Result<LockKeeperResponse<Export>, LockKeeperClientError> {
-        // Create channel: this will internally be a `retrieve` channel
-        let metadata = self.create_metadata(ClientAction::ExportSigningKey);
+        request_id: Uuid,
+    ) -> Result<Export, LockKeeperClientError> {
+        let metadata = self.create_metadata(ClientAction::ExportSigningKey, request_id);
         let client_channel = Self::create_authenticated_channel(
             &mut self.tonic_client(),
             &metadata,
@@ -200,25 +210,29 @@ impl LockKeeperClient {
         )
         .await?;
         // Get local-only secret
-        let LockKeeperResponse { data, metadata } = self
+        let local_storage = self
             .handle_retrieve_signing_key(client_channel, key_id, RetrieveContext::LocalOnly)
-            .await?;
+            .await?
+            .ok_or(LockKeeperClientError::ExportFailed)?;
 
-        let local_storage = data.ok_or(LockKeeperClientError::ExportFailed)?;
-        let exported_signing_key = Export::from(local_storage.material);
-
-        Ok(LockKeeperResponse {
-            data: exported_signing_key,
-            metadata,
-        })
+        Ok(Export::from(local_storage.material))
     }
 
     /// Generate an arbitrary secret client-side, store this secret in the key
     /// server.
-    pub async fn generate_secret(
+    pub async fn generate_secret(&self) -> LockKeeperResponse<GenerateResult> {
+        let request_id = Uuid::new_v4();
+        LockKeeperResponse {
+            result: self.generate_secret_helper(request_id).await,
+            metadata: Some(Metadata { request_id }),
+        }
+    }
+
+    async fn generate_secret_helper(
         &self,
-    ) -> Result<LockKeeperResponse<GenerateResult>, LockKeeperClientError> {
-        let metadata = self.create_metadata(ClientAction::GenerateSecret);
+        request_id: Uuid,
+    ) -> Result<GenerateResult, LockKeeperClientError> {
+        let metadata = self.create_metadata(ClientAction::GenerateSecret, request_id);
         let client_channel = Self::create_authenticated_channel(
             &mut self.tonic_client(),
             &metadata,
@@ -227,15 +241,27 @@ impl LockKeeperClient {
         )
         .await?;
 
-        self.handle_generate_secret(client_channel).await
+        self.handle_generate_secret(client_channel, request_id)
+            .await
     }
 
     /// Import signing key material to the key server
-    pub async fn import_signing_key(
+    pub async fn import_signing_key(&self, key_material: Import) -> LockKeeperResponse<KeyId> {
+        let request_id = Uuid::new_v4();
+        LockKeeperResponse {
+            result: self
+                .import_signing_key_helper(key_material, request_id)
+                .await,
+            metadata: Some(Metadata { request_id }),
+        }
+    }
+
+    async fn import_signing_key_helper(
         &self,
         key_material: Import,
-    ) -> Result<LockKeeperResponse<KeyId>, LockKeeperClientError> {
-        let metadata = self.create_metadata(ClientAction::ImportSigningKey);
+        request_id: Uuid,
+    ) -> Result<KeyId, LockKeeperClientError> {
+        let metadata = self.create_metadata(ClientAction::ImportSigningKey, request_id);
         let client_channel = Self::create_authenticated_channel(
             &mut self.tonic_client(),
             &metadata,
@@ -254,8 +280,23 @@ impl LockKeeperClient {
         &self,
         key_id: &KeyId,
         context: RetrieveContext,
-    ) -> Result<LockKeeperResponse<Option<LocalStorage<Secret>>>, LockKeeperClientError> {
-        let metadata = self.create_metadata(ClientAction::RetrieveSecret);
+    ) -> LockKeeperResponse<Option<LocalStorage<Secret>>> {
+        let request_id = Uuid::new_v4();
+        LockKeeperResponse {
+            result: self
+                .retrieve_secret_helper(key_id, context, request_id)
+                .await,
+            metadata: Some(Metadata { request_id }),
+        }
+    }
+
+    async fn retrieve_secret_helper(
+        &self,
+        key_id: &KeyId,
+        context: RetrieveContext,
+        request_id: Uuid,
+    ) -> Result<Option<LocalStorage<Secret>>, LockKeeperClientError> {
+        let metadata = self.create_metadata(ClientAction::RetrieveSecret, request_id);
         let client_channel = Self::create_authenticated_channel(
             &mut self.tonic_client(),
             &metadata,
@@ -264,15 +305,24 @@ impl LockKeeperClient {
         )
         .await?;
 
-        self.handle_retrieve_secret(client_channel, key_id, context)
+        self.handle_retrieve_secret(client_channel, key_id, context, request_id)
             .await
     }
 
     /// Request that the server generate a new signing key.
-    pub async fn remote_generate(
+    pub async fn remote_generate(&self) -> LockKeeperResponse<RemoteGenerateResult> {
+        let request_id = Uuid::new_v4();
+        LockKeeperResponse {
+            result: self.remote_generate_helper(request_id).await,
+            metadata: Some(Metadata { request_id }),
+        }
+    }
+
+    async fn remote_generate_helper(
         &self,
-    ) -> Result<LockKeeperResponse<RemoteGenerateResult>, LockKeeperClientError> {
-        let metadata = self.create_metadata(ClientAction::RemoteGenerateSigningKey);
+        request_id: Uuid,
+    ) -> Result<RemoteGenerateResult, LockKeeperClientError> {
+        let metadata = self.create_metadata(ClientAction::RemoteGenerateSigningKey, request_id);
         let client_channel = Self::create_authenticated_channel(
             &mut self.tonic_client(),
             &metadata,
@@ -292,8 +342,23 @@ impl LockKeeperClient {
         &self,
         key_id: KeyId,
         bytes: impl Signable,
-    ) -> Result<LockKeeperResponse<Signature>, LockKeeperClientError> {
-        let metadata = self.create_metadata(ClientAction::RemoteSignBytes);
+    ) -> LockKeeperResponse<Signature> {
+        let request_id = Uuid::new_v4();
+        LockKeeperResponse {
+            result: self
+                .remote_sign_bytes_helper(key_id, bytes, request_id)
+                .await,
+            metadata: Some(Metadata { request_id }),
+        }
+    }
+
+    async fn remote_sign_bytes_helper(
+        &self,
+        key_id: KeyId,
+        bytes: impl Signable,
+        request_id: Uuid,
+    ) -> Result<Signature, LockKeeperClientError> {
+        let metadata = self.create_metadata(ClientAction::RemoteSignBytes, request_id);
         let client_channel = Self::create_authenticated_channel(
             &mut self.tonic_client(),
             &metadata,
@@ -326,8 +391,23 @@ impl LockKeeperClient {
         &self,
         event_type: EventType,
         options: AuditEventOptions,
-    ) -> Result<LockKeeperResponse<Vec<AuditEvent>>, LockKeeperClientError> {
-        let metadata = self.create_metadata(ClientAction::RetrieveAuditEvents);
+    ) -> LockKeeperResponse<Vec<AuditEvent>> {
+        let request_id = Uuid::new_v4();
+        LockKeeperResponse {
+            result: self
+                .retrieve_audit_event_log_helper(event_type, options, request_id)
+                .await,
+            metadata: Some(Metadata { request_id }),
+        }
+    }
+
+    async fn retrieve_audit_event_log_helper(
+        &self,
+        event_type: EventType,
+        options: AuditEventOptions,
+        request_id: Uuid,
+    ) -> Result<Vec<AuditEvent>, LockKeeperClientError> {
+        let metadata = self.create_metadata(ClientAction::RetrieveAuditEvents, request_id);
         let client_channel = Self::create_authenticated_channel(
             &mut self.tonic_client(),
             &metadata,

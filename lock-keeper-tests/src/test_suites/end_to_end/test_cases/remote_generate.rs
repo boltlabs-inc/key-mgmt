@@ -28,15 +28,17 @@ pub async fn run_tests(config: &Config, filters: &TestFilters) -> Result<Vec<Tes
 
 async fn remote_generate_works(config: Config) -> Result<()> {
     let state = init_test_state(&config).await?;
-    let client = authenticate(&state).await?;
+    let client = authenticate(&state).await.result?;
 
     let remote_gen_res = client.remote_generate().await;
-    assert!(remote_gen_res.is_ok());
+    let request_id = remote_gen_res.metadata.clone().unwrap().request_id;
+    assert!(remote_gen_res.result.is_ok());
 
     check_audit_events(
         &state,
         EventStatus::Successful,
         ClientAction::RemoteGenerateSigningKey,
+        request_id,
     )
     .await?;
 
@@ -45,9 +47,9 @@ async fn remote_generate_works(config: Config) -> Result<()> {
 
 async fn cannot_remote_generate_after_logout(config: Config) -> Result<()> {
     let state = init_test_state(&config).await?;
-    let client = authenticate(&state).await?;
+    let client = authenticate(&state).await.result?;
 
-    client.logout().await?;
+    client.logout().await.result?;
 
     let res = client.remote_generate().await;
     compare_status_errors(res, Status::unauthenticated("No session key for this user"))?;

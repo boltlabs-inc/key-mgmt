@@ -15,7 +15,9 @@ pub struct Register {
 #[async_trait]
 impl CliCommand for Register {
     async fn execute(self: Box<Self>, state: &mut State) -> Result<(), anyhow::Error> {
-        LockKeeperClient::register(&self.account_name, &self.password, &state.config).await?;
+        LockKeeperClient::register(&self.account_name, &self.password, &state.config)
+            .await
+            .result?;
 
         println!("Logged in to {}", self.account_name);
         state.credentials = Some(Credentials {

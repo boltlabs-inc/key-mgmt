@@ -28,13 +28,15 @@ pub async fn run_tests(config: &Config, filters: &TestFilters) -> Result<Vec<Tes
 
 async fn generate_works(config: Config) -> Result<()> {
     let state = init_test_state(&config).await?;
-    let client = authenticate(&state).await?;
+    let client = authenticate(&state).await.result?;
 
-    let _ = client.generate_secret().await?;
+    let generate_result = client.generate_secret().await;
+    let request_id = generate_result.metadata.unwrap().request_id;
     check_audit_events(
         &state,
         EventStatus::Successful,
         ClientAction::GenerateSecret,
+        request_id,
     )
     .await?;
 
@@ -43,9 +45,9 @@ async fn generate_works(config: Config) -> Result<()> {
 
 async fn cannot_generate_after_logout(config: Config) -> Result<()> {
     let state = init_test_state(&config).await?;
-    let client = authenticate(&state).await?;
+    let client = authenticate(&state).await.result?;
 
-    client.logout().await?;
+    client.logout().await.result?;
 
     let res = client.generate_secret().await;
     compare_status_errors(res, Status::unauthenticated("No session key for this user"))?;
