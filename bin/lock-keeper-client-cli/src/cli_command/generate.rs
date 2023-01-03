@@ -1,3 +1,5 @@
+use std::time::{Duration, SystemTime};
+
 use crate::{cli_command::CliCommand, state::State};
 use anyhow::Error;
 use async_trait::async_trait;
@@ -22,7 +24,7 @@ impl Generate {
 
 #[async_trait]
 impl CliCommand for Generate {
-    async fn execute(self: Box<Self>, state: &mut State) -> Result<(), Error> {
+    async fn execute(self: Box<Self>, state: &mut State) -> Result<Duration, Error> {
         let credentials = state.get_credentials()?;
 
         // Authenticate user to the key server
@@ -34,13 +36,15 @@ impl CliCommand for Generate {
         .await
         .result?;
 
+        let now = SystemTime::now();
         // If successful, proceed to generate a secret with the established session
         let generate_result = lock_keeper_client.generate_secret().await.result?;
+        let elapsed = now.elapsed()?;
 
         // Store Key
         let stored = state.store_entry(self.name, generate_result)?;
         println!("Stored: {stored}");
-        Ok(())
+        Ok(elapsed)
     }
 
     fn parse_command_args(slice: &[&str]) -> Option<Self> {

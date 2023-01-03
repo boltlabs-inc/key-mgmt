@@ -13,6 +13,7 @@ lock-keeper-key-server = { version = "0.2.0", path = "../../lock-keeper-key-serv
 # Workspace dependencies
 async-trait.workspace = true
 futures.workspace = true
+humantime-serde.workspace = true
 opaque-ke.workspace = true
 rand.workspace = true
 serde.workspace = true
@@ -27,7 +28,6 @@ zeroize.workspace = true
 
 # Other dependencies
 mongodb = "2.3.0"
-humantime-serde = "1.1.1"
 
 [dev-dependencies]
 generic-array.workspace = true

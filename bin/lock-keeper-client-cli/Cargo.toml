@@ -24,4 +24,5 @@ async-trait.workspace = true
 # Other dependencies
 anyhow = "1"
 hex = "0.4"
+humantime = "2.1"
 colored = "2.0"

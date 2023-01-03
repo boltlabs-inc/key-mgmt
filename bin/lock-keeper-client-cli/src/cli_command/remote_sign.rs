@@ -1,3 +1,5 @@
+use std::time::{Duration, SystemTime};
+
 use crate::{cli_command::CliCommand, state::State};
 use anyhow::Error;
 use async_trait::async_trait;
@@ -12,7 +14,7 @@ pub struct RemoteSign {
 
 #[async_trait]
 impl CliCommand for RemoteSign {
-    async fn execute(self: Box<Self>, state: &mut State) -> Result<(), Error> {
+    async fn execute(self: Box<Self>, state: &mut State) -> Result<Duration, Error> {
         let credentials = state.get_credentials()?;
         // Get key_id from storage
         let entry = state.get_key_id(&self.name)?;
@@ -28,14 +30,16 @@ impl CliCommand for RemoteSign {
 
         let bytes = SignableBytes(self.data.into_bytes());
 
+        let now = SystemTime::now();
         // If successful, proceed to generate a secret with the established session
         let signature = lock_keeper_client
             .remote_sign_bytes(entry.key_id.clone(), bytes)
             .await
             .result?;
+        let elapsed = now.elapsed()?;
 
         println!("Signature: {}", hex::encode(signature));
-        Ok(())
+        Ok(elapsed)
     }
 
     fn parse_command_args(slice: &[&str]) -> Option<Self> {

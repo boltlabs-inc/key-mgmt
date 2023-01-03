@@ -1,3 +1,5 @@
+use std::time::{Duration, SystemTime};
+
 use crate::{
     cli_command::CliCommand,
     state::{Credentials, State},
@@ -14,17 +16,19 @@ pub struct Authenticate {
 
 #[async_trait]
 impl CliCommand for Authenticate {
-    async fn execute(self: Box<Self>, state: &mut State) -> Result<(), anyhow::Error> {
+    async fn execute(self: Box<Self>, state: &mut State) -> Result<Duration, anyhow::Error> {
+        let now = SystemTime::now();
         LockKeeperClient::authenticated_client(&self.account_name, &self.password, &state.config)
             .await
             .result?;
+        let elapsed = now.elapsed()?;
 
         println!("Logged in to {}", self.account_name);
         state.credentials = Some(Credentials {
             account_name: self.account_name,
             password: self.password,
         });
-        Ok(())
+        Ok(elapsed)
     }
 
     fn parse_command_args(slice: &[&str]) -> Option<Self> {

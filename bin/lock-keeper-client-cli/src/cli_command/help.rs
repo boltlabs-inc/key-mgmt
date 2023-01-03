@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use crate::{cli_command::CliCommand, state::State};
 use anyhow::Error;
 use async_trait::async_trait;
@@ -37,9 +39,10 @@ impl Help {
 /// This represents calling help with no args, i.e. print all commands.
 #[async_trait]
 impl CliCommand for Help {
-    async fn execute(self: Box<Self>, _state: &mut State) -> Result<(), Error> {
+    async fn execute(self: Box<Self>, _state: &mut State) -> Result<Duration, Error> {
         println!("{}", self.help_string);
-        Ok(())
+        // Return zero duration since this command doesn't call the client.
+        Ok(Duration::ZERO)
     }
 
     fn parse_command_args(args: &[&str]) -> Option<Self> {

@@ -13,6 +13,7 @@ pub mod register;
 pub mod remote_generate;
 pub mod remote_sign;
 pub mod retrieve;
+pub mod wait;
 
 pub use authenticate::Authenticate;
 pub use export::Export;
@@ -29,18 +30,22 @@ pub use register::Register;
 pub use remote_generate::RemoteGenerate;
 pub use remote_sign::RemoteSign;
 pub use retrieve::Retrieve;
+pub use wait::Wait;
 
 use crate::state::State;
 use anyhow::{anyhow, bail};
 use async_trait::async_trait;
+use std::{fmt::Debug, time::Duration};
 use tracing::{debug, info};
 
 pub type DynCommand = Box<dyn CliCommand>;
 
 #[async_trait]
-pub trait CliCommand {
-    /// Execute the command.
-    async fn execute(self: Box<Self>, state: &mut State) -> Result<(), anyhow::Error>;
+pub trait CliCommand: Debug {
+    /// Execute the command. Returns the total elapsed time of the client
+    /// operation not including authentication or extra work done by this
+    /// application.
+    async fn execute(self: Box<Self>, state: &mut State) -> Result<Duration, anyhow::Error>;
 
     /// Given the proper string arguments to a command, return an instance of
     /// this command.
@@ -98,6 +103,36 @@ pub trait CliCommand {
     }
 }
 
+// Iterate through our registered commands and see if any of them can parse this
+// command.
+pub fn parse_cli_command(input: &str) -> Result<DynCommand, anyhow::Error> {
+    let input = input.trim();
+
+    info!("Attempting to parse user input string: {}", input);
+
+    let parsers = get_cmd_functions::<Parse>();
+    for cmd_parse in parsers {
+        if let Ok(c) = cmd_parse(input) {
+            return Ok(c);
+        }
+    }
+
+    Err(anyhow!("No matching command."))
+}
+
+/// Helper type to implement [GetCmdFunction]. This returns the parsing
+/// function for all commands and allows the [parse_cli_command] to iterate
+/// through these functions.
+struct Parse;
+
+impl GetCmdFunction for Parse {
+    type FunctionSignature = fn(&str) -> Result<DynCommand, anyhow::Error>;
+
+    fn get_function<T: CliCommand + 'static>() -> Self::FunctionSignature {
+        |s| T::from_str(s).map(|c| c.to_dyn())
+    }
+}
+
 /// This code supports numerous commands which have similar functionality. This
 /// common functionality is expressed by the [CliCommand] trait. A common
 /// pattern in this code is to get the analogous function for all our commands.
@@ -128,6 +163,7 @@ pub fn get_cmd_functions<F: GetCmdFunction>() -> Vec<F::FunctionSignature> {
         F::get_function::<RemoteGenerate>(),
         F::get_function::<RemoteSign>(),
         F::get_function::<Retrieve>(),
+        F::get_function::<Wait>(),
     ]
 }
 

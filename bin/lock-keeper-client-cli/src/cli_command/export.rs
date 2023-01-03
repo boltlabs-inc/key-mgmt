@@ -1,3 +1,5 @@
+use std::time::{Duration, SystemTime};
+
 use crate::{
     cli_command::CliCommand,
     state::State,
@@ -15,7 +17,7 @@ pub struct Export {
 
 #[async_trait]
 impl CliCommand for Export {
-    async fn execute(self: Box<Self>, state: &mut State) -> Result<(), Error> {
+    async fn execute(self: Box<Self>, state: &mut State) -> Result<Duration, Error> {
         info!("Exporting {}", self.name);
 
         let credentials = state.get_credentials()?;
@@ -32,11 +34,13 @@ impl CliCommand for Export {
         // Get key_id from storage
         let entry = state.get_key_id(&self.name)?;
 
+        let now = SystemTime::now();
         let export = lock_keeper_client
             .export_signing_key(&entry.key_id)
             .await
             .result
             .map_err(|e| anyhow::anyhow!("Failed to export signing key. Error: {:?}", e))?;
+        let elapsed = now.elapsed()?;
 
         println!("Retrieved: {}", self.name);
         println!("{:?}", export);
@@ -46,7 +50,7 @@ impl CliCommand for Export {
             Entry::new(entry.key_id.clone(), DataType::Export(export)),
         )?;
         println!("Updated Key: {stored}");
-        Ok(())
+        Ok(elapsed)
     }
 
     fn parse_command_args(slice: &[&str]) -> Option<Self> {

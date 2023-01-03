@@ -140,6 +140,38 @@ Quit:
 > exit
 ```
 
-### Future Work
-- Read commands from a file for easily repeatable testing
-- Interactive help
+## Scripting
+This CLI runs in interactive mode by default, but it can also run in script mode using the `--script` and `--script-file` args. In script mode, the CLI will run all commands in the script and exit back to the command line once all commands are executed.
+
+Scripts are read as a sequence of normal commands separated by line breaks or semicolons. Anything you'd enter into the interactive terminal, you can also write into a script.
+
+The total execution time of all commands in the script will be printed after completion. This time only includes actual client operations and does not count things like parsing or local state management.  If you're using this time for benchmarks, ensure that you're running the binary in `--release` mode.
+
+```
+register
+generate
+generate
+retrieve 2
+```
+
+Scripts can also repeat commands using `repeat n` blocks. `n` is the number of times the block will repeat. Use angle brackets to mark the beginning and end of a `repeat` block.
+
+```
+register
+
+repeat 5 {
+    generate
+}
+
+retrieve 3
+```
+
+The `--script-file` option allows the user to pass a file path and run the contents as a script. Examples above can all be pasted into script files.
+
+The `---script` option allows a full script to be passed as a string. It can be helpful to use semicolons to separate commands when using this option. When separating commands with semicolons, don't forget to add semicolons to the commands inside of `repeat` blocks.
+
+The following command runs the same script as the `repeat` example above.
+
+```bash
+cargo run --bin lock-keeper-client-cli -- --script "register; repeat 5 { generate; } retrieve 3"
+```
