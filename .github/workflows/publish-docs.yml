@@ -26,9 +26,10 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
 
       - name: Install Protoc
-        uses: arduino/setup-protoc@v1
+        uses: arduino/setup-protoc@v1.1.2
         with:
           version: '3.x'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       # Install stable toolchain
       - uses: actions-rs/toolchain@v1
