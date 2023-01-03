@@ -34,18 +34,57 @@
 <span id="34">34</span>
 <span id="35">35</span>
 <span id="36">36</span>
-</pre><pre class="rust"><code><span class="kw">use crate</span>::{cli_command::CliCommand, state::State};
+<span id="37">37</span>
+<span id="38">38</span>
+<span id="39">39</span>
+<span id="40">40</span>
+<span id="41">41</span>
+<span id="42">42</span>
+<span id="43">43</span>
+<span id="44">44</span>
+<span id="45">45</span>
+<span id="46">46</span>
+<span id="47">47</span>
+<span id="48">48</span>
+<span id="49">49</span>
+<span id="50">50</span>
+<span id="51">51</span>
+<span id="52">52</span>
+<span id="53">53</span>
+<span id="54">54</span>
+<span id="55">55</span>
+<span id="56">56</span>
+<span id="57">57</span>
+<span id="58">58</span>
+<span id="59">59</span>
+<span id="60">60</span>
+<span id="61">61</span>
+<span id="62">62</span>
+<span id="63">63</span>
+<span id="64">64</span>
+<span id="65">65</span>
+<span id="66">66</span>
+</pre><pre class="rust"><code><span class="kw">use </span>std::time::{Duration, SystemTime};
+
+<span class="kw">use crate</span>::{cli_command::CliCommand, state::State};
 <span class="kw">use </span>anyhow::Error;
 <span class="kw">use </span>async_trait::async_trait;
+<span class="kw">use </span>lock_keeper_client::LockKeeperClient;
 
 <span class="attribute">#[derive(Debug)]
 </span><span class="kw">pub struct </span>Logout {}
 
 <span class="attribute">#[async_trait]
 </span><span class="kw">impl </span>CliCommand <span class="kw">for </span>Logout {
-    <span class="kw">async fn </span>execute(<span class="self">self</span>: Box&lt;<span class="self">Self</span>&gt;, state: <span class="kw-2">&amp;mut </span>State) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
-        state.credentials = <span class="prelude-val">None</span>;
-        <span class="prelude-val">Ok</span>(())
+    <span class="kw">async fn </span>execute(<span class="self">self</span>: Box&lt;<span class="self">Self</span>&gt;, state: <span class="kw-2">&amp;mut </span>State) -&gt; <span class="prelude-ty">Result</span>&lt;Duration, Error&gt; {
+        <span class="kw">let </span>remote_logout_result = <span class="self">self</span>.remote_logout(state).<span class="kw">await</span>;
+
+        <span class="comment">// Clear stored credentials regardless of whether or not remote logout succeeded
+        // We need the credentials to log out of the server so we can&#39;t clear this until
+        // after the remote operation.
+        </span>state.credentials = <span class="prelude-val">None</span>;
+
+        remote_logout_result
     }
 
     <span class="kw">fn </span>parse_command_args(slice: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>str]) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt; {
@@ -69,6 +108,27 @@
     <span class="kw">fn </span>description() -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str {
         <span class="string">&quot;Log out of currently authenticated account.&quot;
     </span>}
+}
+
+<span class="kw">impl </span>Logout {
+    <span class="kw">async fn </span>remote_logout(<span class="self">self</span>: Box&lt;<span class="self">Self</span>&gt;, state: <span class="kw-2">&amp;mut </span>State) -&gt; <span class="prelude-ty">Result</span>&lt;Duration, Error&gt; {
+        <span class="kw">let </span>credentials = state.get_credentials()<span class="question-mark">?</span>;
+
+        <span class="comment">// Authenticate to get a client that we can use to log out
+        </span><span class="kw">let </span>lock_keeper_client = LockKeeperClient::authenticated_client(
+            <span class="kw-2">&amp;</span>credentials.account_name,
+            <span class="kw-2">&amp;</span>credentials.password,
+            <span class="kw-2">&amp;</span>state.config,
+        )
+        .<span class="kw">await
+        </span>.result<span class="question-mark">?</span>;
+
+        <span class="kw">let </span>now = SystemTime::now();
+        lock_keeper_client.logout().<span class="kw">await</span>.result<span class="question-mark">?</span>;
+        <span class="kw">let </span>elapsed = now.elapsed()<span class="question-mark">?</span>;
+
+        <span class="prelude-val">Ok</span>(elapsed)
+    }
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="lock_keeper_client_cli" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0 (69f9c33d7 2022-12-12)" ></div></body></html>

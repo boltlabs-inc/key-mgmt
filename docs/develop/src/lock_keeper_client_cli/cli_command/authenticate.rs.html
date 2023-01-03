@@ -49,7 +49,13 @@
 <span id="49">49</span>
 <span id="50">50</span>
 <span id="51">51</span>
-</pre><pre class="rust"><code><span class="kw">use crate</span>::{
+<span id="52">52</span>
+<span id="53">53</span>
+<span id="54">54</span>
+<span id="55">55</span>
+</pre><pre class="rust"><code><span class="kw">use </span>std::time::{Duration, SystemTime};
+
+<span class="kw">use crate</span>::{
     cli_command::CliCommand,
     state::{Credentials, State},
 };
@@ -65,17 +71,19 @@
 
 <span class="attribute">#[async_trait]
 </span><span class="kw">impl </span>CliCommand <span class="kw">for </span>Authenticate {
-    <span class="kw">async fn </span>execute(<span class="self">self</span>: Box&lt;<span class="self">Self</span>&gt;, state: <span class="kw-2">&amp;mut </span>State) -&gt; <span class="prelude-ty">Result</span>&lt;(), anyhow::Error&gt; {
+    <span class="kw">async fn </span>execute(<span class="self">self</span>: Box&lt;<span class="self">Self</span>&gt;, state: <span class="kw-2">&amp;mut </span>State) -&gt; <span class="prelude-ty">Result</span>&lt;Duration, anyhow::Error&gt; {
+        <span class="kw">let </span>now = SystemTime::now();
         LockKeeperClient::authenticated_client(<span class="kw-2">&amp;</span><span class="self">self</span>.account_name, <span class="kw-2">&amp;</span><span class="self">self</span>.password, <span class="kw-2">&amp;</span>state.config)
             .<span class="kw">await
             </span>.result<span class="question-mark">?</span>;
+        <span class="kw">let </span>elapsed = now.elapsed()<span class="question-mark">?</span>;
 
         <span class="macro">println!</span>(<span class="string">&quot;Logged in to {}&quot;</span>, <span class="self">self</span>.account_name);
         state.credentials = <span class="prelude-val">Some</span>(Credentials {
             account_name: <span class="self">self</span>.account_name,
             password: <span class="self">self</span>.password,
         });
-        <span class="prelude-val">Ok</span>(())
+        <span class="prelude-val">Ok</span>(elapsed)
     }
 
     <span class="kw">fn </span>parse_command_args(slice: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>str]) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt; {

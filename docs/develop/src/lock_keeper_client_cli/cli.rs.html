@@ -12,6 +12,12 @@
 <span id="12">12</span>
 <span id="13">13</span>
 <span id="14">14</span>
+<span id="15">15</span>
+<span id="16">16</span>
+<span id="17">17</span>
+<span id="18">18</span>
+<span id="19">19</span>
+<span id="20">20</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Command-line arguments
 
 </span><span class="kw">use </span>clap::Parser;
@@ -25,6 +31,12 @@
     <span class="doccomment">/// Directory where persistent storage files will be saved.
     </span><span class="attribute">#[clap(long, default_value = <span class="string">&quot;dev/lk_client_cli_data&quot;</span>)]
     </span><span class="kw">pub </span>storage_path: PathBuf,
+    <span class="doccomment">/// Path to a script file containing a sequence of CLI commands
+    </span><span class="attribute">#[clap(long = <span class="string">&quot;script-file&quot;</span>, conflicts_with = <span class="string">&quot;script&quot;</span>)]
+    </span><span class="kw">pub </span>script_file: <span class="prelude-ty">Option</span>&lt;PathBuf&gt;,
+    <span class="doccomment">/// Sequence of CLI commands separated by a semicolon or newline
+    </span><span class="attribute">#[clap(long, conflicts_with = <span class="string">&quot;script-file&quot;</span>)]
+    </span><span class="kw">pub </span>script: <span class="prelude-ty">Option</span>&lt;String&gt;,
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="lock_keeper_client_cli" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0 (69f9c33d7 2022-12-12)" ></div></body></html>

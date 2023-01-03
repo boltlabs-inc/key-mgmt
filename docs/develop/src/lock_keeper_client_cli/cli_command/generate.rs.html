@@ -65,7 +65,13 @@
 <span id="65">65</span>
 <span id="66">66</span>
 <span id="67">67</span>
-</pre><pre class="rust"><code><span class="kw">use crate</span>::{cli_command::CliCommand, state::State};
+<span id="68">68</span>
+<span id="69">69</span>
+<span id="70">70</span>
+<span id="71">71</span>
+</pre><pre class="rust"><code><span class="kw">use </span>std::time::{Duration, SystemTime};
+
+<span class="kw">use crate</span>::{cli_command::CliCommand, state::State};
 <span class="kw">use </span>anyhow::Error;
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>lock_keeper_client::LockKeeperClient;
@@ -89,7 +95,7 @@
 
 <span class="attribute">#[async_trait]
 </span><span class="kw">impl </span>CliCommand <span class="kw">for </span>Generate {
-    <span class="kw">async fn </span>execute(<span class="self">self</span>: Box&lt;<span class="self">Self</span>&gt;, state: <span class="kw-2">&amp;mut </span>State) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
+    <span class="kw">async fn </span>execute(<span class="self">self</span>: Box&lt;<span class="self">Self</span>&gt;, state: <span class="kw-2">&amp;mut </span>State) -&gt; <span class="prelude-ty">Result</span>&lt;Duration, Error&gt; {
         <span class="kw">let </span>credentials = state.get_credentials()<span class="question-mark">?</span>;
 
         <span class="comment">// Authenticate user to the key server
@@ -101,13 +107,15 @@
         .<span class="kw">await
         </span>.result<span class="question-mark">?</span>;
 
+        <span class="kw">let </span>now = SystemTime::now();
         <span class="comment">// If successful, proceed to generate a secret with the established session
         </span><span class="kw">let </span>generate_result = lock_keeper_client.generate_secret().<span class="kw">await</span>.result<span class="question-mark">?</span>;
+        <span class="kw">let </span>elapsed = now.elapsed()<span class="question-mark">?</span>;
 
         <span class="comment">// Store Key
         </span><span class="kw">let </span>stored = state.store_entry(<span class="self">self</span>.name, generate_result)<span class="question-mark">?</span>;
         <span class="macro">println!</span>(<span class="string">&quot;Stored: {stored}&quot;</span>);
-        <span class="prelude-val">Ok</span>(())
+        <span class="prelude-val">Ok</span>(elapsed)
     }
 
     <span class="kw">fn </span>parse_command_args(slice: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>str]) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt; {

@@ -31,7 +31,11 @@
 <span id="31">31</span>
 <span id="32">32</span>
 <span id="33">33</span>
-</pre><pre class="rust"><code><span class="kw">use crate</span>::{cli_command::CliCommand, state::State};
+<span id="34">34</span>
+<span id="35">35</span>
+</pre><pre class="rust"><code><span class="kw">use </span>std::time::Duration;
+
+<span class="kw">use crate</span>::{cli_command::CliCommand, state::State};
 <span class="kw">use </span>anyhow::Error;
 <span class="kw">use </span>async_trait::async_trait;
 
@@ -40,7 +44,7 @@
 
 <span class="attribute">#[async_trait]
 </span><span class="kw">impl </span>CliCommand <span class="kw">for </span>Quit {
-    <span class="kw">async fn </span>execute(<span class="self">self</span>: Box&lt;<span class="self">Self</span>&gt;, _state: <span class="kw-2">&amp;mut </span>State) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
+    <span class="kw">async fn </span>execute(<span class="self">self</span>: Box&lt;<span class="self">Self</span>&gt;, _state: <span class="kw-2">&amp;mut </span>State) -&gt; <span class="prelude-ty">Result</span>&lt;Duration, Error&gt; {
         std::process::exit(<span class="number">0</span>)
     }
 
