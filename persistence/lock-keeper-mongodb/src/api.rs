@@ -89,7 +89,7 @@ impl Database {
 impl DataStore for Database {
     type Error = Error;
 
-    #[instrument(skip_all, err(Debug), fields(actor, secret_id, action, status))]
+    #[instrument(skip(self, request_id), err(Debug))]
     async fn create_audit_event(
         &self,
         request_id: Uuid,
@@ -103,7 +103,7 @@ impl DataStore for Database {
         Ok(())
     }
 
-    #[instrument(skip_all, err(Debug), fields(account_name, event_type, options))]
+    #[instrument(skip(self), err(Debug))]
     async fn find_audit_events(
         &self,
         account_name: &AccountName,
@@ -116,13 +116,13 @@ impl DataStore for Database {
         Ok(audit_events)
     }
 
-    #[instrument(skip_all, err(Debug), fields(user_id))]
+    #[instrument(skip_all, err(Debug))]
     async fn add_user_secret(&self, secret: StoredSecret) -> Result<(), Self::Error> {
         self.add_user_secret(secret).await?;
         Ok(())
     }
 
-    #[instrument(skip_all, err(Debug), fields(user_id, key_id))]
+    #[instrument(skip(self, filter), err(Debug))]
     async fn get_user_secret(
         &self,
         user_id: &UserId,
@@ -133,6 +133,7 @@ impl DataStore for Database {
         Ok(stored_encrypted_secret)
     }
 
+    #[instrument(skip(self, server_registration), err(Debug))]
     async fn create_user(
         &self,
         user_id: &UserId,
@@ -145,25 +146,25 @@ impl DataStore for Database {
         Ok(user)
     }
 
-    #[instrument(skip_all, err(Debug), fields(account_name))]
+    #[instrument(skip(self), err(Debug))]
     async fn find_user(&self, account_name: &AccountName) -> Result<Option<User>, Self::Error> {
         let opt_user = self.find_user(account_name).await?;
         Ok(opt_user)
     }
 
-    #[instrument(skip_all, err(Debug), fields(user_id))]
+    #[instrument(skip(self), err(Debug))]
     async fn find_user_by_id(&self, user_id: &UserId) -> Result<Option<User>, Self::Error> {
         let opt_user = self.find_user_by_id(user_id).await?;
         Ok(opt_user)
     }
 
-    #[instrument(skip_all, err(Debug), fields(user_id))]
+    #[instrument(skip(self), err(Debug))]
     async fn delete_user(&self, user_id: &UserId) -> Result<(), Self::Error> {
         self.delete_user(user_id).await?;
         Ok(())
     }
 
-    #[instrument(skip_all, err(Debug), fields(user_id))]
+    #[instrument(skip(self, storage_key), err(Debug))]
     async fn set_storage_key(
         &self,
         user_id: &UserId,

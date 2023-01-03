@@ -60,7 +60,7 @@ pub(crate) trait Operation<AUTH: Send + 'static, DB: DataStore>:
     }
 }
 
-#[instrument(skip_all, fields(e))]
+#[instrument(skip(channel))]
 async fn handle_error<AUTH>(channel: &mut ServerChannel<AUTH>, e: LockKeeperServerError) {
     error!("{}", e);
     if let Err(e) = channel.send_error(e).await {
@@ -69,7 +69,7 @@ async fn handle_error<AUTH>(channel: &mut ServerChannel<AUTH>, e: LockKeeperServ
 }
 
 /// Log the given action as an audit event.
-#[instrument(skip_all, fields(status))]
+#[instrument(skip(channel, context))]
 async fn audit_event<AUTH, DB: DataStore>(
     channel: &mut ServerChannel<AUTH>,
     context: &Context<DB>,

@@ -84,7 +84,7 @@ async fn register_start<DB: DataStore>(
     }
 }
 
-#[instrument(skip_all, err(Debug))]
+#[instrument(skip(channel, context), err(Debug))]
 async fn register_finish<DB: DataStore>(
     account_name: &AccountName,
     channel: &mut ServerChannel<Unauthenticated>,

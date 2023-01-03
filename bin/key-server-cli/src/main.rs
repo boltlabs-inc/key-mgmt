@@ -46,15 +46,14 @@
 //! Please follow the following template for instrumenting your function with
 //! spans:
 //! ```text
-//! #[instrument(skip_all, err(Debug), fields(arg1, arg2))]
-//! fn foo(arg1: _, arg2: _) -> _ {}
+//! #[instrument(skip(sensitive_arg), err(Debug))]
+//! fn foo(arg1: _, arg2: _, sensitive_arg SuperSecret) -> _ {}
 //! ```
 //! By default, `instrument` will create a new span where every argument to a
 //! function is a span field. *This is not desirable for our key server as we
-//! want to avoid logging sensitive data!* So *we always use the `skip_all`
-//! option* to avoid automatically logging all arguments. Instead you can use
-//! the `fields(...)` option to specify which arguments should be recorded as
-//! fields in our span.
+//! want to avoid logging sensitive data!* Make sure to skip sensitive arguments
+//! with the `skip(sensitive_arg_1, sensitive_arg_2)` option. You can also use
+//! the `skip_all` option if none of the function arguments need to be logged.
 //!
 //! Finally, the `err(Debug)` option tells `tracing` that any `Result::Err(_)`
 //! returned from this function should be logged as events (with the default

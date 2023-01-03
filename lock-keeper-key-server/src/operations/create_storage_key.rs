@@ -74,7 +74,7 @@ async fn send_user_id<DB: DataStore>(
     Ok(user.user_id)
 }
 
-#[instrument(skip_all, err(Debug), fields(user_id))]
+#[instrument(skip(channel, context), err(Debug))]
 async fn store_storage_key<DB: DataStore>(
     user_id: UserId,
     channel: &mut ServerChannel<Authenticated<StdRng>>,

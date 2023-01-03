@@ -76,7 +76,7 @@ impl MongodbSessionCache {
         Ok(())
     }
 
-    #[instrument(skip_all, err(Debug), fields(session_id, user_id))]
+    #[instrument(skip(self), err(Debug))]
     async fn find_session(&self, session_id: SessionId, user_id: UserId) -> Result<Session, Error> {
         let collection = self.handle.collection::<Session>(TABLE);
         let user_id_bson = mongodb::bson::to_bson(&user_id)?;
@@ -96,7 +96,7 @@ impl MongodbSessionCache {
         Ok(session)
     }
 
-    #[instrument(skip_all, err(Debug), fields(session_id))]
+    #[instrument(skip(self), err(Debug))]
     async fn delete_session(&self, session_id: SessionId) -> Result<(), Error> {
         let collection = self.handle.collection::<Session>(TABLE);
         let session_id_bson = mongodb::bson::to_bson(&session_id)?;
