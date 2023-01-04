@@ -121,10 +121,33 @@ alias = "ci-clippy"
 [tasks.test]
 alias = "ci-test"
 
-# Run the interactive client.
+# -- Client CLI tasks --
+
+# Run the client CLI in interactive mode
 [tasks.cli]
 command = "cargo"
 args = ["run", "--bin", "lock-keeper-client-cli"]
+
+# Runs a CLI script to generate a retrieve a few keys
+[tasks.script-generate]
+command = "cargo"
+args = ["run", "--bin", "lock-keeper-client-cli", "--", "--script-file", "dev/cli-scripts/generate.lk"]
+
+# Runs a CLI script to remotely generate a signing key and sign some data
+[tasks.script-sign]
+command = "cargo"
+args = ["run", "--bin", "lock-keeper-client-cli", "--", "--script-file", "dev/cli-scripts/sign.lk"]
+
+# Runs a CLI script to export a remotely generated signing key
+[tasks.script-export]
+command = "cargo"
+args = ["run", "--bin", "lock-keeper-client-cli", "--", "--script-file", "dev/cli-scripts/export.lk"]
+
+# Runs a CLI script to import and then export a signing key
+[tasks.script-import]
+command = "cargo"
+args = ["run", "--bin", "lock-keeper-client-cli", "--", "--script-file", "dev/cli-scripts/import.lk"]
+
 
 # Generate certificates in the dev/certs/gen directory
 [tasks.certs]
