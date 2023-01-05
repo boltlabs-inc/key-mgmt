@@ -212,7 +212,7 @@ async fn create_random_audit_events(
 
 fn compare_actions(audit_events: Vec<AuditEvent>, event_type: EventType) {
     let actual_actions: Vec<ClientAction> = audit_events.iter().map(|a| a.action()).collect();
-    let expected_actions = event_type.into_client_actions();
+    let expected_actions = event_type.client_actions();
     assert!(actual_actions
         .iter()
         .all(|item| expected_actions.contains(item)));

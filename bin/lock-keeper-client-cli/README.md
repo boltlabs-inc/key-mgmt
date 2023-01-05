@@ -13,53 +13,7 @@ but it also means that it will break alongside the client crate.
 
 
 ## Commands
-To see this list in the application, type `help` in the CLI's prompt.
-
-```
-Enter a command at the prompt. The prompt will display `|` if you are logged out and `>` if you are logged in.
-
-command: register [account_name] [password]
-aliases: reg
-description: Registers a new account with the given account_name and password
-
-command: authenticate [account_name] [password]
-aliases: auth, a, login
-description: Authenticates to a previously registered account. Authentication is required for most commands.
-
-command: generate [key_name (optional)]
-aliases: gen, g
-description: Generate a new key. If you provide a name, the key can be referenced by that name. 
-             If you don't provide a name, the key can be referenced by the number printed to the screen after generation.
-
-command: retrieve [key_name]
-aliases: ret, r
-description: Retrieve a previously generated key from the key server and update local storage.
-
-command: remote-generate [key_name (optional)]
-aliases: rgen, rg
-description: Generate a new key remotely. This key will be generated entirely in the server.
-             If you provide a name, the key can be referenced by that name. 
-             If you don't provide a name, the key can be referenced by the number printed to the screen after generation.
-
-command: print [key_name]
-aliases: p
-description: Prints all stored information about the given key.
-
-command: list
-aliases: ls
-description: Prints stored information about every key associated with the current account.
-
-command: logout
-description: Log out of currently authenticated account.
-
-command: help
-aliases: h
-description: Prints help text.
-
-command: quit
-aliases: q, exit
-description: Quits the application
-```
+Type `help` in the CLI's prompt to see info about all commands.
 
 ## Examples
 
@@ -133,6 +87,31 @@ data: Arbitrary Key - 8fa9f08e7d3d846ce32e33d3081887c368708ff441eb7ee957dca74164
 name: 2
 key_id: 29b47e89b962a703ddf7c9fb57638b72c810ef968296734931d5dcfc913889bd
 data: Arbitrary Key - 4a92b4603e556330fb3e9df51cec0fd623336e560af549b7870b20270925f914
+```
+
+Get all audit events for a user:
+```
+> audit
+Audit Events:
+----------------------------------
+Request ID: 37fd925f-96a6-4f41-add0-7d8aea883ae0
+2023-01-05 23:44:53.424 +00:00:00
+Register
+Started
+----------------------------------
+```
+
+Get audit events for a key with name `my_favorite_key`:
+```
+> audit key:my_favorite_key
+Audit Events:
+----------------------------------
+Request ID: edce607b-daa8-42f4-9d1a-acb312ba759a
+KeyId("7268ed67a1207c1d4a09b40a5c4f6b5f1848b95451302ae5c1f53044f2f51adf")
+2023-01-05 23:46:35.889 +00:00:00
+GenerateSecret
+Successful
+----------------------------------
 ```
 
 Quit:

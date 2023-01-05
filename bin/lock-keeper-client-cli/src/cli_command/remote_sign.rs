@@ -44,9 +44,10 @@ impl CliCommand for RemoteSign {
 
     fn parse_command_args(slice: &[&str]) -> Option<Self> {
         match slice {
-            [key_name, string_to_sign] => Some(RemoteSign {
+            // All arguments after the key name are joined by spaces to form the text to be signed
+            [key_name, string_to_sign @ ..] => Some(RemoteSign {
                 name: key_name.to_string(),
-                data: string_to_sign.to_string(),
+                data: string_to_sign.join(" "),
             }),
             _ => None,
         }
@@ -57,7 +58,7 @@ impl CliCommand for RemoteSign {
     }
 
     fn aliases() -> Vec<&'static str> {
-        vec!["remote-sign", "rs"]
+        vec!["remote-sign", "sign", "rs"]
     }
 
     fn description() -> &'static str {

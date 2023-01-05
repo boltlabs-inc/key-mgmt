@@ -49,7 +49,7 @@ impl Database {
         event_type: EventType,
         options: AuditEventOptions,
     ) -> Result<Vec<AuditEvent>, Error> {
-        let actions = event_type.into_client_actions();
+        let actions = event_type.client_actions();
         let mut query = doc! { ACTOR: account_name.to_string(), ACTION: {"$in": mongodb::bson::to_bson(&actions)?} };
         query = construct_query_with_options(options, query)?;
         let collection = self.handle.collection::<AuditEvent>(AUDIT_EVENTS);
