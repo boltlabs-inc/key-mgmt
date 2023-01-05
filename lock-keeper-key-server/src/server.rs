@@ -144,7 +144,7 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
     async fn get_user_id(
         &self,
         request: Request<tonic::Streaming<Message>>,
-    ) -> Result<Response<Self::GenerateSecretStream>, Status> {
+    ) -> Result<Response<Self::GetUserIdStream>, Status> {
         // `create_authenticated_channel` gets the `user_id` out of the request metadata
         // in order to retrieve the session key. Since the client doesn't know
         // its `user_id` before the `GetUserId` operation is called, we can't call the
