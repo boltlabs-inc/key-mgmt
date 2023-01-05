@@ -173,6 +173,8 @@ Then run the client CLI:
 cargo make cli
 ```
 
+There are a few `cargo make` tasks that run specific CLI scripts for quick testing. Check the CLI section of  `Makefile.toml` for available tasks.
+
 ## Troubleshooting
 ### Logging
 The server writes logs to a few locations:
