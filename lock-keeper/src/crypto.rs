@@ -358,7 +358,9 @@ mod test {
 
     // In practice, a session key will be a pseudorandom output from OPAQUE.
     // We'll use random bytes for the test key.
-    fn create_test_session_key(rng: &mut (impl CryptoRng + RngCore)) -> OpaqueSessionKey {
+    pub(crate) fn create_test_session_key(
+        rng: &mut (impl CryptoRng + RngCore),
+    ) -> OpaqueSessionKey {
         let mut key = [0_u8; 64];
         rng.try_fill(&mut key)
             .expect("Failed to generate random key");
@@ -490,8 +492,9 @@ mod test {
 
     #[test]
     fn session_key_to_vec_u8_conversion_works() -> Result<(), LockKeeperError> {
+        let mut rng = rand::thread_rng();
         for _ in 0..1000 {
-            let session_key = OpaqueSessionKey::try_from(GenericArray::from([42; 64]))?;
+            let session_key = create_test_session_key(&mut rng);
 
             let vec: Vec<u8> = session_key.clone().into();
             let output_session_key = vec.try_into()?;

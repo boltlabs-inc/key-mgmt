@@ -157,8 +157,7 @@ impl Encrypted<StorageKey> {
 #[cfg(test)]
 pub(super) mod test {
     use super::*;
-    use crate::crypto::KeyId;
-    use generic_array::GenericArray;
+    use crate::crypto::{test::create_test_session_key, KeyId};
     use rand::{rngs::StdRng, Rng, SeedableRng};
     use std::collections::HashSet;
 
@@ -338,7 +337,7 @@ pub(super) mod test {
     fn session_key_encryption_works() -> Result<(), LockKeeperError> {
         let mut rng = rand::thread_rng();
         let encryption_key = RemoteStorageKey::generate(&mut rng);
-        let session_key = OpaqueSessionKey::try_from(GenericArray::from([42; 64]))?;
+        let session_key = create_test_session_key(&mut rng);
         let encrypted = encryption_key.encrypt_session_key(&mut rng, session_key.clone())?;
 
         let result = encrypted.decrypt_session_key(&encryption_key)?;
