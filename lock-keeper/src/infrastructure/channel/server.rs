@@ -6,7 +6,7 @@ use tokio::sync::{
 };
 use tokio_stream::StreamExt;
 use tonic::{Request, Status, Streaming};
-use tracing::info;
+use tracing::{error, info};
 
 use crate::{
     constants::METADATA,
@@ -121,17 +121,23 @@ impl ServerChannel<Unauthenticated> {
 impl<RNG: CryptoRng + RngCore> ServerChannel<Authenticated<RNG>> {
     /// Receive the next message on the channel and convert it to the type `R`.
     pub async fn receive<R: ConvertMessage>(&mut self) -> Result<R, LockKeeperError> {
-        match self.receiver.next().await {
-            Some(message) => {
-                let message = message?;
-                let encrypted_message: Encrypted<Message> =
-                    Encrypted::<Message>::try_from_message(message)?;
-                let message = encrypted_message.decrypt_message(&self.auth.session_key)?;
-                let result =
-                    R::from_message(message).map_err(|_| LockKeeperError::InvalidMessage)?;
-                Ok(result)
+        match self.receiver.message().await {
+            Ok(message) => match message {
+                None => Err(LockKeeperError::NoMessageReceived),
+                Some(message) => {
+                    let message = message?;
+                    let encrypted_message: Encrypted<Message> =
+                        Encrypted::<Message>::try_from_message(message)?;
+                    let message = encrypted_message.decrypt_message(&self.auth.session_key)?;
+                    let result =
+                        R::from_message(message).map_err(|_| LockKeeperError::InvalidMessage)?;
+                    Ok(result)
+                }
+            },
+            Err(e) => {
+                error!("{:?}", e);
+                Err(LockKeeperError::NoMessageReceived)
             }
-            None => Err(LockKeeperError::NoMessageReceived),
         }
     }
 
