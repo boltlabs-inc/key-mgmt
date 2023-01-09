@@ -3,7 +3,6 @@ use lock_keeper::{
     infrastructure::{channel::ServerChannel, logging},
     types::audit_event::EventStatus,
 };
-use std::time::Duration;
 use tracing::{error, info, instrument, Instrument};
 
 use crate::{database::DataStore, server::Context, LockKeeperServerError};
@@ -48,11 +47,9 @@ pub(crate) trait Operation<AUTH: Send + 'static, DB: DataStore>:
                         info!("This operation completed with an error!");
                         handle_error(&mut channel, e).await;
                         audit_event(&mut channel, &context, EventStatus::Failed).await;
-
-                        // Give the client a moment to receive the error before dropping the channel
-                        tokio::time::sleep(Duration::from_millis(10)).await;
                     }
                 }
+                channel.closed().await;
             }
             .in_current_span(),
         );
@@ -85,6 +82,6 @@ async fn audit_event<AUTH, DB: DataStore>(
         .await
         .map_err(|e| LockKeeperServerError::Database(Box::new(e)));
     if let Err(e) = audit_event {
-        let _ = handle_error(channel, e);
+        handle_error(channel, e).await;
     };
 }

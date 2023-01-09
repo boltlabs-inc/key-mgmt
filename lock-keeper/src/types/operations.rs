@@ -96,6 +96,9 @@ impl TryFrom<HexBytes> for SessionId {
     }
 }
 
+/// Metadata attached to each request to the server. Note that the request ID is
+/// an ID for an entire operation, not each `ClientAction` that the operation is
+/// composed of.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct RequestMetadata {
     account_name: AccountName,

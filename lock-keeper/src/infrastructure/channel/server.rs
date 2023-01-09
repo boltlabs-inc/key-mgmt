@@ -56,6 +56,10 @@ impl<AUTH> ServerChannel<AUTH> {
         let payload = Err(status.into());
         Ok(self.sender.send(payload).await?)
     }
+
+    pub async fn closed(&mut self) {
+        self.sender.closed().await;
+    }
 }
 
 impl ServerChannel<Unauthenticated> {
