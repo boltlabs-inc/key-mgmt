@@ -64,6 +64,7 @@
 <span id="64">64</span>
 <span id="65">65</span>
 <span id="66">66</span>
+<span id="67">67</span>
 </pre><pre class="rust"><code><span class="kw">use </span>std::time::{Duration, SystemTime};
 
 <span class="kw">use crate</span>::{cli_command::CliCommand, state::State};
@@ -110,9 +111,10 @@
 
     <span class="kw">fn </span>parse_command_args(slice: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>str]) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt; {
         <span class="kw">match </span>slice {
-            [key_name, string_to_sign] =&gt; <span class="prelude-val">Some</span>(RemoteSign {
+            <span class="comment">// All arguments after the key name are joined by spaces to form the text to be signed
+            </span>[key_name, string_to_sign @ ..] =&gt; <span class="prelude-val">Some</span>(RemoteSign {
                 name: key_name.to_string(),
-                data: string_to_sign.to_string(),
+                data: string_to_sign.join(<span class="string">&quot; &quot;</span>),
             }),
             <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
         }
@@ -123,7 +125,7 @@
     </span>}
 
     <span class="kw">fn </span>aliases() -&gt; Vec&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str&gt; {
-        <span class="macro">vec!</span>[<span class="string">&quot;remote-sign&quot;</span>, <span class="string">&quot;rs&quot;</span>]
+        <span class="macro">vec!</span>[<span class="string">&quot;remote-sign&quot;</span>, <span class="string">&quot;sign&quot;</span>, <span class="string">&quot;rs&quot;</span>]
     }
 
     <span class="kw">fn </span>description() -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str {

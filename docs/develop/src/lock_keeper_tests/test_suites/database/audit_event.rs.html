@@ -455,7 +455,7 @@
 
 <span class="kw">fn </span>compare_actions(audit_events: Vec&lt;AuditEvent&gt;, event_type: EventType) {
     <span class="kw">let </span>actual_actions: Vec&lt;ClientAction&gt; = audit_events.iter().map(|a| a.action()).collect();
-    <span class="kw">let </span>expected_actions = event_type.into_client_actions();
+    <span class="kw">let </span>expected_actions = event_type.client_actions();
     <span class="macro">assert!</span>(actual_actions
         .iter()
         .all(|item| expected_actions.contains(item)));

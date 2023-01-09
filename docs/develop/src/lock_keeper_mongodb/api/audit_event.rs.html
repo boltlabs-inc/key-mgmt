@@ -130,7 +130,7 @@
         event_type: EventType,
         options: AuditEventOptions,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;AuditEvent&gt;, Error&gt; {
-        <span class="kw">let </span>actions = event_type.into_client_actions();
+        <span class="kw">let </span>actions = event_type.client_actions();
         <span class="kw">let </span><span class="kw-2">mut </span>query = <span class="macro">doc! </span>{ ACTOR: account_name.to_string(), ACTION: {<span class="string">&quot;$in&quot;</span>: mongodb::bson::to_bson(<span class="kw-2">&amp;</span>actions)<span class="question-mark">?</span>} };
         query = construct_query_with_options(options, query)<span class="question-mark">?</span>;
         <span class="kw">let </span>collection = <span class="self">self</span>.handle.collection::&lt;AuditEvent&gt;(AUDIT_EVENTS);
