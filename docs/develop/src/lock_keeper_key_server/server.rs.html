@@ -462,7 +462,7 @@
     <span class="kw">async fn </span>get_user_id(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         request: Request&lt;tonic::Streaming&lt;Message&gt;&gt;,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;<span class="self">Self</span>::GenerateSecretStream&gt;, Status&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;<span class="self">Self</span>::GetUserIdStream&gt;, Status&gt; {
         <span class="comment">// `create_authenticated_channel` gets the `user_id` out of the request metadata
         // in order to retrieve the session key. Since the client doesn&#39;t know
         // its `user_id` before the `GetUserId` operation is called, we can&#39;t call the

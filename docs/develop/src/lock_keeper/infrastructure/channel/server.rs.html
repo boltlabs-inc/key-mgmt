@@ -151,6 +151,10 @@
 <span id="151">151</span>
 <span id="152">152</span>
 <span id="153">153</span>
+<span id="154">154</span>
+<span id="155">155</span>
+<span id="156">156</span>
+<span id="157">157</span>
 </pre><pre class="rust"><code><span class="kw">use </span>rand::{CryptoRng, RngCore};
 <span class="kw">use </span>std::{fmt::Debug, sync::Arc};
 <span class="kw">use </span>tokio::sync::{
@@ -208,6 +212,10 @@
     </span><span class="kw">pub async fn </span>send_error(<span class="kw-2">&amp;mut </span><span class="self">self</span>, status: <span class="kw">impl </span>Into&lt;Status&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperError&gt; {
         <span class="kw">let </span>payload = <span class="prelude-val">Err</span>(status.into());
         <span class="prelude-val">Ok</span>(<span class="self">self</span>.sender.send(payload).<span class="kw">await</span><span class="question-mark">?</span>)
+    }
+
+    <span class="kw">pub async fn </span>closed(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="self">self</span>.sender.closed().<span class="kw">await</span>;
     }
 }
 
