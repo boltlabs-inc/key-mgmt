@@ -125,7 +125,6 @@ impl<RNG: CryptoRng + RngCore> ServerChannel<Authenticated<RNG>> {
             Ok(message) => match message {
                 None => Err(LockKeeperError::NoMessageReceived),
                 Some(message) => {
-                    let message = message?;
                     let encrypted_message: Encrypted<Message> =
                         Encrypted::<Message>::try_from_message(message)?;
                     let message = encrypted_message.decrypt_message(&self.auth.session_key)?;
