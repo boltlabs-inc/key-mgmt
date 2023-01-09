@@ -10,10 +10,7 @@ use async_trait::async_trait;
 use lock_keeper::{
     crypto::{KeyId, SigningKeyPair},
     infrastructure::channel::{Authenticated, ServerChannel},
-    types::{
-        database::secrets::StoredSecret,
-        operations::remote_generate::{client, server},
-    },
+    types::{database::secrets::StoredSecret, operations::remote_generate::server},
 };
 use rand::rngs::StdRng;
 use tracing::{info, instrument};
@@ -35,13 +32,15 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for RemoteGenerateSigni
         context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
         info!("Starting remote generate protocol.");
-        let request: client::RequestRemoteGenerate = channel.receive().await?;
-
+        let user_id = channel
+            .metadata()
+            .user_id()
+            .ok_or(LockKeeperServerError::InvalidAccount)?;
         // Create a scope for rng mutex
         let (key_id, key_pair) = {
             let mut rng = context.rng.lock().await;
-            let key_id = KeyId::generate(&mut *rng, &request.user_id)?;
-            let key_pair = SigningKeyPair::remote_generate(&mut *rng, &request.user_id, &key_id);
+            let key_id = KeyId::generate(&mut *rng, user_id)?;
+            let key_pair = SigningKeyPair::remote_generate(&mut *rng, user_id, &key_id);
             info!("Generated key ID: {:?}", key_id);
             (key_id, key_pair)
         };
@@ -60,7 +59,7 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for RemoteGenerateSigni
         let secret = StoredSecret::from_remote_signing_key_pair(
             key_id.clone(),
             encrypted_key_pair,
-            request.user_id,
+            user_id.clone(),
         )?;
 
         // Store key in database

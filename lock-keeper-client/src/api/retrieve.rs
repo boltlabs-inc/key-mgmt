@@ -27,7 +27,6 @@ impl LockKeeperClient {
 
         // Send UserId to server
         let request = client::Request {
-            user_id: self.user_id().clone(),
             key_id: key_id.clone(),
             context: context.clone(),
             secret_type: Some(secret_types::ARBITRARY_SECRET.to_string()),
@@ -61,10 +60,7 @@ impl LockKeeperClient {
         context: RetrieveContext,
     ) -> Result<Option<LocalStorage<SigningKeyPair>>, LockKeeperClientError> {
         // TODO spec#39 look up key ID in local storage before making request to server
-
-        // Send UserId to server
         let request = client::Request {
-            user_id: self.user_id().clone(),
             key_id: key_id.clone(),
             context: context.clone(),
             secret_type: Some(secret_types::REMOTE_SIGNING_KEY.to_string()),

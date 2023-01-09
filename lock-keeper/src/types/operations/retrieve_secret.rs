@@ -81,7 +81,7 @@ impl TryFrom<RetrievedSecret> for SigningKeyPair {
 }
 
 pub mod client {
-    use crate::{crypto::KeyId, types::database::user::UserId};
+    use crate::crypto::KeyId;
     use serde::{Deserialize, Serialize};
 
     use super::RetrieveContext;
@@ -89,7 +89,6 @@ pub mod client {
     #[derive(Debug, Deserialize, Serialize)]
     /// pass user ID and key ID to server
     pub struct Request {
-        pub user_id: UserId,
         pub key_id: KeyId,
         pub context: RetrieveContext,
         pub secret_type: Option<String>,

@@ -53,12 +53,15 @@ async fn generate_key<DB: DataStore>(
     channel: &mut ServerChannel<Authenticated<StdRng>>,
     context: &Context<DB>,
 ) -> Result<KeyId, LockKeeperServerError> {
-    // Receive UserId from client
-    let generate_message: client::Generate = channel.receive().await?;
+    let user_id = channel
+        .metadata()
+        .user_id()
+        .ok_or(LockKeeperServerError::InvalidAccount)?;
+
     // Generate new KeyId
     let key_id = {
         let mut rng = context.rng.lock().await;
-        KeyId::generate(&mut *rng, &generate_message.user_id)?
+        KeyId::generate(&mut *rng, user_id)?
     };
     info!("New key_id generated: {:?}", key_id);
 
@@ -82,9 +85,13 @@ async fn store_key<DB: DataStore>(
 ) -> Result<(), LockKeeperServerError> {
     // Receive Encrypted<Secret> from client
     let store_message: client::Store = channel.receive().await?;
+    let user_id = channel
+        .metadata()
+        .user_id()
+        .ok_or(LockKeeperServerError::InvalidAccount)?;
     let secret = StoredSecret::from_arbitrary_secret(
         key_id.clone(),
-        store_message.user_id,
+        user_id.clone(),
         store_message.ciphertext,
     )?;
 

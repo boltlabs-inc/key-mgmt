@@ -34,9 +34,13 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for RemoteSignBytes {
     ) -> Result<(), LockKeeperServerError> {
         info!("Starting remote sign protocol.");
         let request: client::RequestRemoteSign = channel.receive().await?;
+        let user_id = channel
+            .metadata()
+            .user_id()
+            .ok_or(LockKeeperServerError::InvalidAccount)?;
         let encrypted_key: Encrypted<SigningKeyPair> = context
             .db
-            .get_user_secret(&request.user_id, &request.key_id, Default::default())
+            .get_user_secret(user_id, &request.key_id, Default::default())
             .await
             .map_err(LockKeeperServerError::database)?
             .try_into()?;
@@ -44,7 +48,7 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for RemoteSignBytes {
 
         let key = encrypted_key.decrypt_signing_key_by_server(
             &context.config.remote_storage_key,
-            request.user_id,
+            user_id.clone(),
             request.key_id,
         )?;
 

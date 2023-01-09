@@ -1,11 +1,10 @@
 pub mod client {
-    use crate::{crypto::Import, types::database::user::UserId};
+    use crate::crypto::Import;
     use serde::{Deserialize, Serialize};
 
     #[derive(Debug, Deserialize, Serialize)]
     /// send user ID and material to import
     pub struct Request {
-        pub user_id: UserId,
         pub key_material: Import,
     }
 }

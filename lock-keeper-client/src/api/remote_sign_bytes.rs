@@ -14,7 +14,6 @@ impl LockKeeperClient {
         bytes: impl Signable,
     ) -> Result<Signature, LockKeeperClientError> {
         let request = client::RequestRemoteSign {
-            user_id: self.user_id().clone(),
             key_id,
             data: SignableBytes(bytes.as_ref().to_vec()),
         };

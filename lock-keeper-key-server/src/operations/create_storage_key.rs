@@ -28,8 +28,11 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for CreateStorageKey {
     ) -> Result<(), LockKeeperServerError> {
         info!("Starting create storage key operation.");
 
-        let user_id = send_user_id(channel, context).await?;
-        store_storage_key(user_id, channel, context).await?;
+        let user_id = channel
+            .metadata()
+            .user_id()
+            .ok_or(LockKeeperServerError::InvalidAccount)?;
+        store_storage_key(user_id.clone(), channel, context).await?;
         info!("Successfully finished set storage key protocol.");
         Ok(())
     }
@@ -40,41 +43,7 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for CreateStorageKey {
 /// 2) Look up user in database.
 /// 3) Ensure this user doesn't already have a storage key.
 /// 4) Reply to client via channel.
-#[instrument(skip_all, err(Debug))]
-async fn send_user_id<DB: DataStore>(
-    channel: &mut ServerChannel<Authenticated<StdRng>>,
-    context: &Context<DB>,
-) -> Result<UserId, LockKeeperServerError> {
-    let request: client::RequestUserId = channel.receive().await?;
-    info!(
-        "Attempting to create storage key for {:?}",
-        request.account_name
-    );
-
-    let user = context
-        .db
-        .find_account(&request.account_name)
-        .await
-        .map_err(LockKeeperServerError::database)?
-        .ok_or(LockKeeperServerError::InvalidAccount)?;
-
-    info!("User found: {:?}", user);
-
-    if user.storage_key.is_some() {
-        return Err(LockKeeperServerError::StorageKeyAlreadySet);
-    }
-
-    let reply = server::SendUserId {
-        user_id: user.user_id.clone(),
-    };
-
-    channel.send(reply).await?;
-
-    info!("Successfully completed create storage key protocol.");
-    Ok(user.user_id)
-}
-
-#[instrument(skip(channel, context), err(Debug))]
+#[instrument(skip_all, err(Debug), fields(user_id))]
 async fn store_storage_key<DB: DataStore>(
     user_id: UserId,
     channel: &mut ServerChannel<Authenticated<StdRng>>,
@@ -83,12 +52,15 @@ async fn store_storage_key<DB: DataStore>(
     info!("Storing storage key.");
     let client_message: client::SendStorageKey = channel.receive().await?;
 
-    if client_message.user_id != user_id {
-        error!(
-            "Newly received message contain a different user ID: ({:?})",
-            client_message.user_id
-        );
-        return Err(LockKeeperServerError::InvalidAccount);
+    let user = context
+        .db
+        .find_account_by_id(&user_id)
+        .await
+        .map_err(LockKeeperServerError::database)?
+        .ok_or(LockKeeperServerError::InvalidAccount)?;
+
+    if user.storage_key.is_some() {
+        return Err(LockKeeperServerError::StorageKeyAlreadySet);
     }
 
     let store_key_result = context

@@ -32,18 +32,20 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for ImportSigningKey {
         info!("Starting import key operation.");
         // Receive UserId and key material from client.
         let request: client::Request = channel.receive().await?;
+        let user_id = channel
+            .metadata()
+            .user_id()
+            .ok_or(LockKeeperServerError::InvalidAccount)?;
 
         // Generate new KeyId
         let key_id = {
             let mut rng = context.rng.lock().await;
-            KeyId::generate(&mut *rng, &request.user_id)?
+            KeyId::generate(&mut *rng, user_id)?
         };
         context.key_id = Some(key_id.clone());
 
         // Make signing key out of bytes
-        let signing_key = request
-            .key_material
-            .into_signing_key(&request.user_id, &key_id)?;
+        let signing_key = request.key_material.into_signing_key(user_id, &key_id)?;
 
         // encrypt key_pair
         let encrypted_key_pair = {
@@ -57,7 +59,7 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for ImportSigningKey {
         let secret = StoredSecret::from_remote_signing_key_pair(
             key_id.clone(),
             encrypted_key_pair,
-            request.user_id,
+            user_id.clone(),
         )?;
 
         // Check validity of ciphertext and store in DB

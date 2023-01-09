@@ -12,9 +12,8 @@ use lock_keeper::{
     types::{
         database::user::{AccountName, UserId},
         operations::{
-            logout::server as logout_server,
-            retrieve_storage_key::{client, server},
-            ClientAction, RequestMetadata, SessionId,
+            logout::server as logout_server, retrieve_storage_key::server, ClientAction,
+            RequestMetadata, SessionId,
         },
     },
 };
@@ -331,12 +330,6 @@ impl LockKeeperClient {
             self.rng.clone(),
         )
         .await?;
-
-        // Send UserId to server
-        let request = client::Request {
-            user_id: self.user_id().clone(),
-        };
-        channel.send(request).await?;
 
         // Get encrypted storage key from server
         let response: server::Response = channel.receive().await?;

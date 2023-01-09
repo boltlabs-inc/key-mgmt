@@ -13,10 +13,7 @@ impl LockKeeperClient {
         key_material: Import,
     ) -> Result<KeyId, LockKeeperClientError> {
         // Send UserId and key material to server
-        let request = client::Request {
-            user_id: self.user_id().clone(),
-            key_material,
-        };
+        let request = client::Request { key_material };
         channel.send(request).await?;
 
         // Get KeyId for imported key from server

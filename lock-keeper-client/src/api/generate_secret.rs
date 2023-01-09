@@ -28,7 +28,7 @@ impl LockKeeperClient {
         let storage_key = self.retrieve_storage_key(request_id).await?;
 
         // Generate step: get new KeyId from server
-        let key_id = get_key_id(&mut channel, self.user_id()).await?;
+        let key_id = channel.receive::<server::Generate>().await?.key_id;
         // Store step: encrypt secret and send to server to store
         let wrapped_secret = generate_and_store(
             &mut channel,
@@ -46,22 +46,6 @@ impl LockKeeperClient {
     }
 }
 
-async fn get_key_id(
-    channel: &mut ClientChannel<Authenticated<StdRng>>,
-    user_id: &UserId,
-) -> Result<KeyId, LockKeeperClientError> {
-    // Send UserId to server
-    let generate_message = client::Generate {
-        user_id: user_id.clone(),
-    };
-    channel.send(generate_message).await?;
-
-    // Get KeyId from server
-    let generate_result: server::Generate = channel.receive().await?;
-
-    Ok(generate_result.key_id)
-}
-
 async fn generate_and_store(
     channel: &mut ClientChannel<Authenticated<StdRng>>,
     user_id: &UserId,
@@ -77,7 +61,6 @@ async fn generate_and_store(
     // Serialize and send ciphertext
     let response = client::Store {
         ciphertext: encrypted.clone(),
-        user_id: user_id.clone(),
     };
     channel.send(response).await?;
 
