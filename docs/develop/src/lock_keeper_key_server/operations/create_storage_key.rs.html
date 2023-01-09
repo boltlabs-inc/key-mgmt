@@ -190,7 +190,7 @@
     <span class="prelude-val">Ok</span>(user.user_id)
 }
 
-<span class="attribute">#[instrument(skip_all, err(Debug), fields(user_id))]
+<span class="attribute">#[instrument(skip(channel, context), err(Debug))]
 </span><span class="kw">async fn </span>store_storage_key&lt;DB: DataStore&gt;(
     user_id: UserId,
     channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;Authenticated&lt;StdRng&gt;&gt;,

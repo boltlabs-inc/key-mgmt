@@ -173,6 +173,7 @@
 <span id="173">173</span>
 <span id="174">174</span>
 <span id="175">175</span>
+<span id="176">176</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{
     config::Config,
     constants::{SECRETS, USERS},
@@ -264,7 +265,7 @@
 </span><span class="kw">impl </span>DataStore <span class="kw">for </span>Database {
     <span class="kw">type </span>Error = Error;
 
-    <span class="attribute">#[instrument(skip_all, err(Debug), fields(actor, secret_id, action, status))]
+    <span class="attribute">#[instrument(skip(<span class="self">self</span>, request_id), err(Debug))]
     </span><span class="kw">async fn </span>create_audit_event(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         request_id: Uuid,
@@ -278,7 +279,7 @@
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="attribute">#[instrument(skip_all, err(Debug), fields(account_name, event_type, options))]
+    <span class="attribute">#[instrument(skip(<span class="self">self</span>), err(Debug))]
     </span><span class="kw">async fn </span>find_audit_events(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         account_name: <span class="kw-2">&amp;</span>AccountName,
@@ -291,13 +292,13 @@
         <span class="prelude-val">Ok</span>(audit_events)
     }
 
-    <span class="attribute">#[instrument(skip_all, err(Debug), fields(user_id))]
+    <span class="attribute">#[instrument(skip_all, err(Debug))]
     </span><span class="kw">async fn </span>add_user_secret(<span class="kw-2">&amp;</span><span class="self">self</span>, secret: StoredSecret) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt; {
         <span class="self">self</span>.add_user_secret(secret).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="attribute">#[instrument(skip_all, err(Debug), fields(user_id, key_id))]
+    <span class="attribute">#[instrument(skip(<span class="self">self</span>, filter), err(Debug))]
     </span><span class="kw">async fn </span>get_user_secret(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         user_id: <span class="kw-2">&amp;</span>UserId,
@@ -308,7 +309,8 @@
         <span class="prelude-val">Ok</span>(stored_encrypted_secret)
     }
 
-    <span class="kw">async fn </span>create_user(
+    <span class="attribute">#[instrument(skip(<span class="self">self</span>, server_registration), err(Debug))]
+    </span><span class="kw">async fn </span>create_user(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         user_id: <span class="kw-2">&amp;</span>UserId,
         account_name: <span class="kw-2">&amp;</span>AccountName,
@@ -320,25 +322,25 @@
         <span class="prelude-val">Ok</span>(user)
     }
 
-    <span class="attribute">#[instrument(skip_all, err(Debug), fields(account_name))]
+    <span class="attribute">#[instrument(skip(<span class="self">self</span>), err(Debug))]
     </span><span class="kw">async fn </span>find_user(<span class="kw-2">&amp;</span><span class="self">self</span>, account_name: <span class="kw-2">&amp;</span>AccountName) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;User&gt;, <span class="self">Self</span>::Error&gt; {
         <span class="kw">let </span>opt_user = <span class="self">self</span>.find_user(account_name).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(opt_user)
     }
 
-    <span class="attribute">#[instrument(skip_all, err(Debug), fields(user_id))]
+    <span class="attribute">#[instrument(skip(<span class="self">self</span>), err(Debug))]
     </span><span class="kw">async fn </span>find_user_by_id(<span class="kw-2">&amp;</span><span class="self">self</span>, user_id: <span class="kw-2">&amp;</span>UserId) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;User&gt;, <span class="self">Self</span>::Error&gt; {
         <span class="kw">let </span>opt_user = <span class="self">self</span>.find_user_by_id(user_id).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(opt_user)
     }
 
-    <span class="attribute">#[instrument(skip_all, err(Debug), fields(user_id))]
+    <span class="attribute">#[instrument(skip(<span class="self">self</span>), err(Debug))]
     </span><span class="kw">async fn </span>delete_user(<span class="kw-2">&amp;</span><span class="self">self</span>, user_id: <span class="kw-2">&amp;</span>UserId) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt; {
         <span class="self">self</span>.delete_user(user_id).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="attribute">#[instrument(skip_all, err(Debug), fields(user_id))]
+    <span class="attribute">#[instrument(skip(<span class="self">self</span>, storage_key), err(Debug))]
     </span><span class="kw">async fn </span>set_storage_key(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         user_id: <span class="kw-2">&amp;</span>UserId,

@@ -216,7 +216,7 @@
     }
 }
 
-<span class="attribute">#[instrument(skip_all, err(Debug))]
+<span class="attribute">#[instrument(skip(channel, context), err(Debug))]
 </span><span class="kw">async fn </span>register_finish&lt;DB: DataStore&gt;(
     account_name: <span class="kw-2">&amp;</span>AccountName,
     channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;Unauthenticated&gt;,

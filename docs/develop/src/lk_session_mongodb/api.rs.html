@@ -211,7 +211,7 @@
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="attribute">#[instrument(skip_all, err(Debug), fields(session_id, user_id))]
+    <span class="attribute">#[instrument(skip(<span class="self">self</span>), err(Debug))]
     </span><span class="kw">async fn </span>find_session(<span class="kw-2">&amp;</span><span class="self">self</span>, session_id: SessionId, user_id: UserId) -&gt; <span class="prelude-ty">Result</span>&lt;Session, Error&gt; {
         <span class="kw">let </span>collection = <span class="self">self</span>.handle.collection::&lt;Session&gt;(TABLE);
         <span class="kw">let </span>user_id_bson = mongodb::bson::to_bson(<span class="kw-2">&amp;</span>user_id)<span class="question-mark">?</span>;
@@ -231,7 +231,7 @@
         <span class="prelude-val">Ok</span>(session)
     }
 
-    <span class="attribute">#[instrument(skip_all, err(Debug), fields(session_id))]
+    <span class="attribute">#[instrument(skip(<span class="self">self</span>), err(Debug))]
     </span><span class="kw">async fn </span>delete_session(<span class="kw-2">&amp;</span><span class="self">self</span>, session_id: SessionId) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
         <span class="kw">let </span>collection = <span class="self">self</span>.handle.collection::&lt;Session&gt;(TABLE);
         <span class="kw">let </span>session_id_bson = mongodb::bson::to_bson(<span class="kw-2">&amp;</span>session_id)<span class="question-mark">?</span>;
