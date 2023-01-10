@@ -10,8 +10,8 @@ edition = "2021"
 lock-keeper = { version = "0.2.0", path = "../lock-keeper" }
 lock-keeper-key-server = { version = "0.2.0", path = "../lock-keeper-key-server" }
 lock-keeper-client = { version = "0.2.0", path = "../lock-keeper-client", features=["allow_explicit_certificate_trust"] }
-lock-keeper-mongodb = { version = "0.2.0", path = "../persistence/lock-keeper-mongodb" }
 lk-session-mongodb = { version = "0.2.0", path = "../persistence/lk-session-mongodb" }
+lock-keeper-postgres = { path = "../persistence/lock-keeper-sql"}
 
 # Workspace dependencies
 clap.workspace = true
@@ -23,6 +23,7 @@ serde.workspace = true
 serde_json.workspace = true
 strum.workspace = true
 thiserror.workspace = true
+time.workspace = true
 tokio.workspace = true
 toml.workspace = true
 tonic.workspace = true
@@ -33,4 +34,3 @@ uuid.workspace = true
 
 # Other dependencies
 colored = "2.0"
-mongodb = "2.3.0"

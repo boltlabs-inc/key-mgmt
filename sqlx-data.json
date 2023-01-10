@@ -1,0 +1,237 @@
+{
+  "db": "PostgreSQL",
+  "0ac4d9151b57d4a468dd3dfe116874d3b731f5aae44ae709150f99d88c6f4693": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Bytea"
+        ]
+      }
+    },
+    "query": "UPDATE Accounts SET storage_key=$1 WHERE user_id=$2"
+  },
+  "2f7e466e183916bcef3e01a48bdbfd5ead68bafbdf877b7f8aa2f84595113627": {
+    "describe": {
+      "columns": [
+        {
+          "name": "count!",
+          "ordinal": 0,
+          "type_info": "Int8"
+        }
+      ],
+      "nullable": [
+        null
+      ],
+      "parameters": {
+        "Left": [
+          "Bytea"
+        ]
+      }
+    },
+    "query": "WITH deleted AS (DELETE FROM Accounts WHERE user_id=$1 RETURNING *) SELECT count(*) AS \"count!\" FROM deleted"
+  },
+  "3d49508f10ddaec3e02c708ecc0f10095eecc72b9475dd99af6f41c85f4e0dcd": {
+    "describe": {
+      "columns": [
+        {
+          "name": "account_id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "user_id",
+          "ordinal": 1,
+          "type_info": "Bytea"
+        },
+        {
+          "name": "account_name",
+          "ordinal": 2,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "storage_key",
+          "ordinal": 3,
+          "type_info": "Bytea"
+        },
+        {
+          "name": "server_registration",
+          "ordinal": 4,
+          "type_info": "Bytea"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        true,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "SELECT account_id, user_id, account_name, storage_key, server_registration FROM Accounts WHERE account_name=$1"
+  },
+  "638f9e1ec3582aa0f42729cf0dcc031784b0b2d7051152bd6d638a9f0b31a975": {
+    "describe": {
+      "columns": [
+        {
+          "name": "key_id",
+          "ordinal": 0,
+          "type_info": "Bytea"
+        },
+        {
+          "name": "user_id",
+          "ordinal": 1,
+          "type_info": "Bytea"
+        },
+        {
+          "name": "secret_type",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "secret",
+          "ordinal": 3,
+          "type_info": "Bytea"
+        },
+        {
+          "name": "retrieved",
+          "ordinal": 4,
+          "type_info": "Bool"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Bytea",
+          "Text"
+        ]
+      }
+    },
+    "query": "UPDATE Secrets SET retrieved=TRUE WHERE key_id=$1 AND user_id=$2 AND secret_type LIKE $3 RETURNING key_id, user_id, secret_type, secret, retrieved"
+  },
+  "6bb4786a839134fd11cb2e84df34b2a3bb5158c9a82c6a4f798a766077328492": {
+    "describe": {
+      "columns": [
+        {
+          "name": "account_id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "user_id",
+          "ordinal": 1,
+          "type_info": "Bytea"
+        },
+        {
+          "name": "account_name",
+          "ordinal": 2,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "storage_key",
+          "ordinal": 3,
+          "type_info": "Bytea"
+        },
+        {
+          "name": "server_registration",
+          "ordinal": 4,
+          "type_info": "Bytea"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        true,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Bytea"
+        ]
+      }
+    },
+    "query": "SELECT account_id, user_id, account_name, storage_key, server_registration FROM Accounts WHERE user_id=$1"
+  },
+  "a9078aa304e311b5d3459c32a2d36853a810d95f1c6bb12c4e254cd04aaa4cfb": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Bytea",
+          "Bytea",
+          "Text",
+          "Bool"
+        ]
+      }
+    },
+    "query": "INSERT INTO Secrets (key_id, user_id, secret, secret_type, retrieved) VALUES ($1, $2, $3, $4, $5)"
+  },
+  "b35d2924ad509e3ac7d4adf71b571472530c61b824c9b67197bb7ecc7f6d8ecd": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Varchar",
+          "Bytea"
+        ]
+      }
+    },
+    "query": "INSERT INTO Accounts (user_id, account_name, server_registration)VALUES ($1, $2, $3)"
+  },
+  "cc9e4405f5fa1a5a48347e39a92c9f5b07ca0f8012d087523b21844089da0778": {
+    "describe": {
+      "columns": [
+        {
+          "name": "count!",
+          "ordinal": 0,
+          "type_info": "Int8"
+        }
+      ],
+      "nullable": [
+        null
+      ],
+      "parameters": {
+        "Left": [
+          "Bytea"
+        ]
+      }
+    },
+    "query": "SELECT COUNT(1) as \"count!\" FROM Secrets WHERE key_id=$1"
+  },
+  "df4a3e36034bbfa9642e21ad88a9de82e5f1ddbcec5779ae3fb1c08f86786cfe": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Varchar",
+          "Bytea",
+          "Uuid",
+          "Text",
+          "Text",
+          "Timestamptz"
+        ]
+      }
+    },
+    "query": "INSERT INTO AuditEvents (account_name, key_id, request_id, action, event_status, timestamp) VALUES ($1, $2, $3, $4, $5, $6)"
+  }
+}

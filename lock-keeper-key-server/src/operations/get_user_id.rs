@@ -11,7 +11,7 @@ use lock_keeper::{
 };
 
 use rand::rngs::StdRng;
-use tracing::instrument;
+use tracing::{info, instrument};
 
 #[derive(Debug)]
 pub struct GetUserId;
@@ -24,6 +24,7 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for GetUserId {
         channel: &mut ServerChannel<Authenticated<StdRng>>,
         _context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
+        info!("Starting GetUserId protocol.");
         let user_id = channel
             .metadata()
             .user_id()
@@ -32,7 +33,7 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for GetUserId {
 
         let response = server::Response { user_id };
         channel.send(response).await?;
-
+        info!("Successfully completed GetUserId protocol.");
         Ok(())
     }
 }

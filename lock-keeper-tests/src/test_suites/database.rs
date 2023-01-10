@@ -17,7 +17,7 @@ use lock_keeper::{
     types::database::user::{AccountName, UserId},
 };
 use lock_keeper_key_server::database::DataStore;
-use lock_keeper_mongodb::{config::Config as DatabaseConfig, Database};
+use lock_keeper_postgres::{Config, ConfigFile as DatabaseConfigFile, PostgresDB, PostgresError};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
 use crate::utils::{server_registration, tagged};
@@ -52,15 +52,11 @@ pub async fn run_tests(filters: &TestFilters) -> Result<Vec<TestResult>> {
 
 #[derive(Clone, Debug)]
 pub struct TestDatabase {
-    pub db: Database,
-    pub config: DatabaseConfig,
-    /// Direct connection to MongoDB for actions that we don't provide in
-    /// [`Database`]
-    pub mongo: mongodb::Database,
+    pub db: PostgresDB,
 }
 
 impl Deref for TestDatabase {
-    type Target = Database;
+    type Target = PostgresDB;
 
     fn deref(&self) -> &Self::Target {
         &self.db
@@ -68,50 +64,21 @@ impl Deref for TestDatabase {
 }
 
 impl TestDatabase {
-    /// Create a new test database with random characters appended to name.
-    /// This is what you probably want to use.
-    pub async fn new(db_name: impl AsRef<str>) -> Result<Self> {
-        Self::from_db_name(tagged(db_name)).await
-    }
+    pub async fn connect() -> Result<Self> {
+        let config_str = r#"
+            username = 'test' 
+            password = 'test_password'
+            address = 'localhost'
+            db_name = 'test'
+            max_connections = 5
+            connecting_timeout_seconds = 3
+            "#;
 
-    /// Create a new test database with a specific name.
-    /// Use this to reconnect to a [`TestDatabase`] created with the `new`
-    /// function.
-    pub async fn from_db_name(db_name: impl Into<String>) -> Result<Self> {
-        use mongodb::{options::ClientOptions, Client};
-
-        let mongodb_uri = "mongodb://localhost:27017";
-
-        let config_str = format!(
-            r#"
-mongodb_uri = "mongodb://localhost:27017"
-db_name = "{}"
-"#,
-            db_name.into()
-        );
-
-        let db_config = DatabaseConfig::from_str(&config_str).unwrap();
-        let db = Database::connect(db_config.clone()).await?;
-
-        let client_options = ClientOptions::parse(&mongodb_uri).await?;
-        let client = Client::with_options(client_options)?;
-        let mongo = client.database(&db_config.db_name);
-
-        let result = TestDatabase {
-            db,
-            config: db_config,
-            mongo,
-        };
-
-        Ok(result)
-    }
-
-    /// Drops the underlying database. Call this when you're done using the test
-    /// database. Some day Rust will have async `Drop` and we can do this
-    /// properly.
-    pub async fn drop(self) -> Result<()> {
-        self.mongo.drop(None).await?;
-        Ok(())
+        let config_file =
+            DatabaseConfigFile::from_str(config_str).map_err(PostgresError::ConfigError)?;
+        let config: Config = TryFrom::try_from(config_file).map_err(PostgresError::ConfigError)?;
+        let db = PostgresDB::connect(config).await.unwrap();
+        Ok(TestDatabase { db })
     }
 
     /// Create a master key for testing using random bytes.
@@ -149,12 +116,12 @@ db_name = "{}"
         let mut rng = StdRng::from_entropy();
 
         let user_id = UserId::new(&mut rng)?;
-        let account_name = AccountName::from_str(&tagged("user"))?;
+        let account_name = AccountName::from(tagged("user").as_str());
 
         let server_registration = server_registration();
         let _ = self
             .db
-            .create_user(&user_id, &account_name, &server_registration)
+            .create_account(&user_id, &account_name, &server_registration)
             .await?;
 
         Ok((user_id, account_name))
@@ -164,7 +131,7 @@ db_name = "{}"
     /// deserialized to the `User` type. Returns true if retrieval and
     /// deserialization were successful.
     pub async fn is_user_valid(&self, account_name: &AccountName) -> bool {
-        match self.find_user(account_name).await {
+        match self.find_account(account_name).await {
             Ok(maybe_user) => maybe_user.is_some(),
             Err(_) => false,
         }

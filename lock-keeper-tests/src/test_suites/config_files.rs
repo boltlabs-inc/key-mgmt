@@ -11,14 +11,12 @@ use crate::{
     config::TestFilters,
     error::Result,
     run_parallel,
-    test_suites::database::TestDatabase,
     utils::{report_test_results, TestResult},
 };
 
 pub async fn run_tests(filters: &TestFilters) -> Result<Vec<TestResult>> {
     println!("{}", "Running config file tests".cyan());
 
-    let db = TestDatabase::new("config_file_tests").await?;
     let results = run_parallel!(
         filters,
         client_config_with_file_private_key_works(),
@@ -31,10 +29,7 @@ pub async fn run_tests(filters: &TestFilters) -> Result<Vec<TestResult>> {
         server_config_without_remote_storage_key_fails(),
     )?;
 
-    db.drop().await?;
-
     println!("config file tests: {}", report_test_results(&results));
-
     Ok(results)
 }
 

@@ -36,14 +36,11 @@ async fn multiple_sessions_from_same_client_allowed(config: Config) -> Result<()
     let second_login = authenticate(&state).await;
     let _ = second_login.result?;
     let request_id = second_login.metadata.unwrap().request_id;
-    // TODO: Successful authentication now ends with the `GetUserId` action.
-    // At some point we need to update the audit event checks so that they're not
-    // based on the order of audit events. Once that happens, we can change this
-    // back to `Authenticate`.
+
     check_audit_events(
         &state,
         EventStatus::Successful,
-        ClientAction::GetUserId,
+        ClientAction::Authenticate,
         request_id,
     )
     .await?;
@@ -75,7 +72,7 @@ async fn cannot_authenticate_with_wrong_password(config: Config) -> Result<()> {
 }
 
 async fn authenticate_before_register_fails(config: Config) -> Result<()> {
-    let account_name = AccountName::from_str(tagged("user").as_str())?;
+    let account_name = AccountName::from(tagged("user").as_str());
     let password = Password::from_str(tagged("password").as_str())?;
 
     let fake_state = TestState {

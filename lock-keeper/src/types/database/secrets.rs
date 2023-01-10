@@ -9,12 +9,15 @@ use serde::{Deserialize, Serialize};
 use super::user::UserId;
 
 /// Generic representation of a secret that is stored in a database.
+/// Databased implementors must be able to store and return [StoredSecret]s. So
+/// we make all fields in this struct public.
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct StoredSecret {
     pub key_id: KeyId,
     pub user_id: UserId,
     pub secret_type: String,
     pub bytes: Vec<u8>,
+    /// Whether or not this secret has been retrieved.
     pub retrieved: bool,
 }
 

@@ -10,8 +10,8 @@ use opaque_ke::ServerRegistration;
 use rand::{CryptoRng, Rng, RngCore};
 use serde::{Deserialize, Serialize};
 use std::{
-    array::IntoIter,
-    fmt::{Debug, Display},
+    array::{IntoIter, TryFromSliceError},
+    fmt::{Debug, Display, Formatter},
     str::FromStr,
 };
 
@@ -19,21 +19,31 @@ use super::HexBytes;
 
 /// One user with a set of arbitrary secrets and a [`ServerRegistration`] to
 /// authenticate with.
-#[derive(Debug, Deserialize, Serialize)]
-pub struct User {
+#[derive(Deserialize, Serialize)]
+pub struct Account {
     pub user_id: UserId,
     pub account_name: AccountName,
     pub storage_key: Option<Encrypted<StorageKey>>,
     pub server_registration: ServerRegistration<OpaqueCipherSuite>,
 }
 
-impl User {
+/// Manual implement Debug to avoid printing storage key or server_registration.
+impl Debug for Account {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Account")
+            .field("user_id", &self.user_id)
+            .field("account_name", &self.account_name)
+            .finish()
+    }
+}
+
+impl Account {
     pub fn new(
         user_id: UserId,
         account_name: AccountName,
         server_registration: ServerRegistration<OpaqueCipherSuite>,
     ) -> Self {
-        User {
+        Account {
             user_id,
             account_name,
             storage_key: None,
@@ -51,6 +61,19 @@ impl User {
 #[derive(Clone, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
 #[serde(try_from = "HexBytes", into = "HexBytes")]
 pub struct UserId(Box<[u8; 16]>);
+
+impl AsRef<[u8; 16]> for UserId {
+    fn as_ref(&self) -> &[u8; 16] {
+        &self.0
+    }
+}
+impl TryFrom<&[u8]> for UserId {
+    type Error = TryFromSliceError;
+
+    fn try_from(id: &[u8]) -> Result<Self, Self::Error> {
+        Ok(UserId(Box::new(<[u8; 16]>::try_from(id)?)))
+    }
+}
 
 impl UserId {
     pub fn new(rng: &mut (impl CryptoRng + RngCore)) -> Result<Self, LockKeeperError> {
@@ -131,10 +154,16 @@ impl AsRef<str> for AccountName {
 }
 
 impl FromStr for AccountName {
-    type Err = LockKeeperError;
+    type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self(s.to_string()))
+        Ok(AccountName(s.to_string()))
+    }
+}
+
+impl From<&str> for AccountName {
+    fn from(s: &str) -> Self {
+        Self(s.to_string())
     }
 }
 

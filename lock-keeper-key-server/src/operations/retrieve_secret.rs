@@ -33,23 +33,16 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for RetrieveSecret {
         let request: client::Request = channel.receive().await?;
         context.key_id = Some(request.key_id.clone());
 
+        let secret_filter = request
+            .secret_type
+            .map_or_else(Default::default, SecretFilter::secret_type);
+
         // Find secret based on key_id
-        let stored_secret = match request.secret_type {
-            Some(secret_type) => context
-                .db
-                .get_user_secret(
-                    &request.user_id,
-                    &request.key_id,
-                    SecretFilter::secret_type(secret_type),
-                )
-                .await
-                .map_err(LockKeeperServerError::database)?,
-            None => context
-                .db
-                .get_user_secret(&request.user_id, &request.key_id, Default::default())
-                .await
-                .map_err(LockKeeperServerError::database)?,
-        };
+        let stored_secret = context
+            .db
+            .get_user_secret(&request.user_id, &request.key_id, secret_filter)
+            .await
+            .map_err(LockKeeperServerError::database)?;
 
         let reply = server::Response {
             secret: RetrievedSecret::try_from_stored_secret(

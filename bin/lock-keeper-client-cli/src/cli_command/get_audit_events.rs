@@ -13,24 +13,18 @@ use uuid::Uuid;
 #[derive(Debug)]
 pub struct GetAuditEvents {
     event_type: EventType,
-    key_names: Option<Vec<String>>,
+    key_names: Vec<String>,
     request_id: Option<Uuid>,
 }
 
 #[async_trait]
 impl CliCommand for GetAuditEvents {
     async fn execute(self: Box<Self>, state: &mut State) -> Result<Duration, Error> {
-        let key_ids = match self.key_names {
-            Some(key_names) => {
-                let mut key_ids = Vec::new();
-                for key_name in key_names {
-                    key_ids.push(state.get_key_id(&key_name)?.key_id.clone());
-                }
+        let mut key_ids = Vec::new();
+        for key_name in self.key_names {
+            key_ids.push(state.get_key_id(&key_name)?.key_id.clone());
+        }
 
-                Some(key_ids)
-            }
-            None => None,
-        };
         let options = AuditEventOptions {
             key_ids,
             request_id: self.request_id,
@@ -70,13 +64,13 @@ impl CliCommand for GetAuditEvents {
         match slice {
             [] => Some(GetAuditEvents {
                 event_type: EventType::All,
-                key_names: None,
+                key_names: vec![],
                 request_id: None,
             }),
             options => {
                 let mut result = GetAuditEvents {
                     event_type: EventType::All,
-                    key_names: None,
+                    key_names: vec![],
                     request_id: None,
                 };
 
@@ -91,7 +85,7 @@ impl CliCommand for GetAuditEvents {
                             result.event_type = event_type;
                         }
                         ParsedAuditEventOption::KeyNames(key_names) => {
-                            result.key_names = Some(key_names);
+                            result.key_names = key_names;
                         }
                         ParsedAuditEventOption::RequestId(request_id) => {
                             result.request_id = Some(request_id);

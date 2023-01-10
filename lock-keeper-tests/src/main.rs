@@ -64,7 +64,11 @@ async fn run() -> Result<(), LockKeeperTestError> {
             eprintln!("{}", e.to_string().red());
             std::process::exit(1);
         }
-        Err(e) => panic!("{e}"),
+        Err(e) => {
+            // TODO: Without this, error message is not printed.
+            eprintln!("{}", e.to_string().red());
+            panic!("{e}")
+        }
         _ => (),
     }
 

@@ -53,7 +53,7 @@ async fn register_start<DB: DataStore>(
     // Abort registration if UserId already exists
     let user = context
         .db
-        .find_user(&start_message.account_name)
+        .find_account(&start_message.account_name)
         .await
         .map_err(LockKeeperServerError::database)?;
 
@@ -107,7 +107,7 @@ async fn register_finish<DB: DataStore>(
         // If the user ID is fresh, create the new user
         if context
             .db
-            .find_user_by_id(&user_id)
+            .find_account_by_id(&user_id)
             .await
             .map_err(LockKeeperServerError::database)?
             .is_none()
@@ -115,7 +115,7 @@ async fn register_finish<DB: DataStore>(
             info!("Fresh user id generated: {:?}", user_id);
             let _user = context
                 .db
-                .create_user(&user_id, account_name, &server_registration)
+                .create_account(&user_id, account_name, &server_registration)
                 .await
                 .map_err(LockKeeperServerError::database)?;
             break;

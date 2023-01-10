@@ -1,4 +1,4 @@
-# Docker server, no client auth, mongo DB
+# Docker server, no client auth, postgres DB.
 server = "/app/config/docker/Server.toml"
-database = "/app/config/MongoDB.toml"
-session_cache = "/app/config/SessionCache.toml"
+database = "dev/config/docker/Postgres.toml"
+session_cache = "/app/config/docker/SessionCache.toml"
