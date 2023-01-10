@@ -112,6 +112,10 @@
 <span id="112">112</span>
 <span id="113">113</span>
 <span id="114">114</span>
+<span id="115">115</span>
+<span id="116">116</span>
+<span id="117">117</span>
+<span id="118">118</span>
 </pre><pre class="rust"><code><span class="kw">pub mod </span>config;
 <span class="kw">pub mod </span>error;
 <span class="kw">pub mod </span>test_suites;
@@ -178,7 +182,11 @@
             </span><span class="macro">eprintln!</span>(<span class="string">&quot;{}&quot;</span>, e.to_string().red());
             std::process::exit(<span class="number">1</span>);
         }
-        <span class="prelude-val">Err</span>(e) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;{e}&quot;</span>),
+        <span class="prelude-val">Err</span>(e) =&gt; {
+            <span class="comment">// TODO: Without this, error message is not printed.
+            </span><span class="macro">eprintln!</span>(<span class="string">&quot;{}&quot;</span>, e.to_string().red());
+            <span class="macro">panic!</span>(<span class="string">&quot;{e}&quot;</span>)
+        }
         <span class="kw">_ </span>=&gt; (),
     }
 

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":[["add_arbitrary_secret",""],["cannot_get_another_users_secrets",""],["import_signing_key",""],["remote_generate_signing_key",""],["run_tests",""],["user_is_serializable_after_adding_secrets",""]]};
+window.SIDEBAR_ITEMS = {"fn":[["add_arbitrary_secret",""],["cannot_get_another_users_secrets",""],["import_signing_key",""],["incorrect_key_type_specified","An error is returned if a wrong key type is specified."],["remote_generate_signing_key",""],["run_tests",""],["user_is_serializable_after_adding_secrets",""]]};

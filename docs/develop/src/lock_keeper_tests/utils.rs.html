@@ -278,7 +278,7 @@
 /// ```
 /// let user = tagged(&quot;user&quot;);
 /// println!(&quot;{user}&quot;);
-/// // Prints something like &quot;user-1h65k35&quot;
+/// // Prints something like &quot;user_1h65k35&quot;
 /// ```
 </span><span class="kw">pub fn </span>tagged(text: <span class="kw">impl </span>AsRef&lt;str&gt;) -&gt; String {
     <span class="kw">let </span>text = text.as_ref();
@@ -288,7 +288,7 @@
         .map(char::from)
         .collect();
 
-    <span class="macro">format!</span>(<span class="string">&quot;{text}-{tag}&quot;</span>)
+    <span class="macro">format!</span>(<span class="string">&quot;{text}_{tag}&quot;</span>)
 }
 
 <span class="doccomment">/// Locally simulates OPAQUE registration to get a valid

@@ -155,12 +155,6 @@
 <span id="155">155</span>
 <span id="156">156</span>
 <span id="157">157</span>
-<span id="158">158</span>
-<span id="159">159</span>
-<span id="160">160</span>
-<span id="161">161</span>
-<span id="162">162</span>
-<span id="163">163</span>
 </pre><pre class="rust"><code><span class="kw">use </span>std::{
     str::FromStr,
     time::{Duration, SystemTime},
@@ -176,24 +170,18 @@
 <span class="attribute">#[derive(Debug)]
 </span><span class="kw">pub struct </span>GetAuditEvents {
     event_type: EventType,
-    key_names: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
+    key_names: Vec&lt;String&gt;,
     request_id: <span class="prelude-ty">Option</span>&lt;Uuid&gt;,
 }
 
 <span class="attribute">#[async_trait]
 </span><span class="kw">impl </span>CliCommand <span class="kw">for </span>GetAuditEvents {
     <span class="kw">async fn </span>execute(<span class="self">self</span>: Box&lt;<span class="self">Self</span>&gt;, state: <span class="kw-2">&amp;mut </span>State) -&gt; <span class="prelude-ty">Result</span>&lt;Duration, Error&gt; {
-        <span class="kw">let </span>key_ids = <span class="kw">match </span><span class="self">self</span>.key_names {
-            <span class="prelude-val">Some</span>(key_names) =&gt; {
-                <span class="kw">let </span><span class="kw-2">mut </span>key_ids = Vec::new();
-                <span class="kw">for </span>key_name <span class="kw">in </span>key_names {
-                    key_ids.push(state.get_key_id(<span class="kw-2">&amp;</span>key_name)<span class="question-mark">?</span>.key_id.clone());
-                }
+        <span class="kw">let </span><span class="kw-2">mut </span>key_ids = Vec::new();
+        <span class="kw">for </span>key_name <span class="kw">in </span><span class="self">self</span>.key_names {
+            key_ids.push(state.get_key_id(<span class="kw-2">&amp;</span>key_name)<span class="question-mark">?</span>.key_id.clone());
+        }
 
-                <span class="prelude-val">Some</span>(key_ids)
-            }
-            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">None</span>,
-        };
         <span class="kw">let </span>options = AuditEventOptions {
             key_ids,
             request_id: <span class="self">self</span>.request_id,
@@ -233,13 +221,13 @@
         <span class="kw">match </span>slice {
             [] =&gt; <span class="prelude-val">Some</span>(GetAuditEvents {
                 event_type: EventType::All,
-                key_names: <span class="prelude-val">None</span>,
+                key_names: <span class="macro">vec!</span>[],
                 request_id: <span class="prelude-val">None</span>,
             }),
             options =&gt; {
                 <span class="kw">let </span><span class="kw-2">mut </span>result = GetAuditEvents {
                     event_type: EventType::All,
-                    key_names: <span class="prelude-val">None</span>,
+                    key_names: <span class="macro">vec!</span>[],
                     request_id: <span class="prelude-val">None</span>,
                 };
 
@@ -254,7 +242,7 @@
                             result.event_type = event_type;
                         }
                         ParsedAuditEventOption::KeyNames(key_names) =&gt; {
-                            result.key_names = <span class="prelude-val">Some</span>(key_names);
+                            result.key_names = key_names;
                         }
                         ParsedAuditEventOption::RequestId(request_id) =&gt; {
                             result.request_id = <span class="prelude-val">Some</span>(request_id);

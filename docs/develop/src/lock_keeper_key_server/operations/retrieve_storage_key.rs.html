@@ -80,7 +80,7 @@
         <span class="comment">// Find user by user ID.
         </span><span class="kw">let </span>user = context
             .db
-            .find_user_by_id(<span class="kw-2">&amp;</span>request.user_id)
+            .find_account_by_id(<span class="kw-2">&amp;</span>request.user_id)
             .<span class="kw">await
             </span>.map_err(LockKeeperServerError::database)<span class="question-mark">?
             </span>.ok_or(LockKeeperServerError::InvalidAccount)<span class="question-mark">?</span>;

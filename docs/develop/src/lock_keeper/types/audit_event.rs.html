@@ -156,32 +156,24 @@
 <span id="156">156</span>
 <span id="157">157</span>
 <span id="158">158</span>
-<span id="159">159</span>
-<span id="160">160</span>
-<span id="161">161</span>
-<span id="162">162</span>
-<span id="163">163</span>
-<span id="164">164</span>
-<span id="165">165</span>
-<span id="166">166</span>
-<span id="167">167</span>
-<span id="168">168</span>
-<span id="169">169</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Audit events, and associated fields and types
 //!
 //! Includes possible events to log and statuses of those events
 
-</span><span class="kw">use </span><span class="kw">crate</span>::types::{database::user::AccountName, operations::ClientAction};
+</span><span class="kw">use crate</span>::{
+    crypto::KeyId,
+    types::{database::user::AccountName, operations::ClientAction},
+};
 
-<span class="kw">use </span><span class="kw">crate</span>::crypto::KeyId;
-<span class="kw">use </span>bson::DateTime;
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>std::fmt::{Debug, Display, Formatter};
 <span class="kw">use </span>strum::{Display, EnumString};
+<span class="kw">use </span>time::OffsetDateTime;
 <span class="kw">use </span>uuid::Uuid;
 
 <span class="doccomment">/// Options for the outcome of a given action in a [`AuditEvent`]
-</span><span class="attribute">#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize, Display)]
+
+</span><span class="attribute">#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize, Display, EnumString)]
 </span><span class="kw">pub enum </span>EventStatus {
     Started,
     Successful,
@@ -189,38 +181,24 @@
 }
 
 <span class="doccomment">/// A single entry that specifies the actor, action, outcome, and
-/// any related key for a logged audit event
+/// any related key for a logged audit event.
+/// We expect database implementors to create [AuditEvent] instances for us. So
+/// we make all fields public.
 </span><span class="attribute">#[derive(Debug, Serialize, Deserialize)]
 </span><span class="kw">pub struct </span>AuditEvent {
-    request_id: String,
-    actor: AccountName,
-    secret_id: <span class="prelude-ty">Option</span>&lt;KeyId&gt;,
-    date: DateTime,
-    action: ClientAction,
-    status: EventStatus,
+    <span class="kw">pub </span>audit_event_id: i64,
+    <span class="kw">pub </span>account_name: AccountName,
+    <span class="kw">pub </span>request_id: Uuid,
+    <span class="kw">pub </span>key_id: <span class="prelude-ty">Option</span>&lt;KeyId&gt;,
+    <span class="doccomment">/// We use [OffsetDateTime] as this is compatible with SQLx. Easily
+    /// convertible to a postgres&#39; TIMESTAMPTZ type.
+    </span><span class="kw">pub </span>timestamp: OffsetDateTime,
+    <span class="kw">pub </span>action: ClientAction,
+    <span class="kw">pub </span>status: EventStatus,
 }
 
 <span class="kw">impl </span>AuditEvent {
-    <span class="kw">pub fn </span>new(
-        request_id: Uuid,
-        actor: AccountName,
-        secret_id: <span class="prelude-ty">Option</span>&lt;KeyId&gt;,
-        action: ClientAction,
-        status: EventStatus,
-    ) -&gt; <span class="self">Self </span>{
-        AuditEvent {
-            request_id: request_id.to_string(),
-            actor,
-            secret_id,
-            date: DateTime::now(),
-            action,
-            status,
-        }
-    }
-}
-
-<span class="kw">impl </span>AuditEvent {
-    <span class="kw">pub fn </span>request_id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>str {
+    <span class="kw">pub fn </span>request_id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Uuid {
         <span class="kw-2">&amp;</span><span class="self">self</span>.request_id
     }
 
@@ -229,11 +207,11 @@
     }
 
     <span class="kw">pub fn </span>key_id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>KeyId&gt; {
-        <span class="self">self</span>.secret_id.as_ref()
+        <span class="self">self</span>.key_id.as_ref()
     }
 
-    <span class="kw">pub fn </span>date(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; DateTime {
-        <span class="self">self</span>.date
+    <span class="kw">pub fn </span>date(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; OffsetDateTime {
+        <span class="self">self</span>.timestamp
     }
 
     <span class="kw">pub fn </span>status(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; EventStatus {
@@ -314,9 +292,9 @@
 <span class="doccomment">/// Optional parameters to filter [`AuditEvent`]s by
 </span><span class="attribute">#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 </span><span class="kw">pub struct </span>AuditEventOptions {
-    <span class="kw">pub </span>key_ids: <span class="prelude-ty">Option</span>&lt;Vec&lt;KeyId&gt;&gt;,
-    <span class="kw">pub </span>after_date: <span class="prelude-ty">Option</span>&lt;DateTime&gt;,
-    <span class="kw">pub </span>before_date: <span class="prelude-ty">Option</span>&lt;DateTime&gt;,
+    <span class="kw">pub </span>key_ids: Vec&lt;KeyId&gt;,
+    <span class="kw">pub </span>after_date: <span class="prelude-ty">Option</span>&lt;OffsetDateTime&gt;,
+    <span class="kw">pub </span>before_date: <span class="prelude-ty">Option</span>&lt;OffsetDateTime&gt;,
     <span class="kw">pub </span>request_id: <span class="prelude-ty">Option</span>&lt;Uuid&gt;,
 }
 

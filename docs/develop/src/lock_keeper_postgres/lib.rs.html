@@ -1,0 +1,96 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `persistence/lock-keeper-sql/src/lib.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../lock_keeper_postgres/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
+<span id="2">2</span>
+<span id="3">3</span>
+<span id="4">4</span>
+<span id="5">5</span>
+<span id="6">6</span>
+<span id="7">7</span>
+<span id="8">8</span>
+<span id="9">9</span>
+<span id="10">10</span>
+<span id="11">11</span>
+<span id="12">12</span>
+<span id="13">13</span>
+<span id="14">14</span>
+<span id="15">15</span>
+<span id="16">16</span>
+<span id="17">17</span>
+<span id="18">18</span>
+<span id="19">19</span>
+<span id="20">20</span>
+<span id="21">21</span>
+<span id="22">22</span>
+<span id="23">23</span>
+<span id="24">24</span>
+<span id="25">25</span>
+<span id="26">26</span>
+<span id="27">27</span>
+<span id="28">28</span>
+<span id="29">29</span>
+<span id="30">30</span>
+<span id="31">31</span>
+<span id="32">32</span>
+<span id="33">33</span>
+<span id="34">34</span>
+<span id="35">35</span>
+<span id="36">36</span>
+<span id="37">37</span>
+<span id="38">38</span>
+<span id="39">39</span>
+<span id="40">40</span>
+<span id="41">41</span>
+<span id="42">42</span>
+<span id="43">43</span>
+<span id="44">44</span>
+<span id="45">45</span>
+<span id="46">46</span>
+<span id="47">47</span>
+</pre><pre class="rust"><code><span class="doccomment">//! This crate is an implementation of a PostgreSQL database for the key server.
+//! We use SQLx to connect and implement queries for our DB. See .sql file on
+//! the root folder of this crate for the schema and other table set-up
+//! commands.
+//!
+//! We use static, string-literal queries whenever possible (since they checked
+//! at compile time by SQLx. This is not always possible, so we may also use the
+//! QueryBuilder API from SQLx for dynamically generated queries which are not
+//! checked at compile time. We also use the *_as version of SQLX macros when
+//! possible. E.g. `query_as!`, since these versions automatically convert query
+//! results into the provided Rust type (this is typed checked by SQLx based on
+//! the inferred types of the query).
+//!
+//!
+//! SQLx connects to a postgres database at compile time to query the schema and
+//! ensure all the types match. This is specified via the `DATABASE_URL` when
+//! `cargo build` or `cargo check` (etc.) the project. For example:
+//! `DATABASE_URL=&#39;postgres://username:password@localhost/db_name&#39; cargo run
+//! --bin key-server-cli ...`. *Important:** This is only necessary if you are
+//! planning to make change to any of our compile-time checked queries.
+//! Otherwise SQLx will use our pre-generated `sqlx-data.json` file. This
+//! ensures we don&#39;t always need a live postgres server running to compile the
+//! project.
+//!
+//! The DATABASE_URL variable, if present, overrides the `sqlx-data.json` file.
+//! If you make any changes to the queries or schema, you must re-generate the
+//! `sqlx-data.json` file. Via the `sqlx-cli`. See [Offline Mode](https://docs.rs/sqlx/latest/sqlx/macro.query.html#offline-mode-requires-the-offline-feature)
+//! for more information.
+//!
+//! `sqlx-cli` can be installed locally with `cargo install sqlx-cli
+//! --no-default-features --features native-tls,postgres` Then the
+//! `sqlx-data.json` file was generated using `cargo sqlx prepare --database-url
+//! YOUR_DATABASE_URI --merged`. The `--merged` option should be used to handle
+//! our project being a cargo workspace.
+</span><span class="attribute">#![warn(unused_results)]
+#![warn(future_incompatible)]
+#![warn(unused)]
+#![forbid(rustdoc::broken_intra_doc_links)]
+
+</span><span class="kw">mod </span>api;
+<span class="kw">mod </span>config;
+<span class="kw">mod </span>error;
+<span class="kw">mod </span>types;
+
+<span class="kw">pub use </span>api::PostgresDB;
+<span class="kw">pub use </span>config::{Config, ConfigFile};
+<span class="kw">pub use </span>error::PostgresError;
+</code></pre></div>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="lock_keeper_postgres" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0 (69f9c33d7 2022-12-12)" ></div></body></html>

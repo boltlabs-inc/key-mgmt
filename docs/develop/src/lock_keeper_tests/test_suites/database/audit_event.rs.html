@@ -241,6 +241,72 @@
 <span id="241">241</span>
 <span id="242">242</span>
 <span id="243">243</span>
+<span id="244">244</span>
+<span id="245">245</span>
+<span id="246">246</span>
+<span id="247">247</span>
+<span id="248">248</span>
+<span id="249">249</span>
+<span id="250">250</span>
+<span id="251">251</span>
+<span id="252">252</span>
+<span id="253">253</span>
+<span id="254">254</span>
+<span id="255">255</span>
+<span id="256">256</span>
+<span id="257">257</span>
+<span id="258">258</span>
+<span id="259">259</span>
+<span id="260">260</span>
+<span id="261">261</span>
+<span id="262">262</span>
+<span id="263">263</span>
+<span id="264">264</span>
+<span id="265">265</span>
+<span id="266">266</span>
+<span id="267">267</span>
+<span id="268">268</span>
+<span id="269">269</span>
+<span id="270">270</span>
+<span id="271">271</span>
+<span id="272">272</span>
+<span id="273">273</span>
+<span id="274">274</span>
+<span id="275">275</span>
+<span id="276">276</span>
+<span id="277">277</span>
+<span id="278">278</span>
+<span id="279">279</span>
+<span id="280">280</span>
+<span id="281">281</span>
+<span id="282">282</span>
+<span id="283">283</span>
+<span id="284">284</span>
+<span id="285">285</span>
+<span id="286">286</span>
+<span id="287">287</span>
+<span id="288">288</span>
+<span id="289">289</span>
+<span id="290">290</span>
+<span id="291">291</span>
+<span id="292">292</span>
+<span id="293">293</span>
+<span id="294">294</span>
+<span id="295">295</span>
+<span id="296">296</span>
+<span id="297">297</span>
+<span id="298">298</span>
+<span id="299">299</span>
+<span id="300">300</span>
+<span id="301">301</span>
+<span id="302">302</span>
+<span id="303">303</span>
+<span id="304">304</span>
+<span id="305">305</span>
+<span id="306">306</span>
+<span id="307">307</span>
+<span id="308">308</span>
+<span id="309">309</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Integration tests for audit event objects in the database
 
 </span><span class="kw">use </span>colored::Colorize;
@@ -253,14 +319,14 @@
     },
 };
 <span class="kw">use </span>lock_keeper_key_server::database::DataStore;
-<span class="kw">use </span>lock_keeper_mongodb::Database;
-<span class="kw">use </span>mongodb::bson::DateTime;
+
 <span class="kw">use </span>rand::{
     rngs::StdRng,
     seq::{IteratorRandom, SliceRandom},
     SeedableRng,
 };
 <span class="kw">use </span>strum::IntoEnumIterator;
+<span class="kw">use </span>time::OffsetDateTime;
 <span class="kw">use </span>uuid::Uuid;
 
 <span class="kw">use crate</span>::{config::TestFilters, error::Result, run_parallel, utils::TestResult};
@@ -270,7 +336,7 @@
 <span class="kw">pub async fn </span>run_tests(filters: <span class="kw-2">&amp;</span>TestFilters) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;TestResult&gt;&gt; {
     <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, <span class="string">&quot;Running audit event tests&quot;</span>.cyan());
 
-    <span class="kw">let </span>db = TestDatabase::new(<span class="string">&quot;audit_event_tests&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>db = TestDatabase::connect().<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="kw">let </span>result = <span class="macro">run_parallel!</span>(
         filters,
         event_type_filter_works(db.clone()),
@@ -278,9 +344,8 @@
         after_date_filter_works(db.clone()),
         before_date_filter_works(db.clone()),
         request_id_filter_works(db.clone()),
+        store_audit_event_identity(db.clone()),
     )<span class="question-mark">?</span>;
-
-    db.drop().<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(result)
 }
@@ -288,7 +353,42 @@
 <span class="kw">const </span>NUM_LOGS: u32 = <span class="number">10</span>;
 <span class="kw">const </span>NUM_SAMPLE: usize = NUM_LOGS <span class="kw">as </span>usize / <span class="number">2</span>;
 
-<span class="kw">async fn </span>event_type_filter_works(db: TestDatabase) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+<span class="doccomment">/// Tests that storing an event returns the same event back out.
+</span><span class="kw">async fn </span>store_audit_event_identity(db: TestDatabase) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    <span class="comment">// Create and store a single audit event.
+    </span><span class="kw">let </span><span class="kw-2">mut </span>rng = StdRng::from_entropy();
+    <span class="kw">let </span>action_list = ClientAction::iter().collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+    <span class="kw">let </span>(user_id, account_name) = db.create_test_user().<span class="kw">await</span><span class="question-mark">?</span>;
+
+    <span class="kw">let </span>(key_id, request_id, action) =
+        create_random_audit_event(<span class="kw-2">&amp;mut </span>rng, <span class="kw-2">&amp;</span>action_list, <span class="kw-2">&amp;</span>user_id, account_name.clone(), <span class="kw-2">&amp;</span>db)
+            .<span class="kw">await</span><span class="question-mark">?</span>;
+
+    <span class="kw">let </span>options = AuditEventOptions {
+        request_id: <span class="prelude-val">Some</span>(request_id),
+        ..Default::default()
+    };
+    <span class="kw">let </span><span class="kw-2">mut </span>events = db
+        .find_audit_events(<span class="kw-2">&amp;</span>account_name, EventType::All, options)
+        .<span class="kw">await</span><span class="question-mark">?</span>;
+
+    <span class="macro">assert_eq!</span>(events.len(), <span class="number">1</span>, <span class="string">&quot;Multiple events found.&quot;</span>);
+    <span class="kw">let </span>stored_event = events.pop().unwrap();
+    <span class="macro">assert_eq!</span>(action, stored_event.action);
+    <span class="macro">assert_eq!</span>(account_name, stored_event.account_name);
+    <span class="comment">// Our create_random_event function always uses EventStatus::Started.
+    </span><span class="macro">assert_eq!</span>(EventStatus::Started, stored_event.status);
+    <span class="macro">assert_eq!</span>(key_id, stored_event.key_id.unwrap());
+
+    <span class="comment">// Do not compare timestamp. Some precision is lost when storing and retrieving.
+    // assert_eq!(audit_event.timestamp, stored_event.timestamp);
+    </span><span class="prelude-val">Ok</span>(())
+}
+
+<span class="doccomment">/// Check that the DB test filters work by ensuring queries to the DB with
+/// specific [`EventType`]s return only the specified types of audit event log
+/// events.
+</span><span class="kw">async fn </span>event_type_filter_works(db: TestDatabase) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">let </span>(user_id, account_name) = db.create_test_user().<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="comment">// Create random audit events
@@ -302,6 +402,7 @@
             AuditEventOptions::default(),
         )
         .<span class="kw">await</span><span class="question-mark">?</span>;
+
     <span class="kw">let </span>system_only_audit = db
         .find_audit_events(
             <span class="kw-2">&amp;</span>account_name,
@@ -309,11 +410,12 @@
             AuditEventOptions::default(),
         )
         .<span class="kw">await</span><span class="question-mark">?</span>;
+
     <span class="kw">let </span>all_audit = db
         .find_audit_events(<span class="kw-2">&amp;</span>account_name, EventType::All, AuditEventOptions::default())
         .<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="comment">// Make sure each type has the correct actions
+    <span class="comment">// Make sure our audit events have the correct actions.
     </span>compare_actions(key_only_audit, EventType::KeyOnly);
     compare_actions(system_only_audit, EventType::SystemOnly);
     compare_actions(all_audit, EventType::All);
@@ -324,21 +426,15 @@
 <span class="kw">async fn </span>key_id_filter_works(db: TestDatabase) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">let </span>(user_id, account_name) = db.create_test_user().<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let </span>id_tuple_vec = create_random_audit_events(<span class="kw-2">&amp;</span>account_name, <span class="kw-2">&amp;</span>user_id, <span class="kw-2">&amp;</span>db).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>(key_ids, <span class="kw">_</span>) = create_random_audit_events(<span class="kw-2">&amp;</span>account_name, <span class="kw-2">&amp;</span>user_id, <span class="kw-2">&amp;</span>db).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let </span>sample: Vec&lt;KeyId&gt; = {
+    <span class="kw">let </span>sample = {
         <span class="kw">let </span><span class="kw-2">mut </span>rng = rand::thread_rng();
-        id_tuple_vec
-            .into_iter()
-            .choose_multiple(<span class="kw-2">&amp;mut </span>rng, NUM_SAMPLE)
-            .into_iter()
-            .map(|tuple| tuple.<span class="number">0</span>)
-            .collect()
+        key_ids.into_iter().choose_multiple(<span class="kw-2">&amp;mut </span>rng, NUM_SAMPLE)
     };
 
-    <span class="comment">// Retrieve audits for just one key
-    </span><span class="kw">let </span>options = AuditEventOptions {
-        key_ids: <span class="prelude-val">Some</span>(sample.clone()),
+    <span class="kw">let </span>options = AuditEventOptions {
+        key_ids: sample.clone(),
         ..Default::default()
     };
     <span class="kw">let </span>key_audit = db
@@ -356,7 +452,7 @@
     </span><span class="kw">let </span>(user_id, account_name) = db.create_test_user().<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="comment">// Use timestamp as comparison date
-    </span><span class="kw">let </span>after_date = DateTime::now();
+    </span><span class="kw">let </span>after_date = OffsetDateTime::now_utc();
 
     <span class="comment">// Create random audit events
     </span><span class="kw">let _ </span>= create_random_audit_events(<span class="kw-2">&amp;</span>account_name, <span class="kw-2">&amp;</span>user_id, <span class="kw-2">&amp;</span>db).<span class="kw">await</span><span class="question-mark">?</span>;
@@ -381,7 +477,7 @@
     </span><span class="kw">let </span>(user_id, account_name) = db.create_test_user().<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="comment">// Use timestamp as comparison date
-    </span><span class="kw">let </span>before_date = DateTime::now();
+    </span><span class="kw">let </span>before_date = OffsetDateTime::now_utc();
 
     <span class="comment">// Create random audit events
     </span><span class="kw">let _ </span>= create_random_audit_events(<span class="kw-2">&amp;</span>account_name, <span class="kw-2">&amp;</span>user_id, <span class="kw-2">&amp;</span>db).<span class="kw">await</span><span class="question-mark">?</span>;
@@ -404,12 +500,12 @@
 <span class="kw">async fn </span>request_id_filter_works(db: TestDatabase) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">let </span>(user_id, account_name) = db.create_test_user().<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let </span>id_tuple_vec = create_random_audit_events(<span class="kw-2">&amp;</span>account_name, <span class="kw-2">&amp;</span>user_id, <span class="kw-2">&amp;</span>db).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>(<span class="kw">_</span>, uudis) = create_random_audit_events(<span class="kw-2">&amp;</span>account_name, <span class="kw-2">&amp;</span>user_id, <span class="kw-2">&amp;</span>db).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="kw">let </span>sample: Uuid = {
         <span class="kw">let </span><span class="kw-2">mut </span>rng = rand::thread_rng();
-        id_tuple_vec.into_iter().choose(<span class="kw-2">&amp;mut </span>rng).unwrap().<span class="number">1
-    </span>};
+        uudis.into_iter().choose(<span class="kw-2">&amp;mut </span>rng).unwrap()
+    };
 
     <span class="comment">// Retrieve audits for just one key
     </span><span class="kw">let </span>options = AuditEventOptions {
@@ -426,39 +522,74 @@
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="kw">async fn </span>create_random_audit_events(
+<span class="doccomment">/// Create [NUM_LOGS] random audit events and store them in our database. Return
+/// the [KeyId]s and [Uuid]s (request IDs) assigned to these audit events.
+</span><span class="kw">async fn </span>create_random_audit_events(
     account_name: <span class="kw-2">&amp;</span>AccountName,
     user_id: <span class="kw-2">&amp;</span>UserId,
-    db: <span class="kw-2">&amp;</span>Database,
-) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;(KeyId, Uuid)&gt;&gt; {
+    db: <span class="kw-2">&amp;</span>TestDatabase,
+) -&gt; <span class="prelude-ty">Result</span>&lt;(Vec&lt;KeyId&gt;, Vec&lt;Uuid&gt;)&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>rng = StdRng::from_entropy();
 
     <span class="kw">let </span>action_list = ClientAction::iter().collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
-    <span class="kw">let </span><span class="kw-2">mut </span>key_ids = Vec::new();
+    <span class="kw">let </span><span class="kw-2">mut </span>keys = Vec::new();
+    <span class="kw">let </span><span class="kw-2">mut </span>uuids = Vec::new();
+
     <span class="kw">for _ in </span><span class="number">0</span>..NUM_LOGS {
-        <span class="kw">let </span>key_id = KeyId::generate(<span class="kw-2">&amp;mut </span>rng, user_id)<span class="question-mark">?</span>;
-        <span class="kw">let </span>key_id_copy = key_id.clone();
-        <span class="kw">let </span>request_id = Uuid::new_v4();
-        <span class="kw">let </span>action = action_list.choose(<span class="kw-2">&amp;mut </span>rng).unwrap();
-        db.create_audit_event(
-            request_id,
-            account_name,
-            <span class="kw-2">&amp;</span><span class="prelude-val">Some</span>(key_id),
-            <span class="kw-2">*</span>action,
-            EventStatus::Started,
-        )
-        .<span class="kw">await</span><span class="question-mark">?</span>;
-        key_ids.push((key_id_copy, request_id));
+        <span class="kw">let </span>(key_id, request_id, <span class="kw">_</span>) =
+            create_random_audit_event(<span class="kw-2">&amp;mut </span>rng, <span class="kw-2">&amp;</span>action_list, user_id, account_name.clone(), db)
+                .<span class="kw">await</span><span class="question-mark">?</span>;
+
+        <span class="comment">// Key IDs should always exist for these randomly generated audit events.
+        </span>keys.push(key_id);
+        uuids.push(request_id);
     }
-    <span class="prelude-val">Ok</span>(key_ids)
+    <span class="prelude-val">Ok</span>((keys, uuids))
+}
+
+<span class="doccomment">/// Create a single random audit event and store it in our DB.
+</span><span class="kw">async fn </span>create_random_audit_event(
+    rng: <span class="kw-2">&amp;mut </span>StdRng,
+    action_list: <span class="kw-2">&amp;</span>Vec&lt;ClientAction&gt;,
+    user_id: <span class="kw-2">&amp;</span>UserId,
+    account_name: AccountName,
+    db: <span class="kw-2">&amp;</span>TestDatabase,
+) -&gt; <span class="prelude-ty">Result</span>&lt;(KeyId, Uuid, ClientAction)&gt; {
+    <span class="kw">let </span>key_id = KeyId::generate(rng, user_id)<span class="question-mark">?</span>;
+    <span class="kw">let </span>action = action_list.choose(rng).unwrap();
+    <span class="kw">let </span>request_id = Uuid::new_v4();
+
+    db.create_audit_event(
+        request_id,
+        <span class="kw-2">&amp;</span>account_name,
+        <span class="kw-2">&amp;</span><span class="prelude-val">Some</span>(key_id.clone()),
+        <span class="kw-2">*</span>action,
+        EventStatus::Started,
+    )
+    .<span class="kw">await</span><span class="question-mark">?</span>;
+
+    <span class="prelude-val">Ok</span>((key_id, request_id, <span class="kw-2">*</span>action))
 }
 
 <span class="kw">fn </span>compare_actions(audit_events: Vec&lt;AuditEvent&gt;, event_type: EventType) {
+    <span class="comment">// Ensure we have some events, otherwise the assert below will be vacuously true
+    // (since the loop not execute).
+    </span><span class="macro">assert!</span>(
+        !audit_events.is_empty(),
+        <span class="string">&quot;No AuditEvents actions to compare.&quot;
+    </span>);
+
     <span class="kw">let </span>actual_actions: Vec&lt;ClientAction&gt; = audit_events.iter().map(|a| a.action()).collect();
     <span class="kw">let </span>expected_actions = event_type.client_actions();
-    <span class="macro">assert!</span>(actual_actions
-        .iter()
-        .all(|item| expected_actions.contains(item)));
+
+    <span class="kw">for </span>a <span class="kw">in </span>actual_actions {
+        <span class="macro">assert!</span>(
+            expected_actions.contains(<span class="kw-2">&amp;</span>a),
+            <span class="string">&quot;{:?} not in {:?}&quot;</span>,
+            a,
+            event_type,
+        )
+    }
 }
 
 <span class="kw">fn </span>compare_key_ids(audit_events: Vec&lt;AuditEvent&gt;, expected_key_ids: Vec&lt;KeyId&gt;) {
@@ -468,21 +599,22 @@
         .all(|item| expected_key_ids.contains(item)));
 }
 
-<span class="kw">fn </span>compare_request_ids(audit_events: Vec&lt;AuditEvent&gt;, expected_request_id: Uuid) {
+<span class="doccomment">/// We expect all events to have the request_id we specified. Check this.
+</span><span class="kw">fn </span>compare_request_ids(audit_events: Vec&lt;AuditEvent&gt;, expected_request_id: Uuid) {
     <span class="kw">let </span>actual_request_ids = audit_events.iter().map(|a| a.request_id());
-    <span class="macro">assert!</span>(actual_request_ids
-        .into_iter()
-        .all(|item| item == expected_request_id.to_string()));
+    <span class="kw">for </span>item <span class="kw">in </span>actual_request_ids {
+        <span class="macro">assert_eq!</span>(<span class="kw-2">*</span>item, expected_request_id, <span class="string">&quot;Incorrect request ID found!&quot;</span>)
+    }
 }
 
-<span class="kw">fn </span>check_after_date(audit_events: Vec&lt;AuditEvent&gt;, after_date: DateTime) {
-    <span class="kw">let </span>actual_dates: Vec&lt;DateTime&gt; = audit_events.iter().map(|a| a.date()).collect();
-    <span class="macro">assert!</span>(actual_dates.iter().all(|item| after_date &lt;= <span class="kw-2">*</span>item));
+<span class="kw">fn </span>check_after_date(audit_events: Vec&lt;AuditEvent&gt;, after_date: OffsetDateTime) {
+    <span class="kw">let </span>actual_dates: Vec&lt;OffsetDateTime&gt; = audit_events.iter().map(|a| a.date()).collect();
+    <span class="macro">assert!</span>(actual_dates.iter().all(|date| after_date &lt;= <span class="kw-2">*</span>date));
 }
 
-<span class="kw">fn </span>check_before_date(audit_events: Vec&lt;AuditEvent&gt;, before_date: DateTime) {
-    <span class="kw">let </span>actual_dates: Vec&lt;DateTime&gt; = audit_events.iter().map(|a| a.date()).collect();
-    <span class="macro">assert!</span>(actual_dates.iter().all(|item| before_date &gt;= <span class="kw-2">*</span>item));
+<span class="kw">fn </span>check_before_date(audit_events: Vec&lt;AuditEvent&gt;, before_date: OffsetDateTime) {
+    <span class="kw">let </span>actual_dates: Vec&lt;OffsetDateTime&gt; = audit_events.iter().map(|a| a.date()).collect();
+    <span class="macro">assert!</span>(actual_dates.iter().all(|date| before_date &gt;= <span class="kw-2">*</span>date));
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="lock_keeper_tests" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0 (69f9c33d7 2022-12-12)" ></div></body></html>

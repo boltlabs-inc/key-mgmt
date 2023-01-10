@@ -65,10 +65,6 @@
 <span id="65">65</span>
 <span id="66">66</span>
 <span id="67">67</span>
-<span id="68">68</span>
-<span id="69">69</span>
-<span id="70">70</span>
-<span id="71">71</span>
 </pre><pre class="rust"><code><span class="doccomment">//! TLS client authentication tests
 
 </span><span class="kw">use </span>colored::Colorize;
@@ -78,14 +74,12 @@
     config::Environments,
     error::Result,
     run_parallel,
-    test_suites::database::TestDatabase,
     utils::{report_test_results, TestResult},
 };
 
 <span class="kw">pub async fn </span>run_tests(environments: <span class="kw-2">&amp;</span>Environments) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;TestResult&gt;&gt; {
     <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, <span class="string">&quot;Running client auth tests&quot;</span>.cyan());
 
-    <span class="kw">let </span>db = TestDatabase::new(<span class="string">&quot;client_auth_tests&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="kw">let </span>results = <span class="macro">run_parallel!</span>(
         <span class="kw-2">&amp;</span>environments.filters,
         client_auth_not_required(environments.clone()),
@@ -93,8 +87,6 @@
         client_auth_required_not_provided(environments.clone()),
         client_auth_not_required_but_provided(environments.clone()),
     )<span class="question-mark">?</span>;
-
-    db.drop().<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="macro">println!</span>(<span class="string">&quot;client auth tests: {}&quot;</span>, report_test_results(<span class="kw-2">&amp;</span>results));
 

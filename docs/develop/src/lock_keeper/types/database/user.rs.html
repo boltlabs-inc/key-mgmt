@@ -143,6 +143,35 @@
 <span id="143">143</span>
 <span id="144">144</span>
 <span id="145">145</span>
+<span id="146">146</span>
+<span id="147">147</span>
+<span id="148">148</span>
+<span id="149">149</span>
+<span id="150">150</span>
+<span id="151">151</span>
+<span id="152">152</span>
+<span id="153">153</span>
+<span id="154">154</span>
+<span id="155">155</span>
+<span id="156">156</span>
+<span id="157">157</span>
+<span id="158">158</span>
+<span id="159">159</span>
+<span id="160">160</span>
+<span id="161">161</span>
+<span id="162">162</span>
+<span id="163">163</span>
+<span id="164">164</span>
+<span id="165">165</span>
+<span id="166">166</span>
+<span id="167">167</span>
+<span id="168">168</span>
+<span id="169">169</span>
+<span id="170">170</span>
+<span id="171">171</span>
+<span id="172">172</span>
+<span id="173">173</span>
+<span id="174">174</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Database models for users and user-related fields
 
 </span><span class="kw">use crate</span>::{
@@ -155,8 +184,8 @@
 <span class="kw">use </span>rand::{CryptoRng, Rng, RngCore};
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>std::{
-    array::IntoIter,
-    fmt::{Debug, Display},
+    array::{IntoIter, TryFromSliceError},
+    fmt::{Debug, Display, Formatter},
     str::FromStr,
 };
 
@@ -164,21 +193,31 @@
 
 <span class="doccomment">/// One user with a set of arbitrary secrets and a [`ServerRegistration`] to
 /// authenticate with.
-</span><span class="attribute">#[derive(Debug, Deserialize, Serialize)]
-</span><span class="kw">pub struct </span>User {
+</span><span class="attribute">#[derive(Deserialize, Serialize)]
+</span><span class="kw">pub struct </span>Account {
     <span class="kw">pub </span>user_id: UserId,
     <span class="kw">pub </span>account_name: AccountName,
     <span class="kw">pub </span>storage_key: <span class="prelude-ty">Option</span>&lt;Encrypted&lt;StorageKey&gt;&gt;,
     <span class="kw">pub </span>server_registration: ServerRegistration&lt;OpaqueCipherSuite&gt;,
 }
 
-<span class="kw">impl </span>User {
+<span class="doccomment">/// Manual implement Debug to avoid printing storage key or server_registration.
+</span><span class="kw">impl </span>Debug <span class="kw">for </span>Account {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; std::fmt::Result {
+        f.debug_struct(<span class="string">&quot;Account&quot;</span>)
+            .field(<span class="string">&quot;user_id&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.user_id)
+            .field(<span class="string">&quot;account_name&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.account_name)
+            .finish()
+    }
+}
+
+<span class="kw">impl </span>Account {
     <span class="kw">pub fn </span>new(
         user_id: UserId,
         account_name: AccountName,
         server_registration: ServerRegistration&lt;OpaqueCipherSuite&gt;,
     ) -&gt; <span class="self">Self </span>{
-        User {
+        Account {
             user_id,
             account_name,
             storage_key: <span class="prelude-val">None</span>,
@@ -196,6 +235,19 @@
 </span><span class="attribute">#[derive(Clone, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
 #[serde(try_from = <span class="string">&quot;HexBytes&quot;</span>, into = <span class="string">&quot;HexBytes&quot;</span>)]
 </span><span class="kw">pub struct </span>UserId(Box&lt;[u8; <span class="number">16</span>]&gt;);
+
+<span class="kw">impl </span>AsRef&lt;[u8; <span class="number">16</span>]&gt; <span class="kw">for </span>UserId {
+    <span class="kw">fn </span>as_ref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[u8; <span class="number">16</span>] {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0
+    </span>}
+}
+<span class="kw">impl </span>TryFrom&lt;<span class="kw-2">&amp;</span>[u8]&gt; <span class="kw">for </span>UserId {
+    <span class="kw">type </span>Error = TryFromSliceError;
+
+    <span class="kw">fn </span>try_from(id: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
+        <span class="prelude-val">Ok</span>(UserId(Box::new(&lt;[u8; <span class="number">16</span>]&gt;::try_from(id)<span class="question-mark">?</span>)))
+    }
+}
 
 <span class="kw">impl </span>UserId {
     <span class="kw">pub fn </span>new(rng: <span class="kw-2">&amp;mut </span>(<span class="kw">impl </span>CryptoRng + RngCore)) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, LockKeeperError&gt; {
@@ -276,10 +328,16 @@
 }
 
 <span class="kw">impl </span>FromStr <span class="kw">for </span>AccountName {
-    <span class="kw">type </span><span class="prelude-val">Err </span>= LockKeeperError;
+    <span class="kw">type </span><span class="prelude-val">Err </span>= ();
 
     <span class="kw">fn </span>from_str(s: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Err&gt; {
-        <span class="prelude-val">Ok</span>(<span class="self">Self</span>(s.to_string()))
+        <span class="prelude-val">Ok</span>(AccountName(s.to_string()))
+    }
+}
+
+<span class="kw">impl </span>From&lt;<span class="kw-2">&amp;</span>str&gt; <span class="kw">for </span>AccountName {
+    <span class="kw">fn </span>from(s: <span class="kw-2">&amp;</span>str) -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>(s.to_string())
     }
 }
 

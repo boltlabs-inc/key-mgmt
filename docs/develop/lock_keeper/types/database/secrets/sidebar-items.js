@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":[["secret_types",""]],"struct":[["StoredSecret","Generic representation of a secret that is stored in a database."]]};
+window.SIDEBAR_ITEMS = {"mod":[["secret_types",""]],"struct":[["StoredSecret","Generic representation of a secret that is stored in a database. Databased implementors must be able to store and return [StoredSecret]s. So we make all fields in this struct public."]]};

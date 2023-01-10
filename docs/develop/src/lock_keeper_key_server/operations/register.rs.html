@@ -185,7 +185,7 @@
     <span class="comment">// Abort registration if UserId already exists
     </span><span class="kw">let </span>user = context
         .db
-        .find_user(<span class="kw-2">&amp;</span>start_message.account_name)
+        .find_account(<span class="kw-2">&amp;</span>start_message.account_name)
         .<span class="kw">await
         </span>.map_err(LockKeeperServerError::database)<span class="question-mark">?</span>;
 
@@ -239,7 +239,7 @@
         <span class="comment">// If the user ID is fresh, create the new user
         </span><span class="kw">if </span>context
             .db
-            .find_user_by_id(<span class="kw-2">&amp;</span>user_id)
+            .find_account_by_id(<span class="kw-2">&amp;</span>user_id)
             .<span class="kw">await
             </span>.map_err(LockKeeperServerError::database)<span class="question-mark">?
             </span>.is_none()
@@ -247,7 +247,7 @@
             <span class="macro">info!</span>(<span class="string">&quot;Fresh user id generated: {:?}&quot;</span>, user_id);
             <span class="kw">let </span>_user = context
                 .db
-                .create_user(<span class="kw-2">&amp;</span>user_id, account_name, <span class="kw-2">&amp;</span>server_registration)
+                .create_account(<span class="kw-2">&amp;</span>user_id, account_name, <span class="kw-2">&amp;</span>server_registration)
                 .<span class="kw">await
                 </span>.map_err(LockKeeperServerError::database)<span class="question-mark">?</span>;
             <span class="kw">break</span>;

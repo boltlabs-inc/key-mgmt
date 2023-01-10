@@ -105,6 +105,17 @@
 <span id="105">105</span>
 <span id="106">106</span>
 <span id="107">107</span>
+<span id="108">108</span>
+<span id="109">109</span>
+<span id="110">110</span>
+<span id="111">111</span>
+<span id="112">112</span>
+<span id="113">113</span>
+<span id="114">114</span>
+<span id="115">115</span>
+<span id="116">116</span>
+<span id="117">117</span>
+<span id="118">118</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{test_suites::end_to_end::test_cases::TestState, LockKeeperTestError};
 <span class="kw">use </span>lock_keeper::{
     crypto::{Import, KeyId},
@@ -134,10 +145,17 @@
 <span class="kw">where
     </span>E: Into&lt;LockKeeperClientError&gt; + Display,
 {
-    <span class="macro">assert!</span>(result.result.is_err());
+    <span class="macro">assert!</span>(
+        result.result.is_err(),
+        <span class="string">&quot;Expected error. Found value instead.&quot;
+    </span>);
 
     <span class="kw">let </span>actual_error = result.result.err().unwrap();
-    <span class="macro">assert_eq!</span>(actual_error.to_string(), expected_error.to_string());
+    <span class="macro">assert_eq!</span>(
+        actual_error.to_string(),
+        expected_error.to_string(),
+        <span class="string">&quot;Wrong error found.&quot;
+    </span>);
 }
 
 <span class="doccomment">/// Helper to compare status errors.
@@ -156,8 +174,9 @@
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="doccomment">/// Make sure the last audit log for the tested operation has the correct status
-/// and action.
+<span class="doccomment">/// Fetch relevant events based on request_id. Ensure that some event on the
+/// list matches the expected_status and expected_action. Note: we cannot rely
+/// on the ordering of the audit events.
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>check_audit_events(
     state: <span class="kw-2">&amp;</span>TestState,
     expected_status: EventStatus,
@@ -179,14 +198,17 @@
         .<span class="kw">await
         </span>.result<span class="question-mark">?</span>;
 
-    <span class="comment">// Get the last event in the list of events
-    </span><span class="kw">let </span>last_event = audit_event_log.last().unwrap();
+    <span class="comment">// Get all events that match given expected values.
+    </span><span class="kw">let </span>matching_events = audit_event_log
+        .into_iter()
+        .filter(|event| event.status == expected_status &amp;&amp; event.action == expected_action);
 
-    <span class="comment">// Check that expected status and action match
-    </span><span class="kw">let </span>actual_status = last_event.status();
-    <span class="kw">let </span>actual_action = last_event.action();
-    <span class="macro">assert_eq!</span>(expected_status, actual_status);
-    <span class="macro">assert_eq!</span>(expected_action, actual_action);
+    <span class="macro">assert_eq!</span>(
+        matching_events.count(),
+        <span class="number">1</span>,
+        <span class="string">&quot;Exactly one audit event should have matched.&quot;
+    </span>);
+
     <span class="prelude-val">Ok</span>(())
 }
 

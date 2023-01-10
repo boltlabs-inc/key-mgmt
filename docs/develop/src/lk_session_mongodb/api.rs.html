@@ -133,6 +133,8 @@
 <span id="133">133</span>
 <span id="134">134</span>
 <span id="135">135</span>
+<span id="136">136</span>
+<span id="137">137</span>
 </pre><pre class="rust"><code><span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>lock_keeper::{
     infrastructure::logging,
@@ -173,7 +175,9 @@
     }
 
     <span class="doccomment">/// Connect to the MongoDB instance specified by the given [`Config`]
+    </span><span class="attribute">#[instrument(err(Debug))]
     </span><span class="kw">async fn </span>connect(config: <span class="kw-2">&amp;</span>Config) -&gt; <span class="prelude-ty">Result</span>&lt;MongoDB, Error&gt; {
+        <span class="macro">info!</span>(<span class="string">&quot;Connecting&quot;</span>);
         <span class="comment">// Parse a connection string into an options struct
         </span><span class="kw">let </span>client_options = ClientOptions::parse(<span class="kw-2">&amp;</span>config.mongodb_uri).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="comment">// Get a handle to the MongoDB client

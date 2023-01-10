@@ -169,7 +169,7 @@
 
     <span class="kw">let </span>user = context
         .db
-        .find_user(<span class="kw-2">&amp;</span>request.account_name)
+        .find_account(<span class="kw-2">&amp;</span>request.account_name)
         .<span class="kw">await
         </span>.map_err(LockKeeperServerError::database)<span class="question-mark">?
         </span>.ok_or(LockKeeperServerError::InvalidAccount)<span class="question-mark">?</span>;
@@ -218,7 +218,7 @@
         <span class="macro">error!</span>(<span class="string">&quot;Failed to set storage key for user.&quot;</span>);
         context
             .db
-            .delete_user(<span class="kw-2">&amp;</span>user_id)
+            .delete_account(<span class="kw-2">&amp;</span>user_id)
             .<span class="kw">await
             </span>.map_err(LockKeeperServerError::database)<span class="question-mark">?</span>;
         <span class="macro">info!</span>(<span class="string">&quot;Deleted user due to failure to set storage key.&quot;</span>);

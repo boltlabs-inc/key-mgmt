@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":[["construct_query_with_options",""]]};

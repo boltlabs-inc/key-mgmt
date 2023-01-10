@@ -120,6 +120,9 @@
 <span id="120">120</span>
 <span id="121">121</span>
 <span id="122">122</span>
+<span id="123">123</span>
+<span id="124">124</span>
+<span id="125">125</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Database for key-servers.
 //!
 //! This database will hold information on users and the secret material
@@ -133,7 +136,7 @@
         audit_event::{AuditEvent, AuditEventOptions, EventStatus, EventType},
         database::{
             secrets::StoredSecret,
-            user::{AccountName, User, UserId},
+            user::{Account, AccountName, UserId},
         },
         operations::ClientAction,
     },
@@ -148,13 +151,13 @@
 </span><span class="attribute">#[async_trait]
 </span><span class="kw">pub trait </span>DataStore: Send + Sync + <span class="lifetime">&#39;static </span>{
     <span class="kw">type </span>Error: std::error::Error + Send + Sync + <span class="lifetime">&#39;static</span>;
-    <span class="comment">// Audit event
-    </span><span class="doccomment">/// Create a new [`AuditEvent`] for the given actor, action, and outcome
+
+    <span class="doccomment">/// Create a new [`AuditEvent`] for the given actor, action, and outcome
     </span><span class="kw">async fn </span>create_audit_event(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         request_id: Uuid,
-        actor: <span class="kw-2">&amp;</span>AccountName,
-        secret_id: <span class="kw-2">&amp;</span><span class="prelude-ty">Option</span>&lt;KeyId&gt;,
+        account_name: <span class="kw-2">&amp;</span>AccountName,
+        key_id: <span class="kw-2">&amp;</span><span class="prelude-ty">Option</span>&lt;KeyId&gt;,
         action: ClientAction,
         status: EventStatus,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt;;
@@ -169,11 +172,11 @@
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;AuditEvent&gt;, <span class="self">Self</span>::Error&gt;;
 
     <span class="comment">// Secret
-    </span><span class="doccomment">/// Add a [`StoredSecret`] to a [`User`]&#39;s list of arbitrary
+    </span><span class="doccomment">/// Add a [`StoredSecret`] to a [`Account`]&#39;s list of arbitrary
     /// secrets
     </span><span class="kw">async fn </span>add_user_secret(<span class="kw-2">&amp;</span><span class="self">self</span>, secret: StoredSecret) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt;;
 
-    <span class="doccomment">/// Get a [`User`]&#39;s [`StoredSecret`] based on its [`KeyId`].
+    <span class="doccomment">/// Get a [`Account`]&#39;s [`StoredSecret`] based on its [`KeyId`].
     /// A [`StoredSecret`] will only be returned if it matches the given
     /// [`SecretFilter`].
     </span><span class="kw">async fn </span>get_user_secret(
@@ -184,25 +187,28 @@
     ) -&gt; <span class="prelude-ty">Result</span>&lt;StoredSecret, <span class="self">Self</span>::Error&gt;;
 
     <span class="comment">// User
-    </span><span class="doccomment">/// Create a new [`User`] with their authentication information and insert
-    /// it into the database.
-    </span><span class="kw">async fn </span>create_user(
+    </span><span class="doccomment">/// Create a new [`Account`] with their authentication information and
+    /// insert it into the database.
+    </span><span class="kw">async fn </span>create_account(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         user_id: <span class="kw-2">&amp;</span>UserId,
         account_name: <span class="kw-2">&amp;</span>AccountName,
         server_registration: <span class="kw-2">&amp;</span>ServerRegistration&lt;OpaqueCipherSuite&gt;,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;User, <span class="self">Self</span>::Error&gt;;
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Account, <span class="self">Self</span>::Error&gt;;
 
-    <span class="doccomment">/// Find a [`User`] by their human-readable [`AccountName`].
-    </span><span class="kw">async fn </span>find_user(<span class="kw-2">&amp;</span><span class="self">self</span>, account_name: <span class="kw-2">&amp;</span>AccountName) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;User&gt;, <span class="self">Self</span>::Error&gt;;
+    <span class="doccomment">/// Find a [`Account`] by their human-readable [`AccountName`].
+    </span><span class="kw">async fn </span>find_account(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        account_name: <span class="kw-2">&amp;</span>AccountName,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Account&gt;, <span class="self">Self</span>::Error&gt;;
 
-    <span class="doccomment">/// Find a [`User`] by their machine-readable [`UserId`].
-    </span><span class="kw">async fn </span>find_user_by_id(<span class="kw-2">&amp;</span><span class="self">self</span>, user_id: <span class="kw-2">&amp;</span>UserId) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;User&gt;, <span class="self">Self</span>::Error&gt;;
+    <span class="doccomment">/// Find a [`Account`] by their machine-readable [`UserId`].
+    </span><span class="kw">async fn </span>find_account_by_id(<span class="kw-2">&amp;</span><span class="self">self</span>, user_id: <span class="kw-2">&amp;</span>UserId) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Account&gt;, <span class="self">Self</span>::Error&gt;;
 
-    <span class="doccomment">/// Delete a [`User`] by their [`UserId`]
-    </span><span class="kw">async fn </span>delete_user(<span class="kw-2">&amp;</span><span class="self">self</span>, user_id: <span class="kw-2">&amp;</span>UserId) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt;;
+    <span class="doccomment">/// Delete a [`Account`] by their [`UserId`]
+    </span><span class="kw">async fn </span>delete_account(<span class="kw-2">&amp;</span><span class="self">self</span>, user_id: <span class="kw-2">&amp;</span>UserId) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt;;
 
-    <span class="doccomment">/// Set the `storage_key` field for the [`User`] associated with a given
+    <span class="doccomment">/// Set the `storage_key` field for the [`Account`] associated with a given
     /// [`UserId`]
     /// Returns a `LockKeeperServerError::InvalidAccount` if the given
     /// `user_id` does not exist.

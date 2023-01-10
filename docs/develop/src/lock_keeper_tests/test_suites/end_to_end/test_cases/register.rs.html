@@ -80,7 +80,7 @@
 }
 
 <span class="kw">async fn </span>register_same_user_twice_fails(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    <span class="kw">let </span>account_name = AccountName::from_str(tagged(<span class="string">&quot;user&quot;</span>).as_str())<span class="question-mark">?</span>;
+    <span class="kw">let </span>account_name = AccountName::from(tagged(<span class="string">&quot;user&quot;</span>).as_str());
     <span class="kw">let </span>password = Password::from_str(tagged(<span class="string">&quot;password&quot;</span>).as_str())<span class="question-mark">?</span>;
     LockKeeperClient::register(<span class="kw-2">&amp;</span>account_name, <span class="kw-2">&amp;</span>password, <span class="kw-2">&amp;</span>config)
         .<span class="kw">await

@@ -183,7 +183,7 @@
 </span><span class="kw">impl</span>&lt;DB: DataStore&gt; Operation&lt;Unauthenticated, DB&gt; <span class="kw">for </span>Authenticate {
     <span class="doccomment">/// Executes the sever-side opaque authentication protocol. This establishes
     /// a session key for client and server to use for secure communication.
-    </span><span class="attribute">#[instrument(skip_all, err(Debug), fields(account_name))] </span><span class="comment">// TODO: Record account name.
+    </span><span class="attribute">#[instrument(skip_all, err(Debug), fields(account_name))]
     </span><span class="kw">async fn </span>operation(
         <span class="self">self</span>,
         channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;Unauthenticated&gt;,
@@ -213,7 +213,7 @@
     // server_registration
     </span><span class="kw">let </span>(server_registration, user_id) = <span class="kw">match </span>context
         .db
-        .find_user(<span class="kw-2">&amp;</span>start_message.account_name)
+        .find_account(<span class="kw-2">&amp;</span>start_message.account_name)
         .<span class="kw">await
         </span>.map_err(LockKeeperServerError::database)<span class="question-mark">?
     </span>{

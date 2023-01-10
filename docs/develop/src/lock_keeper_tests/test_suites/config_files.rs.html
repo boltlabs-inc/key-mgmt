@@ -224,11 +224,6 @@
 <span id="224">224</span>
 <span id="225">225</span>
 <span id="226">226</span>
-<span id="227">227</span>
-<span id="228">228</span>
-<span id="229">229</span>
-<span id="230">230</span>
-<span id="231">231</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Config file tests that depend on files to exist at specific paths.
 //! If the paths listed in these tests change, the tests will fail.
 
@@ -242,14 +237,12 @@
     config::TestFilters,
     error::Result,
     run_parallel,
-    test_suites::database::TestDatabase,
     utils::{report_test_results, TestResult},
 };
 
 <span class="kw">pub async fn </span>run_tests(filters: <span class="kw-2">&amp;</span>TestFilters) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;TestResult&gt;&gt; {
     <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, <span class="string">&quot;Running config file tests&quot;</span>.cyan());
 
-    <span class="kw">let </span>db = TestDatabase::new(<span class="string">&quot;config_file_tests&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="kw">let </span>results = <span class="macro">run_parallel!</span>(
         filters,
         client_config_with_file_private_key_works(),
@@ -262,10 +255,7 @@
         server_config_without_remote_storage_key_fails(),
     )<span class="question-mark">?</span>;
 
-    db.drop().<span class="kw">await</span><span class="question-mark">?</span>;
-
     <span class="macro">println!</span>(<span class="string">&quot;config file tests: {}&quot;</span>, report_test_results(<span class="kw-2">&amp;</span>results));
-
     <span class="prelude-val">Ok</span>(results)
 }
 

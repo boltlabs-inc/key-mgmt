@@ -168,6 +168,7 @@
 <span id="168">168</span>
 <span id="169">169</span>
 <span id="170">170</span>
+<span id="171">171</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Types related to server operations and the protocols they execute.
 
 </span><span class="kw">pub mod </span>authenticate;
@@ -201,7 +202,7 @@
 
 <span class="doccomment">/// Options for actions the Lock Keeper client can take.
 </span><span class="attribute">#[derive(
-    Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq, Display, EnumIter, EnumString,
+    Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq, Display, EnumIter, EnumString, Hash,
 )]
 </span><span class="kw">pub enum </span>ClientAction {
     Authenticate,
@@ -218,7 +219,8 @@
     RetrieveSecret,
     RetrieveAuditEvents,
     RetrieveSigningKey,
-    RetrieveStorageKey,
+    <span class="comment">// System only.
+    </span>RetrieveStorageKey,
 }
 
 <span class="doccomment">/// Converts a serializable Rust type to and from the RPC [`Message`] type.

@@ -1,1 +1,1 @@
-window.ALL_CRATES = ["key_server_cli","lk_session_mongodb","lock_keeper","lock_keeper_client","lock_keeper_client_cli","lock_keeper_key_server","lock_keeper_mongodb","lock_keeper_tests"];
+window.ALL_CRATES = ["key_server_cli","lk_session_mongodb","lock_keeper","lock_keeper_client","lock_keeper_client_cli","lock_keeper_key_server","lock_keeper_postgres","lock_keeper_tests"];
