@@ -3,7 +3,7 @@ use lock_keeper::{
     crypto::MasterKey,
     infrastructure::channel::{Authenticated, ClientChannel},
     types::{
-        database::user::{AccountName, UserId},
+        database::user::UserId,
         operations::create_storage_key::{client, server},
     },
 };
@@ -14,30 +14,16 @@ use tokio::sync::Mutex;
 impl LockKeeperClient {
     /// Creates a storage key and sends it to the key server
     pub(crate) async fn handle_create_storage_key<T: CryptoRng + RngCore>(
+        &self,
         mut channel: ClientChannel<Authenticated<StdRng>>,
         rng: Arc<Mutex<T>>,
-        account_name: &AccountName,
         master_key: MasterKey,
     ) -> Result<(), LockKeeperClientError> {
-        let user_id = request_user_id(&mut channel, account_name).await?;
+        let user_id = self.user_id().clone();
         create_and_send_storage_key(&mut channel, rng, user_id, master_key).await?;
 
         Ok(())
     }
-}
-
-async fn request_user_id(
-    channel: &mut ClientChannel<Authenticated<StdRng>>,
-    account_name: &AccountName,
-) -> Result<UserId, LockKeeperClientError> {
-    let response = client::RequestUserId {
-        account_name: account_name.clone(),
-    };
-
-    channel.send(response).await?;
-    let request_user_id_result: server::SendUserId = channel.receive().await?;
-
-    Ok(request_user_id_result.user_id)
 }
 
 async fn create_and_send_storage_key<T: CryptoRng + RngCore>(
@@ -51,10 +37,7 @@ async fn create_and_send_storage_key<T: CryptoRng + RngCore>(
         master_key.create_and_encrypt_storage_key(&mut *rng, &user_id)?
     };
 
-    let response = client::SendStorageKey {
-        user_id,
-        storage_key,
-    };
+    let response = client::SendStorageKey { storage_key };
     channel.send(response).await?;
 
     let result: server::CreateStorageKeyResult = channel.receive().await?;

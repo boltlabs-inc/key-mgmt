@@ -29,8 +29,11 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for RetrieveSecret {
         context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
         info!("Starting retrieve secret protocol.");
-        // Receive UserId from client
         let request: client::Request = channel.receive().await?;
+        let user_id = channel
+            .metadata()
+            .user_id()
+            .ok_or(LockKeeperServerError::InvalidAccount)?;
         context.key_id = Some(request.key_id.clone());
 
         let secret_filter = request
@@ -40,14 +43,14 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for RetrieveSecret {
         // Find secret based on key_id
         let stored_secret = context
             .db
-            .get_user_secret(&request.user_id, &request.key_id, secret_filter)
+            .get_user_secret(user_id, &request.key_id, secret_filter)
             .await
             .map_err(LockKeeperServerError::database)?;
 
         let reply = server::Response {
             secret: RetrievedSecret::try_from_stored_secret(
                 stored_secret,
-                request.user_id,
+                user_id.clone(),
                 context.config.remote_storage_key.clone(),
             )?,
         };

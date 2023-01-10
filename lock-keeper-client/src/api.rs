@@ -139,7 +139,8 @@ impl LockKeeperClient {
             rng_arc_mutex.clone(),
         )
         .await?;
-        Self::handle_create_storage_key(client_channel, rng_arc_mutex, account_name, master_key)
+        client
+            .handle_create_storage_key(client_channel, rng_arc_mutex, master_key)
             .await?;
 
         Ok(())

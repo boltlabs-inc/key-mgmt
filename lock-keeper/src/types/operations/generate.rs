@@ -1,21 +1,11 @@
 pub mod client {
-    use crate::{
-        crypto::{Encrypted, Secret},
-        types::database::user::UserId,
-    };
+    use crate::crypto::{Encrypted, Secret};
     use serde::{Deserialize, Serialize};
-
-    #[derive(Debug, Deserialize, Serialize)]
-    /// pass user ID to server
-    pub struct Generate {
-        pub user_id: UserId,
-    }
 
     #[derive(Debug, Deserialize, Serialize)]
     /// pass user ID and encrypted secret
     pub struct Store {
         pub ciphertext: Encrypted<Secret>,
-        pub user_id: UserId,
     }
 }
 
