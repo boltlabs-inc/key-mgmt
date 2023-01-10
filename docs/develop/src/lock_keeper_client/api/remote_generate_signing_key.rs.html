@@ -25,17 +25,11 @@
 <span id="25">25</span>
 <span id="26">26</span>
 <span id="27">27</span>
-<span id="28">28</span>
-<span id="29">29</span>
-<span id="30">30</span>
-<span id="31">31</span>
-<span id="32">32</span>
-<span id="33">33</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{LockKeeperClient, LockKeeperClientError};
 <span class="kw">use </span>lock_keeper::{
     crypto::{KeyId, SigningPublicKey},
     infrastructure::channel::{Authenticated, ClientChannel},
-    types::operations::remote_generate::{client, server},
+    types::operations::remote_generate::server,
 };
 <span class="kw">use </span>rand::rngs::StdRng;
 <span class="kw">use </span>serde::{Deserialize, Serialize};
@@ -45,12 +39,6 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         <span class="kw-2">mut </span>channel: ClientChannel&lt;Authenticated&lt;StdRng&gt;&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;RemoteGenerateResult, LockKeeperClientError&gt; {
-        <span class="kw">let </span>request = client::RequestRemoteGenerate {
-            user_id: <span class="self">self</span>.user_id().clone(),
-        };
-
-        channel.send(request).<span class="kw">await</span><span class="question-mark">?</span>;
-
         <span class="kw">let </span>response: server::ReturnKeyId = channel.receive().<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(RemoteGenerateResult {
             key_id: response.key_id,

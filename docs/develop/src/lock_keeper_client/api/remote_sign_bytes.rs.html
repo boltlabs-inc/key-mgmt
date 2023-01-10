@@ -25,7 +25,6 @@
 <span id="25">25</span>
 <span id="26">26</span>
 <span id="27">27</span>
-<span id="28">28</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{LockKeeperClient, LockKeeperClientError};
 <span class="kw">use </span>lock_keeper::{
     crypto::{KeyId, Signable, SignableBytes, Signature},
@@ -42,7 +41,6 @@
         bytes: <span class="kw">impl </span>Signable,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Signature, LockKeeperClientError&gt; {
         <span class="kw">let </span>request = client::RequestRemoteSign {
-            user_id: <span class="self">self</span>.user_id().clone(),
             key_id,
             data: SignableBytes(bytes.as_ref().to_vec()),
         };

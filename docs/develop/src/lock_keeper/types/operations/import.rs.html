@@ -19,15 +19,13 @@
 <span id="19">19</span>
 <span id="20">20</span>
 <span id="21">21</span>
-<span id="22">22</span>
 </pre><pre class="rust"><code><span class="kw">pub mod </span>client {
-    <span class="kw">use crate</span>::{crypto::Import, types::database::user::UserId};
+    <span class="kw">use </span><span class="kw">crate</span>::crypto::Import;
     <span class="kw">use </span>serde::{Deserialize, Serialize};
 
     <span class="attribute">#[derive(Debug, Deserialize, Serialize)]
     </span><span class="doccomment">/// send user ID and material to import
     </span><span class="kw">pub struct </span>Request {
-        <span class="kw">pub </span>user_id: UserId,
         <span class="kw">pub </span>key_material: Import,
     }
 }

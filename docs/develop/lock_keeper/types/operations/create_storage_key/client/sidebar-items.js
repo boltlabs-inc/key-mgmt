@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["RequestUserId",""],["SendStorageKey",""]]};
+window.SIDEBAR_ITEMS = {"struct":[["SendStorageKey",""]]};

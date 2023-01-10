@@ -56,7 +56,7 @@
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>lock_keeper::{
     infrastructure::channel::{Authenticated, ServerChannel},
-    types::operations::retrieve_storage_key::{client, server},
+    types::operations::retrieve_storage_key::server,
 };
 <span class="kw">use </span>rand::rngs::StdRng;
 <span class="kw">use </span>tracing::{info, instrument};
@@ -73,14 +73,14 @@
         context: <span class="kw-2">&amp;mut </span>Context&lt;DB&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
         <span class="macro">info!</span>(<span class="string">&quot;Starting retrieve storage key protocol.&quot;</span>);
-
-        <span class="comment">// Receive user ID and retrieve encrypted storage key for that user
-        </span><span class="kw">let </span>request: client::Request = channel.receive().<span class="kw">await</span><span class="question-mark">?</span>;
-
+        <span class="kw">let </span>user_id = channel
+            .metadata()
+            .user_id()
+            .ok_or(LockKeeperServerError::InvalidAccount)<span class="question-mark">?</span>;
         <span class="comment">// Find user by user ID.
         </span><span class="kw">let </span>user = context
             .db
-            .find_account_by_id(<span class="kw-2">&amp;</span>request.user_id)
+            .find_account_by_id(user_id)
             .<span class="kw">await
             </span>.map_err(LockKeeperServerError::database)<span class="question-mark">?
             </span>.ok_or(LockKeeperServerError::InvalidAccount)<span class="question-mark">?</span>;

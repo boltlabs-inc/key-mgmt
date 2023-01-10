@@ -56,6 +56,10 @@
 <span id="56">56</span>
 <span id="57">57</span>
 <span id="58">58</span>
+<span id="59">59</span>
+<span id="60">60</span>
+<span id="61">61</span>
+<span id="62">62</span>
 </pre><pre class="rust"><code><span class="doccomment">//! This operation allows client to specify a key ID for a key that was remotely
 //! generated on the server and use this key to sign a message.
 </span><span class="kw">use crate</span>::{
@@ -92,9 +96,13 @@
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
         <span class="macro">info!</span>(<span class="string">&quot;Starting remote sign protocol.&quot;</span>);
         <span class="kw">let </span>request: client::RequestRemoteSign = channel.receive().<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>user_id = channel
+            .metadata()
+            .user_id()
+            .ok_or(LockKeeperServerError::InvalidAccount)<span class="question-mark">?</span>;
         <span class="kw">let </span>encrypted_key: Encrypted&lt;SigningKeyPair&gt; = context
             .db
-            .get_user_secret(<span class="kw-2">&amp;</span>request.user_id, <span class="kw-2">&amp;</span>request.key_id, Default::default())
+            .get_user_secret(user_id, <span class="kw-2">&amp;</span>request.key_id, Default::default())
             .<span class="kw">await
             </span>.map_err(LockKeeperServerError::database)<span class="question-mark">?
             </span>.try_into()<span class="question-mark">?</span>;
@@ -102,7 +110,7 @@
 
         <span class="kw">let </span>key = encrypted_key.decrypt_signing_key_by_server(
             <span class="kw-2">&amp;</span>context.config.remote_storage_key,
-            request.user_id,
+            user_id.clone(),
             request.key_id,
         )<span class="question-mark">?</span>;
 

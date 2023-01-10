@@ -419,6 +419,7 @@
 <span id="419">419</span>
 <span id="420">420</span>
 <span id="421">421</span>
+<span id="422">422</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Full implementation of the public API for the Lock Keeper client library.
 //!
 //! This API is designed for use with a local client application - that is, an
@@ -560,7 +561,8 @@
             rng_arc_mutex.clone(),
         )
         .<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="self">Self</span>::handle_create_storage_key(client_channel, rng_arc_mutex, account_name, master_key)
+        client
+            .handle_create_storage_key(client_channel, rng_arc_mutex, master_key)
             .<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(())

@@ -18,20 +18,12 @@
 <span id="18">18</span>
 <span id="19">19</span>
 <span id="20">20</span>
-<span id="21">21</span>
-<span id="22">22</span>
-<span id="23">23</span>
-<span id="24">24</span>
 </pre><pre class="rust"><code><span class="kw">pub mod </span>client {
-    <span class="kw">use crate</span>::{
-        crypto::{KeyId, SignableBytes},
-        types::database::user::UserId,
-    };
+    <span class="kw">use </span><span class="kw">crate</span>::crypto::{KeyId, SignableBytes};
     <span class="kw">use </span>serde::{Deserialize, Serialize};
 
     <span class="attribute">#[derive(Debug, Deserialize, Serialize)]
     </span><span class="kw">pub struct </span>RequestRemoteSign {
-        <span class="kw">pub </span>user_id: UserId,
         <span class="kw">pub </span>key_id: KeyId,
         <span class="kw">pub </span>data: SignableBytes,
     }

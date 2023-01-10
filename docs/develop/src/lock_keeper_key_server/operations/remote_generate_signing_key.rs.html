@@ -77,7 +77,6 @@
 <span id="77">77</span>
 <span id="78">78</span>
 <span id="79">79</span>
-<span id="80">80</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Client has asked server to generate a new signing key and store it in the
 //! server.
 </span><span class="kw">use crate</span>::{
@@ -90,10 +89,7 @@
 <span class="kw">use </span>lock_keeper::{
     crypto::{KeyId, SigningKeyPair},
     infrastructure::channel::{Authenticated, ServerChannel},
-    types::{
-        database::secrets::StoredSecret,
-        operations::remote_generate::{client, server},
-    },
+    types::{database::secrets::StoredSecret, operations::remote_generate::server},
 };
 <span class="kw">use </span>rand::rngs::StdRng;
 <span class="kw">use </span>tracing::{info, instrument};
@@ -115,13 +111,15 @@
         context: <span class="kw-2">&amp;mut </span>Context&lt;DB&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
         <span class="macro">info!</span>(<span class="string">&quot;Starting remote generate protocol.&quot;</span>);
-        <span class="kw">let </span>request: client::RequestRemoteGenerate = channel.receive().<span class="kw">await</span><span class="question-mark">?</span>;
-
+        <span class="kw">let </span>user_id = channel
+            .metadata()
+            .user_id()
+            .ok_or(LockKeeperServerError::InvalidAccount)<span class="question-mark">?</span>;
         <span class="comment">// Create a scope for rng mutex
         </span><span class="kw">let </span>(key_id, key_pair) = {
             <span class="kw">let </span><span class="kw-2">mut </span>rng = context.rng.lock().<span class="kw">await</span>;
-            <span class="kw">let </span>key_id = KeyId::generate(<span class="kw-2">&amp;mut *</span>rng, <span class="kw-2">&amp;</span>request.user_id)<span class="question-mark">?</span>;
-            <span class="kw">let </span>key_pair = SigningKeyPair::remote_generate(<span class="kw-2">&amp;mut *</span>rng, <span class="kw-2">&amp;</span>request.user_id, <span class="kw-2">&amp;</span>key_id);
+            <span class="kw">let </span>key_id = KeyId::generate(<span class="kw-2">&amp;mut *</span>rng, user_id)<span class="question-mark">?</span>;
+            <span class="kw">let </span>key_pair = SigningKeyPair::remote_generate(<span class="kw-2">&amp;mut *</span>rng, user_id, <span class="kw-2">&amp;</span>key_id);
             <span class="macro">info!</span>(<span class="string">&quot;Generated key ID: {:?}&quot;</span>, key_id);
             (key_id, key_pair)
         };
@@ -140,7 +138,7 @@
         <span class="kw">let </span>secret = StoredSecret::from_remote_signing_key_pair(
             key_id.clone(),
             encrypted_key_pair,
-            request.user_id,
+            user_id.clone(),
         )<span class="question-mark">?</span>;
 
         <span class="comment">// Store key in database

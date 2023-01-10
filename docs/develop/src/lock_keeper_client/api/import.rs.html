@@ -21,9 +21,6 @@
 <span id="21">21</span>
 <span id="22">22</span>
 <span id="23">23</span>
-<span id="24">24</span>
-<span id="25">25</span>
-<span id="26">26</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{LockKeeperClient, LockKeeperClientError};
 <span class="kw">use </span>lock_keeper::{
     crypto::{Import, KeyId},
@@ -39,10 +36,7 @@
         key_material: Import,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;KeyId, LockKeeperClientError&gt; {
         <span class="comment">// Send UserId and key material to server
-        </span><span class="kw">let </span>request = client::Request {
-            user_id: <span class="self">self</span>.user_id().clone(),
-            key_material,
-        };
+        </span><span class="kw">let </span>request = client::Request { key_material };
         channel.send(request).<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="comment">// Get KeyId for imported key from server

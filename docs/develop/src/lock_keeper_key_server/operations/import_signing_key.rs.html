@@ -80,6 +80,8 @@
 <span id="80">80</span>
 <span id="81">81</span>
 <span id="82">82</span>
+<span id="83">83</span>
+<span id="84">84</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Import signing key operation. This protocol allows the client to import a
 //! key into the server.
 </span><span class="kw">use crate</span>::{
@@ -114,18 +116,20 @@
         <span class="macro">info!</span>(<span class="string">&quot;Starting import key operation.&quot;</span>);
         <span class="comment">// Receive UserId and key material from client.
         </span><span class="kw">let </span>request: client::Request = channel.receive().<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>user_id = channel
+            .metadata()
+            .user_id()
+            .ok_or(LockKeeperServerError::InvalidAccount)<span class="question-mark">?</span>;
 
         <span class="comment">// Generate new KeyId
         </span><span class="kw">let </span>key_id = {
             <span class="kw">let </span><span class="kw-2">mut </span>rng = context.rng.lock().<span class="kw">await</span>;
-            KeyId::generate(<span class="kw-2">&amp;mut *</span>rng, <span class="kw-2">&amp;</span>request.user_id)<span class="question-mark">?
+            KeyId::generate(<span class="kw-2">&amp;mut *</span>rng, user_id)<span class="question-mark">?
         </span>};
         context.key_id = <span class="prelude-val">Some</span>(key_id.clone());
 
         <span class="comment">// Make signing key out of bytes
-        </span><span class="kw">let </span>signing_key = request
-            .key_material
-            .into_signing_key(<span class="kw-2">&amp;</span>request.user_id, <span class="kw-2">&amp;</span>key_id)<span class="question-mark">?</span>;
+        </span><span class="kw">let </span>signing_key = request.key_material.into_signing_key(user_id, <span class="kw-2">&amp;</span>key_id)<span class="question-mark">?</span>;
 
         <span class="comment">// encrypt key_pair
         </span><span class="kw">let </span>encrypted_key_pair = {
@@ -139,7 +143,7 @@
         <span class="kw">let </span>secret = StoredSecret::from_remote_signing_key_pair(
             key_id.clone(),
             encrypted_key_pair,
-            request.user_id,
+            user_id.clone(),
         )<span class="question-mark">?</span>;
 
         <span class="comment">// Check validity of ciphertext and store in DB

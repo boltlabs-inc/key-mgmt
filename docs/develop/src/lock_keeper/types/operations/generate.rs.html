@@ -25,34 +25,14 @@
 <span id="25">25</span>
 <span id="26">26</span>
 <span id="27">27</span>
-<span id="28">28</span>
-<span id="29">29</span>
-<span id="30">30</span>
-<span id="31">31</span>
-<span id="32">32</span>
-<span id="33">33</span>
-<span id="34">34</span>
-<span id="35">35</span>
-<span id="36">36</span>
-<span id="37">37</span>
 </pre><pre class="rust"><code><span class="kw">pub mod </span>client {
-    <span class="kw">use crate</span>::{
-        crypto::{Encrypted, Secret},
-        types::database::user::UserId,
-    };
+    <span class="kw">use </span><span class="kw">crate</span>::crypto::{Encrypted, Secret};
     <span class="kw">use </span>serde::{Deserialize, Serialize};
-
-    <span class="attribute">#[derive(Debug, Deserialize, Serialize)]
-    </span><span class="doccomment">/// pass user ID to server
-    </span><span class="kw">pub struct </span>Generate {
-        <span class="kw">pub </span>user_id: UserId,
-    }
 
     <span class="attribute">#[derive(Debug, Deserialize, Serialize)]
     </span><span class="doccomment">/// pass user ID and encrypted secret
     </span><span class="kw">pub struct </span>Store {
         <span class="kw">pub </span>ciphertext: Encrypted&lt;Secret&gt;,
-        <span class="kw">pub </span>user_id: UserId,
     }
 }
 
