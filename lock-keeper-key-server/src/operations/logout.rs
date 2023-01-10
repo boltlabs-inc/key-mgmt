@@ -33,7 +33,7 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for Logout {
                 .session_cache
                 .lock()
                 .await
-                .delete_session(session_id.clone())
+                .delete_session(*session_id)
                 .await?;
         }
 

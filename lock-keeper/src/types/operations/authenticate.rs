@@ -19,9 +19,10 @@ pub mod client {
 }
 
 pub mod server {
-    use crate::{config::opaque::OpaqueCipherSuite, types::operations::SessionId};
+    use crate::config::opaque::OpaqueCipherSuite;
     use opaque_ke::CredentialResponse;
     use serde::{Deserialize, Serialize};
+    use uuid::Uuid;
 
     #[derive(Debug, Deserialize, Serialize)]
     /// Check if user exists and return OPAQUE message if so
@@ -32,6 +33,6 @@ pub mod server {
     #[derive(Debug, Deserialize, Serialize)]
     /// Return true if successful.
     pub struct AuthenticateFinish {
-        pub session_id: SessionId,
+        pub session_id: Uuid,
     }
 }

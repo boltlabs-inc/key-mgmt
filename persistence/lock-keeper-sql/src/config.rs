@@ -3,7 +3,7 @@ use crate::error::{
     ConfigError::{MissingPassword, MissingUsername},
 };
 use serde::{Deserialize, Serialize};
-use std::{env, fs::read_to_string, path::Path, str::FromStr};
+use std::{env, fs::read_to_string, path::Path, str::FromStr, time::Duration};
 use tracing::log::warn;
 
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq)]
@@ -18,7 +18,8 @@ pub struct ConfigFile {
     address: String,
     db_name: String,
     max_connections: u32,
-    connecting_timeout_seconds: u64,
+    #[serde(with = "humantime_serde")]
+    connection_timeout: Duration,
 }
 
 impl ConfigFile {
@@ -47,7 +48,7 @@ pub struct Config {
     /// Name of database. Appended to URI to make the full path.
     pub db_name: String,
     pub max_connections: u32,
-    pub connecting_timeout_seconds: u64,
+    pub connection_timeout: Duration,
 }
 
 impl Config {
@@ -91,7 +92,7 @@ impl TryFrom<ConfigFile> for Config {
             address: config.address,
             db_name: config.db_name,
             max_connections: config.max_connections,
-            connecting_timeout_seconds: config.connecting_timeout_seconds,
+            connection_timeout: config.connection_timeout,
         };
 
         Ok(config)
@@ -100,8 +101,7 @@ impl TryFrom<ConfigFile> for Config {
 
 #[cfg(test)]
 mod test {
-    use crate::{Config, ConfigFile};
-    use std::{env, str::FromStr};
+    use super::*;
 
     /// Helper method for creating a test [ConfigFile]
     fn test_config_file() -> ConfigFile {
@@ -111,7 +111,7 @@ mod test {
             address: "localhost".to_string(),
             db_name: "test_db".to_string(),
             max_connections: 5,
-            connecting_timeout_seconds: 3,
+            connection_timeout: Duration::from_secs(3),
         }
     }
 
@@ -123,7 +123,7 @@ mod test {
             address = "localhost"
             db_name = "test_db"
             max_connections = 5
-            connecting_timeout_seconds = 3
+            connection_timeout = "3s"
             "#;
 
         let config_file = ConfigFile::from_str(config_str).unwrap();

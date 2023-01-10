@@ -77,6 +77,27 @@
     },
     "query": "SELECT account_id, user_id, account_name, storage_key, server_registration FROM Accounts WHERE account_name=$1"
   },
+  "4ed23e9a07ff7723c0692ce77c376d66afc19a70ebe70a9c98cf7737b5ffdac0": {
+    "describe": {
+      "columns": [
+        {
+          "name": "session_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Bytea"
+        ]
+      }
+    },
+    "query": "INSERT INTO Session (user_id, session_key) VALUES ($1, $2) RETURNING session_id"
+  },
   "638f9e1ec3582aa0f42729cf0dcc031784b0b2d7051152bd6d638a9f0b31a975": {
     "describe": {
       "columns": [
@@ -166,6 +187,57 @@
       }
     },
     "query": "SELECT account_id, user_id, account_name, storage_key, server_registration FROM Accounts WHERE user_id=$1"
+  },
+  "77cf5b28693bce775496b4bd73ed7af6f7db3cc56a5186b9dfae7f35061210ed": {
+    "describe": {
+      "columns": [
+        {
+          "name": "session_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "user_id",
+          "ordinal": 1,
+          "type_info": "Bytea"
+        },
+        {
+          "name": "timestamp",
+          "ordinal": 2,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "session_key",
+          "ordinal": 3,
+          "type_info": "Bytea"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Bytea"
+        ]
+      }
+    },
+    "query": "SELECT session_id, user_id, timestamp, session_key FROM Session WHERE session_id=$1 AND user_id=$2"
+  },
+  "78c00eff015db1567510b1ad30a6402dc60a7ec198ff32c74e22ec1f823db198": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "DELETE FROM Session WHERE session_id=$1"
   },
   "a9078aa304e311b5d3459c32a2d36853a810d95f1c6bb12c4e254cd04aaa4cfb": {
     "describe": {

@@ -49,12 +49,12 @@ pub trait DataStore: Send + Sync + 'static {
     // Secret
     /// Add a [`StoredSecret`] to a [`Account`]'s list of arbitrary
     /// secrets
-    async fn add_user_secret(&self, secret: StoredSecret) -> Result<(), Self::Error>;
+    async fn add_secret(&self, secret: StoredSecret) -> Result<(), Self::Error>;
 
     /// Get a [`Account`]'s [`StoredSecret`] based on its [`KeyId`].
     /// A [`StoredSecret`] will only be returned if it matches the given
     /// [`SecretFilter`].
-    async fn get_user_secret(
+    async fn get_secret(
         &self,
         user_id: &UserId,
         key_id: &KeyId,

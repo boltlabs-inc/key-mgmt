@@ -68,19 +68,19 @@ async fn cannot_get_another_users_secrets(db: TestDatabase) -> Result<()> {
     // async closures. So we do not refactor this code.
     assert!(matches!(
         db.db
-            .get_user_secret(&other_user, &key_id1, Default::default())
+            .get_secret(&other_user, &key_id1, Default::default())
             .await,
         Err(PostgresError::IncorrectAssociatedKeyData)
     ));
     assert!(matches!(
         db.db
-            .get_user_secret(&other_user, &key_id2, Default::default())
+            .get_secret(&other_user, &key_id2, Default::default())
             .await,
         Err(PostgresError::IncorrectAssociatedKeyData)
     ));
     assert!(matches!(
         db.db
-            .get_user_secret(&other_user, &key_id3, Default::default())
+            .get_secret(&other_user, &key_id3, Default::default())
             .await,
         Err(PostgresError::IncorrectAssociatedKeyData)
     ));
@@ -98,7 +98,7 @@ async fn incorrect_key_type_specified(db: TestDatabase) -> Result<()> {
 
     assert!(
         db.db
-            .get_user_secret(&user, &key_id, Default::default())
+            .get_secret(&user, &key_id, Default::default())
             .await
             .is_ok(),
         "Failed to fetch just stored secret."
@@ -107,7 +107,7 @@ async fn incorrect_key_type_specified(db: TestDatabase) -> Result<()> {
     // Now fetch secret with wrong key type. ("Foo" key type does not exist).
     assert!(matches!(
         db.db
-            .get_user_secret(&user, &key_id, SecretFilter::secret_type("Foo"))
+            .get_secret(&user, &key_id, SecretFilter::secret_type("Foo"))
             .await,
         Err(PostgresError::IncorrectAssociatedKeyData)
     ));
@@ -125,7 +125,7 @@ async fn add_arbitrary_secret(
     let (_, encrypted) = Secret::create_and_encrypt(rng, storage_key, user_id, &key_id)?;
 
     let secret = StoredSecret::from_arbitrary_secret(key_id.clone(), user_id.clone(), encrypted)?;
-    db.add_user_secret(secret).await?;
+    db.add_secret(secret).await?;
 
     Ok(key_id)
 }
@@ -146,7 +146,7 @@ async fn import_signing_key(db: &PostgresDB, rng: &mut StdRng, user_id: &UserId)
         encrypted_key_pair,
         user_id.clone(),
     )?;
-    db.add_user_secret(secret).await?;
+    db.add_secret(secret).await?;
 
     Ok(key_id)
 }
@@ -169,6 +169,6 @@ async fn remote_generate_signing_key(
         encrypted_key_pair,
         user_id.clone(),
     )?;
-    db.add_user_secret(secret).await?;
+    db.add_secret(secret).await?;
     Ok(key_id)
 }

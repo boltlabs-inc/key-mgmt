@@ -10,7 +10,6 @@ edition = "2021"
 argon2.workspace = true
 async-trait.workspace = true
 bincode.workspace = true
-bson.workspace = true
 bytes.workspace = true
 futures.workspace = true
 generic-array.workspace = true

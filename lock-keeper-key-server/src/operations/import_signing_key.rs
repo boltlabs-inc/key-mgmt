@@ -65,7 +65,7 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for ImportSigningKey {
         // Check validity of ciphertext and store in DB
         context
             .db
-            .add_user_secret(secret)
+            .add_secret(secret)
             .await
             .map_err(LockKeeperServerError::database)?;
 

@@ -7,7 +7,7 @@ members = [
     "lock-keeper-key-server",
     "lock-keeper-tests",
     "persistence/lock-keeper-sql",
-    "persistence/lk-session-mongodb",
+    "persistence/lock-keeper-session-cache-sql",
 ]
 
 [workspace.package]
@@ -17,7 +17,6 @@ version = "0.2.0"
 argon2 = "0.4"
 async-trait = "0.1"
 bincode = "1"
-bson = { version = "2", features = ["uuid-1"] }
 bytes = { version = "1", features = ["serde"] }
 clap = { version = "3", features = ["derive"] }
 futures = "0.3"
@@ -46,5 +45,5 @@ tonic = "0.8"
 tracing = "0.1"
 tracing-futures = "0.2"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
-uuid = "1.1.2"
+uuid = { version = "1.1.2", features = ["v4", "serde"] }
 zeroize = "1.5"

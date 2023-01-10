@@ -14,14 +14,9 @@ pub mod retrieve_secret;
 pub mod retrieve_storage_key;
 
 use crate::{
-    crypto::CryptoError,
-    types::database::{
-        user::{AccountName, UserId},
-        HexBytes,
-    },
+    types::database::user::{AccountName, UserId},
     LockKeeperError,
 };
-use rand::{CryptoRng, Rng, RngCore};
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumIter, EnumString};
 use tonic::metadata::{Ascii, MetadataValue};
@@ -68,35 +63,6 @@ pub trait ConvertMessage: Sized + for<'a> Deserialize<'a> + Serialize {
 // `Deserialize`.
 impl<T: for<'a> Deserialize<'a> + Serialize> ConvertMessage for T {}
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-#[serde(try_from = "HexBytes", into = "HexBytes")]
-pub struct SessionId(Box<[u8; 16]>);
-
-impl SessionId {
-    pub fn new(rng: &mut (impl CryptoRng + RngCore)) -> Result<Self, LockKeeperError> {
-        // Generate random bytes
-        let mut id = [0_u8; 16];
-        rng.try_fill(&mut id)
-            .map_err(|_| CryptoError::RandomNumberGeneratorFailed)?;
-
-        Ok(Self(Box::new(id)))
-    }
-}
-
-impl From<SessionId> for HexBytes {
-    fn from(session_id: SessionId) -> Self {
-        (*session_id.0).into()
-    }
-}
-
-impl TryFrom<HexBytes> for SessionId {
-    type Error = LockKeeperError;
-
-    fn try_from(bytes: HexBytes) -> Result<Self, Self::Error> {
-        Ok(SessionId(Box::new(bytes.try_into()?)))
-    }
-}
-
 /// Metadata attached to each request to the server. Note that the request ID is
 /// an ID for an entire operation, not each `ClientAction` that the operation is
 /// composed of.
@@ -105,7 +71,7 @@ pub struct RequestMetadata {
     account_name: AccountName,
     action: ClientAction,
     user_id: Option<UserId>,
-    session_id: Option<SessionId>,
+    session_id: Option<Uuid>,
     request_id: Uuid,
 }
 
@@ -114,7 +80,7 @@ impl RequestMetadata {
         account_name: &AccountName,
         action: ClientAction,
         user_id: Option<&UserId>,
-        session_id: Option<&SessionId>,
+        session_id: Option<&Uuid>,
         request_id: Uuid,
     ) -> Self {
         Self {
@@ -142,7 +108,7 @@ impl RequestMetadata {
         self.user_id.as_ref()
     }
 
-    pub fn session_id(&self) -> Option<&SessionId> {
+    pub fn session_id(&self) -> Option<&Uuid> {
         self.session_id.as_ref()
     }
 

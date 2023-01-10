@@ -13,7 +13,7 @@ use lock_keeper::{
         database::user::{AccountName, UserId},
         operations::{
             logout::server as logout_server, retrieve_storage_key::server, ClientAction,
-            RequestMetadata, SessionId,
+            RequestMetadata,
         },
     },
 };
@@ -46,7 +46,7 @@ impl Password {
 /// A single session with the LockKeeper key server.
 #[derive(Debug)]
 pub(crate) struct Session {
-    session_id: SessionId,
+    session_id: Uuid,
     session_key: OpaqueSessionKey,
 }
 
@@ -79,7 +79,7 @@ type LockKeeperRpcClientInner = hyper::Client<
 >;
 
 pub(crate) struct AuthenticateResult {
-    pub(crate) session_id: SessionId,
+    pub(crate) session_id: Uuid,
     pub(crate) session_key: OpaqueSessionKey,
     pub(crate) master_key: MasterKey,
 }

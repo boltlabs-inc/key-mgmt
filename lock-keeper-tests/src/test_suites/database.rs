@@ -71,7 +71,7 @@ impl TestDatabase {
             address = 'localhost'
             db_name = 'test'
             max_connections = 5
-            connecting_timeout_seconds = 3
+            connection_timeout = "3s"
             "#;
 
         let config_file =

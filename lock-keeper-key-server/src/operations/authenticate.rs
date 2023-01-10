@@ -13,10 +13,7 @@ use lock_keeper::{
     },
     types::{
         database::user::UserId,
-        operations::{
-            authenticate::{client, server},
-            SessionId,
-        },
+        operations::authenticate::{client, server},
     },
 };
 use opaque_ke::{ServerLogin, ServerLoginStartParameters, ServerLoginStartResult};
@@ -122,22 +119,16 @@ async fn authenticate_finish<DB: DataStore>(
     let session_cache = context.session_cache.lock().await;
     let session_key = server_login_finish_result.session_key.try_into()?;
     // Encrypt the session key and generate a new session ID.
-    let (encrypted_session_key, session_id) = {
+    let encrypted_session_key = {
         let mut rng = context.rng.lock().await;
-        let encrypted_session_key = context
+        context
             .config
             .remote_storage_key
-            .encrypt_session_key(&mut *rng, session_key)?;
-        let session_id = SessionId::new(&mut *rng)?;
-        (encrypted_session_key, session_id)
+            .encrypt_session_key(&mut *rng, session_key)?
     };
 
-    session_cache
-        .create_session(
-            session_id.clone(),
-            start_result.user_id.clone(),
-            encrypted_session_key,
-        )
+    let session_id = session_cache
+        .create_session(start_result.user_id.clone(), encrypted_session_key)
         .await?;
     info!("Session key established and saved.");
 

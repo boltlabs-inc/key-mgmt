@@ -2,7 +2,7 @@
 # database are running on docker instances.
 username = 'test'
 password = 'test_password'
-address = 'postgres'
+address = 'postgres:5432'
 db_name = 'test'
 max_connections = 5
-connecting_timeout_seconds = 3
+connection_timeout = "3s"
