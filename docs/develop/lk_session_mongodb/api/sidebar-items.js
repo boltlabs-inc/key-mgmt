@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"constant":[["SESSION_ID",""],["TABLE",""],["USER_ID",""]],"struct":[["MongodbSessionCache","Cache holding sessions, per user, after authentication. Maps [`UserId`]s to their [`Session`]s. Sessions are tagged with a timestamp. A session is considered invalid after the `expiration` time has elapsed."]]};

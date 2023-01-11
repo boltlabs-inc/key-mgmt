@@ -35,6 +35,7 @@
 <span id="35">35</span>
 <span id="36">36</span>
 <span id="37">37</span>
+<span id="38">38</span>
 </pre><pre class="rust"><code><span class="kw">pub mod </span>client {
     <span class="kw">use crate</span>::{config::opaque::OpaqueCipherSuite, types::database::user::AccountName};
     <span class="kw">use </span>opaque_ke::{CredentialFinalization, CredentialRequest};
@@ -56,9 +57,10 @@
 }
 
 <span class="kw">pub mod </span>server {
-    <span class="kw">use crate</span>::{config::opaque::OpaqueCipherSuite, types::operations::SessionId};
+    <span class="kw">use </span><span class="kw">crate</span>::config::opaque::OpaqueCipherSuite;
     <span class="kw">use </span>opaque_ke::CredentialResponse;
     <span class="kw">use </span>serde::{Deserialize, Serialize};
+    <span class="kw">use </span>uuid::Uuid;
 
     <span class="attribute">#[derive(Debug, Deserialize, Serialize)]
     </span><span class="doccomment">/// Check if user exists and return OPAQUE message if so
@@ -69,8 +71,8 @@
     <span class="attribute">#[derive(Debug, Deserialize, Serialize)]
     </span><span class="doccomment">/// Return true if successful.
     </span><span class="kw">pub struct </span>AuthenticateFinish {
-        <span class="kw">pub </span>session_id: SessionId,
+        <span class="kw">pub </span>session_id: Uuid,
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="lock_keeper" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0 (69f9c33d7 2022-12-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="lock_keeper" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.1 (90743e729 2023-01-10)" ></div></body></html>

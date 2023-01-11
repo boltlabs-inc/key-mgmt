@@ -138,15 +138,6 @@
 <span id="138">138</span>
 <span id="139">139</span>
 <span id="140">140</span>
-<span id="141">141</span>
-<span id="142">142</span>
-<span id="143">143</span>
-<span id="144">144</span>
-<span id="145">145</span>
-<span id="146">146</span>
-<span id="147">147</span>
-<span id="148">148</span>
-<span id="149">149</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{
     error::LockKeeperServerError,
     server::{Context, Operation},
@@ -162,10 +153,7 @@
     },
     types::{
         database::user::UserId,
-        operations::{
-            authenticate::{client, server},
-            SessionId,
-        },
+        operations::authenticate::{client, server},
     },
 };
 <span class="kw">use </span>opaque_ke::{ServerLogin, ServerLoginStartParameters, ServerLoginStartResult};
@@ -271,22 +259,16 @@
     </span><span class="kw">let </span>session_cache = context.session_cache.lock().<span class="kw">await</span>;
     <span class="kw">let </span>session_key = server_login_finish_result.session_key.try_into()<span class="question-mark">?</span>;
     <span class="comment">// Encrypt the session key and generate a new session ID.
-    </span><span class="kw">let </span>(encrypted_session_key, session_id) = {
+    </span><span class="kw">let </span>encrypted_session_key = {
         <span class="kw">let </span><span class="kw-2">mut </span>rng = context.rng.lock().<span class="kw">await</span>;
-        <span class="kw">let </span>encrypted_session_key = context
+        context
             .config
             .remote_storage_key
-            .encrypt_session_key(<span class="kw-2">&amp;mut *</span>rng, session_key)<span class="question-mark">?</span>;
-        <span class="kw">let </span>session_id = SessionId::new(<span class="kw-2">&amp;mut *</span>rng)<span class="question-mark">?</span>;
-        (encrypted_session_key, session_id)
-    };
+            .encrypt_session_key(<span class="kw-2">&amp;mut *</span>rng, session_key)<span class="question-mark">?
+    </span>};
 
-    session_cache
-        .create_session(
-            session_id.clone(),
-            start_result.user_id.clone(),
-            encrypted_session_key,
-        )
+    <span class="kw">let </span>session_id = session_cache
+        .create_session(start_result.user_id.clone(), encrypted_session_key)
         .<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="macro">info!</span>(<span class="string">&quot;Session key established and saved.&quot;</span>);
 
@@ -297,4 +279,4 @@
     <span class="prelude-val">Ok</span>(())
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="lock_keeper_key_server" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0 (69f9c33d7 2022-12-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="lock_keeper_key_server" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.1 (90743e729 2023-01-10)" ></div></body></html>

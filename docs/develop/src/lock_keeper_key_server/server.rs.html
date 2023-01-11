@@ -314,8 +314,6 @@
 <span id="314">314</span>
 <span id="315">315</span>
 <span id="316">316</span>
-<span id="317">317</span>
-<span id="318">318</span>
 </pre><pre class="rust"><code><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>opaque_storage;
 <span class="kw">mod </span>operation;
 <span class="kw">mod </span>service;
@@ -481,8 +479,7 @@
 
         <span class="kw">let </span>session_id = metadata
             .session_id()
-            .ok_or(LockKeeperServerError::SessionIdNotFound)<span class="question-mark">?
-            </span>.clone();
+            .ok_or(LockKeeperServerError::SessionIdNotFound)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>user_id = context
             .db
@@ -498,7 +495,7 @@
         <span class="kw">let </span>session_key = {
             <span class="kw">let </span>session_cache = context.session_cache.lock().<span class="kw">await</span>;
             <span class="kw">let </span>session = session_cache
-                .find_session(session_id, user_id.clone())
+                .find_session(<span class="kw-2">*</span>session_id, user_id.clone())
                 .<span class="kw">await
                 </span>.map_err(|e| Status::internal(e.to_string()))<span class="question-mark">?</span>;
             session.session_key(<span class="kw-2">&amp;</span>context)<span class="question-mark">?
@@ -619,13 +616,12 @@
         <span class="kw">let </span>session_id = channel
             .metadata()
             .session_id()
-            .ok_or(LockKeeperServerError::SessionIdNotFound)<span class="question-mark">?
-            </span>.clone();
+            .ok_or(LockKeeperServerError::SessionIdNotFound)<span class="question-mark">?</span>;
         <span class="kw">let </span>context = <span class="self">self</span>.context();
 
         <span class="kw">let </span>session_key = {
             <span class="kw">let </span>session_cache = context.session_cache.lock().<span class="kw">await</span>;
-            <span class="kw">let </span>session = session_cache.find_session(session_id, user_id).<span class="kw">await</span><span class="question-mark">?</span>;
+            <span class="kw">let </span>session = session_cache.find_session(<span class="kw-2">*</span>session_id, user_id).<span class="kw">await</span><span class="question-mark">?</span>;
             session.session_key(<span class="kw-2">&amp;</span>context)<span class="question-mark">?
         </span>};
 
@@ -635,4 +631,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="lock_keeper_key_server" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0 (69f9c33d7 2022-12-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="lock_keeper_key_server" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.1 (90743e729 2023-01-10)" ></div></body></html>

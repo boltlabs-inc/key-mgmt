@@ -488,10 +488,10 @@
 <span class="kw">use </span>config::Config;
 
 <span class="kw">use </span>clap::Parser;
-<span class="kw">use </span>lk_session_mongodb::{config::Config <span class="kw">as </span>SessionConfig, MongodbSessionCache};
 <span class="kw">use </span>lock_keeper_key_server::{
     config::Config <span class="kw">as </span>ServerConfig, server::start_lock_keeper_server, LockKeeperServerError,
 };
+<span class="kw">use </span>lock_keeper_session_cache_sql::{config::Config <span class="kw">as </span>SessionConfig, PostgresSessionCache};
 
 <span class="kw">use </span>tracing::{info, Level};
 <span class="kw">use </span>tracing_appender::{<span class="self">self</span>, non_blocking::WorkerGuard};
@@ -554,10 +554,10 @@
     <span class="kw">let </span>session_config = SessionConfig::from_file(config.session_cache).unwrap();
 
     <span class="macro">info!</span>(
-        <span class="string">&quot;Creating new MongoDB session cache object: {:?}&quot;</span>,
+        <span class="string">&quot;Creating new Postgres session cache object: {:?}&quot;</span>,
         session_config
     );
-    <span class="kw">let </span>session_cache = MongodbSessionCache::new(session_config).<span class="kw">await</span>.unwrap();
+    <span class="kw">let </span>session_cache = PostgresSessionCache::connect(session_config).<span class="kw">await</span>.unwrap();
     start_lock_keeper_server(server_config, postgres, session_cache)
         .<span class="kw">await
         </span>.unwrap();
@@ -639,8 +639,8 @@
             </span>.with_target(<span class="string">&quot;key_server_cli&quot;</span>, level)
             .with_target(<span class="string">&quot;lock_keeper_key_server&quot;</span>, level)
             .with_target(<span class="string">&quot;lock_keeper&quot;</span>, level)
-            .with_target(<span class="string">&quot;lk_session_mongodb&quot;</span>, level)
+            .with_target(<span class="string">&quot;lock_keeper_session_cache_sql&quot;</span>, level)
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="key_server_cli" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0 (69f9c33d7 2022-12-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="key_server_cli" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.1 (90743e729 2023-01-10)" ></div></body></html>

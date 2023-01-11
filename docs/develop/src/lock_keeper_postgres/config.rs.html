@@ -162,7 +162,7 @@
     ConfigError::{MissingPassword, MissingUsername},
 };
 <span class="kw">use </span>serde::{Deserialize, Serialize};
-<span class="kw">use </span>std::{env, fs::read_to_string, path::Path, str::FromStr};
+<span class="kw">use </span>std::{env, fs::read_to_string, path::Path, str::FromStr, time::Duration};
 <span class="kw">use </span>tracing::log::warn;
 
 <span class="attribute">#[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq)]
@@ -177,7 +177,8 @@
     address: String,
     db_name: String,
     max_connections: u32,
-    connecting_timeout_seconds: u64,
+    <span class="attribute">#[serde(with = <span class="string">&quot;humantime_serde&quot;</span>)]
+    </span>connection_timeout: Duration,
 }
 
 <span class="kw">impl </span>ConfigFile {
@@ -206,7 +207,7 @@
     <span class="doccomment">/// Name of database. Appended to URI to make the full path.
     </span><span class="kw">pub </span>db_name: String,
     <span class="kw">pub </span>max_connections: u32,
-    <span class="kw">pub </span>connecting_timeout_seconds: u64,
+    <span class="kw">pub </span>connection_timeout: Duration,
 }
 
 <span class="kw">impl </span>Config {
@@ -250,7 +251,7 @@
             address: config.address,
             db_name: config.db_name,
             max_connections: config.max_connections,
-            connecting_timeout_seconds: config.connecting_timeout_seconds,
+            connection_timeout: config.connection_timeout,
         };
 
         <span class="prelude-val">Ok</span>(config)
@@ -259,8 +260,7 @@
 
 <span class="attribute">#[cfg(test)]
 </span><span class="kw">mod </span>test {
-    <span class="kw">use crate</span>::{Config, ConfigFile};
-    <span class="kw">use </span>std::{env, str::FromStr};
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
     <span class="doccomment">/// Helper method for creating a test [ConfigFile]
     </span><span class="kw">fn </span>test_config_file() -&gt; ConfigFile {
@@ -270,7 +270,7 @@
             address: <span class="string">&quot;localhost&quot;</span>.to_string(),
             db_name: <span class="string">&quot;test_db&quot;</span>.to_string(),
             max_connections: <span class="number">5</span>,
-            connecting_timeout_seconds: <span class="number">3</span>,
+            connection_timeout: Duration::from_secs(<span class="number">3</span>),
         }
     }
 
@@ -282,7 +282,7 @@
             address = &quot;localhost&quot;
             db_name = &quot;test_db&quot;
             max_connections = 5
-            connecting_timeout_seconds = 3
+            connection_timeout = &quot;3s&quot;
             &quot;#</span>;
 
         <span class="kw">let </span>config_file = ConfigFile::from_str(config_str).unwrap();
@@ -317,4 +317,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="lock_keeper_postgres" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0 (69f9c33d7 2022-12-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="lock_keeper_postgres" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.1 (90743e729 2023-01-10)" ></div></body></html>

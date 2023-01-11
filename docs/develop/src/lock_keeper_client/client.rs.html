@@ -374,7 +374,7 @@
         database::user::{AccountName, UserId},
         operations::{
             logout::server <span class="kw">as </span>logout_server, retrieve_storage_key::server, ClientAction,
-            RequestMetadata, SessionId,
+            RequestMetadata,
         },
     },
 };
@@ -407,7 +407,7 @@
 <span class="doccomment">/// A single session with the LockKeeper key server.
 </span><span class="attribute">#[derive(Debug)]
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>Session {
-    session_id: SessionId,
+    session_id: Uuid,
     session_key: OpaqueSessionKey,
 }
 
@@ -440,7 +440,7 @@
 &gt;;
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>AuthenticateResult {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) session_id: SessionId,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) session_id: Uuid,
     <span class="kw">pub</span>(<span class="kw">crate</span>) session_key: OpaqueSessionKey,
     <span class="kw">pub</span>(<span class="kw">crate</span>) master_key: MasterKey,
 }
@@ -721,4 +721,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="lock_keeper_client" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0 (69f9c33d7 2022-12-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="lock_keeper_client" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.1 (90743e729 2023-01-10)" ></div></body></html>

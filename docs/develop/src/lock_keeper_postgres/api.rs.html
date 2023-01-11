@@ -436,7 +436,6 @@
 <span id="436">436</span>
 <span id="437">437</span>
 <span id="438">438</span>
-<span id="439">439</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{
     types::{AccountDB, AuditEventDB, SecretDB},
     Config, PostgresError,
@@ -461,7 +460,6 @@
 <span class="kw">use </span>std::{
     fmt::{Debug, Formatter},
     sync::Arc,
-    time::Duration,
 };
 <span class="kw">use </span>time::OffsetDateTime;
 <span class="kw">use </span>tracing::{debug, info, instrument};
@@ -500,17 +498,17 @@
             .<span class="kw">await
     </span>}
 
-    <span class="kw">async fn </span>add_user_secret(<span class="kw-2">&amp;</span><span class="self">self</span>, secret: StoredSecret) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt; {
-        <span class="self">self</span>.add_user_secret(secret).<span class="kw">await
+    <span class="kw">async fn </span>add_secret(<span class="kw-2">&amp;</span><span class="self">self</span>, secret: StoredSecret) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt; {
+        <span class="self">self</span>.add_secret(secret).<span class="kw">await
     </span>}
 
-    <span class="kw">async fn </span>get_user_secret(
+    <span class="kw">async fn </span>get_secret(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         user_id: <span class="kw-2">&amp;</span>UserId,
         key_id: <span class="kw-2">&amp;</span>KeyId,
         filter: SecretFilter,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;StoredSecret, <span class="self">Self</span>::Error&gt; {
-        <span class="self">self</span>.get_user_secret(user_id, key_id, filter).<span class="kw">await
+        <span class="self">self</span>.get_secret(user_id, key_id, filter).<span class="kw">await
     </span>}
 
     <span class="kw">async fn </span>create_account(
@@ -519,7 +517,7 @@
         account_name: <span class="kw-2">&amp;</span>AccountName,
         server_registration: <span class="kw-2">&amp;</span>ServerRegistration&lt;OpaqueCipherSuite&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Account, <span class="self">Self</span>::Error&gt; {
-        <span class="self">self</span>.create_user(user_id, account_name, server_registration)
+        <span class="self">self</span>.create_account(user_id, account_name, server_registration)
             .<span class="kw">await
     </span>}
 
@@ -527,15 +525,15 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         account_name: <span class="kw-2">&amp;</span>AccountName,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Account&gt;, <span class="self">Self</span>::Error&gt; {
-        <span class="self">self</span>.find_user(account_name).<span class="kw">await
+        <span class="self">self</span>.find_account(account_name).<span class="kw">await
     </span>}
 
     <span class="kw">async fn </span>find_account_by_id(<span class="kw-2">&amp;</span><span class="self">self</span>, user_id: <span class="kw-2">&amp;</span>UserId) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Account&gt;, <span class="self">Self</span>::Error&gt; {
-        <span class="self">self</span>.find_user_by_id(user_id).<span class="kw">await
+        <span class="self">self</span>.find_account_by_id(user_id).<span class="kw">await
     </span>}
 
     <span class="kw">async fn </span>delete_account(<span class="kw-2">&amp;</span><span class="self">self</span>, user_id: <span class="kw-2">&amp;</span>UserId) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt; {
-        <span class="self">self</span>.delete_user(user_id).<span class="kw">await
+        <span class="self">self</span>.delete_account(user_id).<span class="kw">await
     </span>}
 
     <span class="kw">async fn </span>set_storage_key(
@@ -561,7 +559,7 @@
         <span class="comment">// Create a connection pool based on our config.
         </span><span class="kw">let </span>pool = PgPoolOptions::new()
             .max_connections(config.max_connections)
-            .acquire_timeout(Duration::from_secs(config.connecting_timeout_seconds))
+            .acquire_timeout(config.connection_timeout)
             .connect(<span class="kw-2">&amp;</span>config.uri())
             .<span class="kw">await</span><span class="question-mark">?</span>;
 
@@ -672,7 +670,7 @@
     }
 
     <span class="attribute">#[instrument(skip_all, err(Debug), fields(user_id, key_id, secret_type))]
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>add_user_secret(<span class="kw-2">&amp;</span><span class="self">self</span>, secret: StoredSecret) -&gt; <span class="prelude-ty">Result</span>&lt;(), PostgresError&gt; {
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>add_secret(<span class="kw-2">&amp;</span><span class="self">self</span>, secret: StoredSecret) -&gt; <span class="prelude-ty">Result</span>&lt;(), PostgresError&gt; {
         logging::record_field(<span class="string">&quot;user_id&quot;</span>, <span class="kw-2">&amp;</span>secret.user_id);
         logging::record_field(<span class="string">&quot;key_id&quot;</span>, <span class="kw-2">&amp;</span>secret.key_id);
         logging::record_field(<span class="string">&quot;secret_type&quot;</span>, <span class="kw-2">&amp;</span>secret.secret_type);
@@ -698,7 +696,7 @@
     <span class="doccomment">/// This function verifies the user_id and key type matches. Otherwise will
     /// return a IncorrectAssociatedKeyData error.
     </span><span class="attribute">#[instrument(skip_all, err(Debug), fields(user_id=<span class="question-mark">?</span>user_id, key_id=<span class="question-mark">?</span>key_id, filter=<span class="question-mark">?</span>filter))]
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>get_user_secret(
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>get_secret(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         user_id: <span class="kw-2">&amp;</span>UserId,
         key_id: <span class="kw-2">&amp;</span>KeyId,
@@ -748,7 +746,7 @@
     }
 
     <span class="attribute">#[instrument(skip_all, err(Debug), fields(user_id=<span class="question-mark">?</span>user_id, account_name=<span class="question-mark">?</span>account_name))]
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>create_user(
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>create_account(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         user_id: <span class="kw-2">&amp;</span>UserId,
         account_name: <span class="kw-2">&amp;</span>AccountName,
@@ -776,7 +774,7 @@
     }
 
     <span class="attribute">#[instrument(skip_all, err(Debug), fields(account_name=<span class="question-mark">?</span>account_name))]
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>find_user(
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>find_account(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         account_name: <span class="kw-2">&amp;</span>AccountName,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Account&gt;, PostgresError&gt; {
@@ -796,7 +794,7 @@
     }
 
     <span class="attribute">#[instrument(skip_all, err(Debug), fields(user_id=<span class="question-mark">?</span>user_id))]
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>find_user_by_id(
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>find_account_by_id(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         user_id: <span class="kw-2">&amp;</span>UserId,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Account&gt;, PostgresError&gt; {
@@ -817,7 +815,7 @@
     }
 
     <span class="attribute">#[instrument(skip_all, err(Debug), fields(user_id=<span class="question-mark">?</span>user_id))]
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>delete_user(<span class="kw-2">&amp;</span><span class="self">self</span>, user_id: <span class="kw-2">&amp;</span>UserId) -&gt; <span class="prelude-ty">Result</span>&lt;(), PostgresError&gt; {
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>delete_account(<span class="kw-2">&amp;</span><span class="self">self</span>, user_id: <span class="kw-2">&amp;</span>UserId) -&gt; <span class="prelude-ty">Result</span>&lt;(), PostgresError&gt; {
         <span class="macro">info!</span>(<span class="string">&quot;Deleting user.&quot;</span>);
 
         <span class="comment">// Delete the entry and
@@ -877,4 +875,4 @@
     <span class="prelude-val">Ok</span>(())
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="lock_keeper_postgres" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0 (69f9c33d7 2022-12-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="lock_keeper_postgres" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.1 (90743e729 2023-01-10)" ></div></body></html>
