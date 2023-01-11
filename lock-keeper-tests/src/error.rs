@@ -1,4 +1,5 @@
 use lock_keeper_postgres::PostgresError;
+use lock_keeper_session_cache_sql::Error as SessionCachePostgresError;
 use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, LockKeeperTestError>;
@@ -31,9 +32,9 @@ pub enum LockKeeperTestError {
     LockKeeperClient(#[from] lock_keeper_client::LockKeeperClientError),
     #[error("LockKeeperServerError: {0:?}")]
     LockKeeperServer(#[from] lock_keeper_key_server::LockKeeperServerError),
-    #[error("LockKeeperMongoDb error: {0:?}")]
-    LkSessionMongodb(#[from] lk_session_mongodb::Error),
-    #[error("RandError: {0:?}")]
+    #[error("SessionCachePostgresError error: {0:?}")]
+    LockKeeperSessionCache(#[from] SessionCachePostgresError),
+    #[error("SessionCacheError: {0:?}")]
     SessionCache(#[from] lock_keeper_key_server::server::session_cache::SessionCacheError),
     #[error("PostgresError error: {0:?}")]
     LockKeeperPostgres(#[from] PostgresError),

@@ -1,3 +1,7 @@
-mongodb_uri = 'mongodb://localhost:27017'
-db_name = 'lock-keeper-test-db'
+username = 'test'
+password = 'test_password'
+address = 'localhost:5432'
+db_name = 'test'
+max_connections = 5
+connection_timeout = "3s"
 session_expiration = "60s"

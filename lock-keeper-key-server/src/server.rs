@@ -163,8 +163,7 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
 
         let session_id = metadata
             .session_id()
-            .ok_or(LockKeeperServerError::SessionIdNotFound)?
-            .clone();
+            .ok_or(LockKeeperServerError::SessionIdNotFound)?;
 
         let user_id = context
             .db
@@ -180,7 +179,7 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         let session_key = {
             let session_cache = context.session_cache.lock().await;
             let session = session_cache
-                .find_session(session_id, user_id.clone())
+                .find_session(*session_id, user_id.clone())
                 .await
                 .map_err(|e| Status::internal(e.to_string()))?;
             session.session_key(&context)?
@@ -301,13 +300,12 @@ impl<DB: DataStore> LockKeeperKeyServer<DB> {
         let session_id = channel
             .metadata()
             .session_id()
-            .ok_or(LockKeeperServerError::SessionIdNotFound)?
-            .clone();
+            .ok_or(LockKeeperServerError::SessionIdNotFound)?;
         let context = self.context();
 
         let session_key = {
             let session_cache = context.session_cache.lock().await;
-            let session = session_cache.find_session(session_id, user_id).await?;
+            let session = session_cache.find_session(*session_id, user_id).await?;
             session.session_key(&context)?
         };
 

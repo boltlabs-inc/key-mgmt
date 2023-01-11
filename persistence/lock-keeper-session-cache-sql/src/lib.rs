@@ -7,6 +7,7 @@
 pub mod api;
 pub mod config;
 pub mod error;
+pub mod types;
 
-pub use api::MongodbSessionCache;
+pub use api::PostgresSessionCache;
 pub use error::Error;

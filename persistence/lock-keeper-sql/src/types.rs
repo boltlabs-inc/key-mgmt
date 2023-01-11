@@ -57,8 +57,8 @@ impl TryFrom<SecretDB> for StoredSecret {
     type Error = PostgresError;
 
     fn try_from(secret: SecretDB) -> Result<Self, Self::Error> {
-        let key_id = TryFrom::try_from(secret.key_id.as_slice())?;
-        let user_id = TryFrom::try_from(secret.user_id.as_slice())?;
+        let key_id = secret.key_id.as_slice().try_into()?;
+        let user_id = secret.user_id.as_slice().try_into()?;
         Ok(StoredSecret {
             key_id,
             user_id,

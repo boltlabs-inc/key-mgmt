@@ -22,7 +22,6 @@ use sqlx::{postgres::PgPoolOptions, Encode, PgPool, Postgres, QueryBuilder, Type
 use std::{
     fmt::{Debug, Formatter},
     sync::Arc,
-    time::Duration,
 };
 use time::OffsetDateTime;
 use tracing::{debug, info, instrument};
@@ -61,17 +60,17 @@ impl DataStore for PostgresDB {
             .await
     }
 
-    async fn add_user_secret(&self, secret: StoredSecret) -> Result<(), Self::Error> {
-        self.add_user_secret(secret).await
+    async fn add_secret(&self, secret: StoredSecret) -> Result<(), Self::Error> {
+        self.add_secret(secret).await
     }
 
-    async fn get_user_secret(
+    async fn get_secret(
         &self,
         user_id: &UserId,
         key_id: &KeyId,
         filter: SecretFilter,
     ) -> Result<StoredSecret, Self::Error> {
-        self.get_user_secret(user_id, key_id, filter).await
+        self.get_secret(user_id, key_id, filter).await
     }
 
     async fn create_account(
@@ -80,7 +79,7 @@ impl DataStore for PostgresDB {
         account_name: &AccountName,
         server_registration: &ServerRegistration<OpaqueCipherSuite>,
     ) -> Result<Account, Self::Error> {
-        self.create_user(user_id, account_name, server_registration)
+        self.create_account(user_id, account_name, server_registration)
             .await
     }
 
@@ -88,15 +87,15 @@ impl DataStore for PostgresDB {
         &self,
         account_name: &AccountName,
     ) -> Result<Option<Account>, Self::Error> {
-        self.find_user(account_name).await
+        self.find_account(account_name).await
     }
 
     async fn find_account_by_id(&self, user_id: &UserId) -> Result<Option<Account>, Self::Error> {
-        self.find_user_by_id(user_id).await
+        self.find_account_by_id(user_id).await
     }
 
     async fn delete_account(&self, user_id: &UserId) -> Result<(), Self::Error> {
-        self.delete_user(user_id).await
+        self.delete_account(user_id).await
     }
 
     async fn set_storage_key(
@@ -122,7 +121,7 @@ impl PostgresDB {
         // Create a connection pool based on our config.
         let pool = PgPoolOptions::new()
             .max_connections(config.max_connections)
-            .acquire_timeout(Duration::from_secs(config.connecting_timeout_seconds))
+            .acquire_timeout(config.connection_timeout)
             .connect(&config.uri())
             .await?;
 
@@ -233,7 +232,7 @@ impl PostgresDB {
     }
 
     #[instrument(skip_all, err(Debug), fields(user_id, key_id, secret_type))]
-    pub(crate) async fn add_user_secret(&self, secret: StoredSecret) -> Result<(), PostgresError> {
+    pub(crate) async fn add_secret(&self, secret: StoredSecret) -> Result<(), PostgresError> {
         logging::record_field("user_id", &secret.user_id);
         logging::record_field("key_id", &secret.key_id);
         logging::record_field("secret_type", &secret.secret_type);
@@ -259,7 +258,7 @@ impl PostgresDB {
     /// This function verifies the user_id and key type matches. Otherwise will
     /// return a IncorrectAssociatedKeyData error.
     #[instrument(skip_all, err(Debug), fields(user_id=?user_id, key_id=?key_id, filter=?filter))]
-    pub(crate) async fn get_user_secret(
+    pub(crate) async fn get_secret(
         &self,
         user_id: &UserId,
         key_id: &KeyId,
@@ -309,7 +308,7 @@ impl PostgresDB {
     }
 
     #[instrument(skip_all, err(Debug), fields(user_id=?user_id, account_name=?account_name))]
-    pub(crate) async fn create_user(
+    pub(crate) async fn create_account(
         &self,
         user_id: &UserId,
         account_name: &AccountName,
@@ -337,7 +336,7 @@ impl PostgresDB {
     }
 
     #[instrument(skip_all, err(Debug), fields(account_name=?account_name))]
-    pub(crate) async fn find_user(
+    pub(crate) async fn find_account(
         &self,
         account_name: &AccountName,
     ) -> Result<Option<Account>, PostgresError> {
@@ -357,7 +356,7 @@ impl PostgresDB {
     }
 
     #[instrument(skip_all, err(Debug), fields(user_id=?user_id))]
-    pub(crate) async fn find_user_by_id(
+    pub(crate) async fn find_account_by_id(
         &self,
         user_id: &UserId,
     ) -> Result<Option<Account>, PostgresError> {
@@ -378,7 +377,7 @@ impl PostgresDB {
     }
 
     #[instrument(skip_all, err(Debug), fields(user_id=?user_id))]
-    pub(crate) async fn delete_user(&self, user_id: &UserId) -> Result<(), PostgresError> {
+    pub(crate) async fn delete_account(&self, user_id: &UserId) -> Result<(), PostgresError> {
         info!("Deleting user.");
 
         // Delete the entry and

@@ -40,7 +40,7 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for RemoteSignBytes {
             .ok_or(LockKeeperServerError::InvalidAccount)?;
         let encrypted_key: Encrypted<SigningKeyPair> = context
             .db
-            .get_user_secret(user_id, &request.key_id, Default::default())
+            .get_secret(user_id, &request.key_id, Default::default())
             .await
             .map_err(LockKeeperServerError::database)?
             .try_into()?;

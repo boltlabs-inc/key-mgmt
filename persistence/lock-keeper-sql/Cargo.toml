@@ -13,6 +13,7 @@ lock-keeper-key-server = { version = "0.2.0", path = "../../lock-keeper-key-serv
 # Workspace dependencies
 async-trait.workspace = true
 futures.workspace = true
+humantime-serde.workspace = true
 opaque-ke.workspace = true
 thiserror.workspace = true
 time.workspace = true

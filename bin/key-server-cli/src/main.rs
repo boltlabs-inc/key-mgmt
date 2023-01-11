@@ -166,10 +166,10 @@ use std::{
 use config::Config;
 
 use clap::Parser;
-use lk_session_mongodb::{config::Config as SessionConfig, MongodbSessionCache};
 use lock_keeper_key_server::{
     config::Config as ServerConfig, server::start_lock_keeper_server, LockKeeperServerError,
 };
+use lock_keeper_session_cache_sql::{config::Config as SessionConfig, PostgresSessionCache};
 
 use tracing::{info, Level};
 use tracing_appender::{self, non_blocking::WorkerGuard};
@@ -232,10 +232,10 @@ pub async fn main() {
     let session_config = SessionConfig::from_file(config.session_cache).unwrap();
 
     info!(
-        "Creating new MongoDB session cache object: {:?}",
+        "Creating new Postgres session cache object: {:?}",
         session_config
     );
-    let session_cache = MongodbSessionCache::new(session_config).await.unwrap();
+    let session_cache = PostgresSessionCache::connect(session_config).await.unwrap();
     start_lock_keeper_server(server_config, postgres, session_cache)
         .await
         .unwrap();
@@ -317,6 +317,6 @@ fn init_logging(all_logs: &Path, server_logs: &Path) -> Result<Logging, LockKeep
             .with_target("key_server_cli", level)
             .with_target("lock_keeper_key_server", level)
             .with_target("lock_keeper", level)
-            .with_target("lk_session_mongodb", level)
+            .with_target("lock_keeper_session_cache_sql", level)
     }
 }

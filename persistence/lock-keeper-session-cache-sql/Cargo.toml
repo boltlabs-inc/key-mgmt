@@ -1,5 +1,5 @@
 [package]
-name = "lk-session-mongodb"
+name = "lock-keeper-session-cache-sql"
 version.workspace = true
 edition = "2021"
 
@@ -12,6 +12,7 @@ lock-keeper-key-server = { version = "0.2.0", path = "../../lock-keeper-key-serv
 
 # Workspace dependencies
 async-trait.workspace = true
+bincode.workspace = true
 futures.workspace = true
 humantime-serde.workspace = true
 opaque-ke.workspace = true
@@ -27,7 +28,7 @@ uuid.workspace = true
 zeroize.workspace = true
 
 # Other dependencies
-mongodb = "2.3.0"
+sqlx = { version = "0.6", features = [ "runtime-tokio-native-tls" , "postgres", "offline", "time", "uuid"]}
 
 [dev-dependencies]
 generic-array.workspace = true

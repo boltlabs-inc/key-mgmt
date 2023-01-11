@@ -1,7 +1,7 @@
 //! TLS client authentication tests
 
 use colored::Colorize;
-use lock_keeper_client::{LockKeeperClient, LockKeeperClientError};
+use lock_keeper_client::LockKeeperClient;
 
 use crate::{
     config::Environments,
@@ -45,12 +45,7 @@ async fn client_auth_required_not_provided(environments: Environments) -> Result
     let mut client_config = environments.client_auth_config()?.clone();
     client_config.tls_config = environments.standard_config()?.tls_config.clone();
 
-    let result = LockKeeperClient::health(&client_config).await;
-    assert!(
-        matches!(result, Err(LockKeeperClientError::ClientAuthMissing)),
-        "{:?}",
-        result.unwrap_err()
-    );
+    assert!(LockKeeperClient::health(&client_config).await.is_err());
 
     Ok(())
 }

@@ -98,7 +98,7 @@ async fn store_key<DB: DataStore>(
     // Check validity of ciphertext and store in DB
     context
         .db
-        .add_user_secret(secret)
+        .add_secret(secret)
         .await
         .map_err(LockKeeperServerError::database)?;
     info!("Client's cypher text stored successfully.");

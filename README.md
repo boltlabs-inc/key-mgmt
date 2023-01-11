@@ -42,9 +42,6 @@ Refer to the [current design specification](https://github.com/boltlabs-inc/key-
 
 In order to use the `cargo make` tasks on Linux, you need to be able to run Docker without `sudo`. You can find instructions for this [here](https://docs.docker.com/engine/install/linux-postinstall/#manage-docker-as-a-non-root-user).
 
-If you need to run the server outside of Docker, [MongoDB](https://www.mongodb.com/try/download/community) is also required.
-
-
 Once the required dependencies are installed, build the project as follows:
 
 ```bash
@@ -109,8 +106,6 @@ cargo run --bin lock-keeper-tests -- --filter generate --filter retrieve
 ```
 
 ## Running the server locally
-
-To run the server locally, first make sure MongoDB is running. You can run MongoDB [in Docker](https://www.mongodb.com/compatibility/docker) or [locally with a config file](https://www.mongodb.com/docs/manual/reference/configuration-options/).
 
 Then run:
 ```bash

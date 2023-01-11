@@ -1,4 +1,4 @@
-# Local server, no client auth, mongo DB
+# Local server, no client auth, Postgres
 server = "dev/config/local/Server.toml"
 database = "dev/config/local/Postgres.toml"
 session_cache = "dev/config/local/SessionCache.toml"

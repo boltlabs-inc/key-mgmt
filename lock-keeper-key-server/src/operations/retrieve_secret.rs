@@ -43,7 +43,7 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for RetrieveSecret {
         // Find secret based on key_id
         let stored_secret = context
             .db
-            .get_user_secret(user_id, &request.key_id, secret_filter)
+            .get_secret(user_id, &request.key_id, secret_filter)
             .await
             .map_err(LockKeeperServerError::database)?;
 

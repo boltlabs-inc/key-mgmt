@@ -100,18 +100,24 @@ async fn run_tests(
 async fn run_integration_tests(
     environments: &Environments,
 ) -> Result<Vec<TestResult>, LockKeeperTestError> {
+    let client_auth_results = test_suites::client_auth::run_tests(environments).await?;
     let config_file_results = test_suites::config_files::run_tests(&environments.filters).await?;
     let database_results = test_suites::database::run_tests(&environments.filters).await?;
-    let client_auth_results = test_suites::client_auth::run_tests(environments).await?;
+    let session_cache_results =
+        test_suites::session_cache::run_tests(&environments.filters).await?;
 
+    println!(
+        "client auth tests: {}",
+        report_test_results(&client_auth_results)
+    );
     println!(
         "config file tests: {}",
         report_test_results(&config_file_results)
     );
     println!("database tests: {}", report_test_results(&database_results));
     println!(
-        "client auth tests: {}",
-        report_test_results(&client_auth_results)
+        "session cache tests: {}",
+        report_test_results(&session_cache_results)
     );
 
     Ok([config_file_results, database_results, client_auth_results].concat())

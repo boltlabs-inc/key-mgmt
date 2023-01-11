@@ -65,7 +65,7 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for RemoteGenerateSigni
         // Store key in database
         context
             .db
-            .add_user_secret(secret)
+            .add_secret(secret)
             .await
             .map_err(LockKeeperServerError::database)?;
 
