@@ -1,25 +1,27 @@
-use crate::error::{
-    ConfigError,
-    ConfigError::{MissingPassword, MissingUsername},
-};
+use crate::error::ConfigError;
 use serde::{Deserialize, Serialize};
-use std::{env, fs::read_to_string, path::Path, str::FromStr, time::Duration};
-use tracing::log::warn;
+use std::{
+    fmt::{Debug, Formatter},
+    fs::read_to_string,
+    path::Path,
+    str::FromStr,
+    time::Duration,
+};
 
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct ConfigFile {
     /// Optional, convenience field for specifying the username. Should only be
     /// used for development!
-    username: Option<String>,
+    pub username: Option<String>,
     /// Optional, convenience field for specifying the password. Should only be
     /// used for development!
-    password: Option<String>,
-    address: String,
-    db_name: String,
-    max_connections: u32,
+    pub password: Option<String>,
+    pub address: String,
+    pub db_name: String,
+    pub max_connections: u32,
     #[serde(with = "humantime_serde")]
-    connection_timeout: Duration,
+    pub connection_timeout: Duration,
 }
 
 impl ConfigFile {
@@ -39,7 +41,6 @@ impl FromStr for ConfigFile {
     }
 }
 
-#[derive(Debug)]
 pub struct Config {
     pub username: String,
     pub password: String,
@@ -51,9 +52,22 @@ pub struct Config {
     pub connection_timeout: Duration,
 }
 
+impl Debug for Config {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Config")
+            .field("username", &"REDACTED")
+            .field("password", &"REDACTED")
+            .field("address", &self.address)
+            .field("db_name", &self.db_name)
+            .field("max_connections", &self.max_connections)
+            .field("connection_timeout", &self.connection_timeout)
+            .finish()
+    }
+}
+
 impl Config {
-    const DB_USERNAME: &'static str = "DB_USERNAME";
-    const DB_PASSWORD: &'static str = "DB_PASSWORD";
+    pub const DB_USERNAME: &'static str = "DB_USERNAME";
+    pub const DB_PASSWORD: &'static str = "DB_PASSWORD";
 
     /// Generate full URI for our database based on the config in the form of:
     /// postgres://username:password@address/db_name.
@@ -67,28 +81,11 @@ impl Config {
 
 impl TryFrom<ConfigFile> for Config {
     type Error = ConfigError;
-    /// Optional, convenience field for specifying the username. Should only be
-    /// used for development!
+
     fn try_from(config: ConfigFile) -> Result<Self, Self::Error> {
-        let username = match config.username {
-            None => env::var(Config::DB_USERNAME).map_err(MissingUsername)?,
-            Some(username) => {
-                warn!("Username found via config file. Ensure you are not running in production.");
-                username
-            }
-        };
-
-        let password = match config.password {
-            None => env::var(Config::DB_PASSWORD).map_err(MissingPassword)?,
-            Some(password) => {
-                warn!("Password found via config file. Ensure you are not running in production.");
-                password
-            }
-        };
-
         let config = Config {
-            username,
-            password,
+            username: config.username.ok_or(ConfigError::MissingUsername)?,
+            password: config.password.ok_or(ConfigError::MissingPassword)?,
             address: config.address,
             db_name: config.db_name,
             max_connections: config.max_connections,
@@ -132,25 +129,7 @@ mod test {
 
     #[test]
     fn correct_uri() {
-        let config: Config = TryFrom::try_from(test_config_file()).unwrap();
-        assert_eq!(
-            config.uri(),
-            "postgres://test_user:test_password@localhost/test_db"
-        );
-    }
-
-    #[test]
-    fn correct_uri_from_env_vars() {
-        let config_file = ConfigFile {
-            username: None,
-            password: None,
-            ..test_config_file()
-        };
-
-        env::set_var(Config::DB_USERNAME, "test_user");
-        env::set_var(Config::DB_PASSWORD, "test_password");
-
-        let config: Config = TryFrom::try_from(config_file).unwrap();
+        let config: Config = test_config_file().try_into().unwrap();
         assert_eq!(
             config.uri(),
             "postgres://test_user:test_password@localhost/test_db"

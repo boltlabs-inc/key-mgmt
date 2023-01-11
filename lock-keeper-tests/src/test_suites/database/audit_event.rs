@@ -5,7 +5,7 @@ use lock_keeper::{
     crypto::KeyId,
     types::{
         audit_event::{AuditEvent, AuditEventOptions, EventStatus, EventType},
-        database::user::{AccountName, UserId},
+        database::user::AccountName,
         operations::ClientAction,
     },
 };
@@ -43,17 +43,26 @@ pub async fn run_tests(filters: &TestFilters) -> Result<Vec<TestResult>> {
 
 const NUM_LOGS: u32 = 10;
 const NUM_SAMPLE: usize = NUM_LOGS as usize / 2;
+const HOW_MANY_SECRETS: usize = 50;
 
 /// Tests that storing an event returns the same event back out.
 async fn store_audit_event_identity(db: TestDatabase) -> Result<()> {
     // Create and store a single audit event.
-    let mut rng = StdRng::from_entropy();
+
     let action_list = ClientAction::iter().collect::<Vec<_>>();
     let (user_id, account_name) = db.create_test_user().await?;
+    let key_ids = db
+        .create_random_arbitrary_secrets(HOW_MANY_SECRETS, &user_id)
+        .await?;
 
-    let (key_id, request_id, action) =
-        create_random_audit_event(&mut rng, &action_list, &user_id, account_name.clone(), &db)
-            .await?;
+    let (key_id, request_id, action) = create_random_audit_event(
+        &mut StdRng::from_entropy(),
+        &action_list,
+        &key_ids,
+        account_name.clone(),
+        &db,
+    )
+    .await?;
 
     let options = AuditEventOptions {
         request_id: Some(request_id),
@@ -65,7 +74,7 @@ async fn store_audit_event_identity(db: TestDatabase) -> Result<()> {
 
     assert_eq!(events.len(), 1, "Multiple events found.");
     let stored_event = events.pop().unwrap();
-    assert_eq!(action, stored_event.action);
+    assert_eq!(action, stored_event.client_action);
     assert_eq!(account_name, stored_event.account_name);
     // Our create_random_event function always uses EventStatus::Started.
     assert_eq!(EventStatus::Started, stored_event.status);
@@ -81,9 +90,11 @@ async fn store_audit_event_identity(db: TestDatabase) -> Result<()> {
 /// events.
 async fn event_type_filter_works(db: TestDatabase) -> Result<()> {
     let (user_id, account_name) = db.create_test_user().await?;
-
+    let key_ids = db
+        .create_random_arbitrary_secrets(HOW_MANY_SECRETS, &user_id)
+        .await?;
     // Create random audit events
-    let _ = create_random_audit_events(&account_name, &user_id, &db).await?;
+    let _ = create_random_audit_events(&account_name, &key_ids, &db).await?;
 
     // Retrieve all 3 types of audit events
     let key_only_audit = db
@@ -116,8 +127,10 @@ async fn event_type_filter_works(db: TestDatabase) -> Result<()> {
 
 async fn key_id_filter_works(db: TestDatabase) -> Result<()> {
     let (user_id, account_name) = db.create_test_user().await?;
-
-    let (key_ids, _) = create_random_audit_events(&account_name, &user_id, &db).await?;
+    let key_ids = db
+        .create_random_arbitrary_secrets(HOW_MANY_SECRETS, &user_id)
+        .await?;
+    let (key_ids, _) = create_random_audit_events(&account_name, &key_ids, &db).await?;
 
     let sample = {
         let mut rng = rand::thread_rng();
@@ -145,8 +158,10 @@ async fn after_date_filter_works(db: TestDatabase) -> Result<()> {
     // Use timestamp as comparison date
     let after_date = OffsetDateTime::now_utc();
 
-    // Create random audit events
-    let _ = create_random_audit_events(&account_name, &user_id, &db).await?;
+    let key_ids = db
+        .create_random_arbitrary_secrets(HOW_MANY_SECRETS, &user_id)
+        .await?;
+    let _ = create_random_audit_events(&account_name, &key_ids, &db).await?;
 
     // Retrieve after the comparison date
     let options = AuditEventOptions {
@@ -170,8 +185,10 @@ async fn before_date_filter_works(db: TestDatabase) -> Result<()> {
     // Use timestamp as comparison date
     let before_date = OffsetDateTime::now_utc();
 
-    // Create random audit events
-    let _ = create_random_audit_events(&account_name, &user_id, &db).await?;
+    let key_ids = db
+        .create_random_arbitrary_secrets(HOW_MANY_SECRETS, &user_id)
+        .await?;
+    let _ = create_random_audit_events(&account_name, &key_ids, &db).await?;
 
     // Retrieve before the comparison date
     let options = AuditEventOptions {
@@ -190,8 +207,10 @@ async fn before_date_filter_works(db: TestDatabase) -> Result<()> {
 
 async fn request_id_filter_works(db: TestDatabase) -> Result<()> {
     let (user_id, account_name) = db.create_test_user().await?;
-
-    let (_, uudis) = create_random_audit_events(&account_name, &user_id, &db).await?;
+    let key_ids = db
+        .create_random_arbitrary_secrets(HOW_MANY_SECRETS, &user_id)
+        .await?;
+    let (_, uudis) = create_random_audit_events(&account_name, &key_ids, &db).await?;
 
     let sample: Uuid = {
         let mut rng = rand::thread_rng();
@@ -217,7 +236,7 @@ async fn request_id_filter_works(db: TestDatabase) -> Result<()> {
 /// the [KeyId]s and [Uuid]s (request IDs) assigned to these audit events.
 async fn create_random_audit_events(
     account_name: &AccountName,
-    user_id: &UserId,
+    key_ids: &Vec<KeyId>,
     db: &TestDatabase,
 ) -> Result<(Vec<KeyId>, Vec<Uuid>)> {
     let mut rng = StdRng::from_entropy();
@@ -228,7 +247,7 @@ async fn create_random_audit_events(
 
     for _ in 0..NUM_LOGS {
         let (key_id, request_id, _) =
-            create_random_audit_event(&mut rng, &action_list, user_id, account_name.clone(), db)
+            create_random_audit_event(&mut rng, &action_list, key_ids, account_name.clone(), db)
                 .await?;
 
         // Key IDs should always exist for these randomly generated audit events.
@@ -238,15 +257,19 @@ async fn create_random_audit_events(
     Ok((keys, uuids))
 }
 
-/// Create a single random audit event and store it in our DB.
+/// Create a single random audit event and store it in our DB. This function
+/// samples from the passed vectors of client actions and key IDs.
+///
+/// The key IDs must already exist in database to make foreign key constraint
+/// happy. Returns the chosen (key_ids, request_ids, action) 3-tuples.
 async fn create_random_audit_event(
     rng: &mut StdRng,
     action_list: &Vec<ClientAction>,
-    user_id: &UserId,
+    key_ids: &Vec<KeyId>,
     account_name: AccountName,
     db: &TestDatabase,
 ) -> Result<(KeyId, Uuid, ClientAction)> {
-    let key_id = KeyId::generate(rng, user_id)?;
+    let key_id = key_ids.choose(rng).unwrap();
     let action = action_list.choose(rng).unwrap();
     let request_id = Uuid::new_v4();
 
@@ -259,7 +282,7 @@ async fn create_random_audit_event(
     )
     .await?;
 
-    Ok((key_id, request_id, *action))
+    Ok((key_id.clone(), request_id, *action))
 }
 
 fn compare_actions(audit_events: Vec<AuditEvent>, event_type: EventType) {

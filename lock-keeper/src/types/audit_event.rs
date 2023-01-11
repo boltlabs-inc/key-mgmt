@@ -35,7 +35,7 @@ pub struct AuditEvent {
     /// We use [OffsetDateTime] as this is compatible with SQLx. Easily
     /// convertible to a postgres' TIMESTAMPTZ type.
     pub timestamp: OffsetDateTime,
-    pub action: ClientAction,
+    pub client_action: ClientAction,
     pub status: EventStatus,
 }
 
@@ -45,7 +45,7 @@ impl AuditEvent {
     }
 
     pub fn action(&self) -> ClientAction {
-        self.action
+        self.client_action
     }
 
     pub fn key_id(&self) -> Option<&KeyId> {

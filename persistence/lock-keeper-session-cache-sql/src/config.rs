@@ -1,10 +1,8 @@
 //! Config for session cache.
 
-use serde::{Deserialize, Serialize};
-use std::{env, path::Path, str::FromStr, time::Duration};
-use tracing::log::warn;
-
 use crate::{error::ConfigError, Error};
+use serde::{Deserialize, Serialize};
+use std::{path::Path, str::FromStr, time::Duration};
 
 #[derive(Debug)]
 pub struct Config {
@@ -20,14 +18,8 @@ pub struct Config {
 }
 
 impl Config {
-    const SESSION_CACHE_USERNAME: &'static str = "SESSION_CACHE_USERNAME";
-    const SESSION_CACHE_PASSWORD: &'static str = "SESSION_CACHE_PASSWORD";
-
-    pub fn from_file(config_path: impl AsRef<Path>) -> Result<Self, Error> {
-        let config_string = std::fs::read_to_string(&config_path)?;
-        let config_file = ConfigFile::from_str(&config_string)?;
-        Ok(config_file.try_into()?)
-    }
+    pub const SESSION_CACHE_USERNAME: &'static str = "SESSION_CACHE_USERNAME";
+    pub const SESSION_CACHE_PASSWORD: &'static str = "SESSION_CACHE_PASSWORD";
 
     /// Generate full URI for our database based on the config in the form of:
     /// postgres://username:password@address/db_name.
@@ -39,34 +31,22 @@ impl Config {
     }
 }
 
+impl FromStr for Config {
+    type Err = Error;
+
+    fn from_str(config_string: &str) -> Result<Self, Self::Err> {
+        let config_file = ConfigFile::from_str(config_string)?;
+        Ok(config_file.try_into()?)
+    }
+}
+
 impl TryFrom<ConfigFile> for Config {
     type Error = ConfigError;
-    /// Optional, convenience field for specifying the username. Should only be
-    /// used for development!
+
     fn try_from(config: ConfigFile) -> Result<Self, Self::Error> {
-        let username = match config.username {
-            None => {
-                env::var(Config::SESSION_CACHE_USERNAME).map_err(ConfigError::MissingUsername)?
-            }
-            Some(username) => {
-                warn!("Username found via config file. Ensure you are not running in production.");
-                username
-            }
-        };
-
-        let password = match config.password {
-            None => {
-                env::var(Config::SESSION_CACHE_PASSWORD).map_err(ConfigError::MissingPassword)?
-            }
-            Some(password) => {
-                warn!("Password found via config file. Ensure you are not running in production.");
-                password
-            }
-        };
-
         let config = Config {
-            username,
-            password,
+            username: config.username.ok_or(ConfigError::MissingUsername)?,
+            password: config.password.ok_or(ConfigError::MissingPassword)?,
             address: config.address,
             db_name: config.db_name,
             max_connections: config.max_connections,
@@ -78,28 +58,20 @@ impl TryFrom<ConfigFile> for Config {
     }
 }
 
-impl FromStr for Config {
-    type Err = Error;
-
-    fn from_str(config_string: &str) -> Result<Self, Self::Err> {
-        Ok(ConfigFile::from_str(config_string)?.try_into()?)
-    }
-}
-
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct ConfigFile {
     /// Optional, convenience field for specifying the username. Should only be
     /// used for development!
-    username: Option<String>,
+    pub username: Option<String>,
     /// Optional, convenience field for specifying the password. Should only be
     /// used for development!
-    password: Option<String>,
-    address: String,
-    db_name: String,
-    max_connections: u32,
+    pub password: Option<String>,
+    pub address: String,
+    pub db_name: String,
+    pub max_connections: u32,
     #[serde(with = "humantime_serde")]
-    connection_timeout: Duration,
+    pub connection_timeout: Duration,
     #[serde(with = "humantime_serde")]
     pub session_expiration: Duration,
 }

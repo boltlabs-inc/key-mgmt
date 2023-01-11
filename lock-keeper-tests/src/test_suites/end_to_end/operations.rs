@@ -70,6 +70,7 @@ pub(crate) async fn check_audit_events(
         LockKeeperClient::authenticated_client(&state.account_name, &state.password, &state.config)
             .await
             .result?;
+
     // Get audit event log for the specific request
     let options = AuditEventOptions {
         request_id: Some(request_id),
@@ -83,7 +84,7 @@ pub(crate) async fn check_audit_events(
     // Get all events that match given expected values.
     let matching_events = audit_event_log
         .into_iter()
-        .filter(|event| event.status == expected_status && event.action == expected_action);
+        .filter(|event| event.status == expected_status && event.client_action == expected_action);
 
     assert_eq!(
         matching_events.count(),

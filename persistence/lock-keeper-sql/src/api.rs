@@ -109,14 +109,16 @@ impl DataStore for PostgresDB {
 
 impl Debug for PostgresDB {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "PostgresDB {{ url: {}}}", self.config.uri())
+        f.debug_struct("PostgresDB")
+            .field("uri", &self.config.uri())
+            .finish()
     }
 }
 
 impl PostgresDB {
-    #[instrument(skip_all, err(Debug))]
+    #[instrument(err(Debug))]
     pub async fn connect(config: Config) -> Result<Self, PostgresError> {
-        info!("Connecting to database {:?}", config);
+        info!("Connecting to database");
 
         // Create a connection pool based on our config.
         let pool = PgPoolOptions::new()
@@ -135,7 +137,7 @@ impl PostgresDB {
         &self.config.db_name
     }
 
-    #[instrument(err(Debug))]
+    #[instrument(skip(self), err(Debug))]
     pub(crate) async fn create_audit_event(
         &self,
         request_id: Uuid,
@@ -144,18 +146,18 @@ impl PostgresDB {
         action: ClientAction,
         status: EventStatus,
     ) -> Result<(), PostgresError> {
-        debug!("Storing audit event.");
+        debug!("Storing new audit event.");
 
         let timestamp = OffsetDateTime::now_utc();
         let key_id = key_id.as_ref().map(|k| k.as_bytes());
 
         let _ = sqlx::query!(
-            "INSERT INTO AuditEvents (account_name, key_id, request_id, action, event_status, timestamp) \
+            "INSERT INTO AuditEvents (account_name, key_id, request_id, client_action_id, event_status, timestamp) \
              VALUES ($1, $2, $3, $4, $5, $6)",
             account_name.as_ref(),
             key_id,
             request_id,
-            action.to_string(),
+            action as i64,
             status.to_string(),
             timestamp,
         )
@@ -166,7 +168,7 @@ impl PostgresDB {
     }
 
     /// Create a dynamic query to fetch audit events specified by the caller.
-    #[instrument(skip_all, err(Debug), fields(account_name=?account_name, event_type=?event_type, options=?options))]
+    #[instrument(skip(self), err(Debug))]
     async fn find_audit_events(
         &self,
         account_name: &AccountName,
@@ -176,7 +178,7 @@ impl PostgresDB {
         debug!("Finding audit event(s)");
 
         let mut query = QueryBuilder::new(
-            "SELECT audit_event_id, key_id, request_id, account_name, action, event_status, timestamp \
+            "SELECT audit_event_id, key_id, request_id, account_name, client_action_id, event_status, timestamp \
              FROM AuditEvents \
              WHERE ",
         );
@@ -213,12 +215,19 @@ impl PostgresDB {
         }
 
         // Add filtering based on actions.
-        let _ = query.push("action IN ");
-        // Turn the actions into strings that postgres understands.
+        let _ = query.push("client_action_id IN ");
+        // Turn the actions into their integer value for faster searching.
         let actions = event_type.client_actions();
-        let actions = actions.iter().map(ToString::to_string);
+        let actions = actions.iter().map(|a| *a as i64);
 
         append_value_list(&mut query, actions)?;
+
+        // Ensure account name matches, otherwise a client could fetch anyone's audit
+        // events if they guess the request_id.
+        let _ = query
+            .push("AND account_name=")
+            .push_bind(account_name.as_ref());
+
         debug!("Dynamically generated query: {}", query.sql());
 
         let matches: Vec<AuditEventDB> = query
@@ -236,18 +245,20 @@ impl PostgresDB {
         logging::record_field("user_id", &secret.user_id);
         logging::record_field("key_id", &secret.key_id);
         logging::record_field("secret_type", &secret.secret_type);
-        info!("Adding user secret.");
+        debug!("Adding user secret.");
 
         let secret_db: SecretDB = SecretDB::from(secret);
 
         let _ = sqlx::query!(
-            "INSERT INTO Secrets (key_id, user_id, secret, secret_type, retrieved) \
-             VALUES ($1, $2, $3, $4, $5)",
+            "INSERT INTO Secrets (key_id, user_id, secret, secret_type_id, retrieved) \
+             SELECT $1, $2, $3, SecretTypes.secret_type_id, $4 \
+             FROM SecretTypes \
+             WHERE SecretTypes.secret_type=$5",
             secret_db.key_id,
             secret_db.user_id,
             secret_db.secret,
-            secret_db.secret_type,
             secret_db.retrieved,
+            secret_db.secret_type,
         )
         .execute(&self.connection_pool)
         .await?;
@@ -257,26 +268,30 @@ impl PostgresDB {
 
     /// This function verifies the user_id and key type matches. Otherwise will
     /// return a IncorrectAssociatedKeyData error.
-    #[instrument(skip_all, err(Debug), fields(user_id=?user_id, key_id=?key_id, filter=?filter))]
+    #[instrument(skip(self), err(Debug))]
     pub(crate) async fn get_secret(
         &self,
         user_id: &UserId,
         key_id: &KeyId,
         filter: SecretFilter,
     ) -> Result<StoredSecret, PostgresError> {
-        info!("Fetching user secret.");
+        debug!("Fetching user secret.");
 
-        // We use the LIKE operator to support whether filter.secret_type is present or
-        // not. In case it is not, we use a wildcard match for the secret_type
-        // column.
+        // Join tables to map secret_type to the corresponding secret_type_id.
+        // Update the retrieved value on Secrets.retrieved
         let secret_db: Option<SecretDB> = sqlx::query_as!(
             SecretDB,
             "UPDATE Secrets \
-             SET retrieved=TRUE \
-             WHERE key_id=$1 AND user_id=$2 AND secret_type LIKE $3 \
-             RETURNING key_id, user_id, secret_type, secret, retrieved",
+                SET retrieved=TRUE \
+             FROM Secrets S LEFT JOIN SecretTypes ST \
+                ON S.secret_type_id=ST.secret_type_id \
+             WHERE S.key_id=$1 AND S.user_id=$2 AND ST.secret_type LIKE $3 \
+             RETURNING S.key_id, S.user_id, ST.secret_type, S.secret, S.retrieved",
             key_id.as_bytes(),
             user_id.as_ref(),
+            // We use the LIKE operator to support whether filter.secret_type is present or
+            // not. In case it is not, we use a wildcard match for the secret_type
+            // column.
             filter.secret_type.unwrap_or_else(|| "%".to_string())
         )
         .fetch_optional(&self.connection_pool)
@@ -307,7 +322,7 @@ impl PostgresDB {
         }
     }
 
-    #[instrument(skip_all, err(Debug), fields(user_id=?user_id, account_name=?account_name))]
+    #[instrument(skip(self, server_registration), err(Debug))]
     pub(crate) async fn create_account(
         &self,
         user_id: &UserId,
@@ -335,12 +350,12 @@ impl PostgresDB {
         })
     }
 
-    #[instrument(skip_all, err(Debug), fields(account_name=?account_name))]
+    #[instrument(skip(self), err(Debug))]
     pub(crate) async fn find_account(
         &self,
         account_name: &AccountName,
     ) -> Result<Option<Account>, PostgresError> {
-        info!("Searching for user.");
+        debug!("Searching for user.");
         let user_db = sqlx::query_as!(
             AccountDB,
             "SELECT account_id, user_id, account_name, storage_key, server_registration \
@@ -355,12 +370,12 @@ impl PostgresDB {
         Ok(user)
     }
 
-    #[instrument(skip_all, err(Debug), fields(user_id=?user_id))]
+    #[instrument(skip(self), err(Debug))]
     pub(crate) async fn find_account_by_id(
         &self,
         user_id: &UserId,
     ) -> Result<Option<Account>, PostgresError> {
-        info!("Searching for user by ID");
+        debug!("Searching for user by ID");
 
         let user_db: Option<AccountDB> = sqlx::query_as!(
             AccountDB,
@@ -376,7 +391,7 @@ impl PostgresDB {
         Ok(user)
     }
 
-    #[instrument(skip_all, err(Debug), fields(user_id=?user_id))]
+    #[instrument(skip(self), err(Debug))]
     pub(crate) async fn delete_account(&self, user_id: &UserId) -> Result<(), PostgresError> {
         info!("Deleting user.");
 
@@ -396,13 +411,13 @@ impl PostgresDB {
         }
     }
 
-    #[instrument(skip_all, err(Debug), fields(user_id=?user_id))]
+    #[instrument(skip(self, storage_key), err(Debug))]
     pub(crate) async fn set_storage_key(
         &self,
         user_id: &UserId,
         storage_key: Encrypted<StorageKey>,
     ) -> Result<(), PostgresError> {
-        info!("Setting storage key for");
+        debug!("Setting storage key for");
 
         let storage_key = bincode::serialize(&storage_key)?;
 

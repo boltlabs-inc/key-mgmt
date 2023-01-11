@@ -1,4 +1,4 @@
-use std::{array::TryFromSliceError, env::VarError, path::PathBuf};
+use std::{array::TryFromSliceError, path::PathBuf};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -29,8 +29,8 @@ pub enum ConfigError {
     ConfigFileReadFailure(std::io::Error, PathBuf),
     #[error("Fail to read TOML file contents.")]
     TomlReadFailure(#[from] toml::de::Error),
-    #[error("Failed to get database username: {0}")]
-    MissingUsername(VarError),
-    #[error("Failed to get database password: {0}")]
-    MissingPassword(VarError),
+    #[error("Missing database username.")]
+    MissingUsername,
+    #[error("Missing database password.")]
+    MissingPassword,
 }

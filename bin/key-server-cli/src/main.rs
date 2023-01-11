@@ -169,18 +169,37 @@ use clap::Parser;
 use lock_keeper_key_server::{
     config::Config as ServerConfig, server::start_lock_keeper_server, LockKeeperServerError,
 };
-use lock_keeper_session_cache_sql::{config::Config as SessionConfig, PostgresSessionCache};
+use lock_keeper_postgres::{
+    Config as PostgresConfig, ConfigFile as DatabaseConfigFile, PostgresDB,
+};
+use lock_keeper_session_cache_sql::{
+    config::{Config as SessionConfig, ConfigFile as SessionConfigFile},
+    PostgresSessionCache,
+};
 
-use tracing::{info, Level};
+use tracing::{info, warn, Level};
 use tracing_appender::{self, non_blocking::WorkerGuard};
 
-use lock_keeper_postgres::{ConfigFile as DatabaseConfigFile, PostgresDB};
 use tracing_subscriber::{filter::Targets, prelude::*};
 
 #[derive(Debug, Parser)]
 pub struct Cli {
     /// Path to the server config file
     pub config: PathBuf,
+
+    /// Database username.
+    #[clap(long, env=PostgresConfig::DB_USERNAME)]
+    pub database_username: Option<String>,
+    /// Database password.
+    #[clap(long, env=PostgresConfig::DB_PASSWORD)]
+    pub database_password: Option<String>,
+
+    /// Session cache username.
+    #[clap(long, env=SessionConfig::SESSION_CACHE_USERNAME)]
+    pub session_cache_username: Option<String>,
+    /// Session cache password.
+    #[clap(long, env=SessionConfig::SESSION_CACHE_PASSWORD)]
+    pub session_cache_password: Option<String>,
     /// Base64 encoded private key data
     #[clap(long)]
     pub private_key: Option<String>,
@@ -223,22 +242,84 @@ pub async fn main() {
     info!("Sever started!");
     info!("Logging config settings: {:?}", server_config.logging);
 
-    let db_config_file = DatabaseConfigFile::from_file(config.database).unwrap();
-    let database_config = TryFrom::try_from(db_config_file).unwrap();
-
-    info!("Database config Settings: {:?}", database_config);
-
-    let postgres = PostgresDB::connect(database_config).await.unwrap();
-    let session_config = SessionConfig::from_file(config.session_cache).unwrap();
-
-    info!(
-        "Creating new Postgres session cache object: {:?}",
-        session_config
+    let database_config = get_database_config(
+        cli.database_username,
+        cli.database_password,
+        &config.database,
     );
+    info!("Database config settings: {:?}", database_config);
+    let postgres = PostgresDB::connect(database_config).await.unwrap();
+
+    let session_config = get_session_cache_config(
+        cli.session_cache_username,
+        cli.session_cache_password,
+        &config.session_cache,
+    );
+    info!("Session cache config settings: {:?}", session_config);
     let session_cache = PostgresSessionCache::connect(session_config).await.unwrap();
     start_lock_keeper_server(server_config, postgres, session_cache)
         .await
         .unwrap();
+}
+
+fn get_database_config(
+    cli_username: Option<String>,
+    cli_password: Option<String>,
+    path: &Path,
+) -> PostgresConfig {
+    // Read config file for database settings.
+    let mut db_config_file = DatabaseConfigFile::from_file(path).unwrap();
+
+    if db_config_file.username.is_some() {
+        warn!(
+            "Database username defined in config file. Ensure you are not running in production!"
+        );
+    }
+    if db_config_file.password.is_some() {
+        warn!(
+            "Database password defined in config file. Ensure you are not running in production!"
+        );
+    }
+
+    // Command line or environment variable takes precedence over config value.
+    if let username @ Some(_) = cli_username {
+        db_config_file.username = username;
+    }
+    if let password @ Some(_) = cli_password {
+        db_config_file.password = password;
+    }
+
+    db_config_file.try_into().unwrap()
+}
+
+fn get_session_cache_config(
+    cli_username: Option<String>,
+    cli_password: Option<String>,
+    path: &Path,
+) -> SessionConfig {
+    // Read config file for database settings.
+    let mut session_config_file = SessionConfigFile::from_file(path).unwrap();
+
+    if session_config_file.username.is_some() {
+        warn!(
+            "Session cache username defined in config file. Ensure you are not running in production!"
+        );
+    }
+    if session_config_file.password.is_some() {
+        warn!(
+            "Session cache password defined in config file. Ensure you are not running in production!"
+        );
+    }
+
+    // Command line or environment variable takes precedence over config value.
+    if let username @ Some(_) = cli_username {
+        session_config_file.username = username;
+    }
+    if let password @ Some(_) = cli_password {
+        session_config_file.password = password;
+    }
+
+    session_config_file.try_into().unwrap()
 }
 
 /// Object representing our logging. Should be kept around as our logging
