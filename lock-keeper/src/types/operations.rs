@@ -25,26 +25,61 @@ use uuid::Uuid;
 use super::Message;
 
 /// Options for actions the Lock Keeper client can take.
+/// We explicitly assign discriminant values to this type, as it will be stored
+/// in the our database.
 #[derive(
     Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq, Display, EnumIter, EnumString, Hash,
 )]
 pub enum ClientAction {
-    Authenticate,
-    CreateStorageKey,
-    ExportSecret,
-    ExportSigningKey,
-    GenerateSecret,
-    GetUserId,
-    ImportSigningKey,
-    Logout,
-    Register,
-    RemoteGenerateSigningKey,
-    RemoteSignBytes,
-    RetrieveSecret,
-    RetrieveAuditEvents,
-    RetrieveSigningKey,
-    // System only.
-    RetrieveStorageKey,
+    Authenticate = 0,
+    CreateStorageKey = 1,
+    ExportSecret = 2,
+    ExportSigningKey = 3,
+    GenerateSecret = 4,
+    GetUserId = 5,
+    ImportSigningKey = 6,
+    Logout = 7,
+    Register = 8,
+    RemoteGenerateSigningKey = 9,
+    RemoteSignBytes = 10,
+    RetrieveSecret = 11,
+    RetrieveAuditEvents = 12,
+    RetrieveSigningKey = 13,
+    RetrieveStorageKey = 14,
+}
+
+impl TryFrom<i64> for ClientAction {
+    type Error = i64;
+
+    fn try_from(v: i64) -> Result<Self, Self::Error> {
+        match v {
+            x if x == ClientAction::Authenticate as i64 => Ok(ClientAction::Authenticate),
+            x if x == ClientAction::CreateStorageKey as i64 => Ok(ClientAction::CreateStorageKey),
+            x if x == ClientAction::ExportSecret as i64 => Ok(ClientAction::ExportSecret),
+            x if x == ClientAction::ExportSigningKey as i64 => Ok(ClientAction::ExportSigningKey),
+            x if x == ClientAction::GenerateSecret as i64 => Ok(ClientAction::GenerateSecret),
+            x if x == ClientAction::GetUserId as i64 => Ok(ClientAction::GetUserId),
+            x if x == ClientAction::ImportSigningKey as i64 => Ok(ClientAction::ImportSigningKey),
+            x if x == ClientAction::Logout as i64 => Ok(ClientAction::Logout),
+            x if x == ClientAction::Register as i64 => Ok(ClientAction::Register),
+            x if x == ClientAction::RemoteGenerateSigningKey as i64 => {
+                Ok(ClientAction::RemoteGenerateSigningKey)
+            }
+            x if x == ClientAction::RemoteSignBytes as i64 => Ok(ClientAction::RemoteSignBytes),
+            x if x == ClientAction::RetrieveSecret as i64 => Ok(ClientAction::RetrieveSecret),
+            x if x == ClientAction::RetrieveAuditEvents as i64 => {
+                Ok(ClientAction::RetrieveAuditEvents)
+            }
+            x if x == ClientAction::RetrieveSigningKey as i64 => {
+                Ok(ClientAction::RetrieveSigningKey)
+            }
+            x if x == ClientAction::RetrieveStorageKey as i64 => {
+                Ok(ClientAction::RetrieveStorageKey)
+            }
+            // Return value of offending integer.
+            _ => Err(v),
+        }
+    }
 }
 
 /// Converts a serializable Rust type to and from the RPC [`Message`] type.
@@ -133,5 +168,19 @@ impl TryFrom<&MetadataValue<Ascii>> for RequestMetadata {
         let bytes = value.as_bytes();
         let metadata = serde_json::from_slice(bytes)?;
         Ok(metadata)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::types::operations::ClientAction;
+    use strum::IntoEnumIterator;
+
+    /// Ensure our conversion function covers all cases.
+    #[test]
+    fn client_action_conversion_exhaustive() {
+        for action in ClientAction::iter() {
+            assert_eq!(action, ClientAction::try_from(action as i64).unwrap());
+        }
     }
 }

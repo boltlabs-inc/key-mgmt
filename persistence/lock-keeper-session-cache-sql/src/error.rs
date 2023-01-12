@@ -1,4 +1,4 @@
-use std::{array::TryFromSliceError, env::VarError, path::PathBuf};
+use std::{array::TryFromSliceError, path::PathBuf};
 
 use lock_keeper_key_server::server::session_cache::SessionCacheError;
 use thiserror::Error;
@@ -41,8 +41,8 @@ pub enum ConfigError {
     ConfigFileReadFailure(std::io::Error, PathBuf),
     #[error("Fail to read TOML file contents.")]
     TomlReadFailure(#[from] toml::de::Error),
-    #[error("Failed to get database username: {0}")]
-    MissingUsername(VarError),
-    #[error("Failed to get database password: {0}")]
-    MissingPassword(VarError),
+    #[error("Missing session cache username.")]
+    MissingUsername,
+    #[error("Missing session cache password.")]
+    MissingPassword,
 }

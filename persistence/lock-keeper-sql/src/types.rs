@@ -48,7 +48,7 @@ pub(crate) struct AuditEventDB {
     pub(crate) account_name: String,
     pub(crate) key_id: Option<Vec<u8>>,
     pub(crate) request_id: Uuid,
-    pub(crate) action: String,
+    pub(crate) client_action_id: i64,
     pub(crate) event_status: String,
     pub(crate) timestamp: OffsetDateTime,
 }
@@ -103,8 +103,11 @@ impl TryFrom<AuditEventDB> for AuditEvent {
     type Error = PostgresError;
 
     fn try_from(event: AuditEventDB) -> Result<Self, Self::Error> {
-        let action = ClientAction::from_str(&event.action).map_err(|e| {
-            PostgresError::AuditEventConversion(format!("ClientAction conversion failed {}", e))
+        let client_action = ClientAction::try_from(event.client_action_id).map_err(|i| {
+            PostgresError::AuditEventConversion(format!(
+                "ClientAction conversion failed. Unknown integer {}",
+                i
+            ))
         })?;
 
         let secret_id: Option<KeyId> = match event.key_id {
@@ -126,7 +129,7 @@ impl TryFrom<AuditEventDB> for AuditEvent {
             account_name: AccountName::from(event.account_name.as_str()),
             key_id: secret_id,
             timestamp: event.timestamp,
-            action,
+            client_action,
             status,
         };
 

@@ -13,16 +13,19 @@ use crate::{
     utils::{report_test_results, TestResult},
 };
 use lock_keeper::{
-    crypto::{Encrypted, MasterKey, StorageKey},
-    types::database::user::{AccountName, UserId},
+    crypto::{
+        Encrypted, Import, KeyId, MasterKey, RemoteStorageKey, Secret, SigningKeyPair, StorageKey,
+    },
+    types::database::{
+        secrets::StoredSecret,
+        user::{AccountName, UserId},
+    },
 };
 use lock_keeper_key_server::database::DataStore;
 use lock_keeper_postgres::{Config, ConfigFile as DatabaseConfigFile, PostgresDB, PostgresError};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
 use crate::utils::{server_registration, tagged};
-
-pub const USERS_TABLE: &str = "users";
 
 pub async fn run_tests(filters: &TestFilters) -> Result<Vec<TestResult>> {
     println!("Running database tests");
@@ -76,7 +79,7 @@ impl TestDatabase {
 
         let config_file =
             DatabaseConfigFile::from_str(config_str).map_err(PostgresError::ConfigError)?;
-        let config: Config = TryFrom::try_from(config_file).map_err(PostgresError::ConfigError)?;
+        let config: Config = config_file.try_into().map_err(PostgresError::ConfigError)?;
         let db = PostgresDB::connect(config).await.unwrap();
         Ok(TestDatabase { db })
     }
@@ -135,5 +138,85 @@ impl TestDatabase {
             Ok(maybe_user) => maybe_user.is_some(),
             Err(_) => false,
         }
+    }
+
+    /// Generate and store `n` random secrets in our database.
+    async fn create_random_arbitrary_secrets(
+        &self,
+        n: usize,
+        user_id: &UserId,
+    ) -> Result<Vec<KeyId>> {
+        let (encrypted_storage_key, master_key) = self.create_test_storage_key(user_id)?;
+        let storage_key = encrypted_storage_key.decrypt_storage_key(master_key, user_id)?;
+        let mut rng = StdRng::from_entropy();
+
+        let mut key_ids: Vec<KeyId> = vec![];
+        for _ in 0..n {
+            let key_id = self
+                .add_arbitrary_secret(&mut rng, &storage_key, user_id)
+                .await?;
+            key_ids.push(key_id);
+        }
+
+        Ok(key_ids)
+    }
+
+    /// Store a new arbitrary secret in database.
+    async fn add_arbitrary_secret(
+        &self,
+        rng: &mut StdRng,
+        storage_key: &StorageKey,
+        user_id: &UserId,
+    ) -> Result<KeyId> {
+        let key_id = KeyId::generate(rng, user_id)?;
+        let (_, encrypted) = Secret::create_and_encrypt(rng, storage_key, user_id, &key_id)?;
+
+        let secret =
+            StoredSecret::from_arbitrary_secret(key_id.clone(), user_id.clone(), encrypted)?;
+        self.db.add_secret(secret).await?;
+
+        Ok(key_id)
+    }
+
+    async fn import_signing_key(&self, rng: &mut StdRng, user_id: &UserId) -> Result<KeyId> {
+        let key_id = KeyId::generate(rng, user_id)?;
+        let random_bytes = rand::thread_rng().gen::<[u8; 32]>().to_vec();
+        let import = Import::new(random_bytes)?;
+        let signing_key = import.into_signing_key(user_id, &key_id)?;
+
+        let encryption_key = RemoteStorageKey::generate(rng);
+        // encrypt key_pair
+        let encrypted_key_pair = encryption_key.encrypt_signing_key_pair(rng, signing_key)?;
+
+        let secret = StoredSecret::from_remote_signing_key_pair(
+            key_id.clone(),
+            encrypted_key_pair,
+            user_id.clone(),
+        )?;
+        self.add_secret(secret).await?;
+
+        Ok(key_id)
+    }
+
+    async fn remote_generate_signing_key(
+        &self,
+        rng: &mut StdRng,
+        user_id: &UserId,
+    ) -> Result<KeyId> {
+        let key_id = KeyId::generate(rng, user_id)?;
+        let signing_key = SigningKeyPair::remote_generate(rng, user_id, &key_id);
+
+        let encryption_key = RemoteStorageKey::generate(rng);
+
+        // encrypt key_pair
+        let encrypted_key_pair = encryption_key.encrypt_signing_key_pair(rng, signing_key)?;
+
+        let secret = StoredSecret::from_remote_signing_key_pair(
+            key_id.clone(),
+            encrypted_key_pair,
+            user_id.clone(),
+        )?;
+        self.add_secret(secret).await?;
+        Ok(key_id)
     }
 }
