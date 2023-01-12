@@ -1,0 +1,4 @@
+# Local server, with client auth, Postgres
+server = "dev/config/local-client-auth/Server.toml"
+database = "dev/config/local-client-auth/Postgres.toml"
+session_cache = "dev/config/local-client-auth/SessionCache.toml"

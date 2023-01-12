@@ -3,25 +3,20 @@ name = "lock-keeper-key-server"
 version.workspace = true
 edition = "2021"
 
-[[bin]]
-name = "key-server-cli"
-path = "src/bin/main.rs"
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-# Git dependencies
-lock-keeper = { version = "0.2.0", path = "../lock-keeper" }
+# Local dependencies
+lock-keeper = { path = "../lock-keeper" }
 
 # Workspace dependencies
 argon2.workspace = true
 async-trait.workspace = true
 bincode.workspace = true
 clap.workspace = true
-bson.workspace = true
 futures.workspace = true
+humantime-serde.workspace = true
 hyper.workspace = true
-mongodb.workspace = true
 opaque-ke.workspace = true
 prost.workspace = true
 rand.workspace = true
@@ -29,6 +24,7 @@ rustls.workspace = true
 serde.workspace = true
 serde_with.workspace = true
 thiserror.workspace = true
+time.workspace = true
 tokio.workspace = true
 tokio-rustls.workspace = true
 tokio-stream.workspace = true
@@ -36,10 +32,10 @@ toml.workspace = true
 tonic.workspace = true
 tracing.workspace = true
 tracing-futures.workspace = true
-tracing-subscriber.workspace = true
+uuid.workspace = true
+zeroize.workspace = true
 
 # Other dependencies
-base64 = "0.13"
 strum = { version = "0.24.1", features = ["derive"] }
 tower = "0.4"
 

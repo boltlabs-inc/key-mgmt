@@ -1,80 +1,88 @@
 use async_trait::async_trait;
-use lock_keeper::{
-    infrastructure::channel::ServerChannel,
-    types::{audit_event::EventStatus, Message, MessageStream},
-};
-use std::{thread, time::Duration};
-use tokio_stream::wrappers::ReceiverStream;
-use tonic::{Request, Response, Status, Streaming};
 
-use crate::{server::Context, LockKeeperServerError};
+use lock_keeper::{
+    infrastructure::{channel::ServerChannel, logging},
+    types::audit_event::EventStatus,
+};
+use tracing::{error, info, instrument, Instrument};
+
+use crate::{database::DataStore, server::Context, LockKeeperServerError};
 
 #[async_trait]
 /// A type implementing [`Operation`] can process `tonic` requests using a
 /// message-passing protocol facilitated by a [`ServerChannel`].
-pub(crate) trait Operation: Sized + Send + 'static {
+pub(crate) trait Operation<AUTH: Send + 'static, DB: DataStore>:
+    Sized + Send + 'static
+{
     /// Core logic for a given operation.
     async fn operation(
         self,
-        channel: &mut ServerChannel,
-        context: &mut Context,
+        channel: &mut ServerChannel<AUTH>,
+        context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError>;
 
     /// Takes a request from `tonic` and spawns a new thread to process that
     /// request through the logic defined by the `Operation::operation` method.
     /// Any errors returned by the operation are logged and an appropriate error
     /// message is sent to the client.
+    #[instrument(skip_all, err(Debug), fields(metadata, request_id))]
     async fn handle_request(
         self,
-        context: Context,
-        request: Request<Streaming<Message>>,
-    ) -> Result<Response<MessageStream>, Status> {
-        {
-            let mut session_key_cache = context.session_key_cache.lock().await;
-            session_key_cache.check_key(&context)?;
-        }
-        tracing::info!("Handling action: {:?}", context.metadata.action());
+        mut context: Context<DB>,
+        mut channel: ServerChannel<AUTH>,
+    ) -> Result<(), LockKeeperServerError> {
+        logging::record_field("metadata", &channel.metadata());
+        logging::record_field("request_id", &channel.metadata().request_id());
+        info!("Handling new client request.");
 
-        let (mut channel, rx) = ServerChannel::create(request.into_inner());
-        let mut context = context;
+        let _ = tokio::spawn(
+            async move {
+                audit_event(&mut channel, &context, EventStatus::Started).await;
 
-        let _ = tokio::spawn(async move {
-            audit_event(&mut channel, &context, EventStatus::Started).await;
-
-            let result = self.operation(&mut channel, &mut context).await;
-            if let Err(e) = result {
-                handle_error(&mut channel, e).await;
-                audit_event(&mut channel, &context, EventStatus::Failed).await;
-
-                // Give the client a moment to receive the error before dropping the channel
-                thread::sleep(Duration::from_millis(100));
-            } else {
-                audit_event(&mut channel, &context, EventStatus::Successful).await;
+                match self.operation(&mut channel, &mut context).await {
+                    Ok(()) => {
+                        info!("This operation completed successfully!");
+                        audit_event(&mut channel, &context, EventStatus::Successful).await;
+                    }
+                    Err(e) => {
+                        info!("This operation completed with an error!");
+                        handle_error(&mut channel, e).await;
+                        audit_event(&mut channel, &context, EventStatus::Failed).await;
+                    }
+                }
+                channel.closed().await;
             }
-        });
-
-        Ok(Response::new(ReceiverStream::new(rx)))
+            .in_current_span(),
+        );
+        Ok(())
     }
 }
 
-async fn handle_error(channel: &mut ServerChannel, e: LockKeeperServerError) {
-    tracing::error!("{}", e);
+#[instrument(skip(channel))]
+async fn handle_error<AUTH>(channel: &mut ServerChannel<AUTH>, e: LockKeeperServerError) {
+    error!("{}", e);
     if let Err(e) = channel.send_error(e).await {
-        tracing::error!("{}", e);
+        error!("Problem while sending error over channel: {}", e);
     }
 }
 
-async fn audit_event(channel: &mut ServerChannel, context: &Context, status: EventStatus) {
+/// Log the given action as an audit event.
+#[instrument(skip(channel, context))]
+async fn audit_event<AUTH, DB: DataStore>(
+    channel: &mut ServerChannel<AUTH>,
+    context: &Context<DB>,
+    status: EventStatus,
+) {
+    let account_name = channel.metadata().account_name();
+    let action = channel.metadata().action();
+    let request_id = channel.metadata().request_id();
+
     let audit_event = context
         .db
-        .create_audit_event(
-            context.metadata.account_name(),
-            &context.key_id,
-            &context.metadata.action(),
-            status,
-        )
-        .await;
+        .create_audit_event(request_id, account_name, &context.key_id, action, status)
+        .await
+        .map_err(|e| LockKeeperServerError::Database(Box::new(e)));
     if let Err(e) = audit_event {
-        let _ = handle_error(channel, e);
+        handle_error(channel, e).await;
     };
 }

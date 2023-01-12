@@ -1,4 +1,5 @@
-use crate::server::session_key_cache::SessionKeyCacheError;
+use crate::server::session_cache::SessionCacheError;
+use std::path::PathBuf;
 use thiserror::Error;
 use tonic::Status;
 
@@ -8,16 +9,20 @@ pub enum LockKeeperServerError {
     MissingService,
     #[error("Private key was not provided.")]
     PrivateKeyMissing,
+    #[error("Remote storage key was not provided.")]
+    RemoteStorageKeyMissing,
 
     #[error("Error in session keys cache.")]
-    SessionKeyCache(#[from] SessionKeyCacheError),
+    SessionCache(#[from] SessionCacheError),
 
     // Infrastructure errors
     #[error("Invalid OPAQUE directory")]
     InvalidOpaqueDirectory,
+    #[error("Invalid log file path: {0}")]
+    InvalidLogFilePath(PathBuf),
 
     // Protocol errors
-    #[error("Account already registered")]
+    #[error("Account already registered.")]
     AccountAlreadyRegistered,
     #[error("Invalid account")]
     InvalidAccount,
@@ -27,12 +32,14 @@ pub enum LockKeeperServerError {
     StorageKeyNotSet,
     #[error("Key ID does not match any stored arbitrary key")]
     KeyNotFound,
+    #[error("Session ID was not found in request metadata")]
+    SessionIdNotFound,
 
     // Wrapped errors
     #[error(transparent)]
     Bincode(#[from] bincode::Error),
-    #[error(transparent)]
-    Bson(#[from] mongodb::bson::ser::Error),
+    #[error("Database error: {0}")]
+    Database(Box<dyn std::error::Error + Send + Sync>),
     #[error(transparent)]
     EnvVar(#[from] std::env::VarError),
     #[error(transparent)]
@@ -41,8 +48,6 @@ pub enum LockKeeperServerError {
     Io(#[from] std::io::Error),
     #[error(transparent)]
     LockKeeper(#[from] lock_keeper::LockKeeperError),
-    #[error(transparent)]
-    MongoDb(#[from] mongodb::error::Error),
     #[error("OPAQUE protocol error: {}", .0)]
     OpaqueProtocol(opaque_ke::errors::ProtocolError),
     #[error(transparent)]
@@ -59,6 +64,12 @@ pub enum LockKeeperServerError {
     WebPki(#[from] tokio_rustls::webpki::Error),
 }
 
+impl LockKeeperServerError {
+    pub fn database(error: impl std::error::Error + Send + Sync + 'static) -> Self {
+        Self::Database(Box::new(error))
+    }
+}
+
 impl From<opaque_ke::errors::ProtocolError> for LockKeeperServerError {
     fn from(error: opaque_ke::errors::ProtocolError) -> Self {
         Self::OpaqueProtocol(error)
@@ -67,15 +78,17 @@ impl From<opaque_ke::errors::ProtocolError> for LockKeeperServerError {
 
 impl From<LockKeeperServerError> for Status {
     fn from(error: LockKeeperServerError) -> Status {
-        use crate::server::session_key_cache::SessionKeyCacheError::*;
+        use crate::server::session_cache::SessionCacheError::*;
 
         match error {
-            LockKeeperServerError::SessionKeyCache(ExpiredSessionKey) => {
-                Status::unauthenticated("Session key expired")
+            LockKeeperServerError::SessionCache(ExpiredSession)
+            | LockKeeperServerError::SessionCache(MissingSession) => {
+                Status::unauthenticated("No session key for this user")
             }
             // Errors that are safe to return to the client
             LockKeeperServerError::AccountAlreadyRegistered
             | LockKeeperServerError::InvalidAccount
+            | LockKeeperServerError::SessionIdNotFound
             | LockKeeperServerError::KeyNotFound => Status::invalid_argument(error.to_string()),
 
             LockKeeperServerError::StorageKeyAlreadySet
@@ -88,19 +101,20 @@ impl From<LockKeeperServerError> for Status {
 
             // Errors that the client should not see
             LockKeeperServerError::MissingService
-            | LockKeeperServerError::SessionKeyCache(_)
+            | LockKeeperServerError::InvalidLogFilePath(_)
+            | LockKeeperServerError::SessionCache(_)
             | LockKeeperServerError::Hyper(_)
             | LockKeeperServerError::Io(_)
             | LockKeeperServerError::InvalidOpaqueDirectory
-            | LockKeeperServerError::Bson(_)
             | LockKeeperServerError::Bincode(_)
             | LockKeeperServerError::OpaqueProtocol(_)
             | LockKeeperServerError::PrivateKeyMissing
+            | LockKeeperServerError::RemoteStorageKeyMissing
             | LockKeeperServerError::EnvVar(_)
             | LockKeeperServerError::Rustls(_)
             | LockKeeperServerError::StrumParseError(_)
             | LockKeeperServerError::Toml(_)
-            | LockKeeperServerError::MongoDb(_)
+            | LockKeeperServerError::Database(_)
             | LockKeeperServerError::WebPki(_) => Status::internal("Internal server error"),
         }
     }

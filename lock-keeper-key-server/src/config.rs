@@ -1,4 +1,6 @@
-use lock_keeper::{config::opaque::OpaqueCipherSuite, infrastructure::pem_utils};
+use lock_keeper::{
+    config::opaque::OpaqueCipherSuite, crypto::RemoteStorageKey, infrastructure::pem_utils,
+};
 use opaque_ke::{keypair::PrivateKey, Ristretto255, ServerSetup};
 use rand::{rngs::StdRng, SeedableRng};
 use rustls::{
@@ -19,36 +21,46 @@ use crate::{server::opaque_storage::create_or_retrieve_server_key_opaque, LockKe
 pub struct Config {
     pub address: IpAddr,
     pub port: u16,
-    pub tls_config: ServerConfig,
+    pub tls_config: Option<ServerConfig>,
     pub opaque_server_setup: ServerSetup<OpaqueCipherSuite, PrivateKey<Ristretto255>>,
-    pub database: DatabaseSpec,
+    pub remote_storage_key: RemoteStorageKey,
+    pub logging: LoggingConfig,
 }
 
 impl Config {
     pub fn from_file(
         config_path: impl AsRef<Path>,
         private_key_bytes: Option<Vec<u8>>,
+        remote_storage_key_bytes: Option<Vec<u8>>,
     ) -> Result<Self, LockKeeperServerError> {
         let config_string = std::fs::read_to_string(&config_path)?;
         let config_file = ConfigFile::from_str(&config_string)?;
-        Self::from_config_file(config_file, private_key_bytes)
+        Self::from_config_file(config_file, private_key_bytes, remote_storage_key_bytes)
     }
 
     pub fn from_config_file(
         config: ConfigFile,
         private_key_bytes: Option<Vec<u8>>,
+        remote_storage_key_bytes: Option<Vec<u8>>,
     ) -> Result<Self, LockKeeperServerError> {
         let mut rng = StdRng::from_entropy();
 
+        let remote_storage_key = config.remote_storage_key_config(remote_storage_key_bytes)?;
+        let tls_config = config
+            .tls_config
+            .map(|tc| tc.into_rustls_config(private_key_bytes))
+            .transpose()?;
+
         Ok(Self {
+            remote_storage_key,
             address: config.address,
             port: config.port,
-            tls_config: config.tls_config(private_key_bytes)?,
+            tls_config,
             opaque_server_setup: create_or_retrieve_server_key_opaque(
                 &mut rng,
                 config.opaque_server_key,
             )?,
-            database: config.database,
+            logging: config.logging,
         })
     }
 }
@@ -60,7 +72,6 @@ impl std::fmt::Debug for Config {
             .field("port", &self.port)
             .field("tls_config", &"[Does not implement Debug]")
             .field("opaque_server_setup", &self.opaque_server_setup)
-            .field("database", &self.database)
             .finish()
     }
 }
@@ -72,15 +83,13 @@ impl std::fmt::Debug for Config {
 pub struct ConfigFile {
     pub address: IpAddr,
     pub port: u16,
-    /// The private key can be provided as a file or passed to the
-    /// [`Config`] constructors.
-    pub private_key: Option<PathBuf>,
-    pub certificate_chain: PathBuf,
-    #[serde(default)]
-    pub client_auth: bool,
+    /// The remote storage key can be provided as a file or passed to
+    /// the [`Config`] constructors.
+    pub remote_storage_key: Option<PathBuf>,
     pub opaque_path: PathBuf,
     pub opaque_server_key: PathBuf,
-    pub database: DatabaseSpec,
+    pub logging: LoggingConfig,
+    pub tls_config: Option<TlsConfig>,
 }
 
 impl FromStr for ConfigFile {
@@ -91,15 +100,42 @@ impl FromStr for ConfigFile {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(deny_unknown_fields, rename_all = "snake_case")]
-pub struct DatabaseSpec {
-    pub mongodb_uri: String,
-    pub db_name: String,
+impl ConfigFile {
+    pub fn remote_storage_key_config(
+        &self,
+        remote_storage_key_bytes: Option<Vec<u8>>,
+    ) -> Result<RemoteStorageKey, LockKeeperServerError> {
+        let key = if let Some(bytes) = remote_storage_key_bytes {
+            RemoteStorageKey::from_bytes(&bytes)?
+        } else if let Some(key_path) = &self.remote_storage_key {
+            RemoteStorageKey::read_from_file(key_path)?
+        } else {
+            return Err(LockKeeperServerError::RemoteStorageKeyMissing);
+        };
+
+        Ok(key)
+    }
 }
 
-impl ConfigFile {
-    pub fn tls_config(
+#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
+pub struct LoggingConfig {
+    pub lock_keeper_logs_file_name: PathBuf,
+    pub all_logs_file_name: PathBuf,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TlsConfig {
+    /// The private key can be provided as a file or passed to the
+    /// [`Config`] constructors.
+    pub private_key: Option<PathBuf>,
+    pub certificate_chain: PathBuf,
+    #[serde(default)]
+    pub client_auth: bool,
+}
+
+impl TlsConfig {
+    pub fn into_rustls_config(
         &self,
         private_key_bytes: Option<Vec<u8>>,
     ) -> Result<ServerConfig, LockKeeperServerError> {
@@ -144,44 +180,48 @@ mod tests {
         let config_str = r#"
             address = "127.0.0.2"
             port = 1114
+            opaque_path = "tests/gen/opaque"
+            opaque_server_key = "tests/gen/opaque/server_setup"
+            remote_storage_key = "test_sse.key"
+
+            [tls_config]
             private_key = "test.key"
             certificate_chain = "test.crt"
             client_auth = false
-            opaque_path = "tests/gen/opaque"
-            opaque_server_key = "tests/gen/opaque/server_setup"
 
-            [database]
-            mongodb_uri = "mongodb://localhost:27017"
-            db_name = "lock-keeper-test-db"
+            [logging]
+            lock_keeper_logs_file_name = "./dev/logs/server.log"
+            all_logs_file_name = "./dev/logs/all.log"
         "#;
 
         // Destructure so the test breaks when fields are added
         let ConfigFile {
             address,
             port,
-            private_key,
-            certificate_chain,
-            client_auth,
+            remote_storage_key,
+            tls_config,
             opaque_path,
             opaque_server_key,
-            database:
-                DatabaseSpec {
-                    mongodb_uri,
-                    db_name,
-                },
+            logging,
         } = ConfigFile::from_str(config_str).unwrap();
 
-        assert_eq!(mongodb_uri, "mongodb://localhost:27017");
-        assert_eq!(db_name, "lock-keeper-test-db");
+        let tls_config = tls_config.unwrap();
+
         assert_eq!(address, IpAddr::from_str("127.0.0.2").unwrap());
         assert_eq!(port, 1114);
-        assert_eq!(private_key, Some(PathBuf::from("test.key")));
-        assert_eq!(certificate_chain, PathBuf::from("test.crt"));
-        assert!(!client_auth);
+        assert_eq!(remote_storage_key, Some(PathBuf::from("test_sse.key")));
+        assert_eq!(tls_config.private_key, Some(PathBuf::from("test.key")));
+        assert_eq!(tls_config.certificate_chain, PathBuf::from("test.crt"));
+        assert!(!tls_config.client_auth);
         assert_eq!(opaque_path, PathBuf::from("tests/gen/opaque"));
         assert_eq!(
             opaque_server_key,
             PathBuf::from("tests/gen/opaque/server_setup")
         );
+        let expected_log = LoggingConfig {
+            lock_keeper_logs_file_name: "./dev/logs/server.log".parse().unwrap(),
+            all_logs_file_name: "./dev/logs/all.log".parse().unwrap(),
+        };
+        assert_eq!(logging, expected_log);
     }
 }

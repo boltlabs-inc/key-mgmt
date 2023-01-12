@@ -1,0 +1,34 @@
+[package]
+name = "lock-keeper-session-cache-sql"
+version.workspace = true
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# Local dependencies
+lock-keeper = { path = "../../lock-keeper" }
+lock-keeper-key-server = { path = "../../lock-keeper-key-server" }
+
+# Workspace dependencies
+async-trait.workspace = true
+bincode.workspace = true
+futures.workspace = true
+humantime-serde.workspace = true
+opaque-ke.workspace = true
+rand.workspace = true
+serde.workspace = true
+serde_with.workspace = true
+thiserror.workspace = true
+toml.workspace = true
+tracing.workspace = true
+tracing-futures.workspace = true
+tracing-subscriber.workspace = true
+uuid.workspace = true
+zeroize.workspace = true
+
+# Other dependencies
+sqlx = { version = "0.6", features = [ "runtime-tokio-native-tls" , "postgres", "offline", "time", "uuid"]}
+
+[dev-dependencies]
+generic-array.workspace = true

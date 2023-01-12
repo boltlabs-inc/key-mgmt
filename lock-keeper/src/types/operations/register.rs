@@ -1,8 +1,5 @@
 pub mod client {
-    use crate::{
-        config::opaque::OpaqueCipherSuite, impl_message_conversion,
-        types::database::user::AccountName,
-    };
+    use crate::{config::opaque::OpaqueCipherSuite, types::database::user::AccountName};
     use opaque_ke::{RegistrationRequest, RegistrationUpload};
     use serde::{Deserialize, Serialize};
 
@@ -18,12 +15,10 @@ pub mod client {
     pub struct RegisterFinish {
         pub registration_upload: RegistrationUpload<OpaqueCipherSuite>,
     }
-
-    impl_message_conversion!(RegisterStart, RegisterFinish);
 }
 
 pub mod server {
-    use crate::{config::opaque::OpaqueCipherSuite, impl_message_conversion};
+    use crate::config::opaque::OpaqueCipherSuite;
     use opaque_ke::RegistrationResponse;
     use serde::{Deserialize, Serialize};
 
@@ -38,6 +33,4 @@ pub mod server {
     pub struct RegisterFinish {
         pub success: bool,
     }
-
-    impl_message_conversion!(RegisterStart, RegisterFinish);
 }

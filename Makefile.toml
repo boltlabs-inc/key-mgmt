@@ -3,13 +3,13 @@ default_to_workspace = false
 
 # -- Server Tasks --
 
+# Shorthand task to start server and monitor its output.
+[tasks.run]
+alias = "start-server-attached"
+
 # Shorthand task to start server in the background.
 [tasks.start]
 alias = "start-server-detached"
-
-# Shorthand task to start both servers in the background.
-[tasks.start-all]
-alias = "start-server-detached-all"
 
 # Shorthand task to stop a server running in the background.
 [tasks.stop]
@@ -24,44 +24,24 @@ alias = "teardown-server"
 dependencies = ["teardown", "start"]
 
 # Start a key server and monitor its output.
-[tasks.start-server]
-command = "docker"
-args = ["compose", "up", "--build", "mongodb", "key_server", "--attach", "key_server"]
-dependencies = ["certs"]
-
-# Start a key server with mutual auth enabled and monitor its output.
-[tasks.start-server-mutual-auth]
-command = "docker"
-args = ["compose", "up", "--build", "mongodb", "key_server_mutual_auth", "--attach", "key_server_mutual_auth"]
-dependencies = ["certs"]
-
-# Starts two key servers, one with mutual auth and one without
-[tasks.start-server-all]
+[tasks.start-server-attached]
 command = "docker"
 args = ["compose", "up",
-        "--build", "mongodb", "key_server", "key_server_mutual_auth",
+        "--build", "postgres", "nginx", "key_server", "ks_client_auth", "ks_nginx",
         "--attach", "key_server", 
-        "--attach", "key_server_mutual_auth"
+        "--attach", "ks_client_auth",
+        "--attach", "ks_nginx",
 ]
-dependencies = ["certs"]
+dependencies = ["certs", "remote-storage-key"]
 
-# Start a key server in the background.
+# Start a key server in the background
 [tasks.start-server-detached]
 command = "docker"
-args = ["compose", "up", "--build", "mongodb", "key_server", "--detach", "--wait"]
-dependencies = ["certs"]
-
-# Start a key server with mutual auth enabled in the background.
-[tasks.start-server-detached-mutual-auth]
-command = "docker"
-args = ["compose", "up", "--build", "mongodb", "key_server_mutual_auth", "--detach", "--wait"]
-dependencies = ["certs"]
-
-# Starts two key servers in the background, one with mutual auth and one without
-[tasks.start-server-detached-all]
-command = "docker"
-args = ["compose", "up", "--build", "mongodb", "key_server", "key_server_mutual_auth", "--detach", "--wait"]
-dependencies = ["certs"]
+args = ["compose", "up", 
+        "--build", "postgres", "nginx", "key_server", "ks_client_auth", "ks_nginx",
+        "--wait",
+]
+dependencies = ["certs", "remote-storage-key"]
 
 # Stop a key server running in the background.
 [tasks.stop-server]
@@ -72,12 +52,6 @@ args = ["compose", "stop"]
 [tasks.teardown-server]
 command = "docker"
 args = ["compose", "down", "--rmi", "local", "--volumes", "--remove-orphans"]
-
-# Start a server running on your local machine without Docker.
-[tasks.start-server-local]
-command = "cargo"
-args = ["run", "--bin", "key-server-cli", "./dev/server/config/Local.toml"]
-dependencies = ["certs"]
 
 # -- Testing Tasks --
 
@@ -92,16 +66,6 @@ args = ["run", "--bin", "lock-keeper-tests", "--", "--test-type", "e2e"]
 [tasks.integration]
 command = "cargo"
 args = ["run", "--bin", "lock-keeper-tests", "--", "--test-type", "integration"]
-
-# Run TLS mutual auth tests
-[tasks.test-mutual-auth]
-command = "cargo"
-args = ["run", "--bin", "lock-keeper-tests", "--", "--test-type", "mutual-auth"]
-
-# Run TLS mutual auth tests
-[tasks.test-config-files]
-command = "cargo"
-args = ["run", "--bin", "lock-keeper-tests", "--", "--test-type", "config-files"]
 
 # Run all tests that require a server to be running in Docker.
 [tasks.all-tests]
@@ -138,9 +102,21 @@ args = ["test", "--all-features", "--doc", "--workspace"]
 [tasks.ci-docs]
 env = { "RUSTDOCFLAGS" = "-Dwarnings" }
 command = "cargo"
-args = ["doc", "--all-features", "--no-deps", "--workspace"]
+args = ["doc", "--all-features", "--no-deps", "--document-private-items", "--workspace"]
 
-# -- Utility Tasks --
+# -- Database Tasks --
+
+# Update the `sqlx-data.json` file
+[tasks.refresh-db-cache]
+command = "cargo"
+args = ["sqlx", "prepare", "--database-url", "postgres://test:test_password@localhost:5432/test", "--merged"]
+
+# Connect to test database using `psql`
+[tasks.test-db]
+env = { "PGPASSWORD" = "test_password" }
+command = "psql"
+args = ["-h", "localhost", "-p", "5432", "-d", "test", "-U", "test"]
+
 
 # -- Aliases --
 [tasks.fmt]
@@ -157,11 +133,41 @@ alias = "ci-clippy"
 [tasks.test]
 alias = "ci-test"
 
-# Run the interactive client.
+# -- Client CLI tasks --
+
+# Run the client CLI in interactive mode
 [tasks.cli]
 command = "cargo"
 args = ["run", "--bin", "lock-keeper-client-cli"]
 
+# Runs a CLI script to generate a retrieve a few keys
+[tasks.script-generate]
+command = "cargo"
+args = ["run", "--bin", "lock-keeper-client-cli", "--", "--script-file", "dev/cli-scripts/generate.lk"]
+
+# Runs a CLI script to remotely generate a signing key and sign some data
+[tasks.script-sign]
+command = "cargo"
+args = ["run", "--bin", "lock-keeper-client-cli", "--", "--script-file", "dev/cli-scripts/sign.lk"]
+
+# Runs a CLI script to export a remotely generated signing key
+[tasks.script-export]
+command = "cargo"
+args = ["run", "--bin", "lock-keeper-client-cli", "--", "--script-file", "dev/cli-scripts/export.lk"]
+
+# Runs a CLI script to import and then export a signing key
+[tasks.script-import]
+command = "cargo"
+args = ["run", "--bin", "lock-keeper-client-cli", "--", "--script-file", "dev/cli-scripts/import.lk"]
+
+# Runs all scripts
+[tasks.all-scripts]
+dependencies = ["script-generate", "script-sign", "script-export", "script-import"]
+
 # Generate certificates in the dev/certs/gen directory
 [tasks.certs]
 script = { file = "dev/test-pki/generate-test-pki.sh" }
+
+# Generate remote storage key in the dev/remote-storage-key/gen directory
+[tasks.remote-storage-key]
+script = { file = "dev/remote-storage-key/generate-test-remote-storage-key.sh" }

@@ -4,8 +4,8 @@ use crate::{
 };
 use lock_keeper::{
     config::opaque::OpaqueCipherSuite,
-    crypto::OpaqueExportKey,
-    infrastructure::channel::ClientChannel,
+    crypto::MasterKey,
+    infrastructure::channel::{ClientChannel, Unauthenticated},
     types::{
         database::user::AccountName,
         operations::register::{client, server},
@@ -14,33 +14,38 @@ use lock_keeper::{
 use opaque_ke::{
     ClientRegistration, ClientRegistrationFinishParameters, ClientRegistrationStartResult,
 };
-use rand::{CryptoRng, RngCore};
+use rand::rngs::StdRng;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 impl LockKeeperClient {
-    pub(crate) async fn handle_registration<T: CryptoRng + RngCore>(
-        mut channel: ClientChannel,
-        rng: &mut T,
+    pub(crate) async fn handle_registration(
+        mut channel: ClientChannel<Unauthenticated>,
+        rng: Arc<Mutex<StdRng>>,
         account_name: &AccountName,
         password: &Password,
-    ) -> Result<OpaqueExportKey, LockKeeperClientError> {
+    ) -> Result<MasterKey, LockKeeperClientError> {
         // Handle start step
-        let client_start_result = register_start(&mut channel, rng, account_name, password).await?;
+        let client_start_result =
+            register_start(&mut channel, rng.clone(), account_name, password).await?;
 
         // Handle finish step
-        let export_key = register_finish(&mut channel, rng, password, client_start_result).await?;
+        let master_key = register_finish(&mut channel, rng, password, client_start_result).await?;
 
-        Ok(export_key)
+        Ok(master_key)
     }
 }
 
-async fn register_start<T: CryptoRng + RngCore>(
-    channel: &mut ClientChannel,
-    rng: &mut T,
+async fn register_start(
+    channel: &mut ClientChannel<Unauthenticated>,
+    rng: Arc<Mutex<StdRng>>,
     account_name: &AccountName,
     password: &Password,
 ) -> Result<ClientRegistrationStartResult<OpaqueCipherSuite>, LockKeeperClientError> {
-    let client_registration_start_result =
-        ClientRegistration::<OpaqueCipherSuite>::start(rng, password.as_bytes())?;
+    let client_registration_start_result = {
+        let mut rng = rng.lock().await;
+        ClientRegistration::<OpaqueCipherSuite>::start(&mut *rng, password.as_bytes())?
+    };
 
     let response = client::RegisterStart {
         registration_request: client_registration_start_result.message.clone(),
@@ -52,20 +57,23 @@ async fn register_start<T: CryptoRng + RngCore>(
     Ok(client_registration_start_result)
 }
 
-async fn register_finish<T: CryptoRng + RngCore>(
-    channel: &mut ClientChannel,
-    rng: &mut T,
+async fn register_finish(
+    channel: &mut ClientChannel<Unauthenticated>,
+    rng: Arc<Mutex<StdRng>>,
     password: &Password,
     client_start_result: ClientRegistrationStartResult<OpaqueCipherSuite>,
-) -> Result<OpaqueExportKey, LockKeeperClientError> {
+) -> Result<MasterKey, LockKeeperClientError> {
     let server_start_result: server::RegisterStart = channel.receive().await?;
 
-    let client_finish_registration_result = client_start_result.state.finish(
-        rng,
-        password.as_bytes(),
-        server_start_result.registration_response,
-        ClientRegistrationFinishParameters::default(),
-    )?;
+    let client_finish_registration_result = {
+        let mut rng = rng.lock().await;
+        client_start_result.state.finish(
+            &mut *rng,
+            password.as_bytes(),
+            server_start_result.registration_response,
+            ClientRegistrationFinishParameters::default(),
+        )?
+    };
 
     let response = client::RegisterFinish {
         registration_upload: client_finish_registration_result.message,
@@ -75,7 +83,9 @@ async fn register_finish<T: CryptoRng + RngCore>(
     let result: server::RegisterFinish = channel.receive().await?;
 
     if result.success {
-        Ok(client_finish_registration_result.export_key.into())
+        let master_key =
+            MasterKey::derive_master_key(client_finish_registration_result.export_key)?;
+        Ok(master_key)
     } else {
         Err(LockKeeperClientError::ServerReturnedFailure)
     }

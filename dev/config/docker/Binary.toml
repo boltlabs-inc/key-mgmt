@@ -1,0 +1,4 @@
+# Docker server, no client auth, postgres DB.
+server = "/app/config/docker/Server.toml"
+database = "dev/config/docker/Postgres.toml"
+session_cache = "/app/config/docker/SessionCache.toml"

@@ -1,0 +1,15 @@
+address = "0.0.0.0"
+port = 1113
+opaque_path = "/app/opaque"
+opaque_server_key = "/app/opaque/server_setup"
+remote_storage_key = "/app/remote-storage-key/gen/remote_storage.key"
+
+[tls_config]
+private_key = "/app/test-pki/gen/certs/server.key"
+certificate_chain = "/app/test-pki/gen/certs/server.chain"
+client_auth = false
+
+# Point logging to a different directory since these log files will be created under "root" user.
+[logging]
+lock_keeper_logs_file_name = "/app/docker/logs/server.log"
+all_logs_file_name = "/app/docker/logs/all.log"

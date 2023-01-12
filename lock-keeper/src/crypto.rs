@@ -4,28 +4,38 @@
 //! transformations between them. Public functions here are mostly wrappers
 //! around multiple low-level cryptographic steps.
 
-use crate::LockKeeperError;
+use crate::{types::database::HexBytes, LockKeeperError};
 use generic_array::{typenum::U64, GenericArray};
-use hkdf::Hkdf;
+use hkdf::{hmac::digest::Output, Hkdf};
+use k256::sha2::Sha512;
 use rand::{CryptoRng, Rng, RngCore};
 use serde::{Deserialize, Serialize};
 use sha3::{Digest, Sha3_256};
-use std::{array::IntoIter, convert::TryFrom};
+use std::{
+    array::{IntoIter, TryFromSliceError},
+    convert::TryFrom,
+    fmt::Debug,
+};
 use tracing::error;
+use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use crate::types::database::user::UserId;
 
 mod arbitrary_secret;
 mod generic;
 mod signing_key;
+mod storage_key;
 
+use crate::rpc::Message;
 pub use arbitrary_secret::Secret;
 use generic::{AssociatedData, EncryptionKey};
 pub use generic::{CryptoError, Encrypted};
 pub use signing_key::{
-    Export, Import, PlaceholderEncryptedSigningKeyPair, Signable, SignableBytes, Signature,
-    SigningKeyPair, SigningPublicKey,
+    Import, Signable, SignableBytes, Signature, SigningKeyPair, SigningPublicKey,
 };
+#[cfg(test)]
+use storage_key::test::create_test_export_key;
+pub use storage_key::{RemoteStorageKey, StorageKey};
 
 /// A session key is produced as shared output for client and server from
 /// OPAQUE.
@@ -33,144 +43,58 @@ pub use signing_key::{
 /// This key should not be stored or saved beyond the lifetime of a single
 /// authentication session. It should not be passed out to the local calling
 /// application.
-#[derive(Debug, Clone)]
-pub struct OpaqueSessionKey(Box<[u8; 64]>);
+#[derive(Debug, Clone, PartialEq, Eq, Zeroize, ZeroizeOnDrop)]
+pub struct OpaqueSessionKey(EncryptionKey);
 
-impl From<GenericArray<u8, U64>> for OpaqueSessionKey {
-    fn from(arr: GenericArray<u8, U64>) -> Self {
-        Self(Box::new(arr.into()))
-    }
-}
+impl TryFrom<GenericArray<u8, U64>> for OpaqueSessionKey {
+    type Error = LockKeeperError;
 
-/// An export key is secure key material produced as client output from OPAQUE.
-///
-/// This uses standardized naming, but is _not_ directly used as an encryption
-/// key in this system. Instead, the client uses it to derive a master key.
-///
-/// This key should not be stored or saved beyond the lifetime of a single
-/// authentication session.
-/// It should never be sent to the server or passed out to the local calling
-/// application.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct OpaqueExportKey(Box<[u8; 64]>);
-
-impl OpaqueExportKey {
-    /// Derive a uniformly distributed secret [`MasterKey`] using the export key
-    /// as input key material.
-    fn derive_master_key(&self) -> Result<MasterKey, CryptoError> {
-        let context = AssociatedData::new().with_str("OPAQUE-derived Lock Keeper master key");
-        let mut master_key_material = [0u8; 32];
-
-        // Derive `master_key_material` from HKDF with no salt, the
-        // `OpaqueExportKey` as input key material, and the associated data as
-        // extra info.
-        Hkdf::<Sha3_256>::new(None, self.0.as_ref())
-            .expand((&context).into(), &mut master_key_material)
-            // This should never cause an error because we've hardcoded the length of the master key
-            // material and the export key length to both be 32, and length mismatch is the only
-            // documented cause of an `expand` failure.
-            .map_err(|e| {
-                error!("HKDF failed unexpectedly. {:?}", e);
-                CryptoError::KeyDerivationFailed(e)
-            })?;
-
-        Ok(MasterKey(EncryptionKey::from_bytes(
-            master_key_material,
+    fn try_from(arr: GenericArray<u8, U64>) -> Result<Self, Self::Error> {
+        let context = AssociatedData::new().with_str(Self::domain_separator());
+        Ok(Self(EncryptionKey::from_bytes(
+            arr[..32]
+                .try_into()
+                .map_err(|_| LockKeeperError::Crypto(CryptoError::ConversionError))?,
             context,
         )))
     }
-
-    /// Create an encrypted storage key. This is part of the registration flow
-    /// and is executed during a registration session with the
-    /// server. This key should be sent to the server for storage.
-    ///
-    /// This must be run by the client.
-    /// It takes the following steps:
-    /// 1. Derive a master key from the [`OpaqueExportKey`]
-    /// 2. Generate a new [`StorageKey`] to encrypt stored data with
-    /// 3. Encrypt the storage key under the master key, using an AEAD scheme
-    /// 4. Return the encrypted storage key
-    pub fn create_and_encrypt_storage_key(
-        self,
-        rng: &mut (impl CryptoRng + RngCore),
-        user_id: &UserId,
-    ) -> Result<Encrypted<StorageKey>, LockKeeperError> {
-        let master_key = self.derive_master_key()?;
-        let storage_key = StorageKey::generate(rng);
-        Ok(master_key.encrypt_storage_key(rng, storage_key, user_id)?)
-    }
 }
 
-impl From<GenericArray<u8, U64>> for OpaqueExportKey {
-    fn from(arr: GenericArray<u8, U64>) -> Self {
-        Self(Box::new(arr.into()))
-    }
-}
-
-/// The master key is a default-length symmetric encryption key for an
-/// AEAD scheme.
-///
-/// The master key is used by the client to securely encrypt their
-/// [`StorageKey`]. It should not be stored or saved beyond the lifetime of a
-/// single authentication session. It should never be sent to the server or
-/// passed out to the local calling application.
-#[derive(Debug, PartialEq, Eq)]
-struct MasterKey(EncryptionKey);
-
-impl MasterKey {
-    /// Encrypt the given [`StorageKey`] under the [`MasterKey`] using an
+impl OpaqueSessionKey {
+    /// Encrypt the given [`Message`] under the [`OpaqueSessionKey`] using an
     /// AEAD scheme.
-    fn encrypt_storage_key(
-        self,
+    pub(crate) fn encrypt(
+        &self,
         rng: &mut (impl CryptoRng + RngCore),
-        storage_key: StorageKey,
-        user_id: &UserId,
-    ) -> Result<Encrypted<StorageKey>, CryptoError> {
-        let associated_data = AssociatedData::new()
-            .with_bytes(user_id.clone())
-            .with_str(StorageKey::domain_separator());
+        message: Message,
+    ) -> Result<Encrypted<Message>, CryptoError> {
+        Encrypted::encrypt(rng, &self.0, message, &AssociatedData::new())
+    }
 
-        Encrypted::encrypt(rng, &self.0, storage_key, &associated_data)
+    fn context(&self) -> &AssociatedData {
+        &self.0.context
+    }
+
+    pub(crate) fn domain_separator() -> &'static str {
+        "OPAQUE-derived Lock Keeper session key"
     }
 }
 
-/// A storage key is a default-length symmetric encryption key for an
-/// AEAD scheme. The storage key is used to encrypt stored secrets and signing
-/// keys.
-///
-/// It is generated by the client and should never be revealed to the server or
-/// the calling application.
-/// It should not be stored or saved beyond the lifetime of a single
-/// authentication session.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct StorageKey(EncryptionKey);
-
-impl StorageKey {
-    fn domain_separator() -> &'static str {
-        "storage key"
-    }
-
-    /// Generate a new 32-byte [`StorageKey`].
-    fn generate<Rng: CryptoRng + RngCore>(rng: &mut Rng) -> Self {
-        Self(EncryptionKey::new(rng))
-    }
-}
-
-impl From<StorageKey> for Vec<u8> {
-    fn from(key: StorageKey) -> Self {
-        StorageKey::domain_separator()
+impl From<OpaqueSessionKey> for Vec<u8> {
+    fn from(key: OpaqueSessionKey) -> Self {
+        OpaqueSessionKey::domain_separator()
             .as_bytes()
             .iter()
             .copied()
-            .chain::<Vec<u8>>(key.0.into())
+            .chain::<Vec<u8>>(key.0.to_owned().into())
             .collect()
     }
 }
 
-impl TryFrom<Vec<u8>> for StorageKey {
+impl TryFrom<Vec<u8>> for OpaqueSessionKey {
     type Error = CryptoError;
     fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
-        let expected_domain_sep = StorageKey::domain_separator().as_bytes();
+        let expected_domain_sep = OpaqueSessionKey::domain_separator().as_bytes();
         let domain_separator = bytes
             .get(0..expected_domain_sep.len())
             .ok_or(CryptoError::ConversionError)?;
@@ -188,35 +112,161 @@ impl TryFrom<Vec<u8>> for StorageKey {
     }
 }
 
-impl Encrypted<StorageKey> {
-    /// Decrypt a storage key. This should be run as part of the subprotocol to
-    /// retrieve a storage key from the server.
-    ///
-    /// This must be run by the client. It takes the following steps:
-    /// 1. Derive a master key from the [`OpaqueExportKey`]
-    /// 2. Decrypt the encrypted storage key using the master key
-    /// 3. Return the decrypted [`StorageKey`]
-    pub fn decrypt_storage_key(
+impl Encrypted<OpaqueSessionKey> {
+    /// Decrypt a session key server-side.
+    pub fn decrypt_session_key(
         self,
-        export_key: OpaqueExportKey,
-        user_id: &UserId,
-    ) -> Result<StorageKey, LockKeeperError> {
-        // Check that the associated data is correct.
-        let expected_aad = AssociatedData::new()
-            .with_bytes(user_id.clone())
-            .with_str(StorageKey::domain_separator());
-        if self.associated_data != expected_aad {
-            return Err(CryptoError::DecryptionFailed.into());
-        }
-
-        let master_key = export_key.derive_master_key()?;
-        let decrypted = self.decrypt(&master_key.0)?;
+        remote_storage_key: &RemoteStorageKey,
+    ) -> Result<OpaqueSessionKey, LockKeeperError> {
+        let decrypted = self.decrypt_inner(&remote_storage_key.0)?;
         Ok(decrypted)
     }
 }
 
+/// The master key is a default-length symmetric encryption key for an
+/// AEAD scheme.
+///
+/// The master key is used by the client to securely encrypt their
+/// [`StorageKey`]. It should not be stored or saved beyond the lifetime of a
+/// single authentication session. It should never be sent to the server or
+/// passed out to the local calling application.
+#[derive(Debug, Clone, PartialEq, Eq, Zeroize, ZeroizeOnDrop)]
+pub struct MasterKey(EncryptionKey);
+
+impl MasterKey {
+    /// Derive a uniformly distributed secret [`MasterKey`] using the export key
+    /// as input key material.
+    ///
+    /// # Arguments
+    ///
+    /// * `export_key` - the export_key as returned by opaque-ke library,
+    /// which has type [`Output<Sha512>`]
+    pub fn derive_master_key(export_key: Output<Sha512>) -> Result<Self, LockKeeperError> {
+        let context = AssociatedData::new().with_str("OPAQUE-derived Lock Keeper master key");
+        let mut master_key_material = [0u8; 32];
+
+        // Derive `master_key_material` from HKDF with no salt, the
+        // export_key as input key material, and the associated data as
+        // extra info.
+        Hkdf::<Sha3_256>::new(None, export_key.as_ref())
+            .expand((&context).into(), &mut master_key_material)
+            // This should never cause an error because we've hardcoded the length of the master key
+            // material and the export key length to both be 32, and length mismatch is the only
+            // documented cause of an `expand` failure.
+            .map_err(|e| {
+                error!("HKDF failed unexpectedly. {:?}", e);
+                CryptoError::KeyDerivationFailed(e)
+            })?;
+
+        Ok(Self(EncryptionKey::from_bytes(
+            master_key_material,
+            context,
+        )))
+    }
+
+    /// Create an encrypted storage key. This is part of the registration flow
+    /// and is executed during a registration session with the
+    /// server. This key should be sent to the server for storage.
+    ///
+    /// This must be run by the client.
+    /// It takes the following steps:
+    /// 1. Generate a new [`StorageKey`] to encrypt stored data with
+    /// 2. Derive the decryption key from the master key,
+    ///    using the associated data
+    /// 3. Encrypt the storage key under the encryption key,
+    ///    using an AEAD scheme
+    /// 4. Return the encrypted storage key
+    pub fn create_and_encrypt_storage_key(
+        self,
+        rng: &mut (impl CryptoRng + RngCore),
+        user_id: &UserId,
+    ) -> Result<Encrypted<StorageKey>, LockKeeperError> {
+        let storage_key = StorageKey::generate(rng);
+        Ok(self.encrypt_storage_key(rng, storage_key, user_id)?)
+    }
+
+    /// Encrypt the given [`StorageKey`] under a derivation from the
+    /// [`MasterKey`] using an AEAD scheme.
+    fn encrypt_storage_key(
+        self,
+        rng: &mut (impl CryptoRng + RngCore),
+        storage_key: StorageKey,
+        user_id: &UserId,
+    ) -> Result<Encrypted<StorageKey>, CryptoError> {
+        let associated_data = AssociatedData::new()
+            .with_bytes(user_id.clone())
+            .with_str(StorageKey::domain_separator());
+
+        let key = self.derive_key(associated_data.clone())?;
+        Encrypted::encrypt(rng, &key, storage_key, &associated_data)
+    }
+
+    /// Derive a new key from [`MasterKey`] using [`AssociatedData`] as the
+    /// domain separator. [`MasterKey`] should not be used directly to
+    /// encrypt something, instead use this method to derive a key for
+    /// a specific use-case using a domain separator.
+    fn derive_key(self, context: AssociatedData) -> Result<EncryptionKey, CryptoError> {
+        let mut key_material = [0u8; 32];
+
+        // Derive `key_material` from HKDF with no salt, the
+        // `MasterKey` as input key material, and the associated data as
+        // extra info.
+        Hkdf::<Sha3_256>::new(None, self.0.clone().into_bytes().as_ref())
+            .expand((&context).into(), &mut key_material)
+            // This should never cause an error because we've hardcoded the length of the key
+            // material and the master key length to both be 32, and length mismatch is the only
+            // documented cause of an `expand` failure.
+            .map_err(|e| {
+                error!("HKDF failed unexpectedly. {:?}", e);
+                CryptoError::KeyDerivationFailed(e)
+            })?;
+
+        Ok(EncryptionKey::from_bytes(key_material, context))
+    }
+}
+
+impl Encrypted<Message> {
+    pub fn decrypt_message(
+        self,
+        session_key: &OpaqueSessionKey,
+    ) -> Result<Message, LockKeeperError> {
+        let decrypted = self.decrypt_inner(&session_key.0)?;
+        Ok(decrypted)
+    }
+
+    /// Translates an [`Encrypted<Message>`] to a [`Message`] in order to be
+    /// sent through an authenticated channel.
+    pub(crate) fn try_into_message(self) -> Result<Message, LockKeeperError> {
+        let content = serde_json::to_vec(&self)?;
+
+        Ok(Message { content })
+    }
+
+    /// Translates a [`Message`] received through an authenticated channel to an
+    /// [`Encrypted<Message>`].
+    pub(crate) fn try_from_message(message: Message) -> Result<Self, LockKeeperError> {
+        Ok(serde_json::from_slice(&message.content)?)
+    }
+}
+
+impl From<Vec<u8>> for Message {
+    fn from(value: Vec<u8>) -> Self {
+        Message { content: value }
+    }
+}
+
+impl From<Message> for Vec<u8> {
+    fn from(message: Message) -> Self {
+        message.content
+    }
+}
+
 /// Universally unique identifier for a stored secret or signing key.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+/// Wrapped in a `Box` to avoid stack overflows during heavy traffic.
+/// [KeyId]s are created by implementors of our DataStore trait. So we expose
+/// the internal as pub.
+#[derive(Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(try_from = "HexBytes", into = "HexBytes")]
 pub struct KeyId(Box<[u8; 32]>);
 
 impl IntoIterator for KeyId {
@@ -225,6 +275,14 @@ impl IntoIterator for KeyId {
 
     fn into_iter(self) -> Self::IntoIter {
         self.0.into_iter()
+    }
+}
+
+impl TryFrom<&[u8]> for KeyId {
+    type Error = TryFromSliceError;
+
+    fn try_from(id: &[u8]) -> Result<Self, Self::Error> {
+        Ok(KeyId(Box::new(<[u8; 32]>::try_from(id)?)))
     }
 }
 
@@ -271,45 +329,64 @@ impl KeyId {
     }
 }
 
+impl Debug for KeyId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let hex = hex::encode(*self.0);
+        f.debug_tuple("KeyId").field(&hex).finish()
+    }
+}
+
+impl From<KeyId> for HexBytes {
+    fn from(key_id: KeyId) -> Self {
+        (*key_id.0).into()
+    }
+}
+
+impl TryFrom<HexBytes> for KeyId {
+    type Error = LockKeeperError;
+
+    fn try_from(bytes: HexBytes) -> Result<Self, Self::Error> {
+        Ok(KeyId(Box::new(bytes.try_into()?)))
+    }
+}
+
+/// Raw material for an exported signing key.
+#[derive(Debug, Clone, Serialize, Deserialize, ZeroizeOnDrop)]
+pub struct Export {
+    pub key_material: Vec<u8>,
+    #[zeroize(skip)]
+    pub context: Vec<u8>,
+}
+
 #[cfg(test)]
 mod test {
     use std::collections::HashSet;
 
-    use crate::LockKeeperError;
+    use crate::{
+        types::operations::{get_user_id, ConvertMessage},
+        LockKeeperError,
+    };
 
     use super::*;
     use rand::{rngs::StdRng, Rng, SeedableRng};
 
-    #[test]
-    fn storage_key_to_vec_u8_conversion_works() -> Result<(), CryptoError> {
-        let mut rng = rand::thread_rng();
-
-        for _ in 0..1000 {
-            let storage_key = StorageKey::generate(&mut rng);
-
-            let vec: Vec<u8> = storage_key.clone().into();
-            let output_storage_key = vec.try_into()?;
-
-            assert_eq!(storage_key, output_storage_key);
-        }
-        Ok(())
-    }
-
-    // In practice, an export key will be a pseudorandom output from OPAQUE.
+    // In practice, a session key will be a pseudorandom output from OPAQUE.
     // We'll use random bytes for the test key.
-    fn create_test_export_key(rng: &mut (impl CryptoRng + RngCore)) -> OpaqueExportKey {
+    pub(crate) fn create_test_session_key(
+        rng: &mut (impl CryptoRng + RngCore),
+    ) -> OpaqueSessionKey {
         let mut key = [0_u8; 64];
         rng.try_fill(&mut key)
             .expect("Failed to generate random key");
 
-        OpaqueExportKey(key.into())
+        OpaqueSessionKey::try_from(GenericArray::from(key)).expect("Failed to create Session Key")
     }
 
     #[test]
     fn derive_master_key_not_obviously_broken() {
         let mut rng = rand::thread_rng();
         let export_key = create_test_export_key(&mut rng);
-        let master_key = export_key.derive_master_key().unwrap();
+        let master_key = MasterKey::derive_master_key(export_key.into()).unwrap();
 
         // Make sure the master key isn't all 0s.
         let zero_key = EncryptionKey::from_bytes([0; 32], master_key.0.context().clone());
@@ -318,7 +395,7 @@ mod test {
         // Make sure that using different context doesn't give the same key.
         let mut bad_mk = [0; 32];
         let bad_ad = AssociatedData::new().with_str("here is my testing context");
-        Hkdf::<Sha3_256>::new(None, export_key.0.as_ref())
+        Hkdf::<Sha3_256>::new(None, export_key.as_ref())
             .expand((&bad_ad).into(), &mut bad_mk)
             .unwrap();
         let wrong_context_key = EncryptionKey::from_bytes(bad_mk, master_key.0.context().clone());
@@ -336,26 +413,9 @@ mod test {
         assert_ne!(export1, export2);
         // ...implies different master keys.
         assert_ne!(
-            export1.derive_master_key().unwrap(),
-            export2.derive_master_key().unwrap()
+            MasterKey::derive_master_key(export1.into()).unwrap(),
+            MasterKey::derive_master_key(export2.into()).unwrap()
         );
-    }
-
-    #[test]
-    fn storage_key_generation_produces_unique_storage_keys() {
-        let mut rng = rand::thread_rng();
-        let mut uniq = HashSet::new();
-
-        assert!((0..1000)
-            .map(|_| StorageKey::generate(&mut rng))
-            .all(|storage_key| uniq.insert(storage_key.0)));
-    }
-
-    #[test]
-    fn storage_keys_are_32_bytes() {
-        let mut rng = rand::thread_rng();
-        let storage_key = StorageKey::generate(&mut rng);
-        assert_eq!(32, storage_key.0.len())
     }
 
     #[test]
@@ -392,89 +452,69 @@ mod test {
     }
 
     #[test]
-    fn storage_key_encryption_works() -> Result<(), LockKeeperError> {
+    fn message_encryption_works() -> Result<(), LockKeeperError> {
         let mut rng = rand::thread_rng();
-        let export_key = create_test_export_key(&mut rng);
+        let session_key = create_test_session_key(&mut rng);
         let user_id = UserId::new(&mut rng)?;
 
         // Set up matching RNGs to check behavior of the utility function.
         let seed = b"not-random seed for convenience!";
         let mut rng = StdRng::from_seed(*seed);
-        let mut rng_copy = StdRng::from_seed(*seed);
 
-        // Encrypt the storage key
-        let master_key = export_key.derive_master_key()?;
-        let storage_key = StorageKey::generate(&mut rng);
+        // Encrypt a message
+        let message = get_user_id::server::Response {
+            user_id: user_id.clone(),
+        }
+        .to_message();
+        let expected_message = get_user_id::server::Response { user_id };
+        let encrypted_message = session_key.encrypt(&mut rng, message?)?;
 
-        let encrypted_key =
-            master_key.encrypt_storage_key(&mut rng, storage_key.clone(), &user_id)?;
-
-        // Make sure the utility function gives the same result when encrypting the
-        // storage key
-        let utility_encrypted_key = export_key
-            .clone()
-            .create_and_encrypt_storage_key(&mut rng_copy, &user_id)?;
-        assert_eq!(utility_encrypted_key, encrypted_key);
-
-        // Decrypt the storage key and check that it worked
-        let decrypted_key = encrypted_key.decrypt_storage_key(export_key, &user_id)?;
-        assert_eq!(storage_key, decrypted_key);
+        // Decrypt the message and check that it worked
+        let decrypted_message = get_user_id::server::Response::from_message(
+            encrypted_message.decrypt_message(&session_key)?,
+        )?;
+        assert_eq!(expected_message.user_id, decrypted_message.user_id);
 
         Ok(())
     }
 
     #[test]
-    fn storage_key_retrieval_requires_correct_aad() -> Result<(), LockKeeperError> {
+    fn encrypted_message_to_message_and_back_conversion_works() -> Result<(), LockKeeperError> {
         let mut rng = rand::thread_rng();
-        let export_key = create_test_export_key(&mut rng);
+        let session_key = create_test_session_key(&mut rng);
         let user_id = UserId::new(&mut rng)?;
 
-        let master_key = export_key.derive_master_key()?;
-        let storage_key = StorageKey::generate(&mut rng);
+        // Set up matching RNGs to check behavior of the utility function.
+        let seed = b"not-random seed for convenience!";
+        let mut rng = StdRng::from_seed(*seed);
 
-        let bad_aad = AssociatedData::new()
-            .with_bytes(user_id.clone())
-            .with_str(StorageKey::domain_separator())
-            .with_str("some other content that makes this incorrect");
+        // Encrypt a message
+        let message = get_user_id::server::Response { user_id }.to_message()?;
+        let encrypted_message = session_key.encrypt(&mut rng, message)?;
 
-        let encrypted_storage_key =
-            Encrypted::encrypt(&mut rng, &master_key.0, storage_key, &bad_aad)?;
-        assert!(encrypted_storage_key
-            .decrypt_storage_key(export_key, &user_id)
-            .is_err());
+        let result_to_message = encrypted_message.clone().try_into_message();
+        assert!(result_to_message.is_ok());
+
+        let result_from_message =
+            Encrypted::<Message>::try_from_message(result_to_message.unwrap());
+        assert!(result_from_message.is_ok());
+
+        assert_eq!(encrypted_message, result_from_message.unwrap());
 
         Ok(())
     }
 
     #[test]
-    fn storage_key_requires_correct_encrypted_blob() -> Result<(), LockKeeperError> {
+    fn session_key_to_vec_u8_conversion_works() -> Result<(), LockKeeperError> {
         let mut rng = rand::thread_rng();
+        for _ in 0..1000 {
+            let session_key = create_test_session_key(&mut rng);
 
-        // Set up correct parameters to encrypt a storage key.
-        let user_id = UserId::new(&mut rng)?;
-        let export_key = create_test_export_key(&mut rng);
-        let aad = AssociatedData::new()
-            .with_bytes(user_id.clone())
-            .with_str(StorageKey::domain_separator());
+            let vec: Vec<u8> = session_key.clone().into();
+            let output_session_key = vec.try_into()?;
 
-        // Encrypt any old key (and make sure it's decryptable in general)
-        let fake_key = EncryptionKey::new(&mut rng);
-        let encrypted_fake_key =
-            Encrypted::encrypt(&mut rng, &export_key.derive_master_key()?.0, fake_key, &aad)?;
-        assert!(encrypted_fake_key
-            .clone()
-            .decrypt(&export_key.derive_master_key()?.0)
-            .is_ok());
-
-        // Serialize the fake key, and pretend it's a storage key when you deserialize.
-        let fake_storage_key: Encrypted<StorageKey> =
-            serde_json::from_str(&serde_json::to_string(&encrypted_fake_key).unwrap()).unwrap();
-
-        // Decryption must fail.
-        assert!(fake_storage_key
-            .decrypt_storage_key(export_key, &user_id)
-            .is_err());
-
+            assert_eq!(session_key, output_session_key);
+        }
         Ok(())
     }
 }

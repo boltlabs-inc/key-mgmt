@@ -3,58 +3,123 @@
 //! This database will hold information on users and the secret material
 //! they have stored in the key server.
 
-use crate::{config::DatabaseSpec, constants};
+use async_trait::async_trait;
 use lock_keeper::{
-    constants::{ACCOUNT_NAME, USER_ID},
-    types::database::user::User,
+    config::opaque::OpaqueCipherSuite,
+    crypto::{Encrypted, KeyId, StorageKey},
+    types::{
+        audit_event::{AuditEvent, AuditEventOptions, EventStatus, EventType},
+        database::{
+            secrets::StoredSecret,
+            user::{Account, AccountName, UserId},
+        },
+        operations::ClientAction,
+    },
 };
-use mongodb::{
-    bson::doc,
-    options::{ClientOptions, IndexOptions},
-    Client, IndexModel,
-};
+use opaque_ke::ServerRegistration;
+use uuid::Uuid;
 
-use crate::error::LockKeeperServerError;
+/// Defines the expected interface between a key server and its database.
+///
+/// This trait definition is not complete. New trait methods may be added
+/// in future server versions.
+#[async_trait]
+pub trait DataStore: Send + Sync + 'static {
+    type Error: std::error::Error + Send + Sync + 'static;
 
-pub(crate) mod audit_event;
-pub(crate) mod secrets;
-pub(crate) mod user;
+    /// Create a new [`AuditEvent`] for the given actor, action, and outcome
+    async fn create_audit_event(
+        &self,
+        request_id: Uuid,
+        account_name: &AccountName,
+        key_id: &Option<KeyId>,
+        action: ClientAction,
+        status: EventStatus,
+    ) -> Result<(), Self::Error>;
 
-#[derive(Clone, Debug)]
-pub struct Database {
-    inner: mongodb::Database,
+    /// Find [`AuditEvent`]s that correspond to the event type and provided
+    /// filters
+    async fn find_audit_events(
+        &self,
+        account_name: &AccountName,
+        event_type: EventType,
+        options: AuditEventOptions,
+    ) -> Result<Vec<AuditEvent>, Self::Error>;
+
+    // Secret
+    /// Add a [`StoredSecret`] to a [`Account`]'s list of arbitrary
+    /// secrets
+    async fn add_secret(&self, secret: StoredSecret) -> Result<(), Self::Error>;
+
+    /// Get a [`Account`]'s [`StoredSecret`] based on its [`KeyId`].
+    /// A [`StoredSecret`] will only be returned if it matches the given
+    /// [`SecretFilter`].
+    async fn get_secret(
+        &self,
+        user_id: &UserId,
+        key_id: &KeyId,
+        filter: SecretFilter,
+    ) -> Result<StoredSecret, Self::Error>;
+
+    // User
+    /// Create a new [`Account`] with their authentication information and
+    /// insert it into the database.
+    async fn create_account(
+        &self,
+        user_id: &UserId,
+        account_name: &AccountName,
+        server_registration: &ServerRegistration<OpaqueCipherSuite>,
+    ) -> Result<Account, Self::Error>;
+
+    /// Find a [`Account`] by their human-readable [`AccountName`].
+    async fn find_account(
+        &self,
+        account_name: &AccountName,
+    ) -> Result<Option<Account>, Self::Error>;
+
+    /// Find a [`Account`] by their machine-readable [`UserId`].
+    async fn find_account_by_id(&self, user_id: &UserId) -> Result<Option<Account>, Self::Error>;
+
+    /// Delete a [`Account`] by their [`UserId`]
+    async fn delete_account(&self, user_id: &UserId) -> Result<(), Self::Error>;
+
+    /// Set the `storage_key` field for the [`Account`] associated with a given
+    /// [`UserId`]
+    /// Returns a `LockKeeperServerError::InvalidAccount` if the given
+    /// `user_id` does not exist.
+    async fn set_storage_key(
+        &self,
+        user_id: &UserId,
+        storage_key: Encrypted<StorageKey>,
+    ) -> Result<(), Self::Error>;
 }
 
-impl Database {
-    /// Connect to the MongoDB instance specified by the given [`DatabaseSpec`]
-    pub async fn connect(database_spec: &DatabaseSpec) -> Result<Self, LockKeeperServerError> {
-        // Parse a connection string into an options struct
-        let client_options = ClientOptions::parse(&database_spec.mongodb_uri).await?;
-        // Get a handle to the deployment
-        let client = Client::with_options(client_options)?;
-        // Get a handle to the database
-        let db = client.database(&database_spec.db_name);
+/// Filters that can be used to influence database queries.
+/// Any new database filters for secrets (e.g. created_time)
+/// should be added to this struct as optional fields.
+/// This will allow us to add new filters with minimal breakage.
+///
+/// If you're constructing this type directly, use `..Default::default()`
+/// to guard against breaking changes.
+///
+/// ## Example:
+/// ```
+/// # use lock_keeper_key_server::database::SecretFilter;
+/// SecretFilter {
+///     secret_type: None,
+///     ..Default::default()
+/// };
+/// ```
+#[derive(Clone, Debug, Default)]
+pub struct SecretFilter {
+    pub secret_type: Option<String>,
+}
 
-        // Enforce that the user ID is unique
-        let enforce_uniqueness = IndexOptions::builder().unique(true).build();
-        let user_id_index = IndexModel::builder()
-            .keys(doc! {USER_ID: 1})
-            .options(enforce_uniqueness)
-            .build();
-
-        // Enforce that the account name is unique
-        let enforce_uniqueness = IndexOptions::builder().unique(true).build();
-        let account_name_index = IndexModel::builder()
-            .keys(doc! {ACCOUNT_NAME: 1})
-            .options(enforce_uniqueness)
-            .build();
-
-        // Apply uniqueness to the database
-        let _created_indices = db
-            .collection::<User>(constants::USERS)
-            .create_indexes([user_id_index, account_name_index], None)
-            .await?;
-
-        Ok(Self { inner: db })
+impl SecretFilter {
+    /// Convenience function to filter by secret type.
+    pub fn secret_type(secret_type: impl std::fmt::Display) -> Self {
+        Self {
+            secret_type: Some(secret_type.to_string()),
+        }
     }
 }

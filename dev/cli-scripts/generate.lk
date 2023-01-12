@@ -1,0 +1,9 @@
+register
+
+repeat 3 {
+    generate
+}
+
+retrieve 1
+retrieve 2
+retrieve 3

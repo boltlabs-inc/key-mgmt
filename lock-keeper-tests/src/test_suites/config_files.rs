@@ -8,31 +8,28 @@ use lock_keeper_client::LockKeeperClientError;
 use lock_keeper_key_server::LockKeeperServerError;
 
 use crate::{
-    config::Config,
+    config::TestFilters,
     error::Result,
     run_parallel,
-    test_suites::database::TestDatabase,
     utils::{report_test_results, TestResult},
 };
 
-pub async fn run_tests(config: &Config) -> Result<Vec<TestResult>> {
+pub async fn run_tests(filters: &TestFilters) -> Result<Vec<TestResult>> {
     println!("{}", "Running config file tests".cyan());
 
-    let db = TestDatabase::new("config_file_tests").await?;
     let results = run_parallel!(
-        config.clone(),
+        filters,
         client_config_with_file_private_key_works(),
         client_config_with_manual_private_key_works(),
         client_config_without_private_key_fails(),
         server_config_with_file_private_key_works(),
         server_config_with_manual_private_key_works(),
+        server_config_with_manual_remote_storage_key_works(),
         server_config_without_private_key_fails(),
+        server_config_without_remote_storage_key_fails(),
     )?;
 
-    db.drop().await?;
-
     println!("config file tests: {}", report_test_results(&results));
-
     Ok(results)
 }
 
@@ -74,7 +71,7 @@ async fn server_config_with_file_private_key_works() -> Result<()> {
     use lock_keeper_key_server::config::{Config as ServerConfig, ConfigFile};
 
     let config_file = ConfigFile::from_str(SERVER_CONFIG_WITH_KEY)?;
-    let config = ServerConfig::from_config_file(config_file, None);
+    let config = ServerConfig::from_config_file(config_file, None, None);
     assert!(config.is_ok());
 
     Ok(())
@@ -85,8 +82,20 @@ async fn server_config_with_manual_private_key_works() -> Result<()> {
 
     let config_file = ConfigFile::from_str(SERVER_CONFIG_NO_KEY)?;
     let private_key_bytes = SAMPLE_PRIVATE_KEY.to_string().into_bytes();
-    let config = ServerConfig::from_config_file(config_file, Some(private_key_bytes));
+    let config = ServerConfig::from_config_file(config_file, Some(private_key_bytes), None);
     assert!(config.is_ok());
+
+    Ok(())
+}
+
+async fn server_config_with_manual_remote_storage_key_works() -> Result<()> {
+    use lock_keeper_key_server::config::{Config as ServerConfig, ConfigFile};
+
+    let config_file = ConfigFile::from_str(SERVER_CONFIG_NO_SSE_KEY)?;
+    let sse_key_bytes = SAMPLE_SSE_KEY.to_string().into_bytes();
+    println!("{}", sse_key_bytes.len());
+    let config = ServerConfig::from_config_file(config_file, None, Some(sse_key_bytes));
+    assert!(config.is_ok(), "{}", config.unwrap_err());
 
     Ok(())
 }
@@ -95,10 +104,23 @@ async fn server_config_without_private_key_fails() -> Result<()> {
     use lock_keeper_key_server::config::{Config as ServerConfig, ConfigFile};
 
     let config_file = ConfigFile::from_str(SERVER_CONFIG_NO_KEY)?;
-    let config = ServerConfig::from_config_file(config_file, None);
+    let config = ServerConfig::from_config_file(config_file, None, None);
     assert!(matches!(
         config,
         Err(LockKeeperServerError::PrivateKeyMissing)
+    ));
+
+    Ok(())
+}
+
+async fn server_config_without_remote_storage_key_fails() -> Result<()> {
+    use lock_keeper_key_server::config::{Config as ServerConfig, ConfigFile};
+
+    let config_file = ConfigFile::from_str(SERVER_CONFIG_NO_SSE_KEY)?;
+    let config = ServerConfig::from_config_file(config_file, None, None);
+    assert!(matches!(
+        config,
+        Err(LockKeeperServerError::RemoteStorageKeyMissing)
     ));
 
     Ok(())
@@ -124,28 +146,50 @@ private_key = "dev/test-pki/gen/certs/client.key"
 const SERVER_CONFIG_NO_KEY: &str = r#"
 address = "127.0.0.1"
 port = 1114
+opaque_path = "dev/opaque"
+opaque_server_key = "dev/opaque/server_setup"
+remote_storage_key = "dev/remote-storage-key/gen/remote_storage.key"
+
+[tls_config]
 certificate_chain = "dev/test-pki/gen/certs/server.chain"
 client_auth = true
+
+[logging]
+lock_keeper_logs_file_name = "/app/logs/server.log"
+all_logs_file_name = "/app/logs/all.log"
+"#;
+
+const SERVER_CONFIG_NO_SSE_KEY: &str = r#"
+address = "127.0.0.1"
+port = 1114
 opaque_path = "dev/opaque"
 opaque_server_key = "dev/opaque/server_setup"
 
-[database]
-mongodb_uri = 'mongodb://localhost:27017'
-db_name = 'lock-keeper-test-db'
+[tls_config]
+private_key = "dev/test-pki/gen/certs/server.key"
+certificate_chain = "dev/test-pki/gen/certs/server.chain"
+client_auth = true
+
+[logging]
+lock_keeper_logs_file_name = "/app/logs/server.log"
+all_logs_file_name = "/app/logs/all.log"
 "#;
 
 const SERVER_CONFIG_WITH_KEY: &str = r#"
 address = "127.0.0.1"
 port = 1114
-certificate_chain = "dev/test-pki/gen/certs/server.chain"
-private_key = "dev/test-pki/gen/certs/server.key"
-client_auth = true
 opaque_path = "dev/opaque"
 opaque_server_key = "dev/opaque/server_setup"
+remote_storage_key = "dev/remote-storage-key/gen/remote_storage.key"
 
-[database]
-mongodb_uri = 'mongodb://localhost:27017'
-db_name = 'lock-keeper-test-db'
+[tls_config]
+private_key = "dev/test-pki/gen/certs/server.key"
+certificate_chain = "dev/test-pki/gen/certs/server.chain"
+client_auth = true
+
+[logging]
+lock_keeper_logs_file_name = "/app/logs/server.log"
+all_logs_file_name = "/app/logs/all.log"
 "#;
 
 const SAMPLE_PRIVATE_KEY: &str = r#"
@@ -178,3 +222,5 @@ XrqXH4XVk0PdxqQL0Ntny3OZT0QCnAFMIzs5Tb1hZy6mwOgXcOSOo+qs0l0ckvX3
 3jgHukmZ0w0rPwXJn8PRIa0b
 -----END PRIVATE KEY-----
 "#;
+
+const SAMPLE_SSE_KEY: &str = "32randombytes-As test!#$%^-\\_^^/";

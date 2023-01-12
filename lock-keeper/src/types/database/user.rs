@@ -6,29 +6,83 @@ use crate::{
     LockKeeperError,
 };
 
-use bson::Bson;
 use opaque_ke::ServerRegistration;
 use rand::{CryptoRng, Rng, RngCore};
 use serde::{Deserialize, Serialize};
-use std::{fmt::Display, str::FromStr, vec::IntoIter};
-use uuid::Uuid;
+use std::{
+    array::{IntoIter, TryFromSliceError},
+    fmt::{Debug, Display, Formatter},
+    str::FromStr,
+};
 
-use super::secrets::StoredSecrets;
+use super::HexBytes;
+
+/// One user with a set of arbitrary secrets and a [`ServerRegistration`] to
+/// authenticate with.
+#[derive(Deserialize, Serialize)]
+pub struct Account {
+    pub user_id: UserId,
+    pub account_name: AccountName,
+    pub storage_key: Option<Encrypted<StorageKey>>,
+    pub server_registration: ServerRegistration<OpaqueCipherSuite>,
+}
+
+/// Manual implement Debug to avoid printing storage key or server_registration.
+impl Debug for Account {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Account")
+            .field("user_id", &self.user_id)
+            .field("account_name", &self.account_name)
+            .finish()
+    }
+}
+
+impl Account {
+    pub fn new(
+        user_id: UserId,
+        account_name: AccountName,
+        server_registration: ServerRegistration<OpaqueCipherSuite>,
+    ) -> Self {
+        Account {
+            user_id,
+            account_name,
+            storage_key: None,
+            server_registration,
+        }
+    }
+
+    pub fn into_parts(self) -> (ServerRegistration<OpaqueCipherSuite>, UserId) {
+        (self.server_registration, self.user_id)
+    }
+}
 
 /// Unique ID for a user.
-#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
-pub struct UserId(String);
+/// Wrapped in a `Box` to avoid stack overflows during heavy traffic.
+#[derive(Clone, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
+#[serde(try_from = "HexBytes", into = "HexBytes")]
+pub struct UserId(Box<[u8; 16]>);
+
+impl AsRef<[u8; 16]> for UserId {
+    fn as_ref(&self) -> &[u8; 16] {
+        &self.0
+    }
+}
+impl TryFrom<&[u8]> for UserId {
+    type Error = TryFromSliceError;
+
+    fn try_from(id: &[u8]) -> Result<Self, Self::Error> {
+        Ok(UserId(Box::new(<[u8; 16]>::try_from(id)?)))
+    }
+}
 
 impl UserId {
     pub fn new(rng: &mut (impl CryptoRng + RngCore)) -> Result<Self, LockKeeperError> {
-        // Generate a UUID from bytes
+        // Generate random bytes
         let mut id = [0_u8; 16];
         rng.try_fill(&mut id)
             .map_err(|_| CryptoError::RandomNumberGeneratorFailed)?;
-        let uuid = Uuid::from_bytes(id);
 
-        // Store the UUID as a string to simplify database queries
-        Ok(Self(uuid.to_string()))
+        Ok(Self(Box::new(id)))
     }
 
     pub fn as_bytes(&self) -> &[u8] {
@@ -42,22 +96,38 @@ impl UserId {
 
 impl IntoIterator for UserId {
     type Item = u8;
-    type IntoIter = IntoIter<u8>;
+    type IntoIter = IntoIter<u8, 16>;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.0.into_bytes().into_iter()
+        self.0.into_iter()
+    }
+}
+
+impl Debug for UserId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let hex = hex::encode(*self.0);
+        f.debug_tuple("UserId").field(&hex).finish()
     }
 }
 
 impl Display for UserId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self.0)
+        let hex = hex::encode(*self.0);
+        write!(f, "{hex}")
     }
 }
 
-impl From<UserId> for Bson {
-    fn from(user_id: UserId) -> Self {
-        Bson::String(user_id.0)
+impl From<UserId> for HexBytes {
+    fn from(key_id: UserId) -> Self {
+        (*key_id.0).into()
+    }
+}
+
+impl TryFrom<HexBytes> for UserId {
+    type Error = LockKeeperError;
+
+    fn try_from(bytes: HexBytes) -> Result<Self, Self::Error> {
+        Ok(UserId(Box::new(bytes.try_into()?)))
     }
 }
 
@@ -84,46 +154,21 @@ impl AsRef<str> for AccountName {
 }
 
 impl FromStr for AccountName {
-    type Err = LockKeeperError;
+    type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self(s.to_string()))
+        Ok(AccountName(s.to_string()))
+    }
+}
+
+impl From<&str> for AccountName {
+    fn from(s: &str) -> Self {
+        Self(s.to_string())
     }
 }
 
 impl AccountName {
     pub fn as_bytes(&self) -> &[u8] {
         self.0.as_bytes()
-    }
-}
-
-/// One user with a set of arbitrary secrets and a [`ServerRegistration`] to
-/// authenticate with.
-#[derive(Debug, Deserialize, Serialize)]
-pub struct User {
-    pub user_id: UserId,
-    pub account_name: AccountName,
-    pub storage_key: Option<Encrypted<StorageKey>>,
-    pub secrets: StoredSecrets,
-    pub server_registration: ServerRegistration<OpaqueCipherSuite>,
-}
-
-impl User {
-    pub fn new(
-        user_id: UserId,
-        account_name: AccountName,
-        server_registration: ServerRegistration<OpaqueCipherSuite>,
-    ) -> Self {
-        User {
-            user_id,
-            account_name,
-            storage_key: None,
-            secrets: StoredSecrets::default(),
-            server_registration,
-        }
-    }
-
-    pub fn into_parts(self) -> (ServerRegistration<OpaqueCipherSuite>, UserId) {
-        (self.server_registration, self.user_id)
     }
 }

@@ -1,0 +1,27 @@
+[package]
+name = "lock-keeper-postgres"
+version.workspace = true
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# Local dependencies
+lock-keeper = { path = "../../lock-keeper" }
+lock-keeper-key-server = { path = "../../lock-keeper-key-server" }
+
+# Workspace dependencies
+async-trait.workspace = true
+futures.workspace = true
+humantime-serde.workspace = true
+opaque-ke.workspace = true
+thiserror.workspace = true
+time.workspace = true
+tracing.workspace = true
+serde.workspace = true
+toml.workspace = true
+uuid.workspace = true
+bincode.workspace = true
+
+# Other dependencies
+sqlx = { version = "0.6", features = [ "runtime-tokio-native-tls" , "postgres", "offline", "time", "uuid"]}

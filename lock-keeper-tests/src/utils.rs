@@ -6,8 +6,8 @@ use std::{
 };
 
 use crate::{
+    config::TestFilters,
     error::{LockKeeperTestError, Result},
-    Config,
 };
 use colored::Colorize;
 use futures::Future;
@@ -25,7 +25,7 @@ pub const RNG_SEED: &[u8; 32] = b"we love deterministic testing!!!";
 /// ```
 /// let user = tagged("user");
 /// println!("{user}");
-/// // Prints something like "user-1h65k35"
+/// // Prints something like "user_1h65k35"
 /// ```
 pub fn tagged(text: impl AsRef<str>) -> String {
     let text = text.as_ref();
@@ -35,7 +35,7 @@ pub fn tagged(text: impl AsRef<str>) -> String {
         .map(char::from)
         .collect();
 
-    format!("{text}-{tag}")
+    format!("{text}_{tag}")
 }
 
 /// Locally simulates OPAQUE registration to get a valid
@@ -78,17 +78,17 @@ pub fn random_bytes(mut rng: impl Rng, len: usize) -> Vec<u8> {
 /// ```
 #[macro_export]
 macro_rules! run_parallel {
-    ($config:expr, $($task:expr),+,) => {
-        run_parallel!($config, $($task),+)
+    ($filters:expr, $($task:expr),+,) => {
+        run_parallel!($filters, $($task),+)
     };
-    ($config:expr, $($task:expr),+) => {
+    ($filters:expr, $($task:expr),+) => {
         // Stick this in a scope so it can return a result
         {
             use std::sync::{Arc, Mutex};
             use $crate::{error::LockKeeperTestError, utils::TestResult};
 
             let results = Arc::new(Mutex::new(Vec::new()));
-            tokio::try_join!($($crate::utils::run_test_case($config, stringify!($task), $task, results.clone())),+)?;
+            tokio::try_join!($($crate::utils::run_test_case($filters, stringify!($task), $task, results.clone())),+)?;
 
             let results = results.lock().unwrap().clone();
 
@@ -100,7 +100,7 @@ macro_rules! run_parallel {
 /// Runs a test case and manually handles any panics triggered by `assert`
 /// macros.
 pub async fn run_test_case(
-    config: Config,
+    filters: &TestFilters,
     name: &str,
     task: impl Future<Output = Result<()>> + Send + 'static,
     results: Arc<Mutex<Vec<TestResult>>>,
@@ -118,7 +118,7 @@ pub async fn run_test_case(
         .expect("Function has at least one character");
     test_result.push_str(&format!("\n{name}:\n"));
 
-    if !config.filters.matches(name) {
+    if !filters.matches(name) {
         let mut results = results.lock().unwrap();
         results.push(Skipped);
         test_result.push_str(&format!("{}", "skipped\n".bright_blue()));
@@ -235,12 +235,6 @@ pub async fn wait_for_server(config: &ClientConfig) -> Result<()> {
     const NUM_RETRIES: u32 = 10;
     const RETRY_DELAY: Duration = Duration::from_secs(10);
 
-    let server_start_command = if config.client_auth_enabled {
-        "cargo make start-all"
-    } else {
-        "cargo make start"
-    };
-
     for i in 0..NUM_RETRIES {
         println!("Attempting to connect to server...");
         match LockKeeperClient::health(config).await {
@@ -248,7 +242,7 @@ pub async fn wait_for_server(config: &ClientConfig) -> Result<()> {
             Err(_) => {
                 println!("Server connection failed. Retrying in {:?}", RETRY_DELAY);
                 if i == 0 {
-                    println!("Did you remember to run `{}`?", server_start_command);
+                    println!("Did you remember to run `cargo make start`?");
                 }
                 std::thread::sleep(RETRY_DELAY);
             }

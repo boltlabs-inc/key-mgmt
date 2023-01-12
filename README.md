@@ -24,6 +24,11 @@ The client also includes the cryptographic functionality for:
 
 Refer to the [current design specification](https://github.com/boltlabs-inc/key-mgmt-spec) for Lock Keeper.
 
+## Breaking Changes
+- LockKeeperKeyServer v0.4 introduces a breaking change with respect to a database that was generated using LockKeeperKeyServer v0.3. Remotely generated signing keys are now encrypted using a remote storage key.
+- LockKeeperClient v0.3 introduces a breaking change with respect to v0.2. Storage keys are encrypted inside the database using a different key, therefore, old storage keys in the database cannot be used anymore.
+- LockKeeperClient v0.3 is backwards **incompatible** with LockKeeperServer v0.2, given that authenticated traffic will now use an extra layer of encryption using the session key.
+
 ## Install & Setup
 
 ### Dependencies:
@@ -36,9 +41,6 @@ Refer to the [current design specification](https://github.com/boltlabs-inc/key-
 - On Linux, you may need to install [Docker Compose](https://docs.docker.com/compose/install/) separately.
 
 In order to use the `cargo make` tasks on Linux, you need to be able to run Docker without `sudo`. You can find instructions for this [here](https://docs.docker.com/engine/install/linux-postinstall/#manage-docker-as-a-non-root-user).
-
-If you need to run the server outside of Docker, [MongoDB](https://www.mongodb.com/try/download/community) is also required.
-
 
 Once the required dependencies are installed, build the project as follows:
 
@@ -93,7 +95,7 @@ cargo make stop
 
 If you want to watch server output in real-time, you can run the server in the foreground with:
 ```bash
-cargo make start-server
+cargo make run
 ```
 
 Running the test binary directly offers some extra command line options.
@@ -105,29 +107,15 @@ cargo run --bin lock-keeper-tests -- --filter generate --filter retrieve
 
 ## Running the server locally
 
-To run the server locally, first make sure MongoDB is running. You can run MongoDB [in Docker](https://www.mongodb.com/compatibility/docker) or [locally with a config file](https://www.mongodb.com/docs/manual/reference/configuration-options/).
-
 Then run:
 ```bash
-cargo make start-server-local
+cargo run --bin key-server-cli ./dev/config/local/Binary.toml
 ```
 
-Tests can be run against a local server with:
-```bash
-cargo make e2e
-```
+## TLS client authentication
 
-## TLS mutual authentication
-
-Mutual authentication can be enabled in server and client configs. See `ServerMutualAuth.toml` and `ClientMutualAuth.toml` 
+Client authentication can be enabled in server and client configs. See the config files in `dev/config/docker-client-auth` or `dev/config/local-client-auth`
 for examples.
-
-To run a server with mutual auth enabled, use your preferred `cargo make` task and append `-mutual-auth` to the end. For example, 
-to run a server in the foreground with mutual auth use `cargo make start-server-mutual-auth`.
-
-To run both servers at the same time, append `-all` to the end. For example, `cargo make start-server-all`.
-
-In order to run the mutual authentication integration tests, you must have both servers running.
 
 # Private key security
 The key server always requires a private key. 
@@ -141,13 +129,29 @@ key as a base64 string.
 Example:
 
 ```bash
-cargo run --bin key-server-cli dev/local/ServerMutualAuth.toml --private-key "$(cat dev/test-pki/gen/certs/server.key | base64)"
+cargo run --bin key-server-cli dev/config/local-client-auth/Binary.toml --private-key "$(cat dev/test-pki/gen/certs/server.key | base64)"
 ```
 
 `LockKeeperClient` requires a private key if client authentication is enabled. 
 The private key can optionally be provided via a file path in the client config.
 Alternatively, the raw bytes for a private key can be passed to the `lock_keeper_client::Config` constructors.
 This alternative allows the client to secure its private key however it chooses.
+
+# Remote storage key security
+The key server always requires a remote storage key.
+The remote storage key can be provided in a similar fashion as the private key (see above).
+
+The command line argument for the `key-server-cli` binary included with the `lock-keeper-key-server` is `remote-storage-key`.
+
+Example:
+
+```bash
+cargo run --bin key-server-cli dev/config/local-client-auth/Binary.toml --remote_storage_key "$(cat dev/remote-storage-key/gen/remote_storage.key | base64)"
+```
+
+Important to note is that this key encrypts all signing keys on the server, therefore, loss of this key would mean loss of all signing keys.
+Therefore, we recommend to store this key in a secure fashion, e.g. by using an HSM. Access to this key should be well guarded to obtain very high security.
+Ultimately, the key server will provide a different way to keep signing keys secure using an enclave.
 
 ## Running the interactive client
 
@@ -164,7 +168,21 @@ Then run the client CLI:
 cargo make cli
 ```
 
+There are a few `cargo make` tasks that run specific CLI scripts for quick testing. Check the CLI section of  `Makefile.toml` for available tasks.
+
 ## Troubleshooting
+### Logging
+The server writes logs to a few locations:
+- **Standard Output**: `INFO` level logs get written out to standard output for any events originating from any lock-keeper crates.
+- **Sever-only logs**: `INFO` level logs written to a file based on user config (see below) for any events originating from any lock-keeper crates.
+- **All logs**: `TRACE` or higher level logs written to a file based on user config (see below) for any event from any crate including dependencies.
+
+The following may be configured via the server configuration file:
+- The log directory may be specified via the `log_directory` field in the server config file.
+- The sever-only log file may be specified via the `lock_keeper_logs_file_name` field.
+- The all log file may be specified via the `all_logs_file_name` field.
+
+### No Space Left
 
 If you get a `no space left on device` error from Docker, try running:
 ```bash
@@ -176,6 +194,17 @@ If this doesn't help, you can do a full system prune. This will delete your cach
 ```bash
 docker system prune -a --volumes
 ```
+
+## About the use of Zeroize
+
+In our client and server we make use of the [zeroize](https://docs.rs/zeroize/latest/zeroize/) library to make sure secrets get properly removed from memory after dropping. This library will make sure that the memory is set to zero after the secret is of no use anymore. 
+Most of the secrets are annotated with the trait [ZeroizeOnDrop](https://docs.rs/zeroize/latest/zeroize/trait.ZeroizeOnDrop.html) which assures the allocated memory gets set to zero as soon as the object gets dropped.
+
+The zeroize crate guarantees the following:
+1. The zeroing operation can’t be “optimized away” by the compiler.
+2. All subsequent reads to memory will see “zeroized” values.
+
+For more information about this carte and its usage, we refer the reader to the [zeroize documentation.](https://docs.rs/zeroize/latest/zeroize/)
 
 ## Build documentation
 

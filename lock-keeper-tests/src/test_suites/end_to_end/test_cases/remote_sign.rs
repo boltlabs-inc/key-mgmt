@@ -5,40 +5,47 @@ use lock_keeper::{
 };
 use lock_keeper_client::{api::RemoteGenerateResult, Config};
 use rand::{rngs::StdRng, SeedableRng};
+use tonic::Status;
+use uuid::Uuid;
 
 use crate::{
+    config::TestFilters,
     error::Result,
     run_parallel,
     test_suites::end_to_end::{
-        operations::{check_audit_events, remote_generate, remote_sign_bytes},
+        operations::{authenticate, check_audit_events, compare_status_errors},
         test_cases::init_test_state,
     },
     utils::{self, TestResult, RNG_SEED},
-    Config as TestConfig,
 };
 
-pub async fn run_tests(config: TestConfig) -> Result<Vec<TestResult>> {
+pub async fn run_tests(config: &Config, filters: &TestFilters) -> Result<Vec<TestResult>> {
     println!("{}", "Running remote sign tests".cyan());
 
     let result = run_parallel!(
-        config.clone(),
-        remote_sign_works(config.client_config.clone()),
+        filters,
+        remote_sign_works(config.clone()),
+        cannot_remote_sign_after_logout(config.clone()),
     )?;
 
     Ok(result)
 }
 
 async fn remote_sign_works(config: Config) -> Result<()> {
-    let state = init_test_state(config).await?;
+    let state = init_test_state(&config).await?;
+    let client = authenticate(&state).await.result?;
 
-    let RemoteGenerateResult { key_id, public_key } = remote_generate(&state).await?;
+    let RemoteGenerateResult { key_id, public_key } = client.remote_generate().await.result?;
 
     let mut rng = StdRng::from_seed(*RNG_SEED);
+    let mut request_id = Uuid::nil();
 
     for _ in 0..10 {
         let data = SignableBytes(utils::random_bytes(&mut rng, 100));
-        let signature = remote_sign_bytes(&state, &key_id, data.clone()).await?;
+        let signature_response = client.remote_sign_bytes(key_id.clone(), data.clone()).await;
         // Verify that the data was signed with the generated key
+        let signature = signature_response.result?;
+        request_id = signature_response.metadata.unwrap().request_id;
         assert!(
             data.verify(&public_key, &signature).is_ok(),
             "original bytes: {data:?}"
@@ -49,8 +56,25 @@ async fn remote_sign_works(config: Config) -> Result<()> {
         &state,
         EventStatus::Successful,
         ClientAction::RemoteSignBytes,
+        request_id,
     )
     .await?;
+
+    Ok(())
+}
+
+async fn cannot_remote_sign_after_logout(config: Config) -> Result<()> {
+    let state = init_test_state(&config).await?;
+    let client = authenticate(&state).await.result?;
+
+    // Remote generate before waiting out the timeout
+    let res = client.remote_generate().await.result?;
+    client.logout().await.result?;
+
+    let mut rng = StdRng::from_seed(*RNG_SEED);
+    let data = SignableBytes(utils::random_bytes(&mut rng, 100));
+    let res = client.remote_sign_bytes(res.key_id, data).await;
+    compare_status_errors(res, Status::unauthenticated("No session key for this user"))?;
 
     Ok(())
 }

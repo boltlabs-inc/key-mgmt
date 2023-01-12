@@ -3,26 +3,47 @@
 pub mod operations;
 pub mod test_cases;
 use crate::{
-    config::Config,
+    config::{Environments, TestFilters},
     error::Result,
     utils::{report_test_results, TestResult},
 };
+use colored::Colorize;
+use lock_keeper_client::Config;
 use test_cases::{
     authenticate, export, generate, import, register, remote_generate, remote_sign, retrieve,
 };
 
-pub async fn run_tests(config: &Config) -> Result<Vec<TestResult>> {
-    println!("Running end-to-end tests");
+pub async fn run_tests(environments: &Environments) -> Result<Vec<TestResult>> {
+    let mut results = Vec::new();
 
-    let register_results = register::run_tests(config.clone()).await?;
-    let authenticate_results = authenticate::run_tests(config.clone()).await?;
-    let generate_results = generate::run_tests(config.clone()).await?;
-    let retrieve_results = retrieve::run_tests(config.clone()).await?;
-    let export_results = export::run_tests(config.clone()).await?;
-    let import_results = import::run_tests(config.clone()).await?;
-    let remote_generate_results = remote_generate::run_tests(config.clone()).await?;
-    let remote_sign_results = remote_sign::run_tests(config.clone()).await?;
+    for (name, config) in &environments.configs {
+        let env_results = run_tests_with_config(name, config, &environments.filters).await?;
+        results.extend(env_results);
+    }
 
+    Ok(results)
+}
+
+pub async fn run_tests_with_config(
+    environment_name: &str,
+    config: &Config,
+    filters: &TestFilters,
+) -> Result<Vec<TestResult>> {
+    println!(
+        "Running end-to-end tests with environment: {}",
+        environment_name.magenta()
+    );
+
+    let register_results = register::run_tests(config, filters).await?;
+    let authenticate_results = authenticate::run_tests(config, filters).await?;
+    let generate_results = generate::run_tests(config, filters).await?;
+    let retrieve_results = retrieve::run_tests(config, filters).await?;
+    let export_results = export::run_tests(config, filters).await?;
+    let import_results = import::run_tests(config, filters).await?;
+    let remote_generate_results = remote_generate::run_tests(config, filters).await?;
+    let remote_sign_results = remote_sign::run_tests(config, filters).await?;
+
+    println!("Results for environment: {}", environment_name.magenta());
     // Report results after all tests finish so results show up together
     println!("register tests: {}", report_test_results(&register_results));
     println!(

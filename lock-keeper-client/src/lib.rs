@@ -1,5 +1,4 @@
 //! This crate is an implementation of a client to a key management system.
-#![warn(missing_debug_implementations)]
 #![warn(unused_results)]
 #![warn(future_incompatible)]
 #![warn(unused)]
@@ -9,7 +8,9 @@ pub mod api;
 pub mod client;
 pub mod config;
 pub mod error;
+pub mod response;
 
 pub use client::LockKeeperClient;
 pub use config::Config;
-pub use error::LockKeeperClientError;
+pub use error::{LockKeeperClientError, Result};
+pub use response::LockKeeperResponse;

@@ -1,5 +1,8 @@
 use crate::{
-    config::Config, database::Database, error::LockKeeperServerError, server::LockKeeperKeyServer,
+    config::Config,
+    database::DataStore,
+    error::LockKeeperServerError,
+    server::{session_cache::SessionCache, LockKeeperKeyServer},
 };
 
 use hyper::server::conn::Http;
@@ -8,19 +11,25 @@ use std::{net::SocketAddr, sync::Arc};
 use tokio::{
     net::{TcpListener, TcpStream},
     signal,
+    sync::Mutex,
 };
 use tokio_rustls::TlsAcceptor;
 use tonic::transport::{server::Routes, Server};
 use tracing::{error, info};
 
 /// Starts a full Lock Keeper server stack based on the given config.
-pub async fn start_lock_keeper_server(config: Config) -> Result<(), LockKeeperServerError> {
-    tracing::info!("Starting Lock Keeper key server");
-    let db = Database::connect(&config.database).await?;
+pub async fn start_lock_keeper_server<DB: DataStore + Clone, S: SessionCache + 'static>(
+    config: Config,
+    db: DB,
+    session_key_cache: S,
+) -> Result<(), LockKeeperServerError> {
+    info!("Starting Lock Keeper key server");
+    let db = Arc::new(db);
+    let session_key_cache = Arc::new(Mutex::new(session_key_cache));
     // Collect the futures for the result of running each specified server
-    let server_future = start_service(&config, &db);
+    let server_future = start_service(&config, db, session_key_cache);
 
-    tracing::info!("Lock Keeper key server started");
+    info!("Lock Keeper key server started");
 
     // Wait for the server to finish
     tokio::select! {
@@ -37,16 +46,25 @@ pub async fn start_lock_keeper_server(config: Config) -> Result<(), LockKeeperSe
 
 /// Starts a new thread that accepts connections and sends them through our
 /// service stack.
-async fn start_service(config: &Config, db: &Database) -> Result<(), LockKeeperServerError> {
+async fn start_service<DB: DataStore + Clone>(
+    config: &Config,
+    db: Arc<DB>,
+    session_key_cache: Arc<Mutex<dyn SessionCache>>,
+) -> Result<(), LockKeeperServerError> {
     // Clone `Arc`s for the various resources we need in this server
     let config = config.clone();
     let db = db.clone();
+    let session_key_cache = session_key_cache.clone();
 
-    let tls = config.tls_config.clone();
+    let tls_acceptor = config
+        .tls_config
+        .clone()
+        .map(|tls| TlsAcceptor::from(Arc::new(tls)));
 
-    let rpc_server = LockKeeperKeyServer::new(db, config)?;
+    let rpc_server = LockKeeperKeyServer::new(db, session_key_cache, config)?;
     let addr = rpc_server.config.address;
     let port = rpc_server.config.port;
+    info!(?addr, ?port, "Starting server with:");
 
     let svc = Server::builder()
         .add_service(LockKeeperRpcServer::new(rpc_server))
@@ -56,19 +74,18 @@ async fn start_service(config: &Config, db: &Database) -> Result<(), LockKeeperS
     let _ = http.http2_only(true);
 
     let listener = TcpListener::bind(SocketAddr::new(addr, port)).await?;
-    let tls_acceptor = TlsAcceptor::from(Arc::new(tls));
 
     // Spawn a task to accept connections
     let _ = tokio::spawn(async move {
         loop {
-            let (conn, _) = match listener.accept().await {
+            let (conn, client) = match listener.accept().await {
                 Ok(incoming) => incoming,
                 Err(e) => {
                     error!("Error accepting connection: {}", e);
                     continue;
                 }
             };
-
+            info!(?client, "Accepted Connection from:");
             let http = http.clone();
             let tls_acceptor = tls_acceptor.clone();
             let svc = svc.clone();
@@ -91,12 +108,18 @@ async fn start_service(config: &Config, db: &Database) -> Result<(), LockKeeperS
 async fn handle_connection(
     http: Http,
     connection: TcpStream,
-    tls_acceptor: TlsAcceptor,
+    tls_acceptor: Option<TlsAcceptor>,
     service: Routes,
 ) -> Result<(), LockKeeperServerError> {
-    let conn = tls_acceptor.accept(connection).await?;
     let svc = tower::ServiceBuilder::new().service(service);
-    http.serve_connection(conn, svc).await?;
+
+    match tls_acceptor {
+        Some(tls_acceptor) => {
+            let conn = tls_acceptor.accept(connection).await?;
+            http.serve_connection(conn, svc).await?;
+        }
+        None => http.serve_connection(connection, svc).await?,
+    }
 
     Ok(())
 }

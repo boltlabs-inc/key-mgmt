@@ -2,12 +2,12 @@ use lock_keeper::LockKeeperError;
 use thiserror::Error;
 use tonic::{Code, Status};
 
+pub type Result<T> = std::result::Result<T, LockKeeperClientError>;
+
 #[derive(Debug, Error)]
 pub enum LockKeeperClientError {
     #[error("Health check failed: {0}")]
     HealthCheckFailed(String),
-    #[error("Tried to connect to a server without an https link")]
-    HttpNotAllowed,
     #[error("Server returned failure")]
     ServerReturnedFailure,
     #[error("This key server requires TLS client authentication.")]
@@ -19,12 +19,18 @@ pub enum LockKeeperClientError {
     AccountAlreadyRegistered,
     #[error("Export failed")]
     ExportFailed,
+    #[error("Logout failed")]
+    LogoutFailed,
     #[error("Invalid account")]
     InvalidAccount,
     #[error("Invalid login")]
     InvalidLogin,
     #[error("Invalid key retrieved")]
     InvalidKeyRetrieved,
+    #[error("An unauthenticated channel is needed for this action")]
+    UnauthenticatedChannelNeeded,
+    #[error("An authenticated channel is needed for this action")]
+    AuthenticatedChannelNeeded,
 
     // Wrapped errors
     #[error(transparent)]
@@ -41,8 +47,6 @@ pub enum LockKeeperClientError {
     Rustls(#[from] rustls::Error),
     #[error(transparent)]
     Toml(#[from] toml::de::Error),
-    #[error(transparent)]
-    TonicMetadata(#[from] tonic::metadata::errors::InvalidMetadataValueBytes),
     #[error(transparent)]
     TonicStatus(Status),
     #[error(transparent)]

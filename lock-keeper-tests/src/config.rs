@@ -1,33 +1,77 @@
 //! Test config types
 
-use std::path::PathBuf;
+use std::{collections::HashMap, path::PathBuf};
 
-use crate::{error::LockKeeperTestError, Cli};
-use lock_keeper_client::Config as ClientConfig;
+use lock_keeper_client::Config;
 
-#[derive(Debug, Clone)]
-pub struct Config {
-    pub client_config: ClientConfig,
-    pub client_config_path: PathBuf,
-    pub mutual_auth_client_config: ClientConfig,
-    pub mutual_auth_client_config_path: PathBuf,
+use crate::{error::LockKeeperTestError, utils, Cli};
+
+pub const STANDARD_CONFIG_NAME: &str = "standard";
+pub const CLIENT_AUTH_CONFIG_NAME: &str = "client_auth";
+pub const REQUIRED_CONFIGS: &[&str] = &[STANDARD_CONFIG_NAME, CLIENT_AUTH_CONFIG_NAME];
+
+/// Contains test configs for all environments defined in the test environment
+/// configuration file. This allows us to use specific configs for certain tests
+/// or to run certain tests in all environments.
+#[derive(Clone, Debug)]
+pub struct Environments {
+    pub configs: HashMap<String, Config>,
     pub filters: TestFilters,
 }
 
-impl TryFrom<Cli> for Config {
+impl TryFrom<Cli> for Environments {
     type Error = LockKeeperTestError;
 
     fn try_from(cli: Cli) -> Result<Self, Self::Error> {
-        let client_config = ClientConfig::from_file(&cli.client_config, None)?;
-        let mutual_auth_client_config =
-            ClientConfig::from_file(&cli.mutual_auth_client_config, None)?;
-        Ok(Self {
-            client_config,
-            client_config_path: cli.client_config.clone(),
-            mutual_auth_client_config,
-            mutual_auth_client_config_path: cli.mutual_auth_client_config.clone(),
-            filters: cli.filters.unwrap_or_default().into(),
-        })
+        let environments_string = std::fs::read_to_string(&cli.environments)?;
+        let environment_paths: HashMap<String, PathBuf> = toml::from_str(&environments_string)?;
+
+        let filters: TestFilters = cli.filters.unwrap_or_default().into();
+
+        let mut configs = HashMap::new();
+        for (name, path) in environment_paths {
+            let client_config = Config::from_file(path, None)?;
+            configs.insert(name, client_config);
+        }
+
+        for required_config in REQUIRED_CONFIGS {
+            if !configs.contains_key(*required_config) {
+                return Err(LockKeeperTestError::MissingRequiredConfig(
+                    required_config.to_string(),
+                ));
+            }
+        }
+
+        Ok(Self { configs, filters })
+    }
+}
+
+impl Environments {
+    pub async fn wait(&self) -> Result<(), LockKeeperTestError> {
+        for (name, config) in &self.configs {
+            println!("Waiting for environment: {name}");
+            if let Err(LockKeeperTestError::WaitForServerTimedOut) =
+                utils::wait_for_server(config).await
+            {
+                return Err(LockKeeperTestError::WaitForEnvironmentFailed(name.clone()));
+            }
+        }
+
+        Ok(())
+    }
+
+    pub fn config(&self, environment_name: &str) -> Result<&Config, LockKeeperTestError> {
+        self.configs
+            .get(environment_name)
+            .ok_or_else(|| LockKeeperTestError::UndefinedEnvironment(environment_name.to_string()))
+    }
+
+    pub fn standard_config(&self) -> Result<&Config, LockKeeperTestError> {
+        self.config(STANDARD_CONFIG_NAME)
+    }
+
+    pub fn client_auth_config(&self) -> Result<&Config, LockKeeperTestError> {
+        self.config(CLIENT_AUTH_CONFIG_NAME)
     }
 }
 
