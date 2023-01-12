@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"struct":[["Request","pass user ID to server"]]};

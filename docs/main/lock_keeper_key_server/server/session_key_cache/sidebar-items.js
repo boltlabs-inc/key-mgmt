@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":[["SessionKeyCacheError",""]],"struct":[["SessionKeyCache","Cache holding our session keys, per user, after authentication. Maps [`UserId`]s to [`OpaqueSessionKey`]s. Keys are tagged with a timestamp. A key is considered invalid after [`Self::expiration`] time has elapsed."]]};

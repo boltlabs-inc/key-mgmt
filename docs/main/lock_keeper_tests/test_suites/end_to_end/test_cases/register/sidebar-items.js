@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":[["register_same_user_twice",""],["run_tests",""]]};
+window.SIDEBAR_ITEMS = {"fn":[["register_same_user_twice_fails",""],["run_tests",""]]};

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":[["audit_event",""],["handle_error",""]],"trait":[["Operation","A type implementing [`Operation`] can process `tonic` requests using a message-passing protocol facilitated by a [`ServerChannel`]."]]};
+window.SIDEBAR_ITEMS = {"fn":[["audit_event","Log the given action as an audit event."],["handle_error",""]],"trait":[["Operation","A type implementing [`Operation`] can process `tonic` requests using a message-passing protocol facilitated by a [`ServerChannel`]."]]};

@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `lock-keeper-tests/src/test_suites/end_to_end/test_cases/retrieve.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>retrieve.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../../normalize.css"><link rel="stylesheet" href="../../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../../dark.css" disabled><link rel="stylesheet" href="../../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../../storage.js"></script><script defer src="../../../../../source-script.js"></script><script defer src="../../../../../source-files.js"></script><script defer src="../../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../../lock_keeper_tests/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../../lock_keeper_tests/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../../lock_keeper_tests/index.html"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `lock-keeper-tests/src/test_suites/end_to_end/test_cases/retrieve.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>retrieve.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../../normalize.css"><link rel="stylesheet" href="../../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../../dark.css" disabled><link rel="stylesheet" href="../../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../../storage.js"></script><script defer src="../../../../../source-script.js"></script><script defer src="../../../../../source-files.js"></script><script defer src="../../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../../../lock_keeper_tests/index.html"><img class="rust-logo" src="../../../../../rust-logo.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../wheel.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -72,79 +72,181 @@
 <span id="72">72</span>
 <span id="73">73</span>
 <span id="74">74</span>
+<span id="75">75</span>
+<span id="76">76</span>
+<span id="77">77</span>
+<span id="78">78</span>
+<span id="79">79</span>
+<span id="80">80</span>
+<span id="81">81</span>
+<span id="82">82</span>
+<span id="83">83</span>
+<span id="84">84</span>
+<span id="85">85</span>
+<span id="86">86</span>
+<span id="87">87</span>
+<span id="88">88</span>
+<span id="89">89</span>
+<span id="90">90</span>
+<span id="91">91</span>
+<span id="92">92</span>
+<span id="93">93</span>
+<span id="94">94</span>
+<span id="95">95</span>
+<span id="96">96</span>
+<span id="97">97</span>
+<span id="98">98</span>
+<span id="99">99</span>
+<span id="100">100</span>
+<span id="101">101</span>
+<span id="102">102</span>
+<span id="103">103</span>
+<span id="104">104</span>
+<span id="105">105</span>
+<span id="106">106</span>
+<span id="107">107</span>
+<span id="108">108</span>
+<span id="109">109</span>
+<span id="110">110</span>
+<span id="111">111</span>
+<span id="112">112</span>
+<span id="113">113</span>
+<span id="114">114</span>
+<span id="115">115</span>
+<span id="116">116</span>
+<span id="117">117</span>
+<span id="118">118</span>
+<span id="119">119</span>
+<span id="120">120</span>
+<span id="121">121</span>
+<span id="122">122</span>
+<span id="123">123</span>
+<span id="124">124</span>
+<span id="125">125</span>
 </pre><pre class="rust"><code><span class="kw">use </span>colored::Colorize;
 <span class="kw">use </span>lock_keeper::types::{
     audit_event::EventStatus,
-    operations::{retrieve::RetrieveContext, ClientAction},
+    operations::{retrieve_secret::RetrieveContext, ClientAction},
 };
-<span class="kw">use </span>lock_keeper_client::{Config, LockKeeperClientError};
+<span class="kw">use </span>lock_keeper_client::{api::GenerateResult, Config};
+<span class="kw">use </span>tonic::Status;
 
 <span class="kw">use crate</span>::{
+    config::TestFilters,
     error::Result,
     run_parallel,
     test_suites::end_to_end::{
         operations::{
-            check_audit_events, compare_errors, generate, generate_fake_key_id, retrieve,
+            authenticate, check_audit_events, compare_errors, compare_status_errors,
+            generate_fake_key_id,
         },
         test_cases::init_test_state,
     },
     utils::TestResult,
-    Config <span class="kw">as </span>TestConfig,
 };
 
-<span class="kw">pub async fn </span>run_tests(config: TestConfig) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;TestResult&gt;&gt; {
+<span class="kw">pub async fn </span>run_tests(config: <span class="kw-2">&amp;</span>Config, filters: <span class="kw-2">&amp;</span>TestFilters) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;TestResult&gt;&gt; {
     <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, <span class="string">&quot;Running retrieve tests&quot;</span>.cyan());
 
     <span class="kw">let </span>result = <span class="macro">run_parallel!</span>(
-        config.clone(),
-        retrieve_local_only_works(config.client_config.clone()),
-        retrieve_null_works(config.client_config.clone()),
-        cannot_retrieve_fake_key(config.client_config.clone()),
+        filters,
+        retrieve_local_only_works(config.clone()),
+        retrieve_null_works(config.clone()),
+        cannot_retrieve_fake_key(config.clone()),
+        cannot_retrieve_after_logout(config.clone()),
     )<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(result)
 }
 
 <span class="kw">async fn </span>retrieve_local_only_works(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    <span class="kw">let </span>state = init_test_state(config).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>state = init_test_state(<span class="kw-2">&amp;</span>config).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>client = authenticate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span>.result<span class="question-mark">?</span>;
 
-    <span class="kw">let </span>(key_id, local_storage) = generate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let </span>local_storage_res = retrieve(<span class="kw-2">&amp;</span>state, <span class="kw-2">&amp;</span>key_id, RetrieveContext::LocalOnly).<span class="kw">await</span>;
-    <span class="macro">assert!</span>(local_storage_res.is_ok());
+    <span class="kw">let </span>GenerateResult {
+        key_id,
+        local_storage,
+    } = client.generate_secret().<span class="kw">await</span>.result<span class="question-mark">?</span>;
+    <span class="kw">let </span>local_storage_res = client
+        .retrieve_secret(<span class="kw-2">&amp;</span>key_id, RetrieveContext::LocalOnly)
+        .<span class="kw">await</span>;
 
-    <span class="kw">let </span>local_storage_opt = local_storage_res<span class="question-mark">?</span>;
-    <span class="macro">assert!</span>(local_storage_opt.is_some());
+    <span class="kw">let </span>local_storage_opt = local_storage_res.result<span class="question-mark">?</span>;
+    <span class="kw">let </span>request_id = local_storage_res.metadata.clone().unwrap().request_id;
 
     <span class="kw">let </span>local_storage_new = local_storage_opt.unwrap();
     <span class="macro">assert_eq!</span>(local_storage_new.material, local_storage.material);
-    check_audit_events(<span class="kw-2">&amp;</span>state, EventStatus::Successful, ClientAction::Retrieve).<span class="kw">await</span><span class="question-mark">?</span>;
+    check_audit_events(
+        <span class="kw-2">&amp;</span>state,
+        EventStatus::Successful,
+        ClientAction::RetrieveSecret,
+        request_id,
+    )
+    .<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
 }
 
 <span class="kw">async fn </span>retrieve_null_works(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    <span class="kw">let </span>state = init_test_state(config).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>state = init_test_state(<span class="kw-2">&amp;</span>config).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>client = authenticate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span>.result<span class="question-mark">?</span>;
 
-    <span class="kw">let </span>(key_id, <span class="kw">_</span>) = generate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let </span>local_storage_res = retrieve(<span class="kw-2">&amp;</span>state, <span class="kw-2">&amp;</span>key_id, RetrieveContext::Null).<span class="kw">await</span>;
-    <span class="macro">assert!</span>(local_storage_res.is_ok());
+    <span class="kw">let </span>GenerateResult {
+        key_id,
+        local_storage: <span class="kw">_</span>,
+    } = client.generate_secret().<span class="kw">await</span>.result<span class="question-mark">?</span>;
+    <span class="kw">let </span>local_storage_res = client.retrieve_secret(<span class="kw-2">&amp;</span>key_id, RetrieveContext::Null).<span class="kw">await</span>;
 
-    <span class="kw">let </span>local_storage_opt = local_storage_res<span class="question-mark">?</span>;
+    <span class="kw">let </span>local_storage_opt = local_storage_res.result<span class="question-mark">?</span>;
+    <span class="kw">let </span>request_id = local_storage_res.metadata.unwrap().request_id;
     <span class="macro">assert!</span>(local_storage_opt.is_none());
-    check_audit_events(<span class="kw-2">&amp;</span>state, EventStatus::Successful, ClientAction::Retrieve).<span class="kw">await</span><span class="question-mark">?</span>;
+    check_audit_events(
+        <span class="kw-2">&amp;</span>state,
+        EventStatus::Successful,
+        ClientAction::RetrieveSecret,
+        request_id,
+    )
+    .<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
 }
 
 <span class="kw">async fn </span>cannot_retrieve_fake_key(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    <span class="kw">let </span>state = init_test_state(config).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>state = init_test_state(<span class="kw-2">&amp;</span>config).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>client = authenticate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span>.result<span class="question-mark">?</span>;
 
-    <span class="kw">let </span>fake_key_id = generate_fake_key_id(<span class="kw-2">&amp;</span>state).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let </span>local_storage_res = retrieve(<span class="kw-2">&amp;</span>state, <span class="kw-2">&amp;</span>fake_key_id, RetrieveContext::LocalOnly).<span class="kw">await</span>;
-    compare_errors(local_storage_res, LockKeeperClientError::InvalidAccount);
-    check_audit_events(<span class="kw-2">&amp;</span>state, EventStatus::Failed, ClientAction::Retrieve).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>fake_key_id = generate_fake_key_id(<span class="kw-2">&amp;</span>client).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>local_storage_res = client
+        .retrieve_secret(<span class="kw-2">&amp;</span>fake_key_id, RetrieveContext::LocalOnly)
+        .<span class="kw">await</span>;
+    <span class="kw">let </span>request_id = local_storage_res.metadata.clone().unwrap().request_id;
+    compare_errors(local_storage_res, Status::internal(<span class="string">&quot;Internal server error&quot;</span>));
+    check_audit_events(
+        <span class="kw-2">&amp;</span>state,
+        EventStatus::Failed,
+        ClientAction::RetrieveSecret,
+        request_id,
+    )
+    .<span class="kw">await</span><span class="question-mark">?</span>;
+
+    <span class="prelude-val">Ok</span>(())
+}
+
+<span class="kw">async fn </span>cannot_retrieve_after_logout(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    <span class="kw">let </span>state = init_test_state(<span class="kw-2">&amp;</span>config).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>client = authenticate(<span class="kw-2">&amp;</span>state).<span class="kw">await</span>.result<span class="question-mark">?</span>;
+
+    <span class="comment">// Generate a secret before waiting out the timeout
+    </span><span class="kw">let </span>GenerateResult {
+        key_id,
+        local_storage: <span class="kw">_</span>,
+    } = client.generate_secret().<span class="kw">await</span>.result<span class="question-mark">?</span>;
+    client.logout().<span class="kw">await</span>.result<span class="question-mark">?</span>;
+
+    <span class="kw">let </span>res = client.retrieve_secret(<span class="kw-2">&amp;</span>key_id, RetrieveContext::Null).<span class="kw">await</span>;
+    compare_status_errors(res, Status::unauthenticated(<span class="string">&quot;No session key for this user&quot;</span>))<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../../" data-current-crate="lock_keeper_tests" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../../" data-current-crate="lock_keeper_tests" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.1 (90743e729 2023-01-10)" ></div></body></html>

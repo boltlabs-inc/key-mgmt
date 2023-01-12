@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["GetAuditEvents",""]]};
+window.SIDEBAR_ITEMS = {"enum":[["ParsedAuditEventOption",""]],"fn":[["parse_option",""]],"struct":[["GetAuditEvents",""]]};

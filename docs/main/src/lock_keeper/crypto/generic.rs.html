@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `lock-keeper/src/crypto/generic.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>generic.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../lock_keeper/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../lock_keeper/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../lock_keeper/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `lock-keeper/src/crypto/generic.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>generic.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../lock_keeper/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -555,6 +555,54 @@
 <span id="555">555</span>
 <span id="556">556</span>
 <span id="557">557</span>
+<span id="558">558</span>
+<span id="559">559</span>
+<span id="560">560</span>
+<span id="561">561</span>
+<span id="562">562</span>
+<span id="563">563</span>
+<span id="564">564</span>
+<span id="565">565</span>
+<span id="566">566</span>
+<span id="567">567</span>
+<span id="568">568</span>
+<span id="569">569</span>
+<span id="570">570</span>
+<span id="571">571</span>
+<span id="572">572</span>
+<span id="573">573</span>
+<span id="574">574</span>
+<span id="575">575</span>
+<span id="576">576</span>
+<span id="577">577</span>
+<span id="578">578</span>
+<span id="579">579</span>
+<span id="580">580</span>
+<span id="581">581</span>
+<span id="582">582</span>
+<span id="583">583</span>
+<span id="584">584</span>
+<span id="585">585</span>
+<span id="586">586</span>
+<span id="587">587</span>
+<span id="588">588</span>
+<span id="589">589</span>
+<span id="590">590</span>
+<span id="591">591</span>
+<span id="592">592</span>
+<span id="593">593</span>
+<span id="594">594</span>
+<span id="595">595</span>
+<span id="596">596</span>
+<span id="597">597</span>
+<span id="598">598</span>
+<span id="599">599</span>
+<span id="600">600</span>
+<span id="601">601</span>
+<span id="602">602</span>
+<span id="603">603</span>
+<span id="604">604</span>
+<span id="605">605</span>
 </pre><pre class="rust"><code><span class="kw">use </span>chacha20poly1305::{
     aead::{Aead, Payload},
     AeadCore, ChaCha20Poly1305, KeyInit,
@@ -564,8 +612,8 @@
 <span class="kw">use </span>std::{iter, marker::PhantomData};
 <span class="kw">use </span>thiserror::Error;
 
-<span class="attribute">#[cfg(test)]
-</span><span class="kw">use </span>std::convert::Infallible;
+<span class="kw">use </span>std::convert::Infallible;
+<span class="kw">use </span>zeroize::{Zeroize, ZeroizeOnDrop};
 
 <span class="doccomment">/// Errors that arise in the cryptography module.
 </span><span class="attribute">#[derive(Debug, Clone, Copy, Error)]
@@ -582,9 +630,7 @@
     </span>ConversionError,
     <span class="attribute">#[error(<span class="string">&quot;Signature did not verify&quot;</span>)]
     </span>VerificationFailed,
-
-    <span class="attribute">#[cfg(test)]
-    #[error(transparent)]
+    <span class="attribute">#[error(transparent)]
     </span>Infallible(<span class="attribute">#[from] </span>Infallible),
 }
 
@@ -641,36 +687,48 @@
 /// [ChaCha20Poly1305 crate](https://docs.rs/chacha20poly1305/latest/chacha20poly1305/index.html).
 </span><span class="attribute">#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 </span><span class="kw">pub struct </span>Encrypted&lt;T&gt; {
-    ciphertext: Vec&lt;u8&gt;,
+    <span class="kw">pub</span>(<span class="kw">super</span>) ciphertext: Vec&lt;u8&gt;,
     <span class="kw">pub</span>(<span class="kw">super</span>) associated_data: AssociatedData,
-    nonce: chacha20poly1305::Nonce,
-    original_type: PhantomData&lt;T&gt;,
+    <span class="kw">pub</span>(<span class="kw">super</span>) nonce: chacha20poly1305::Nonce,
+    <span class="kw">pub</span>(<span class="kw">super</span>) original_type: PhantomData&lt;T&gt;,
 }
 
 <span class="doccomment">/// A well-formed symmetric encryption key for an AEAD scheme.
-</span><span class="attribute">#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+</span><span class="attribute">#[derive(Debug, Clone, PartialEq, Eq, Hash, Zeroize, ZeroizeOnDrop)]
 </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">struct </span>EncryptionKey {
-    key: chacha20poly1305::Key,
+    key: Box&lt;chacha20poly1305::Key&gt;,
 
     <span class="attribute">#[allow(unused)]
-    </span>context: AssociatedData,
+    #[zeroize(skip)]
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) context: AssociatedData,
 }
 
 <span class="kw">impl </span>EncryptionKey {
+    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>domain_separator() -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str {
+        <span class="string">&quot;ChaCha20Poly1305 with 96-bit nonce.&quot;
+    </span>}
+
     <span class="doccomment">/// Generate a new symmetric AEAD encryption key from scratch.
     </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>new(rng: <span class="kw-2">&amp;mut </span>(<span class="kw">impl </span>CryptoRng + RngCore)) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
-            key: ChaCha20Poly1305::generate_key(rng),
-            context: AssociatedData::new().with_str(<span class="string">&quot;ChaCha20Poly1305 with 96-bit nonce.&quot;</span>),
+            key: Box::new(ChaCha20Poly1305::generate_key(rng)),
+            context: AssociatedData::new().with_str(<span class="self">Self</span>::domain_separator()),
         }
     }
 
     <span class="comment">// Use the given bytes as a symmetric AEAD encryption key.
     </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>from_bytes(key_material: [u8; <span class="number">32</span>], context: AssociatedData) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
-            key: key_material.into(),
+            key: Box::new(key_material.into()),
             context,
         }
+    }
+
+    <span class="comment">// WARNING: this generates a copy from the key,
+    // and should only be used to derive another key from this key using a KDF.
+    // This should explicitly stay pub(super) to avoid abuse.
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>into_bytes(<span class="self">self</span>) -&gt; [u8; <span class="number">32</span>] {
+        (<span class="kw-2">*</span><span class="self">self</span>.key).into()
     }
 }
 
@@ -691,8 +749,8 @@
     <span class="kw">fn </span>from(key: EncryptionKey) -&gt; <span class="self">Self </span>{
         <span class="comment">// len || key || context
         </span>iter::once(key.key.len() <span class="kw">as </span>u8)
-            .chain(key.key)
-            .chain::&lt;Vec&lt;u8&gt;&gt;(key.context.into())
+            .chain(<span class="kw-2">*</span>key.key)
+            .chain::&lt;Vec&lt;u8&gt;&gt;(key.context.to_owned().into())
             .collect()
     }
 }
@@ -717,7 +775,7 @@
             </span>.into();
 
         <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
-            key: <span class="kw-2">*</span>chacha20poly1305::Key::from_slice(key),
+            key: Box::from(<span class="kw-2">*</span>chacha20poly1305::Key::from_slice(key)),
             context: context.try_into()<span class="question-mark">?</span>,
         })
     }
@@ -725,6 +783,8 @@
 
 <span class="kw">impl</span>&lt;T&gt; Encrypted&lt;T&gt;
 <span class="kw">where
+    </span><span class="comment">// These bounds cover both the `encrypt` and `decrypt` methods.
+    // This ensures that the user can only encrypt types than can also be decrypted.
     </span>T: TryFrom&lt;Vec&lt;u8&gt;&gt;,
     CryptoError: From&lt;&lt;T <span class="kw">as </span>TryFrom&lt;Vec&lt;u8&gt;&gt;&gt;::Error&gt;,
     Vec&lt;u8&gt;: From&lt;T&gt;,
@@ -768,7 +828,7 @@
     /// Raises a [`CryptoError::DecryptionFailed`] if decryption fails or
     /// [`CryptoError::ConversionError`] if the decrypted plaintext cannot be
     /// converted into `T`.
-    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>decrypt(<span class="self">self</span>, enc_key: <span class="kw-2">&amp;</span>EncryptionKey) -&gt; <span class="prelude-ty">Result</span>&lt;T, CryptoError&gt; {
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>decrypt_inner(<span class="self">self</span>, enc_key: <span class="kw-2">&amp;</span>EncryptionKey) -&gt; <span class="prelude-ty">Result</span>&lt;T, CryptoError&gt; {
         <span class="comment">// Set up cipher with key
         </span><span class="kw">let </span>cipher = ChaCha20Poly1305::new(<span class="kw-2">&amp;</span>enc_key.key);
 
@@ -791,11 +851,12 @@
 ///
 /// This type isn&#39;t public -- it holds generic secret material and associated
 /// data, but does not enforce any properties on the key material.
-</span><span class="attribute">#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+</span><span class="attribute">#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, ZeroizeOnDrop)]
 </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">struct </span>Secret {
     <span class="doccomment">/// The actual bytes of secret material.
     </span>material: Vec&lt;u8&gt;,
     <span class="doccomment">/// Additional context about the secret.
+    </span><span class="attribute">#[zeroize(skip)]
     </span>context: AssociatedData,
 }
 
@@ -825,7 +886,6 @@
     ///
     /// This is currently only used in testing, but it is fine to make it
     /// publicly accessible if necessary.
-    </span><span class="attribute">#[cfg(test)]
     </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>context(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>AssociatedData {
         <span class="kw-2">&amp;</span><span class="self">self</span>.context
     }
@@ -842,9 +902,9 @@
 <span class="kw">impl </span>From&lt;Secret&gt; <span class="kw">for </span>Vec&lt;u8&gt; {
     <span class="kw">fn </span>from(secret: Secret) -&gt; <span class="self">Self </span>{
         <span class="comment">// key len || key material || context len || context
-        </span><span class="kw">let </span>ad: Vec&lt;u8&gt; = secret.context.into();
+        </span><span class="kw">let </span>ad: Vec&lt;u8&gt; = secret.context.to_owned().into();
         iter::once(secret.material.len() <span class="kw">as </span>u8)
-            .chain(secret.material)
+            .chain(secret.material.to_owned())
             .chain(iter::once(ad.len() <span class="kw">as </span>u8))
             .chain(ad)
             .collect()
@@ -883,6 +943,7 @@
     <span class="kw">use </span>std::collections::HashSet;
 
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
+    <span class="kw">use </span><span class="kw">crate</span>::LockKeeperError;
     <span class="kw">use </span>rand::Rng;
 
     <span class="attribute">#[test]
@@ -979,7 +1040,11 @@
         // by putting them into a set. Insert will return false if a secret
         // already exists in the set.
         </span><span class="macro">assert!</span>((<span class="number">0</span>..<span class="number">1000</span>)
-            .map(|<span class="kw">_</span>| Secret::generate(<span class="kw-2">&amp;mut </span>rng, <span class="number">32</span>, AssociatedData::default()).material)
+            .map(
+                |<span class="kw">_</span>| Secret::generate(<span class="kw-2">&amp;mut </span>rng, <span class="number">32</span>, AssociatedData::default())
+                    .material
+                    .to_owned()
+            )
             .all(|secret| uniq.insert(secret)))
     }
 
@@ -1013,12 +1078,30 @@
         <span class="macro">assert_eq!</span>(secret.context, complicated_ad);
     }
 
+    <span class="doccomment">/// A struct wrapped around a byte vector to add ZeroizeOnDrop
+    </span><span class="attribute">#[derive(Debug, Clone, PartialEq, Eq, ZeroizeOnDrop)]
+    </span><span class="kw">struct </span>RandomBytes(Vec&lt;u8&gt;);
+
+    <span class="kw">impl </span>From&lt;RandomBytes&gt; <span class="kw">for </span>Vec&lt;u8&gt; {
+        <span class="kw">fn </span>from(bytes: RandomBytes) -&gt; <span class="self">Self </span>{
+            bytes.<span class="number">0</span>.clone()
+        }
+    }
+
+    <span class="kw">impl </span>TryFrom&lt;Vec&lt;u8&gt;&gt; <span class="kw">for </span>RandomBytes {
+        <span class="kw">type </span>Error = CryptoError;
+        <span class="kw">fn </span>try_from(bytes: Vec&lt;u8&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
+            <span class="prelude-val">Ok</span>(<span class="self">Self</span>(bytes))
+        }
+    }
+
     <span class="doccomment">/// Generates random bytes, encrypts them, and returns them along with the
     /// key used for encryption.
     </span><span class="kw">fn </span>encrypt_random_bytes(
         rng: <span class="kw-2">&amp;mut </span>(<span class="kw">impl </span>CryptoRng + RngCore),
-    ) -&gt; (Vec&lt;u8&gt;, Encrypted&lt;Vec&lt;u8&gt;&gt;, EncryptionKey) {
-        <span class="kw">let </span>bytes: Vec&lt;u8&gt; = std::iter::repeat_with(|| rng.gen()).take(<span class="number">64</span>).collect();
+    ) -&gt; (RandomBytes, Encrypted&lt;RandomBytes&gt;, EncryptionKey) {
+        <span class="kw">let </span>bytes: RandomBytes =
+            RandomBytes(std::iter::repeat_with(|| rng.gen()).take(<span class="number">64</span>).collect());
         <span class="kw">let </span>enc_key = EncryptionKey::new(rng);
         <span class="kw">let </span>encrypted_bytes =
             Encrypted::encrypt(rng, <span class="kw-2">&amp;</span>enc_key, bytes.clone(), <span class="kw-2">&amp;</span>AssociatedData::default()).unwrap();
@@ -1033,14 +1116,14 @@
             <span class="kw">let </span>(bytes, encrypted_bytes, enc_key) = encrypt_random_bytes(<span class="kw-2">&amp;mut </span>rng);
 
             <span class="comment">// Make sure encryption isn&#39;t obviously broken.
-            </span><span class="macro">assert_ne!</span>(bytes, encrypted_bytes.ciphertext);
+            </span><span class="macro">assert_ne!</span>(bytes, RandomBytes(encrypted_bytes.ciphertext.clone()));
             <span class="macro">assert_ne!</span>(Vec::from([<span class="number">0</span>; <span class="number">32</span>]), encrypted_bytes.ciphertext);
 
             <span class="comment">// Make sure encrypted object includes the expected associated data.
             </span><span class="kw">let </span>expected_aad = AssociatedData::default();
             <span class="macro">assert_eq!</span>(expected_aad, encrypted_bytes.associated_data);
 
-            <span class="kw">let </span>decrypted_bytes = encrypted_bytes.decrypt(<span class="kw-2">&amp;</span>enc_key)<span class="question-mark">?</span>;
+            <span class="kw">let </span>decrypted_bytes = encrypted_bytes.decrypt_inner(<span class="kw-2">&amp;</span>enc_key)<span class="question-mark">?</span>;
             <span class="comment">// Make sure decryption works
             </span><span class="macro">assert_eq!</span>(bytes, decrypted_bytes);
         }
@@ -1067,7 +1150,7 @@
         <span class="kw">for _ in </span><span class="number">0</span>..<span class="number">100 </span>{
             <span class="kw">let </span>(<span class="kw">_</span>, <span class="kw-2">mut </span>encrypted_bytes, enc_key) = encrypt_random_bytes(<span class="kw-2">&amp;mut </span>rng);
             encrypted_bytes.nonce = ChaCha20Poly1305::generate_nonce(<span class="kw-2">&amp;mut </span>rng);
-            <span class="macro">assert!</span>(encrypted_bytes.decrypt(<span class="kw-2">&amp;</span>enc_key).is_err());
+            <span class="macro">assert!</span>(encrypted_bytes.decrypt_inner(<span class="kw-2">&amp;</span>enc_key).is_err());
         }
     }
 
@@ -1078,7 +1161,7 @@
             <span class="kw">let </span>(<span class="kw">_</span>, encrypted_bytes, <span class="kw">_</span>) = encrypt_random_bytes(<span class="kw-2">&amp;mut </span>rng);
             <span class="kw">let </span>wrong_key = EncryptionKey::new(<span class="kw-2">&amp;mut </span>rand::thread_rng());
 
-            <span class="macro">assert!</span>(encrypted_bytes.decrypt(<span class="kw-2">&amp;</span>wrong_key).is_err());
+            <span class="macro">assert!</span>(encrypted_bytes.decrypt_inner(<span class="kw-2">&amp;</span>wrong_key).is_err());
         }
     }
 
@@ -1089,7 +1172,7 @@
         encrypted_bytes.associated_data =
             AssociatedData::new().with_str(<span class="string">&quot;Here is some incorrect data&quot;</span>);
 
-        <span class="macro">assert!</span>(encrypted_bytes.decrypt(<span class="kw-2">&amp;</span>enc_key).is_err())
+        <span class="macro">assert!</span>(encrypted_bytes.decrypt_inner(<span class="kw-2">&amp;</span>enc_key).is_err())
     }
 
     <span class="attribute">#[test]
@@ -1099,18 +1182,31 @@
         <span class="kw">for _ in </span><span class="number">0</span>..<span class="number">100 </span>{
             <span class="kw">let </span>(<span class="kw">_</span>, <span class="kw-2">mut </span>encrypted_bytes, enc_key) = encrypt_random_bytes(<span class="kw-2">&amp;mut </span>rng);
             encrypted_bytes.ciphertext[<span class="number">0</span>] ^= <span class="number">1</span>;
-            <span class="macro">assert!</span>(encrypted_bytes.decrypt(<span class="kw-2">&amp;</span>enc_key).is_err());
+            <span class="macro">assert!</span>(encrypted_bytes.decrypt_inner(<span class="kw-2">&amp;</span>enc_key).is_err());
 
             <span class="kw">let </span>(<span class="kw">_</span>, <span class="kw-2">mut </span>encrypted_bytes, enc_key) = encrypt_random_bytes(<span class="kw-2">&amp;mut </span>rng);
             <span class="kw">let </span>len = encrypted_bytes.ciphertext.len();
             encrypted_bytes.ciphertext[len - <span class="number">1</span>] ^= <span class="number">1</span>;
-            <span class="macro">assert!</span>(encrypted_bytes.decrypt(<span class="kw-2">&amp;</span>enc_key).is_err());
+            <span class="macro">assert!</span>(encrypted_bytes.decrypt_inner(<span class="kw-2">&amp;</span>enc_key).is_err());
 
             <span class="kw">let </span>(<span class="kw">_</span>, <span class="kw-2">mut </span>encrypted_bytes, enc_key) = encrypt_random_bytes(<span class="kw-2">&amp;mut </span>rng);
             encrypted_bytes.ciphertext[len / <span class="number">2</span>] ^= <span class="number">1</span>;
-            <span class="macro">assert!</span>(encrypted_bytes.decrypt(<span class="kw-2">&amp;</span>enc_key).is_err());
+            <span class="macro">assert!</span>(encrypted_bytes.decrypt_inner(<span class="kw-2">&amp;</span>enc_key).is_err());
         }
+    }
+
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>encryption_key_gets_zeroized() -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperError&gt; {
+        <span class="kw">let </span>key_bytes = [<span class="number">1</span>; <span class="number">32</span>];
+        <span class="kw">let </span>key = EncryptionKey::from_bytes(key_bytes, AssociatedData::default());
+        <span class="kw">let </span>ptr = key.key.as_ptr();
+
+        drop(key);
+
+        <span class="kw">let </span>after_drop = <span class="kw">unsafe </span>{ core::slice::from_raw_parts(ptr, <span class="number">32</span>) };
+        <span class="macro">assert_ne!</span>(key_bytes, after_drop);
+        <span class="prelude-val">Ok</span>(())
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="lock_keeper" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="lock_keeper" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.1 (90743e729 2023-01-10)" ></div></body></html>

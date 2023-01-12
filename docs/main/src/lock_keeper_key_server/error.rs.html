@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `lock-keeper-key-server/src/error.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>error.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../lock_keeper_key_server/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../lock_keeper_key_server/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../lock_keeper_key_server/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `lock-keeper-key-server/src/error.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>error.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../lock_keeper_key_server/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -105,7 +105,22 @@
 <span id="105">105</span>
 <span id="106">106</span>
 <span id="107">107</span>
-</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::server::session_key_cache::SessionKeyCacheError;
+<span id="108">108</span>
+<span id="109">109</span>
+<span id="110">110</span>
+<span id="111">111</span>
+<span id="112">112</span>
+<span id="113">113</span>
+<span id="114">114</span>
+<span id="115">115</span>
+<span id="116">116</span>
+<span id="117">117</span>
+<span id="118">118</span>
+<span id="119">119</span>
+<span id="120">120</span>
+<span id="121">121</span>
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::server::session_cache::SessionCacheError;
+<span class="kw">use </span>std::path::PathBuf;
 <span class="kw">use </span>thiserror::Error;
 <span class="kw">use </span>tonic::Status;
 
@@ -115,16 +130,20 @@
     </span>MissingService,
     <span class="attribute">#[error(<span class="string">&quot;Private key was not provided.&quot;</span>)]
     </span>PrivateKeyMissing,
+    <span class="attribute">#[error(<span class="string">&quot;Remote storage key was not provided.&quot;</span>)]
+    </span>RemoteStorageKeyMissing,
 
     <span class="attribute">#[error(<span class="string">&quot;Error in session keys cache.&quot;</span>)]
-    </span>SessionKeyCache(<span class="attribute">#[from] </span>SessionKeyCacheError),
+    </span>SessionCache(<span class="attribute">#[from] </span>SessionCacheError),
 
     <span class="comment">// Infrastructure errors
     </span><span class="attribute">#[error(<span class="string">&quot;Invalid OPAQUE directory&quot;</span>)]
     </span>InvalidOpaqueDirectory,
+    <span class="attribute">#[error(<span class="string">&quot;Invalid log file path: {0}&quot;</span>)]
+    </span>InvalidLogFilePath(PathBuf),
 
     <span class="comment">// Protocol errors
-    </span><span class="attribute">#[error(<span class="string">&quot;Account already registered&quot;</span>)]
+    </span><span class="attribute">#[error(<span class="string">&quot;Account already registered.&quot;</span>)]
     </span>AccountAlreadyRegistered,
     <span class="attribute">#[error(<span class="string">&quot;Invalid account&quot;</span>)]
     </span>InvalidAccount,
@@ -134,12 +153,14 @@
     </span>StorageKeyNotSet,
     <span class="attribute">#[error(<span class="string">&quot;Key ID does not match any stored arbitrary key&quot;</span>)]
     </span>KeyNotFound,
+    <span class="attribute">#[error(<span class="string">&quot;Session ID was not found in request metadata&quot;</span>)]
+    </span>SessionIdNotFound,
 
     <span class="comment">// Wrapped errors
     </span><span class="attribute">#[error(transparent)]
     </span>Bincode(<span class="attribute">#[from] </span>bincode::Error),
-    <span class="attribute">#[error(transparent)]
-    </span>Bson(<span class="attribute">#[from] </span>mongodb::bson::ser::Error),
+    <span class="attribute">#[error(<span class="string">&quot;Database error: {0}&quot;</span>)]
+    </span>Database(Box&lt;<span class="kw">dyn </span>std::error::Error + Send + Sync&gt;),
     <span class="attribute">#[error(transparent)]
     </span>EnvVar(<span class="attribute">#[from] </span>std::env::VarError),
     <span class="attribute">#[error(transparent)]
@@ -148,8 +169,6 @@
     </span>Io(<span class="attribute">#[from] </span>std::io::Error),
     <span class="attribute">#[error(transparent)]
     </span>LockKeeper(<span class="attribute">#[from] </span>lock_keeper::LockKeeperError),
-    <span class="attribute">#[error(transparent)]
-    </span>MongoDb(<span class="attribute">#[from] </span>mongodb::error::Error),
     <span class="attribute">#[error(<span class="string">&quot;OPAQUE protocol error: {}&quot;</span>, .<span class="number">0</span>)]
     </span>OpaqueProtocol(opaque_ke::errors::ProtocolError),
     <span class="attribute">#[error(transparent)]
@@ -166,6 +185,12 @@
     </span>WebPki(<span class="attribute">#[from] </span>tokio_rustls::webpki::Error),
 }
 
+<span class="kw">impl </span>LockKeeperServerError {
+    <span class="kw">pub fn </span>database(error: <span class="kw">impl </span>std::error::Error + Send + Sync + <span class="lifetime">&#39;static</span>) -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>::Database(Box::new(error))
+    }
+}
+
 <span class="kw">impl </span>From&lt;opaque_ke::errors::ProtocolError&gt; <span class="kw">for </span>LockKeeperServerError {
     <span class="kw">fn </span>from(error: opaque_ke::errors::ProtocolError) -&gt; <span class="self">Self </span>{
         <span class="self">Self</span>::OpaqueProtocol(error)
@@ -174,15 +199,17 @@
 
 <span class="kw">impl </span>From&lt;LockKeeperServerError&gt; <span class="kw">for </span>Status {
     <span class="kw">fn </span>from(error: LockKeeperServerError) -&gt; Status {
-        <span class="kw">use </span><span class="kw">crate</span>::server::session_key_cache::SessionKeyCacheError::<span class="kw-2">*</span>;
+        <span class="kw">use </span><span class="kw">crate</span>::server::session_cache::SessionCacheError::<span class="kw-2">*</span>;
 
         <span class="kw">match </span>error {
-            LockKeeperServerError::SessionKeyCache(ExpiredSessionKey) =&gt; {
-                Status::unauthenticated(<span class="string">&quot;Session key expired&quot;</span>)
+            LockKeeperServerError::SessionCache(ExpiredSession)
+            | LockKeeperServerError::SessionCache(MissingSession) =&gt; {
+                Status::unauthenticated(<span class="string">&quot;No session key for this user&quot;</span>)
             }
             <span class="comment">// Errors that are safe to return to the client
             </span>LockKeeperServerError::AccountAlreadyRegistered
             | LockKeeperServerError::InvalidAccount
+            | LockKeeperServerError::SessionIdNotFound
             | LockKeeperServerError::KeyNotFound =&gt; Status::invalid_argument(error.to_string()),
 
             LockKeeperServerError::StorageKeyAlreadySet
@@ -195,22 +222,23 @@
 
             <span class="comment">// Errors that the client should not see
             </span>LockKeeperServerError::MissingService
-            | LockKeeperServerError::SessionKeyCache(<span class="kw">_</span>)
+            | LockKeeperServerError::InvalidLogFilePath(<span class="kw">_</span>)
+            | LockKeeperServerError::SessionCache(<span class="kw">_</span>)
             | LockKeeperServerError::Hyper(<span class="kw">_</span>)
             | LockKeeperServerError::Io(<span class="kw">_</span>)
             | LockKeeperServerError::InvalidOpaqueDirectory
-            | LockKeeperServerError::Bson(<span class="kw">_</span>)
             | LockKeeperServerError::Bincode(<span class="kw">_</span>)
             | LockKeeperServerError::OpaqueProtocol(<span class="kw">_</span>)
             | LockKeeperServerError::PrivateKeyMissing
+            | LockKeeperServerError::RemoteStorageKeyMissing
             | LockKeeperServerError::EnvVar(<span class="kw">_</span>)
             | LockKeeperServerError::Rustls(<span class="kw">_</span>)
             | LockKeeperServerError::StrumParseError(<span class="kw">_</span>)
             | LockKeeperServerError::Toml(<span class="kw">_</span>)
-            | LockKeeperServerError::MongoDb(<span class="kw">_</span>)
+            | LockKeeperServerError::Database(<span class="kw">_</span>)
             | LockKeeperServerError::WebPki(<span class="kw">_</span>) =&gt; Status::internal(<span class="string">&quot;Internal server error&quot;</span>),
         }
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="lock_keeper_key_server" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="lock_keeper_key_server" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.1 (90743e729 2023-01-10)" ></div></body></html>

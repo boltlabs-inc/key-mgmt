@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":[["generate_key",""],["store_key",""]],"struct":[["Generate",""]]};

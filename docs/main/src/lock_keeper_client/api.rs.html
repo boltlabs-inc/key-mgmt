@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `lock-keeper-client/src/api.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>api.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../lock_keeper_client/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../lock_keeper_client/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../lock_keeper_client/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `lock-keeper-client/src/api.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>api.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../lock_keeper_client/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -227,6 +227,199 @@
 <span id="227">227</span>
 <span id="228">228</span>
 <span id="229">229</span>
+<span id="230">230</span>
+<span id="231">231</span>
+<span id="232">232</span>
+<span id="233">233</span>
+<span id="234">234</span>
+<span id="235">235</span>
+<span id="236">236</span>
+<span id="237">237</span>
+<span id="238">238</span>
+<span id="239">239</span>
+<span id="240">240</span>
+<span id="241">241</span>
+<span id="242">242</span>
+<span id="243">243</span>
+<span id="244">244</span>
+<span id="245">245</span>
+<span id="246">246</span>
+<span id="247">247</span>
+<span id="248">248</span>
+<span id="249">249</span>
+<span id="250">250</span>
+<span id="251">251</span>
+<span id="252">252</span>
+<span id="253">253</span>
+<span id="254">254</span>
+<span id="255">255</span>
+<span id="256">256</span>
+<span id="257">257</span>
+<span id="258">258</span>
+<span id="259">259</span>
+<span id="260">260</span>
+<span id="261">261</span>
+<span id="262">262</span>
+<span id="263">263</span>
+<span id="264">264</span>
+<span id="265">265</span>
+<span id="266">266</span>
+<span id="267">267</span>
+<span id="268">268</span>
+<span id="269">269</span>
+<span id="270">270</span>
+<span id="271">271</span>
+<span id="272">272</span>
+<span id="273">273</span>
+<span id="274">274</span>
+<span id="275">275</span>
+<span id="276">276</span>
+<span id="277">277</span>
+<span id="278">278</span>
+<span id="279">279</span>
+<span id="280">280</span>
+<span id="281">281</span>
+<span id="282">282</span>
+<span id="283">283</span>
+<span id="284">284</span>
+<span id="285">285</span>
+<span id="286">286</span>
+<span id="287">287</span>
+<span id="288">288</span>
+<span id="289">289</span>
+<span id="290">290</span>
+<span id="291">291</span>
+<span id="292">292</span>
+<span id="293">293</span>
+<span id="294">294</span>
+<span id="295">295</span>
+<span id="296">296</span>
+<span id="297">297</span>
+<span id="298">298</span>
+<span id="299">299</span>
+<span id="300">300</span>
+<span id="301">301</span>
+<span id="302">302</span>
+<span id="303">303</span>
+<span id="304">304</span>
+<span id="305">305</span>
+<span id="306">306</span>
+<span id="307">307</span>
+<span id="308">308</span>
+<span id="309">309</span>
+<span id="310">310</span>
+<span id="311">311</span>
+<span id="312">312</span>
+<span id="313">313</span>
+<span id="314">314</span>
+<span id="315">315</span>
+<span id="316">316</span>
+<span id="317">317</span>
+<span id="318">318</span>
+<span id="319">319</span>
+<span id="320">320</span>
+<span id="321">321</span>
+<span id="322">322</span>
+<span id="323">323</span>
+<span id="324">324</span>
+<span id="325">325</span>
+<span id="326">326</span>
+<span id="327">327</span>
+<span id="328">328</span>
+<span id="329">329</span>
+<span id="330">330</span>
+<span id="331">331</span>
+<span id="332">332</span>
+<span id="333">333</span>
+<span id="334">334</span>
+<span id="335">335</span>
+<span id="336">336</span>
+<span id="337">337</span>
+<span id="338">338</span>
+<span id="339">339</span>
+<span id="340">340</span>
+<span id="341">341</span>
+<span id="342">342</span>
+<span id="343">343</span>
+<span id="344">344</span>
+<span id="345">345</span>
+<span id="346">346</span>
+<span id="347">347</span>
+<span id="348">348</span>
+<span id="349">349</span>
+<span id="350">350</span>
+<span id="351">351</span>
+<span id="352">352</span>
+<span id="353">353</span>
+<span id="354">354</span>
+<span id="355">355</span>
+<span id="356">356</span>
+<span id="357">357</span>
+<span id="358">358</span>
+<span id="359">359</span>
+<span id="360">360</span>
+<span id="361">361</span>
+<span id="362">362</span>
+<span id="363">363</span>
+<span id="364">364</span>
+<span id="365">365</span>
+<span id="366">366</span>
+<span id="367">367</span>
+<span id="368">368</span>
+<span id="369">369</span>
+<span id="370">370</span>
+<span id="371">371</span>
+<span id="372">372</span>
+<span id="373">373</span>
+<span id="374">374</span>
+<span id="375">375</span>
+<span id="376">376</span>
+<span id="377">377</span>
+<span id="378">378</span>
+<span id="379">379</span>
+<span id="380">380</span>
+<span id="381">381</span>
+<span id="382">382</span>
+<span id="383">383</span>
+<span id="384">384</span>
+<span id="385">385</span>
+<span id="386">386</span>
+<span id="387">387</span>
+<span id="388">388</span>
+<span id="389">389</span>
+<span id="390">390</span>
+<span id="391">391</span>
+<span id="392">392</span>
+<span id="393">393</span>
+<span id="394">394</span>
+<span id="395">395</span>
+<span id="396">396</span>
+<span id="397">397</span>
+<span id="398">398</span>
+<span id="399">399</span>
+<span id="400">400</span>
+<span id="401">401</span>
+<span id="402">402</span>
+<span id="403">403</span>
+<span id="404">404</span>
+<span id="405">405</span>
+<span id="406">406</span>
+<span id="407">407</span>
+<span id="408">408</span>
+<span id="409">409</span>
+<span id="410">410</span>
+<span id="411">411</span>
+<span id="412">412</span>
+<span id="413">413</span>
+<span id="414">414</span>
+<span id="415">415</span>
+<span id="416">416</span>
+<span id="417">417</span>
+<span id="418">418</span>
+<span id="419">419</span>
+<span id="420">420</span>
+<span id="421">421</span>
+<span id="422">422</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Full implementation of the public API for the Lock Keeper client library.
 //!
 //! This API is designed for use with a local client application - that is, an
@@ -236,28 +429,36 @@
 
 </span><span class="kw">mod </span>authenticate;
 <span class="kw">mod </span>create_storage_key;
-<span class="kw">mod </span>generate;
+<span class="kw">mod </span>generate_secret;
+<span class="kw">mod </span>get_user_id;
 <span class="kw">mod </span>import;
 <span class="kw">mod </span>register;
-<span class="kw">mod </span>remote_generate;
+<span class="kw">mod </span>remote_generate_signing_key;
 <span class="kw">mod </span>remote_sign_bytes;
 <span class="kw">mod </span>retrieve;
 <span class="kw">mod </span>retrieve_audit_events;
 
-<span class="kw">use crate</span>::{client::Password, config::Config, LockKeeperClient, LockKeeperClientError};
+<span class="kw">use crate</span>::{
+    client::Password, config::Config, response::Metadata, LockKeeperClient, LockKeeperClientError,
+    LockKeeperResponse,
+};
 <span class="kw">use </span>lock_keeper::{
-    crypto::{Export, KeyId, Secret, Signable, Signature},
+    crypto::{Export, Import, KeyId, Secret, Signable, Signature},
     types::{
         audit_event::{AuditEvent, AuditEventOptions, EventType},
         database::user::AccountName,
-        operations::{retrieve::RetrieveContext, ClientAction, RequestMetadata},
+        operations::{retrieve_secret::RetrieveContext, ClientAction, RequestMetadata},
     },
 };
 <span class="kw">use </span>rand::{rngs::StdRng, SeedableRng};
 <span class="kw">use </span>serde::{Deserialize, Serialize};
-<span class="kw">use </span>tracing::error;
+<span class="kw">use </span>std::sync::Arc;
+<span class="kw">use </span>tokio::sync::Mutex;
+<span class="kw">use </span>uuid::Uuid;
 
-<span class="kw">pub use </span><span class="self">self</span>::remote_generate::RemoteGenerateResult;
+<span class="kw">pub use </span><span class="self">self</span>::{
+    generate_secret::GenerateResult, remote_generate_signing_key::RemoteGenerateResult,
+};
 
 <span class="doccomment">/// Wrapper for secrets prepared for local storage
 </span><span class="attribute">#[derive(Debug, Deserialize, Serialize)]
@@ -285,6 +486,16 @@
         }
     }
 
+    <span class="doccomment">/// Expire the current session and session key for this user.
+    </span><span class="kw">pub async fn </span>logout(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; LockKeeperResponse&lt;()&gt; {
+        <span class="comment">// Create channel to send messages to server
+        </span><span class="kw">let </span>request_id = Uuid::new_v4();
+        LockKeeperResponse {
+            result: <span class="self">self</span>.handle_logout(request_id).<span class="kw">await</span>,
+            metadata: <span class="prelude-val">Some</span>(Metadata { request_id }),
+        }
+    }
+
     <span class="doccomment">/// Authenticate to the Lock Keeper key server as a previously registered
     /// user.
     ///
@@ -293,10 +504,13 @@
         account_name: <span class="kw-2">&amp;</span>AccountName,
         password: <span class="kw-2">&amp;</span>Password,
         config: <span class="kw-2">&amp;</span>Config,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, LockKeeperClientError&gt; {
-        <span class="kw">let </span>client = <span class="self">Self</span>::connect(config).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="self">Self</span>::authenticate(client, account_name, password, config).<span class="kw">await
-    </span>}
+    ) -&gt; LockKeeperResponse&lt;<span class="self">Self</span>&gt; {
+        <span class="kw">let </span>request_id = Uuid::new_v4();
+        LockKeeperResponse {
+            result: <span class="self">Self</span>::authenticate(<span class="prelude-val">None</span>, account_name, password, config, request_id).<span class="kw">await</span>,
+            metadata: <span class="prelude-val">Some</span>(Metadata { request_id }),
+        }
+    }
 
     <span class="doccomment">/// Register a new user who has not yet interacted with the service.
     ///
@@ -309,109 +523,239 @@
         account_name: <span class="kw-2">&amp;</span>AccountName,
         password: <span class="kw-2">&amp;</span>Password,
         config: <span class="kw-2">&amp;</span>Config,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperClientError&gt; {
-        <span class="kw">let </span><span class="kw-2">mut </span>rng = StdRng::from_entropy();
-        <span class="kw">let </span><span class="kw-2">mut </span>client = <span class="self">Self</span>::connect(config).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="kw">let </span>metadata = RequestMetadata::new(account_name, ClientAction::Register, <span class="prelude-val">None</span>);
-        <span class="kw">let </span>client_channel = <span class="self">Self</span>::create_channel(<span class="kw-2">&amp;mut </span>client, <span class="kw-2">&amp;</span>metadata).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="kw">let </span>result =
-            <span class="self">Self</span>::handle_registration(client_channel, <span class="kw-2">&amp;mut </span>rng, account_name, password).<span class="kw">await</span>;
-        <span class="kw">match </span>result {
-            <span class="prelude-val">Ok</span>(export_key) =&gt; {
-                <span class="kw">let </span>client = <span class="self">Self</span>::authenticate(client, account_name, password, config).<span class="kw">await</span><span class="question-mark">?</span>;
-
-                <span class="comment">// After authenticating we can create the storage key
-                </span><span class="kw">let </span>metadata = client.create_metadata(ClientAction::CreateStorageKey);
-                <span class="kw">let </span>client_channel =
-                    <span class="self">Self</span>::create_channel(<span class="kw-2">&amp;mut </span>client.tonic_client(), <span class="kw-2">&amp;</span>metadata).<span class="kw">await</span><span class="question-mark">?</span>;
-                <span class="self">Self</span>::handle_create_storage_key(client_channel, <span class="kw-2">&amp;mut </span>rng, account_name, export_key)
-                    .<span class="kw">await</span><span class="question-mark">?</span>;
-
-                <span class="prelude-val">Ok</span>(())
-            }
-            <span class="prelude-val">Err</span>(e) =&gt; {
-                <span class="macro">error!</span>(<span class="string">&quot;{:?}&quot;</span>, e);
-                <span class="prelude-val">Err</span>(e)
-            }
+    ) -&gt; LockKeeperResponse&lt;()&gt; {
+        <span class="kw">let </span>request_id = Uuid::new_v4();
+        LockKeeperResponse {
+            result: <span class="self">Self</span>::register_helper(account_name, password, config, request_id).<span class="kw">await</span>,
+            metadata: <span class="prelude-val">Some</span>(Metadata { request_id }),
         }
+    }
+
+    <span class="kw">async fn </span>register_helper(
+        account_name: <span class="kw-2">&amp;</span>AccountName,
+        password: <span class="kw-2">&amp;</span>Password,
+        config: <span class="kw-2">&amp;</span>Config,
+        request_id: Uuid,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperClientError&gt; {
+        <span class="kw">let </span>rng = StdRng::from_entropy();
+        <span class="kw">let </span><span class="kw-2">mut </span>client = <span class="self">Self</span>::connect(config).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>metadata =
+            RequestMetadata::new(account_name, ClientAction::Register, <span class="prelude-val">None</span>, <span class="prelude-val">None</span>, request_id);
+        <span class="kw">let </span>rng_arc_mutex = Arc::new(Mutex::new(rng));
+        <span class="kw">let </span>client_channel = <span class="self">Self</span>::create_channel(<span class="kw-2">&amp;mut </span>client, <span class="kw-2">&amp;</span>metadata).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>master_key = <span class="self">Self</span>::handle_registration(
+            client_channel,
+            rng_arc_mutex.clone(),
+            account_name,
+            password,
+        )
+        .<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>client =
+            <span class="self">Self</span>::authenticate(<span class="prelude-val">Some</span>(client), account_name, password, config, request_id).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="comment">// After authenticating we can create the storage key
+        </span><span class="kw">let </span>request_metadata = client.create_metadata(ClientAction::CreateStorageKey, request_id);
+        <span class="kw">let </span>client_channel = LockKeeperClient::create_authenticated_channel(
+            <span class="kw-2">&amp;mut </span>client.tonic_client(),
+            <span class="kw-2">&amp;</span>request_metadata,
+            client.session_key().clone(),
+            rng_arc_mutex.clone(),
+        )
+        .<span class="kw">await</span><span class="question-mark">?</span>;
+        client
+            .handle_create_storage_key(client_channel, rng_arc_mutex, master_key)
+            .<span class="kw">await</span><span class="question-mark">?</span>;
+
+        <span class="prelude-val">Ok</span>(())
     }
 
     <span class="doccomment">/// Export an arbitrary key from the key servers.
     ///
     /// Calling this function on a signing key will generate an error.
     /// Output: If successful, returns the requested key material in byte form.
-    </span><span class="kw">pub async fn </span>export_key(<span class="kw-2">&amp;</span><span class="self">self</span>, key_id: <span class="kw-2">&amp;</span>KeyId) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;, LockKeeperClientError&gt; {
-        <span class="comment">// Create channel: this will internally be a `retrieve` channel
-        </span><span class="kw">let </span>metadata = <span class="self">self</span>.create_metadata(ClientAction::Export);
-        <span class="kw">let </span><span class="kw-2">mut </span>client_channel = <span class="self">Self</span>::create_channel(<span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(), <span class="kw-2">&amp;</span>metadata).<span class="kw">await</span><span class="question-mark">?</span>;
+    </span><span class="kw">pub async fn </span>export_secret(<span class="kw-2">&amp;</span><span class="self">self</span>, key_id: <span class="kw-2">&amp;</span>KeyId) -&gt; LockKeeperResponse&lt;Export&gt; {
+        <span class="kw">let </span>request_id = Uuid::new_v4();
+        LockKeeperResponse {
+            result: <span class="self">self</span>.export_secret_helper(key_id, request_id).<span class="kw">await</span>,
+            metadata: <span class="prelude-val">Some</span>(Metadata { request_id }),
+        }
+    }
+
+    <span class="kw">async fn </span>export_secret_helper(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        key_id: <span class="kw-2">&amp;</span>KeyId,
+        request_id: Uuid,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Export, LockKeeperClientError&gt; {
+        <span class="kw">let </span>metadata = <span class="self">self</span>.create_metadata(ClientAction::ExportSecret, request_id);
+        <span class="kw">let </span>client_channel = <span class="self">Self</span>::create_authenticated_channel(
+            <span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(),
+            <span class="kw-2">&amp;</span>metadata,
+            <span class="self">self</span>.session_key().clone(),
+            <span class="self">self</span>.rng.clone(),
+        )
+        .<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="comment">// Get local-only secret
         </span><span class="kw">let </span>local_storage = <span class="self">self
-            </span>.handle_retrieve(<span class="kw-2">&amp;mut </span>client_channel, key_id, RetrieveContext::LocalOnly)
+            </span>.handle_retrieve_secret(
+                client_channel,
+                key_id,
+                RetrieveContext::LocalOnly,
+                request_id,
+            )
             .<span class="kw">await</span><span class="question-mark">?
             </span>.ok_or(LockKeeperClientError::ExportFailed)<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(local_storage.material.into())
+
+        <span class="prelude-val">Ok</span>(Export::from(local_storage.material))
     }
 
     <span class="doccomment">/// Export signing key pair material from the key servers.
     ///
     /// Calling this function on an arbitrary key will generated an error.
     /// Output: If successful, returns the requested key material in byte form.
-    </span><span class="kw">pub async fn </span>export_signing_key(
+    </span><span class="kw">pub async fn </span>export_signing_key(<span class="kw-2">&amp;</span><span class="self">self</span>, key_id: <span class="kw-2">&amp;</span>KeyId) -&gt; LockKeeperResponse&lt;Export&gt; {
+        <span class="kw">let </span>request_id = Uuid::new_v4();
+        LockKeeperResponse {
+            result: <span class="self">self</span>.export_signing_key_helper(key_id, request_id).<span class="kw">await</span>,
+            metadata: <span class="prelude-val">Some</span>(Metadata { request_id }),
+        }
+    }
+
+    <span class="kw">async fn </span>export_signing_key_helper(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         key_id: <span class="kw-2">&amp;</span>KeyId,
+        request_id: Uuid,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Export, LockKeeperClientError&gt; {
-        <span class="comment">// Create channel: this will internally be a `retrieve` channel
-        </span><span class="kw">let </span>metadata = <span class="self">self</span>.create_metadata(ClientAction::ExportSigningKey);
-        <span class="kw">let </span><span class="kw-2">mut </span>client_channel = <span class="self">Self</span>::create_channel(<span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(), <span class="kw-2">&amp;</span>metadata).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>metadata = <span class="self">self</span>.create_metadata(ClientAction::ExportSigningKey, request_id);
+        <span class="kw">let </span>client_channel = <span class="self">Self</span>::create_authenticated_channel(
+            <span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(),
+            <span class="kw-2">&amp;</span>metadata,
+            <span class="self">self</span>.session_key().clone(),
+            <span class="self">self</span>.rng.clone(),
+        )
+        .<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="comment">// Get local-only secret
         </span><span class="kw">let </span>local_storage = <span class="self">self
-            </span>.handle_retrieve_signing_key(<span class="kw-2">&amp;mut </span>client_channel, key_id, RetrieveContext::LocalOnly)
+            </span>.handle_retrieve_signing_key(client_channel, key_id, RetrieveContext::LocalOnly)
             .<span class="kw">await</span><span class="question-mark">?
             </span>.ok_or(LockKeeperClientError::ExportFailed)<span class="question-mark">?</span>;
-        <span class="kw">let </span>exported_signing_key = Export::from(local_storage.material);
-        <span class="prelude-val">Ok</span>(exported_signing_key)
+
+        <span class="prelude-val">Ok</span>(Export::from(local_storage.material))
     }
 
     <span class="doccomment">/// Generate an arbitrary secret client-side, store this secret in the key
     /// server.
-    </span><span class="kw">pub async fn </span>generate_and_store(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;(KeyId, LocalStorage&lt;Secret&gt;), LockKeeperClientError&gt; {
-        <span class="kw">let </span>metadata = <span class="self">self</span>.create_metadata(ClientAction::Generate);
-        <span class="kw">let </span><span class="kw-2">mut </span>client_channel = <span class="self">Self</span>::create_channel(<span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(), <span class="kw-2">&amp;</span>metadata).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="self">self</span>.handle_generate(<span class="kw-2">&amp;mut </span>client_channel).<span class="kw">await
-    </span>}
+    </span><span class="kw">pub async fn </span>generate_secret(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; LockKeeperResponse&lt;GenerateResult&gt; {
+        <span class="kw">let </span>request_id = Uuid::new_v4();
+        LockKeeperResponse {
+            result: <span class="self">self</span>.generate_secret_helper(request_id).<span class="kw">await</span>,
+            metadata: <span class="prelude-val">Some</span>(Metadata { request_id }),
+        }
+    }
 
-    <span class="doccomment">/// Import signing key material to the key server
-    </span><span class="kw">pub async fn </span>import_signing_key(
+    <span class="kw">async fn </span>generate_secret_helper(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        key_material: Vec&lt;u8&gt;,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;KeyId, LockKeeperClientError&gt; {
-        <span class="kw">let </span>metadata = <span class="self">self</span>.create_metadata(ClientAction::ImportSigningKey);
-        <span class="kw">let </span><span class="kw-2">mut </span>client_channel = <span class="self">Self</span>::create_channel(<span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(), <span class="kw-2">&amp;</span>metadata).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="self">self</span>.handle_import_signing_key(<span class="kw-2">&amp;mut </span>client_channel, key_material)
+        request_id: Uuid,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;GenerateResult, LockKeeperClientError&gt; {
+        <span class="kw">let </span>metadata = <span class="self">self</span>.create_metadata(ClientAction::GenerateSecret, request_id);
+        <span class="kw">let </span>client_channel = <span class="self">Self</span>::create_authenticated_channel(
+            <span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(),
+            <span class="kw-2">&amp;</span>metadata,
+            <span class="self">self</span>.session_key().clone(),
+            <span class="self">self</span>.rng.clone(),
+        )
+        .<span class="kw">await</span><span class="question-mark">?</span>;
+
+        <span class="self">self</span>.handle_generate_secret(client_channel, request_id)
             .<span class="kw">await
     </span>}
 
-    <span class="doccomment">/// Retrieve an arbitrary secret from the key server by [`KeyId`]
+    <span class="doccomment">/// Import signing key material to the key server
+    </span><span class="kw">pub async fn </span>import_signing_key(<span class="kw-2">&amp;</span><span class="self">self</span>, key_material: Import) -&gt; LockKeeperResponse&lt;KeyId&gt; {
+        <span class="kw">let </span>request_id = Uuid::new_v4();
+        LockKeeperResponse {
+            result: <span class="self">self
+                </span>.import_signing_key_helper(key_material, request_id)
+                .<span class="kw">await</span>,
+            metadata: <span class="prelude-val">Some</span>(Metadata { request_id }),
+        }
+    }
+
+    <span class="kw">async fn </span>import_signing_key_helper(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        key_material: Import,
+        request_id: Uuid,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;KeyId, LockKeeperClientError&gt; {
+        <span class="kw">let </span>metadata = <span class="self">self</span>.create_metadata(ClientAction::ImportSigningKey, request_id);
+        <span class="kw">let </span>client_channel = <span class="self">Self</span>::create_authenticated_channel(
+            <span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(),
+            <span class="kw-2">&amp;</span>metadata,
+            <span class="self">self</span>.session_key().clone(),
+            <span class="self">self</span>.rng.clone(),
+        )
+        .<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="self">self</span>.handle_import_signing_key(client_channel, key_material)
+            .<span class="kw">await
+    </span>}
+
+    <span class="doccomment">/// Retrieve a secret from the key server by [`KeyId`]
     ///
     /// This operation will fail if it is called on a signing key.
-    </span><span class="kw">pub async fn </span>retrieve(
+    </span><span class="kw">pub async fn </span>retrieve_secret(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         key_id: <span class="kw-2">&amp;</span>KeyId,
         context: RetrieveContext,
+    ) -&gt; LockKeeperResponse&lt;<span class="prelude-ty">Option</span>&lt;LocalStorage&lt;Secret&gt;&gt;&gt; {
+        <span class="kw">let </span>request_id = Uuid::new_v4();
+        LockKeeperResponse {
+            result: <span class="self">self
+                </span>.retrieve_secret_helper(key_id, context, request_id)
+                .<span class="kw">await</span>,
+            metadata: <span class="prelude-val">Some</span>(Metadata { request_id }),
+        }
+    }
+
+    <span class="kw">async fn </span>retrieve_secret_helper(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        key_id: <span class="kw-2">&amp;</span>KeyId,
+        context: RetrieveContext,
+        request_id: Uuid,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;LocalStorage&lt;Secret&gt;&gt;, LockKeeperClientError&gt; {
-        <span class="kw">let </span>metadata = <span class="self">self</span>.create_metadata(ClientAction::Retrieve);
-        <span class="kw">let </span><span class="kw-2">mut </span>client_channel = <span class="self">Self</span>::create_channel(<span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(), <span class="kw-2">&amp;</span>metadata).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="self">self</span>.handle_retrieve(<span class="kw-2">&amp;mut </span>client_channel, key_id, context)
+        <span class="kw">let </span>metadata = <span class="self">self</span>.create_metadata(ClientAction::RetrieveSecret, request_id);
+        <span class="kw">let </span>client_channel = <span class="self">Self</span>::create_authenticated_channel(
+            <span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(),
+            <span class="kw-2">&amp;</span>metadata,
+            <span class="self">self</span>.session_key().clone(),
+            <span class="self">self</span>.rng.clone(),
+        )
+        .<span class="kw">await</span><span class="question-mark">?</span>;
+
+        <span class="self">self</span>.handle_retrieve_secret(client_channel, key_id, context, request_id)
             .<span class="kw">await
     </span>}
 
     <span class="doccomment">/// Request that the server generate a new signing key.
-    </span><span class="kw">pub async fn </span>remote_generate(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;RemoteGenerateResult, LockKeeperClientError&gt; {
-        <span class="kw">let </span>metadata = <span class="self">self</span>.create_metadata(ClientAction::RemoteGenerate);
-        <span class="kw">let </span><span class="kw-2">mut </span>client_channel = <span class="self">Self</span>::create_channel(<span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(), <span class="kw-2">&amp;</span>metadata).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="self">self</span>.handle_remote_generate(<span class="kw-2">&amp;mut </span>client_channel).<span class="kw">await
+    </span><span class="kw">pub async fn </span>remote_generate(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; LockKeeperResponse&lt;RemoteGenerateResult&gt; {
+        <span class="kw">let </span>request_id = Uuid::new_v4();
+        LockKeeperResponse {
+            result: <span class="self">self</span>.remote_generate_helper(request_id).<span class="kw">await</span>,
+            metadata: <span class="prelude-val">Some</span>(Metadata { request_id }),
+        }
+    }
+
+    <span class="kw">async fn </span>remote_generate_helper(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        request_id: Uuid,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;RemoteGenerateResult, LockKeeperClientError&gt; {
+        <span class="kw">let </span>metadata = <span class="self">self</span>.create_metadata(ClientAction::RemoteGenerateSigningKey, request_id);
+        <span class="kw">let </span>client_channel = <span class="self">Self</span>::create_authenticated_channel(
+            <span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(),
+            <span class="kw-2">&amp;</span>metadata,
+            <span class="self">self</span>.session_key().clone(),
+            <span class="self">self</span>.rng.clone(),
+        )
+        .<span class="kw">await</span><span class="question-mark">?</span>;
+
+        <span class="self">self</span>.handle_remote_generate_signing_key(client_channel)
+            .<span class="kw">await
     </span>}
 
     <span class="doccomment">/// Sign an arbitrary blob of bytes with a remotely generated
@@ -421,10 +765,31 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         key_id: KeyId,
         bytes: <span class="kw">impl </span>Signable,
+    ) -&gt; LockKeeperResponse&lt;Signature&gt; {
+        <span class="kw">let </span>request_id = Uuid::new_v4();
+        LockKeeperResponse {
+            result: <span class="self">self
+                </span>.remote_sign_bytes_helper(key_id, bytes, request_id)
+                .<span class="kw">await</span>,
+            metadata: <span class="prelude-val">Some</span>(Metadata { request_id }),
+        }
+    }
+
+    <span class="kw">async fn </span>remote_sign_bytes_helper(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        key_id: KeyId,
+        bytes: <span class="kw">impl </span>Signable,
+        request_id: Uuid,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Signature, LockKeeperClientError&gt; {
-        <span class="kw">let </span>metadata = <span class="self">self</span>.create_metadata(ClientAction::RemoteSignBytes);
-        <span class="kw">let </span><span class="kw-2">mut </span>client_channel = <span class="self">Self</span>::create_channel(<span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(), <span class="kw-2">&amp;</span>metadata).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="self">self</span>.handle_remote_sign_bytes(<span class="kw-2">&amp;mut </span>client_channel, key_id, bytes)
+        <span class="kw">let </span>metadata = <span class="self">self</span>.create_metadata(ClientAction::RemoteSignBytes, request_id);
+        <span class="kw">let </span>client_channel = <span class="self">Self</span>::create_authenticated_channel(
+            <span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(),
+            <span class="kw-2">&amp;</span>metadata,
+            <span class="self">self</span>.session_key().clone(),
+            <span class="self">self</span>.rng.clone(),
+        )
+        .<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="self">self</span>.handle_remote_sign_bytes(client_channel, key_id, bytes)
             .<span class="kw">await
     </span>}
 
@@ -449,12 +814,33 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         event_type: EventType,
         options: AuditEventOptions,
+    ) -&gt; LockKeeperResponse&lt;Vec&lt;AuditEvent&gt;&gt; {
+        <span class="kw">let </span>request_id = Uuid::new_v4();
+        LockKeeperResponse {
+            result: <span class="self">self
+                </span>.retrieve_audit_event_log_helper(event_type, options, request_id)
+                .<span class="kw">await</span>,
+            metadata: <span class="prelude-val">Some</span>(Metadata { request_id }),
+        }
+    }
+
+    <span class="kw">async fn </span>retrieve_audit_event_log_helper(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        event_type: EventType,
+        options: AuditEventOptions,
+        request_id: Uuid,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;AuditEvent&gt;, LockKeeperClientError&gt; {
-        <span class="kw">let </span>metadata = <span class="self">self</span>.create_metadata(ClientAction::RetrieveAuditEvents);
-        <span class="kw">let </span><span class="kw-2">mut </span>client_channel = <span class="self">Self</span>::create_channel(<span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(), <span class="kw-2">&amp;</span>metadata).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="self">self</span>.handle_retrieve_audit_events(<span class="kw-2">&amp;mut </span>client_channel, event_type, options)
+        <span class="kw">let </span>metadata = <span class="self">self</span>.create_metadata(ClientAction::RetrieveAuditEvents, request_id);
+        <span class="kw">let </span>client_channel = <span class="self">Self</span>::create_authenticated_channel(
+            <span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(),
+            <span class="kw-2">&amp;</span>metadata,
+            <span class="self">self</span>.session_key().clone(),
+            <span class="self">self</span>.rng.clone(),
+        )
+        .<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="self">self</span>.handle_retrieve_audit_events(client_channel, event_type, options)
             .<span class="kw">await
     </span>}
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="lock_keeper_client" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="lock_keeper_client" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.1 (90743e729 2023-01-10)" ></div></body></html>

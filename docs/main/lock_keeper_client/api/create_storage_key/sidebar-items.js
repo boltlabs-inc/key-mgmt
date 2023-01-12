@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":[["create_and_send_storage_key",""],["request_user_id",""]]};
+window.SIDEBAR_ITEMS = {"fn":[["create_and_send_storage_key",""]]};

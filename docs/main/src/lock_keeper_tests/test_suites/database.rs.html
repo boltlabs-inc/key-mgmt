@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `lock-keeper-tests/src/test_suites/database.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>database.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../lock_keeper_tests/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../lock_keeper_tests/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../lock_keeper_tests/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `lock-keeper-tests/src/test_suites/database.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>database.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../lock_keeper_tests/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -160,6 +160,66 @@
 <span id="160">160</span>
 <span id="161">161</span>
 <span id="162">162</span>
+<span id="163">163</span>
+<span id="164">164</span>
+<span id="165">165</span>
+<span id="166">166</span>
+<span id="167">167</span>
+<span id="168">168</span>
+<span id="169">169</span>
+<span id="170">170</span>
+<span id="171">171</span>
+<span id="172">172</span>
+<span id="173">173</span>
+<span id="174">174</span>
+<span id="175">175</span>
+<span id="176">176</span>
+<span id="177">177</span>
+<span id="178">178</span>
+<span id="179">179</span>
+<span id="180">180</span>
+<span id="181">181</span>
+<span id="182">182</span>
+<span id="183">183</span>
+<span id="184">184</span>
+<span id="185">185</span>
+<span id="186">186</span>
+<span id="187">187</span>
+<span id="188">188</span>
+<span id="189">189</span>
+<span id="190">190</span>
+<span id="191">191</span>
+<span id="192">192</span>
+<span id="193">193</span>
+<span id="194">194</span>
+<span id="195">195</span>
+<span id="196">196</span>
+<span id="197">197</span>
+<span id="198">198</span>
+<span id="199">199</span>
+<span id="200">200</span>
+<span id="201">201</span>
+<span id="202">202</span>
+<span id="203">203</span>
+<span id="204">204</span>
+<span id="205">205</span>
+<span id="206">206</span>
+<span id="207">207</span>
+<span id="208">208</span>
+<span id="209">209</span>
+<span id="210">210</span>
+<span id="211">211</span>
+<span id="212">212</span>
+<span id="213">213</span>
+<span id="214">214</span>
+<span id="215">215</span>
+<span id="216">216</span>
+<span id="217">217</span>
+<span id="218">218</span>
+<span id="219">219</span>
+<span id="220">220</span>
+<span id="221">221</span>
+<span id="222">222</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Database integration tests
 
 </span><span class="kw">pub mod </span>audit_event;
@@ -170,27 +230,31 @@
 <span class="kw">use </span>std::{ops::Deref, str::FromStr};
 
 <span class="kw">use crate</span>::{
+    config::TestFilters,
     error::Result,
     utils::{report_test_results, TestResult},
-    Config,
 };
 <span class="kw">use </span>lock_keeper::{
-    crypto::{Encrypted, OpaqueExportKey, StorageKey},
-    types::database::user::{AccountName, UserId},
+    crypto::{
+        Encrypted, Import, KeyId, MasterKey, RemoteStorageKey, Secret, SigningKeyPair, StorageKey,
+    },
+    types::database::{
+        secrets::StoredSecret,
+        user::{AccountName, UserId},
+    },
 };
-<span class="kw">use </span>lock_keeper_key_server::{config::DatabaseSpec, database::Database};
+<span class="kw">use </span>lock_keeper_key_server::database::DataStore;
+<span class="kw">use </span>lock_keeper_postgres::{Config, ConfigFile <span class="kw">as </span>DatabaseConfigFile, PostgresDB, PostgresError};
 <span class="kw">use </span>rand::{rngs::StdRng, Rng, SeedableRng};
 
 <span class="kw">use </span><span class="kw">crate</span>::utils::{server_registration, tagged};
 
-<span class="kw">pub const </span>USERS_TABLE: <span class="kw-2">&amp;</span>str = <span class="string">&quot;users&quot;</span>;
-
-<span class="kw">pub async fn </span>run_tests(config: <span class="kw-2">&amp;</span>Config) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;TestResult&gt;&gt; {
+<span class="kw">pub async fn </span>run_tests(filters: <span class="kw-2">&amp;</span>TestFilters) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;TestResult&gt;&gt; {
     <span class="macro">println!</span>(<span class="string">&quot;Running database tests&quot;</span>);
 
-    <span class="kw">let </span>audit_event_results = audit_event::run_tests(config.clone()).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let </span>user_results = user::run_tests(config.clone()).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let </span>secret_results = secret::run_tests(config.clone()).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>audit_event_results = audit_event::run_tests(filters).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>user_results = user::run_tests(filters).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>secret_results = secret::run_tests(filters).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="comment">// Report results after all tests finish so results show up together
     </span><span class="macro">println!</span>(
@@ -213,15 +277,11 @@
 
 <span class="attribute">#[derive(Clone, Debug)]
 </span><span class="kw">pub struct </span>TestDatabase {
-    <span class="kw">pub </span>db: Database,
-    <span class="kw">pub </span>spec: DatabaseSpec,
-    <span class="doccomment">/// Direct connection to MongoDB for actions that we don&#39;t provide in
-    /// [`Database`]
-    </span><span class="kw">pub </span>mongo: mongodb::Database,
+    <span class="kw">pub </span>db: PostgresDB,
 }
 
 <span class="kw">impl </span>Deref <span class="kw">for </span>TestDatabase {
-    <span class="kw">type </span>Target = Database;
+    <span class="kw">type </span>Target = PostgresDB;
 
     <span class="kw">fn </span>deref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="self">Self</span>::Target {
         <span class="kw-2">&amp;</span><span class="self">self</span>.db
@@ -229,70 +289,50 @@
 }
 
 <span class="kw">impl </span>TestDatabase {
-    <span class="doccomment">/// Create a new test database with random characters appended to name.
-    /// This is what you probably want to use.
-    </span><span class="kw">pub async fn </span>new(db_name: <span class="kw">impl </span>AsRef&lt;str&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
-        <span class="self">Self</span>::from_db_name(tagged(db_name)).<span class="kw">await
-    </span>}
+    <span class="kw">pub async fn </span>connect() -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
+        <span class="kw">let </span>config_str = <span class="string">r#&quot;
+            username = &#39;test&#39; 
+            password = &#39;test_password&#39;
+            address = &#39;localhost&#39;
+            db_name = &#39;test&#39;
+            max_connections = 5
+            connection_timeout = &quot;3s&quot;
+            &quot;#</span>;
 
-    <span class="doccomment">/// Create a new test database with a specific name.
-    /// Use this to reconnect to a [`TestDatabase`] created with the `new`
-    /// function.
-    </span><span class="kw">pub async fn </span>from_db_name(db_name: <span class="kw">impl </span>Into&lt;String&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
-        <span class="kw">use </span>mongodb::{options::ClientOptions, Client};
-
-        <span class="kw">let </span>mongodb_uri = <span class="string">&quot;mongodb://localhost:27017&quot;</span>;
-
-        <span class="kw">let </span>spec = DatabaseSpec {
-            mongodb_uri: mongodb_uri.to_string(),
-            db_name: db_name.into(),
-        };
-
-        <span class="kw">let </span>db = Database::connect(<span class="kw-2">&amp;</span>spec).<span class="kw">await</span><span class="question-mark">?</span>;
-
-        <span class="kw">let </span>client_options = ClientOptions::parse(<span class="kw-2">&amp;</span>mongodb_uri).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="kw">let </span>client = Client::with_options(client_options)<span class="question-mark">?</span>;
-        <span class="kw">let </span>mongo = client.database(<span class="kw-2">&amp;</span>spec.db_name);
-
-        <span class="kw">let </span>result = TestDatabase { db, spec, mongo };
-
-        <span class="prelude-val">Ok</span>(result)
+        <span class="kw">let </span>config_file =
+            DatabaseConfigFile::from_str(config_str).map_err(PostgresError::ConfigError)<span class="question-mark">?</span>;
+        <span class="kw">let </span>config: Config = config_file.try_into().map_err(PostgresError::ConfigError)<span class="question-mark">?</span>;
+        <span class="kw">let </span>db = PostgresDB::connect(config).<span class="kw">await</span>.unwrap();
+        <span class="prelude-val">Ok</span>(TestDatabase { db })
     }
 
-    <span class="doccomment">/// Drops the underlying database. Call this when you&#39;re done using the test
-    /// database. Some day Rust will have async `Drop` and we can do this
-    /// properly.
-    </span><span class="kw">pub async fn </span>drop(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="self">self</span>.mongo.drop(<span class="prelude-val">None</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(())
-    }
-
-    <span class="doccomment">/// Create an export key for testing using random bytes.
-    </span><span class="kw">fn </span>create_test_export_key(rng: <span class="kw-2">&amp;mut </span>StdRng) -&gt; <span class="prelude-ty">Result</span>&lt;OpaqueExportKey&gt; {
+    <span class="doccomment">/// Create a master key for testing using random bytes.
+    </span><span class="kw">fn </span>create_test_master_key(rng: <span class="kw-2">&amp;mut </span>StdRng) -&gt; <span class="prelude-ty">Result</span>&lt;MasterKey&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>key = [<span class="number">0_u8</span>; <span class="number">64</span>];
         rng.try_fill(<span class="kw-2">&amp;mut </span>key)<span class="question-mark">?</span>;
 
-        <span class="comment">// We can&#39;t create an export key directly from bytes so we convert it to a
+        <span class="comment">// We can&#39;t create a master key directly from bytes so we convert it to a
         // GenericArray first.
         </span><span class="kw">let </span>key: GenericArray&lt;u8, U64&gt; = key.into();
 
-        <span class="prelude-val">Ok</span>(key.into())
+        <span class="kw">let </span>master_key = MasterKey::derive_master_key(key)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(master_key)
     }
 
     <span class="doccomment">/// Create a storage key for a test user.
     </span><span class="kw">pub fn </span>create_test_storage_key(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         user_id: <span class="kw-2">&amp;</span>UserId,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;(Encrypted&lt;StorageKey&gt;, OpaqueExportKey)&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(Encrypted&lt;StorageKey&gt;, MasterKey)&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>rng = StdRng::from_entropy();
 
         <span class="comment">// Create a storage key
-        </span><span class="kw">let </span>export_key = <span class="self">Self</span>::create_test_export_key(<span class="kw-2">&amp;mut </span>rng)<span class="question-mark">?</span>;
-        <span class="kw">let </span>storage_key = export_key
+        </span><span class="kw">let </span>master_key = <span class="self">Self</span>::create_test_master_key(<span class="kw-2">&amp;mut </span>rng)<span class="question-mark">?</span>;
+        <span class="kw">let </span>storage_key = master_key
             .clone()
             .create_and_encrypt_storage_key(<span class="kw-2">&amp;mut </span>rng, user_id)<span class="question-mark">?</span>;
 
-        <span class="prelude-val">Ok</span>((storage_key, export_key))
+        <span class="prelude-val">Ok</span>((storage_key, master_key))
     }
 
     <span class="doccomment">/// Creates a test user with a randomized name and returns the id and
@@ -301,12 +341,12 @@
         <span class="kw">let </span><span class="kw-2">mut </span>rng = StdRng::from_entropy();
 
         <span class="kw">let </span>user_id = UserId::new(<span class="kw-2">&amp;mut </span>rng)<span class="question-mark">?</span>;
-        <span class="kw">let </span>account_name = AccountName::from_str(<span class="kw-2">&amp;</span>tagged(<span class="string">&quot;user&quot;</span>))<span class="question-mark">?</span>;
+        <span class="kw">let </span>account_name = AccountName::from(tagged(<span class="string">&quot;user&quot;</span>).as_str());
 
         <span class="kw">let </span>server_registration = server_registration();
         <span class="kw">let _ </span>= <span class="self">self
             </span>.db
-            .create_user(<span class="kw-2">&amp;</span>user_id, <span class="kw-2">&amp;</span>account_name, <span class="kw-2">&amp;</span>server_registration)
+            .create_account(<span class="kw-2">&amp;</span>user_id, <span class="kw-2">&amp;</span>account_name, <span class="kw-2">&amp;</span>server_registration)
             .<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>((user_id, account_name))
@@ -316,11 +356,91 @@
     /// deserialized to the `User` type. Returns true if retrieval and
     /// deserialization were successful.
     </span><span class="kw">pub async fn </span>is_user_valid(<span class="kw-2">&amp;</span><span class="self">self</span>, account_name: <span class="kw-2">&amp;</span>AccountName) -&gt; bool {
-        <span class="kw">match </span><span class="self">self</span>.find_user(account_name).<span class="kw">await </span>{
+        <span class="kw">match </span><span class="self">self</span>.find_account(account_name).<span class="kw">await </span>{
             <span class="prelude-val">Ok</span>(maybe_user) =&gt; maybe_user.is_some(),
             <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="bool-val">false</span>,
         }
     }
+
+    <span class="doccomment">/// Generate and store `n` random secrets in our database.
+    </span><span class="kw">async fn </span>create_random_arbitrary_secrets(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        n: usize,
+        user_id: <span class="kw-2">&amp;</span>UserId,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;KeyId&gt;&gt; {
+        <span class="kw">let </span>(encrypted_storage_key, master_key) = <span class="self">self</span>.create_test_storage_key(user_id)<span class="question-mark">?</span>;
+        <span class="kw">let </span>storage_key = encrypted_storage_key.decrypt_storage_key(master_key, user_id)<span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>rng = StdRng::from_entropy();
+
+        <span class="kw">let </span><span class="kw-2">mut </span>key_ids: Vec&lt;KeyId&gt; = <span class="macro">vec!</span>[];
+        <span class="kw">for _ in </span><span class="number">0</span>..n {
+            <span class="kw">let </span>key_id = <span class="self">self
+                </span>.add_arbitrary_secret(<span class="kw-2">&amp;mut </span>rng, <span class="kw-2">&amp;</span>storage_key, user_id)
+                .<span class="kw">await</span><span class="question-mark">?</span>;
+            key_ids.push(key_id);
+        }
+
+        <span class="prelude-val">Ok</span>(key_ids)
+    }
+
+    <span class="doccomment">/// Store a new arbitrary secret in database.
+    </span><span class="kw">async fn </span>add_arbitrary_secret(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        rng: <span class="kw-2">&amp;mut </span>StdRng,
+        storage_key: <span class="kw-2">&amp;</span>StorageKey,
+        user_id: <span class="kw-2">&amp;</span>UserId,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;KeyId&gt; {
+        <span class="kw">let </span>key_id = KeyId::generate(rng, user_id)<span class="question-mark">?</span>;
+        <span class="kw">let </span>(<span class="kw">_</span>, encrypted) = Secret::create_and_encrypt(rng, storage_key, user_id, <span class="kw-2">&amp;</span>key_id)<span class="question-mark">?</span>;
+
+        <span class="kw">let </span>secret =
+            StoredSecret::from_arbitrary_secret(key_id.clone(), user_id.clone(), encrypted)<span class="question-mark">?</span>;
+        <span class="self">self</span>.db.add_secret(secret).<span class="kw">await</span><span class="question-mark">?</span>;
+
+        <span class="prelude-val">Ok</span>(key_id)
+    }
+
+    <span class="kw">async fn </span>import_signing_key(<span class="kw-2">&amp;</span><span class="self">self</span>, rng: <span class="kw-2">&amp;mut </span>StdRng, user_id: <span class="kw-2">&amp;</span>UserId) -&gt; <span class="prelude-ty">Result</span>&lt;KeyId&gt; {
+        <span class="kw">let </span>key_id = KeyId::generate(rng, user_id)<span class="question-mark">?</span>;
+        <span class="kw">let </span>random_bytes = rand::thread_rng().gen::&lt;[u8; <span class="number">32</span>]&gt;().to_vec();
+        <span class="kw">let </span>import = Import::new(random_bytes)<span class="question-mark">?</span>;
+        <span class="kw">let </span>signing_key = import.into_signing_key(user_id, <span class="kw-2">&amp;</span>key_id)<span class="question-mark">?</span>;
+
+        <span class="kw">let </span>encryption_key = RemoteStorageKey::generate(rng);
+        <span class="comment">// encrypt key_pair
+        </span><span class="kw">let </span>encrypted_key_pair = encryption_key.encrypt_signing_key_pair(rng, signing_key)<span class="question-mark">?</span>;
+
+        <span class="kw">let </span>secret = StoredSecret::from_remote_signing_key_pair(
+            key_id.clone(),
+            encrypted_key_pair,
+            user_id.clone(),
+        )<span class="question-mark">?</span>;
+        <span class="self">self</span>.add_secret(secret).<span class="kw">await</span><span class="question-mark">?</span>;
+
+        <span class="prelude-val">Ok</span>(key_id)
+    }
+
+    <span class="kw">async fn </span>remote_generate_signing_key(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        rng: <span class="kw-2">&amp;mut </span>StdRng,
+        user_id: <span class="kw-2">&amp;</span>UserId,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;KeyId&gt; {
+        <span class="kw">let </span>key_id = KeyId::generate(rng, user_id)<span class="question-mark">?</span>;
+        <span class="kw">let </span>signing_key = SigningKeyPair::remote_generate(rng, user_id, <span class="kw-2">&amp;</span>key_id);
+
+        <span class="kw">let </span>encryption_key = RemoteStorageKey::generate(rng);
+
+        <span class="comment">// encrypt key_pair
+        </span><span class="kw">let </span>encrypted_key_pair = encryption_key.encrypt_signing_key_pair(rng, signing_key)<span class="question-mark">?</span>;
+
+        <span class="kw">let </span>secret = StoredSecret::from_remote_signing_key_pair(
+            key_id.clone(),
+            encrypted_key_pair,
+            user_id.clone(),
+        )<span class="question-mark">?</span>;
+        <span class="self">self</span>.add_secret(secret).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(key_id)
+    }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="lock_keeper_tests" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="lock_keeper_tests" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.1 (90743e729 2023-01-10)" ></div></body></html>

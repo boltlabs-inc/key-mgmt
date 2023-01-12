@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `lock-keeper/src/crypto.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>crypto.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../lock_keeper/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../lock_keeper/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../lock_keeper/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `lock-keeper/src/crypto.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>crypto.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../lock_keeper/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -478,34 +478,84 @@
 <span id="478">478</span>
 <span id="479">479</span>
 <span id="480">480</span>
+<span id="481">481</span>
+<span id="482">482</span>
+<span id="483">483</span>
+<span id="484">484</span>
+<span id="485">485</span>
+<span id="486">486</span>
+<span id="487">487</span>
+<span id="488">488</span>
+<span id="489">489</span>
+<span id="490">490</span>
+<span id="491">491</span>
+<span id="492">492</span>
+<span id="493">493</span>
+<span id="494">494</span>
+<span id="495">495</span>
+<span id="496">496</span>
+<span id="497">497</span>
+<span id="498">498</span>
+<span id="499">499</span>
+<span id="500">500</span>
+<span id="501">501</span>
+<span id="502">502</span>
+<span id="503">503</span>
+<span id="504">504</span>
+<span id="505">505</span>
+<span id="506">506</span>
+<span id="507">507</span>
+<span id="508">508</span>
+<span id="509">509</span>
+<span id="510">510</span>
+<span id="511">511</span>
+<span id="512">512</span>
+<span id="513">513</span>
+<span id="514">514</span>
+<span id="515">515</span>
+<span id="516">516</span>
+<span id="517">517</span>
+<span id="518">518</span>
+<span id="519">519</span>
+<span id="520">520</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Application-specific cryptographic types and operations.
 //!
 //! Defines and implements keys and secret types, and the appropriate
 //! transformations between them. Public functions here are mostly wrappers
 //! around multiple low-level cryptographic steps.
 
-</span><span class="kw">use </span><span class="kw">crate</span>::LockKeeperError;
+</span><span class="kw">use crate</span>::{types::database::HexBytes, LockKeeperError};
 <span class="kw">use </span>generic_array::{typenum::U64, GenericArray};
-<span class="kw">use </span>hkdf::Hkdf;
+<span class="kw">use </span>hkdf::{hmac::digest::Output, Hkdf};
+<span class="kw">use </span>k256::sha2::Sha512;
 <span class="kw">use </span>rand::{CryptoRng, Rng, RngCore};
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>sha3::{Digest, Sha3_256};
-<span class="kw">use </span>std::{array::IntoIter, convert::TryFrom};
+<span class="kw">use </span>std::{
+    array::{IntoIter, TryFromSliceError},
+    convert::TryFrom,
+    fmt::Debug,
+};
 <span class="kw">use </span>tracing::error;
+<span class="kw">use </span>zeroize::{Zeroize, ZeroizeOnDrop};
 
 <span class="kw">use </span><span class="kw">crate</span>::types::database::user::UserId;
 
 <span class="kw">mod </span>arbitrary_secret;
 <span class="kw">mod </span>generic;
 <span class="kw">mod </span>signing_key;
+<span class="kw">mod </span>storage_key;
 
+<span class="kw">use </span><span class="kw">crate</span>::rpc::Message;
 <span class="kw">pub use </span>arbitrary_secret::Secret;
 <span class="kw">use </span>generic::{AssociatedData, EncryptionKey};
 <span class="kw">pub use </span>generic::{CryptoError, Encrypted};
 <span class="kw">pub use </span>signing_key::{
-    Export, Import, PlaceholderEncryptedSigningKeyPair, Signable, SignableBytes, Signature,
-    SigningKeyPair, SigningPublicKey,
+    Import, Signable, SignableBytes, Signature, SigningKeyPair, SigningPublicKey,
 };
+<span class="attribute">#[cfg(test)]
+</span><span class="kw">use </span>storage_key::test::create_test_export_key;
+<span class="kw">pub use </span>storage_key::{RemoteStorageKey, StorageKey};
 
 <span class="doccomment">/// A session key is produced as shared output for client and server from
 /// OPAQUE.
@@ -513,144 +563,58 @@
 /// This key should not be stored or saved beyond the lifetime of a single
 /// authentication session. It should not be passed out to the local calling
 /// application.
-</span><span class="attribute">#[derive(Debug, Clone)]
-</span><span class="kw">pub struct </span>OpaqueSessionKey(Box&lt;[u8; <span class="number">64</span>]&gt;);
+</span><span class="attribute">#[derive(Debug, Clone, PartialEq, Eq, Zeroize, ZeroizeOnDrop)]
+</span><span class="kw">pub struct </span>OpaqueSessionKey(EncryptionKey);
 
-<span class="kw">impl </span>From&lt;GenericArray&lt;u8, U64&gt;&gt; <span class="kw">for </span>OpaqueSessionKey {
-    <span class="kw">fn </span>from(arr: GenericArray&lt;u8, U64&gt;) -&gt; <span class="self">Self </span>{
-        <span class="self">Self</span>(Box::new(arr.into()))
-    }
-}
+<span class="kw">impl </span>TryFrom&lt;GenericArray&lt;u8, U64&gt;&gt; <span class="kw">for </span>OpaqueSessionKey {
+    <span class="kw">type </span>Error = LockKeeperError;
 
-<span class="doccomment">/// An export key is secure key material produced as client output from OPAQUE.
-///
-/// This uses standardized naming, but is _not_ directly used as an encryption
-/// key in this system. Instead, the client uses it to derive a master key.
-///
-/// This key should not be stored or saved beyond the lifetime of a single
-/// authentication session.
-/// It should never be sent to the server or passed out to the local calling
-/// application.
-</span><span class="attribute">#[derive(Debug, Clone, PartialEq, Eq)]
-</span><span class="kw">pub struct </span>OpaqueExportKey(Box&lt;[u8; <span class="number">64</span>]&gt;);
-
-<span class="kw">impl </span>OpaqueExportKey {
-    <span class="doccomment">/// Derive a uniformly distributed secret [`MasterKey`] using the export key
-    /// as input key material.
-    </span><span class="kw">fn </span>derive_master_key(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;MasterKey, CryptoError&gt; {
-        <span class="kw">let </span>context = AssociatedData::new().with_str(<span class="string">&quot;OPAQUE-derived Lock Keeper master key&quot;</span>);
-        <span class="kw">let </span><span class="kw-2">mut </span>master_key_material = [<span class="number">0u8</span>; <span class="number">32</span>];
-
-        <span class="comment">// Derive `master_key_material` from HKDF with no salt, the
-        // `OpaqueExportKey` as input key material, and the associated data as
-        // extra info.
-        </span>Hkdf::&lt;Sha3_256&gt;::new(<span class="prelude-val">None</span>, <span class="self">self</span>.<span class="number">0</span>.as_ref())
-            .expand((<span class="kw-2">&amp;</span>context).into(), <span class="kw-2">&amp;mut </span>master_key_material)
-            <span class="comment">// This should never cause an error because we&#39;ve hardcoded the length of the master key
-            // material and the export key length to both be 32, and length mismatch is the only
-            // documented cause of an `expand` failure.
-            </span>.map_err(|e| {
-                <span class="macro">error!</span>(<span class="string">&quot;HKDF failed unexpectedly. {:?}&quot;</span>, e);
-                CryptoError::KeyDerivationFailed(e)
-            })<span class="question-mark">?</span>;
-
-        <span class="prelude-val">Ok</span>(MasterKey(EncryptionKey::from_bytes(
-            master_key_material,
+    <span class="kw">fn </span>try_from(arr: GenericArray&lt;u8, U64&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
+        <span class="kw">let </span>context = AssociatedData::new().with_str(<span class="self">Self</span>::domain_separator());
+        <span class="prelude-val">Ok</span>(<span class="self">Self</span>(EncryptionKey::from_bytes(
+            arr[..<span class="number">32</span>]
+                .try_into()
+                .map_err(|<span class="kw">_</span>| LockKeeperError::Crypto(CryptoError::ConversionError))<span class="question-mark">?</span>,
             context,
         )))
     }
-
-    <span class="doccomment">/// Create an encrypted storage key. This is part of the registration flow
-    /// and is executed during a registration session with the
-    /// server. This key should be sent to the server for storage.
-    ///
-    /// This must be run by the client.
-    /// It takes the following steps:
-    /// 1. Derive a master key from the [`OpaqueExportKey`]
-    /// 2. Generate a new [`StorageKey`] to encrypt stored data with
-    /// 3. Encrypt the storage key under the master key, using an AEAD scheme
-    /// 4. Return the encrypted storage key
-    </span><span class="kw">pub fn </span>create_and_encrypt_storage_key(
-        <span class="self">self</span>,
-        rng: <span class="kw-2">&amp;mut </span>(<span class="kw">impl </span>CryptoRng + RngCore),
-        user_id: <span class="kw-2">&amp;</span>UserId,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;Encrypted&lt;StorageKey&gt;, LockKeeperError&gt; {
-        <span class="kw">let </span>master_key = <span class="self">self</span>.derive_master_key()<span class="question-mark">?</span>;
-        <span class="kw">let </span>storage_key = StorageKey::generate(rng);
-        <span class="prelude-val">Ok</span>(master_key.encrypt_storage_key(rng, storage_key, user_id)<span class="question-mark">?</span>)
-    }
 }
 
-<span class="kw">impl </span>From&lt;GenericArray&lt;u8, U64&gt;&gt; <span class="kw">for </span>OpaqueExportKey {
-    <span class="kw">fn </span>from(arr: GenericArray&lt;u8, U64&gt;) -&gt; <span class="self">Self </span>{
-        <span class="self">Self</span>(Box::new(arr.into()))
-    }
-}
-
-<span class="doccomment">/// The master key is a default-length symmetric encryption key for an
-/// AEAD scheme.
-///
-/// The master key is used by the client to securely encrypt their
-/// [`StorageKey`]. It should not be stored or saved beyond the lifetime of a
-/// single authentication session. It should never be sent to the server or
-/// passed out to the local calling application.
-</span><span class="attribute">#[derive(Debug, PartialEq, Eq)]
-</span><span class="kw">struct </span>MasterKey(EncryptionKey);
-
-<span class="kw">impl </span>MasterKey {
-    <span class="doccomment">/// Encrypt the given [`StorageKey`] under the [`MasterKey`] using an
+<span class="kw">impl </span>OpaqueSessionKey {
+    <span class="doccomment">/// Encrypt the given [`Message`] under the [`OpaqueSessionKey`] using an
     /// AEAD scheme.
-    </span><span class="kw">fn </span>encrypt_storage_key(
-        <span class="self">self</span>,
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>encrypt(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
         rng: <span class="kw-2">&amp;mut </span>(<span class="kw">impl </span>CryptoRng + RngCore),
-        storage_key: StorageKey,
-        user_id: <span class="kw-2">&amp;</span>UserId,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;Encrypted&lt;StorageKey&gt;, CryptoError&gt; {
-        <span class="kw">let </span>associated_data = AssociatedData::new()
-            .with_bytes(user_id.clone())
-            .with_str(StorageKey::domain_separator());
-
-        Encrypted::encrypt(rng, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, storage_key, <span class="kw-2">&amp;</span>associated_data)
+        message: Message,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Encrypted&lt;Message&gt;, CryptoError&gt; {
+        Encrypted::encrypt(rng, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, message, <span class="kw-2">&amp;</span>AssociatedData::new())
     }
-}
 
-<span class="doccomment">/// A storage key is a default-length symmetric encryption key for an
-/// AEAD scheme. The storage key is used to encrypt stored secrets and signing
-/// keys.
-///
-/// It is generated by the client and should never be revealed to the server or
-/// the calling application.
-/// It should not be stored or saved beyond the lifetime of a single
-/// authentication session.
-</span><span class="attribute">#[derive(Debug, Clone, PartialEq, Eq)]
-</span><span class="kw">pub struct </span>StorageKey(EncryptionKey);
+    <span class="kw">fn </span>context(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>AssociatedData {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>.context
+    }
 
-<span class="kw">impl </span>StorageKey {
-    <span class="kw">fn </span>domain_separator() -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str {
-        <span class="string">&quot;storage key&quot;
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>domain_separator() -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str {
+        <span class="string">&quot;OPAQUE-derived Lock Keeper session key&quot;
     </span>}
-
-    <span class="doccomment">/// Generate a new 32-byte [`StorageKey`].
-    </span><span class="kw">fn </span>generate&lt;Rng: CryptoRng + RngCore&gt;(rng: <span class="kw-2">&amp;mut </span>Rng) -&gt; <span class="self">Self </span>{
-        <span class="self">Self</span>(EncryptionKey::new(rng))
-    }
 }
 
-<span class="kw">impl </span>From&lt;StorageKey&gt; <span class="kw">for </span>Vec&lt;u8&gt; {
-    <span class="kw">fn </span>from(key: StorageKey) -&gt; <span class="self">Self </span>{
-        StorageKey::domain_separator()
+<span class="kw">impl </span>From&lt;OpaqueSessionKey&gt; <span class="kw">for </span>Vec&lt;u8&gt; {
+    <span class="kw">fn </span>from(key: OpaqueSessionKey) -&gt; <span class="self">Self </span>{
+        OpaqueSessionKey::domain_separator()
             .as_bytes()
             .iter()
             .copied()
-            .chain::&lt;Vec&lt;u8&gt;&gt;(key.<span class="number">0</span>.into())
+            .chain::&lt;Vec&lt;u8&gt;&gt;(key.<span class="number">0</span>.to_owned().into())
             .collect()
     }
 }
 
-<span class="kw">impl </span>TryFrom&lt;Vec&lt;u8&gt;&gt; <span class="kw">for </span>StorageKey {
+<span class="kw">impl </span>TryFrom&lt;Vec&lt;u8&gt;&gt; <span class="kw">for </span>OpaqueSessionKey {
     <span class="kw">type </span>Error = CryptoError;
     <span class="kw">fn </span>try_from(bytes: Vec&lt;u8&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
-        <span class="kw">let </span>expected_domain_sep = StorageKey::domain_separator().as_bytes();
+        <span class="kw">let </span>expected_domain_sep = OpaqueSessionKey::domain_separator().as_bytes();
         <span class="kw">let </span>domain_separator = bytes
             .get(<span class="number">0</span>..expected_domain_sep.len())
             .ok_or(CryptoError::ConversionError)<span class="question-mark">?</span>;
@@ -668,35 +632,161 @@
     }
 }
 
-<span class="kw">impl </span>Encrypted&lt;StorageKey&gt; {
-    <span class="doccomment">/// Decrypt a storage key. This should be run as part of the subprotocol to
-    /// retrieve a storage key from the server.
-    ///
-    /// This must be run by the client. It takes the following steps:
-    /// 1. Derive a master key from the [`OpaqueExportKey`]
-    /// 2. Decrypt the encrypted storage key using the master key
-    /// 3. Return the decrypted [`StorageKey`]
-    </span><span class="kw">pub fn </span>decrypt_storage_key(
+<span class="kw">impl </span>Encrypted&lt;OpaqueSessionKey&gt; {
+    <span class="doccomment">/// Decrypt a session key server-side.
+    </span><span class="kw">pub fn </span>decrypt_session_key(
         <span class="self">self</span>,
-        export_key: OpaqueExportKey,
-        user_id: <span class="kw-2">&amp;</span>UserId,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;StorageKey, LockKeeperError&gt; {
-        <span class="comment">// Check that the associated data is correct.
-        </span><span class="kw">let </span>expected_aad = AssociatedData::new()
-            .with_bytes(user_id.clone())
-            .with_str(StorageKey::domain_separator());
-        <span class="kw">if </span><span class="self">self</span>.associated_data != expected_aad {
-            <span class="kw">return </span><span class="prelude-val">Err</span>(CryptoError::DecryptionFailed.into());
-        }
-
-        <span class="kw">let </span>master_key = export_key.derive_master_key()<span class="question-mark">?</span>;
-        <span class="kw">let </span>decrypted = <span class="self">self</span>.decrypt(<span class="kw-2">&amp;</span>master_key.<span class="number">0</span>)<span class="question-mark">?</span>;
+        remote_storage_key: <span class="kw-2">&amp;</span>RemoteStorageKey,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;OpaqueSessionKey, LockKeeperError&gt; {
+        <span class="kw">let </span>decrypted = <span class="self">self</span>.decrypt_inner(<span class="kw-2">&amp;</span>remote_storage_key.<span class="number">0</span>)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(decrypted)
     }
 }
 
+<span class="doccomment">/// The master key is a default-length symmetric encryption key for an
+/// AEAD scheme.
+///
+/// The master key is used by the client to securely encrypt their
+/// [`StorageKey`]. It should not be stored or saved beyond the lifetime of a
+/// single authentication session. It should never be sent to the server or
+/// passed out to the local calling application.
+</span><span class="attribute">#[derive(Debug, Clone, PartialEq, Eq, Zeroize, ZeroizeOnDrop)]
+</span><span class="kw">pub struct </span>MasterKey(EncryptionKey);
+
+<span class="kw">impl </span>MasterKey {
+    <span class="doccomment">/// Derive a uniformly distributed secret [`MasterKey`] using the export key
+    /// as input key material.
+    ///
+    /// # Arguments
+    ///
+    /// * `export_key` - the export_key as returned by opaque-ke library,
+    /// which has type [`Output&lt;Sha512&gt;`]
+    </span><span class="kw">pub fn </span>derive_master_key(export_key: Output&lt;Sha512&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, LockKeeperError&gt; {
+        <span class="kw">let </span>context = AssociatedData::new().with_str(<span class="string">&quot;OPAQUE-derived Lock Keeper master key&quot;</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>master_key_material = [<span class="number">0u8</span>; <span class="number">32</span>];
+
+        <span class="comment">// Derive `master_key_material` from HKDF with no salt, the
+        // export_key as input key material, and the associated data as
+        // extra info.
+        </span>Hkdf::&lt;Sha3_256&gt;::new(<span class="prelude-val">None</span>, export_key.as_ref())
+            .expand((<span class="kw-2">&amp;</span>context).into(), <span class="kw-2">&amp;mut </span>master_key_material)
+            <span class="comment">// This should never cause an error because we&#39;ve hardcoded the length of the master key
+            // material and the export key length to both be 32, and length mismatch is the only
+            // documented cause of an `expand` failure.
+            </span>.map_err(|e| {
+                <span class="macro">error!</span>(<span class="string">&quot;HKDF failed unexpectedly. {:?}&quot;</span>, e);
+                CryptoError::KeyDerivationFailed(e)
+            })<span class="question-mark">?</span>;
+
+        <span class="prelude-val">Ok</span>(<span class="self">Self</span>(EncryptionKey::from_bytes(
+            master_key_material,
+            context,
+        )))
+    }
+
+    <span class="doccomment">/// Create an encrypted storage key. This is part of the registration flow
+    /// and is executed during a registration session with the
+    /// server. This key should be sent to the server for storage.
+    ///
+    /// This must be run by the client.
+    /// It takes the following steps:
+    /// 1. Generate a new [`StorageKey`] to encrypt stored data with
+    /// 2. Derive the decryption key from the master key,
+    ///    using the associated data
+    /// 3. Encrypt the storage key under the encryption key,
+    ///    using an AEAD scheme
+    /// 4. Return the encrypted storage key
+    </span><span class="kw">pub fn </span>create_and_encrypt_storage_key(
+        <span class="self">self</span>,
+        rng: <span class="kw-2">&amp;mut </span>(<span class="kw">impl </span>CryptoRng + RngCore),
+        user_id: <span class="kw-2">&amp;</span>UserId,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Encrypted&lt;StorageKey&gt;, LockKeeperError&gt; {
+        <span class="kw">let </span>storage_key = StorageKey::generate(rng);
+        <span class="prelude-val">Ok</span>(<span class="self">self</span>.encrypt_storage_key(rng, storage_key, user_id)<span class="question-mark">?</span>)
+    }
+
+    <span class="doccomment">/// Encrypt the given [`StorageKey`] under a derivation from the
+    /// [`MasterKey`] using an AEAD scheme.
+    </span><span class="kw">fn </span>encrypt_storage_key(
+        <span class="self">self</span>,
+        rng: <span class="kw-2">&amp;mut </span>(<span class="kw">impl </span>CryptoRng + RngCore),
+        storage_key: StorageKey,
+        user_id: <span class="kw-2">&amp;</span>UserId,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Encrypted&lt;StorageKey&gt;, CryptoError&gt; {
+        <span class="kw">let </span>associated_data = AssociatedData::new()
+            .with_bytes(user_id.clone())
+            .with_str(StorageKey::domain_separator());
+
+        <span class="kw">let </span>key = <span class="self">self</span>.derive_key(associated_data.clone())<span class="question-mark">?</span>;
+        Encrypted::encrypt(rng, <span class="kw-2">&amp;</span>key, storage_key, <span class="kw-2">&amp;</span>associated_data)
+    }
+
+    <span class="doccomment">/// Derive a new key from [`MasterKey`] using [`AssociatedData`] as the
+    /// domain separator. [`MasterKey`] should not be used directly to
+    /// encrypt something, instead use this method to derive a key for
+    /// a specific use-case using a domain separator.
+    </span><span class="kw">fn </span>derive_key(<span class="self">self</span>, context: AssociatedData) -&gt; <span class="prelude-ty">Result</span>&lt;EncryptionKey, CryptoError&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>key_material = [<span class="number">0u8</span>; <span class="number">32</span>];
+
+        <span class="comment">// Derive `key_material` from HKDF with no salt, the
+        // `MasterKey` as input key material, and the associated data as
+        // extra info.
+        </span>Hkdf::&lt;Sha3_256&gt;::new(<span class="prelude-val">None</span>, <span class="self">self</span>.<span class="number">0</span>.clone().into_bytes().as_ref())
+            .expand((<span class="kw-2">&amp;</span>context).into(), <span class="kw-2">&amp;mut </span>key_material)
+            <span class="comment">// This should never cause an error because we&#39;ve hardcoded the length of the key
+            // material and the master key length to both be 32, and length mismatch is the only
+            // documented cause of an `expand` failure.
+            </span>.map_err(|e| {
+                <span class="macro">error!</span>(<span class="string">&quot;HKDF failed unexpectedly. {:?}&quot;</span>, e);
+                CryptoError::KeyDerivationFailed(e)
+            })<span class="question-mark">?</span>;
+
+        <span class="prelude-val">Ok</span>(EncryptionKey::from_bytes(key_material, context))
+    }
+}
+
+<span class="kw">impl </span>Encrypted&lt;Message&gt; {
+    <span class="kw">pub fn </span>decrypt_message(
+        <span class="self">self</span>,
+        session_key: <span class="kw-2">&amp;</span>OpaqueSessionKey,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Message, LockKeeperError&gt; {
+        <span class="kw">let </span>decrypted = <span class="self">self</span>.decrypt_inner(<span class="kw-2">&amp;</span>session_key.<span class="number">0</span>)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(decrypted)
+    }
+
+    <span class="doccomment">/// Translates an [`Encrypted&lt;Message&gt;`] to a [`Message`] in order to be
+    /// sent through an authenticated channel.
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>try_into_message(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Message, LockKeeperError&gt; {
+        <span class="kw">let </span>content = serde_json::to_vec(<span class="kw-2">&amp;</span><span class="self">self</span>)<span class="question-mark">?</span>;
+
+        <span class="prelude-val">Ok</span>(Message { content })
+    }
+
+    <span class="doccomment">/// Translates a [`Message`] received through an authenticated channel to an
+    /// [`Encrypted&lt;Message&gt;`].
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>try_from_message(message: Message) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, LockKeeperError&gt; {
+        <span class="prelude-val">Ok</span>(serde_json::from_slice(<span class="kw-2">&amp;</span>message.content)<span class="question-mark">?</span>)
+    }
+}
+
+<span class="kw">impl </span>From&lt;Vec&lt;u8&gt;&gt; <span class="kw">for </span>Message {
+    <span class="kw">fn </span>from(value: Vec&lt;u8&gt;) -&gt; <span class="self">Self </span>{
+        Message { content: value }
+    }
+}
+
+<span class="kw">impl </span>From&lt;Message&gt; <span class="kw">for </span>Vec&lt;u8&gt; {
+    <span class="kw">fn </span>from(message: Message) -&gt; <span class="self">Self </span>{
+        message.content
+    }
+}
+
 <span class="doccomment">/// Universally unique identifier for a stored secret or signing key.
-</span><span class="attribute">#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+/// Wrapped in a `Box` to avoid stack overflows during heavy traffic.
+/// [KeyId]s are created by implementors of our DataStore trait. So we expose
+/// the internal as pub.
+</span><span class="attribute">#[derive(Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(try_from = <span class="string">&quot;HexBytes&quot;</span>, into = <span class="string">&quot;HexBytes&quot;</span>)]
 </span><span class="kw">pub struct </span>KeyId(Box&lt;[u8; <span class="number">32</span>]&gt;);
 
 <span class="kw">impl </span>IntoIterator <span class="kw">for </span>KeyId {
@@ -705,6 +795,14 @@
 
     <span class="kw">fn </span>into_iter(<span class="self">self</span>) -&gt; <span class="self">Self</span>::IntoIter {
         <span class="self">self</span>.<span class="number">0</span>.into_iter()
+    }
+}
+
+<span class="kw">impl </span>TryFrom&lt;<span class="kw-2">&amp;</span>[u8]&gt; <span class="kw">for </span>KeyId {
+    <span class="kw">type </span>Error = TryFromSliceError;
+
+    <span class="kw">fn </span>try_from(id: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
+        <span class="prelude-val">Ok</span>(KeyId(Box::new(&lt;[u8; <span class="number">32</span>]&gt;::try_from(id)<span class="question-mark">?</span>)))
     }
 }
 
@@ -751,45 +849,64 @@
     </span>}
 }
 
+<span class="kw">impl </span>Debug <span class="kw">for </span>KeyId {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; std::fmt::Result {
+        <span class="kw">let </span>hex = hex::encode(<span class="kw-2">*</span><span class="self">self</span>.<span class="number">0</span>);
+        f.debug_tuple(<span class="string">&quot;KeyId&quot;</span>).field(<span class="kw-2">&amp;</span>hex).finish()
+    }
+}
+
+<span class="kw">impl </span>From&lt;KeyId&gt; <span class="kw">for </span>HexBytes {
+    <span class="kw">fn </span>from(key_id: KeyId) -&gt; <span class="self">Self </span>{
+        (<span class="kw-2">*</span>key_id.<span class="number">0</span>).into()
+    }
+}
+
+<span class="kw">impl </span>TryFrom&lt;HexBytes&gt; <span class="kw">for </span>KeyId {
+    <span class="kw">type </span>Error = LockKeeperError;
+
+    <span class="kw">fn </span>try_from(bytes: HexBytes) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
+        <span class="prelude-val">Ok</span>(KeyId(Box::new(bytes.try_into()<span class="question-mark">?</span>)))
+    }
+}
+
+<span class="doccomment">/// Raw material for an exported signing key.
+</span><span class="attribute">#[derive(Debug, Clone, Serialize, Deserialize, ZeroizeOnDrop)]
+</span><span class="kw">pub struct </span>Export {
+    <span class="kw">pub </span>key_material: Vec&lt;u8&gt;,
+    <span class="attribute">#[zeroize(skip)]
+    </span><span class="kw">pub </span>context: Vec&lt;u8&gt;,
+}
+
 <span class="attribute">#[cfg(test)]
 </span><span class="kw">mod </span>test {
     <span class="kw">use </span>std::collections::HashSet;
 
-    <span class="kw">use </span><span class="kw">crate</span>::LockKeeperError;
+    <span class="kw">use crate</span>::{
+        types::operations::{get_user_id, ConvertMessage},
+        LockKeeperError,
+    };
 
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="kw">use </span>rand::{rngs::StdRng, Rng, SeedableRng};
 
-    <span class="attribute">#[test]
-    </span><span class="kw">fn </span>storage_key_to_vec_u8_conversion_works() -&gt; <span class="prelude-ty">Result</span>&lt;(), CryptoError&gt; {
-        <span class="kw">let </span><span class="kw-2">mut </span>rng = rand::thread_rng();
-
-        <span class="kw">for _ in </span><span class="number">0</span>..<span class="number">1000 </span>{
-            <span class="kw">let </span>storage_key = StorageKey::generate(<span class="kw-2">&amp;mut </span>rng);
-
-            <span class="kw">let </span>vec: Vec&lt;u8&gt; = storage_key.clone().into();
-            <span class="kw">let </span>output_storage_key = vec.try_into()<span class="question-mark">?</span>;
-
-            <span class="macro">assert_eq!</span>(storage_key, output_storage_key);
-        }
-        <span class="prelude-val">Ok</span>(())
-    }
-
-    <span class="comment">// In practice, an export key will be a pseudorandom output from OPAQUE.
+    <span class="comment">// In practice, a session key will be a pseudorandom output from OPAQUE.
     // We&#39;ll use random bytes for the test key.
-    </span><span class="kw">fn </span>create_test_export_key(rng: <span class="kw-2">&amp;mut </span>(<span class="kw">impl </span>CryptoRng + RngCore)) -&gt; OpaqueExportKey {
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>create_test_session_key(
+        rng: <span class="kw-2">&amp;mut </span>(<span class="kw">impl </span>CryptoRng + RngCore),
+    ) -&gt; OpaqueSessionKey {
         <span class="kw">let </span><span class="kw-2">mut </span>key = [<span class="number">0_u8</span>; <span class="number">64</span>];
         rng.try_fill(<span class="kw-2">&amp;mut </span>key)
             .expect(<span class="string">&quot;Failed to generate random key&quot;</span>);
 
-        OpaqueExportKey(key.into())
+        OpaqueSessionKey::try_from(GenericArray::from(key)).expect(<span class="string">&quot;Failed to create Session Key&quot;</span>)
     }
 
     <span class="attribute">#[test]
     </span><span class="kw">fn </span>derive_master_key_not_obviously_broken() {
         <span class="kw">let </span><span class="kw-2">mut </span>rng = rand::thread_rng();
         <span class="kw">let </span>export_key = create_test_export_key(<span class="kw-2">&amp;mut </span>rng);
-        <span class="kw">let </span>master_key = export_key.derive_master_key().unwrap();
+        <span class="kw">let </span>master_key = MasterKey::derive_master_key(export_key.into()).unwrap();
 
         <span class="comment">// Make sure the master key isn&#39;t all 0s.
         </span><span class="kw">let </span>zero_key = EncryptionKey::from_bytes([<span class="number">0</span>; <span class="number">32</span>], master_key.<span class="number">0</span>.context().clone());
@@ -798,7 +915,7 @@
         <span class="comment">// Make sure that using different context doesn&#39;t give the same key.
         </span><span class="kw">let </span><span class="kw-2">mut </span>bad_mk = [<span class="number">0</span>; <span class="number">32</span>];
         <span class="kw">let </span>bad_ad = AssociatedData::new().with_str(<span class="string">&quot;here is my testing context&quot;</span>);
-        Hkdf::&lt;Sha3_256&gt;::new(<span class="prelude-val">None</span>, export_key.<span class="number">0</span>.as_ref())
+        Hkdf::&lt;Sha3_256&gt;::new(<span class="prelude-val">None</span>, export_key.as_ref())
             .expand((<span class="kw-2">&amp;</span>bad_ad).into(), <span class="kw-2">&amp;mut </span>bad_mk)
             .unwrap();
         <span class="kw">let </span>wrong_context_key = EncryptionKey::from_bytes(bad_mk, master_key.<span class="number">0</span>.context().clone());
@@ -816,26 +933,9 @@
         </span><span class="macro">assert_ne!</span>(export1, export2);
         <span class="comment">// ...implies different master keys.
         </span><span class="macro">assert_ne!</span>(
-            export1.derive_master_key().unwrap(),
-            export2.derive_master_key().unwrap()
+            MasterKey::derive_master_key(export1.into()).unwrap(),
+            MasterKey::derive_master_key(export2.into()).unwrap()
         );
-    }
-
-    <span class="attribute">#[test]
-    </span><span class="kw">fn </span>storage_key_generation_produces_unique_storage_keys() {
-        <span class="kw">let </span><span class="kw-2">mut </span>rng = rand::thread_rng();
-        <span class="kw">let </span><span class="kw-2">mut </span>uniq = HashSet::new();
-
-        <span class="macro">assert!</span>((<span class="number">0</span>..<span class="number">1000</span>)
-            .map(|<span class="kw">_</span>| StorageKey::generate(<span class="kw-2">&amp;mut </span>rng))
-            .all(|storage_key| uniq.insert(storage_key.<span class="number">0</span>)));
-    }
-
-    <span class="attribute">#[test]
-    </span><span class="kw">fn </span>storage_keys_are_32_bytes() {
-        <span class="kw">let </span><span class="kw-2">mut </span>rng = rand::thread_rng();
-        <span class="kw">let </span>storage_key = StorageKey::generate(<span class="kw-2">&amp;mut </span>rng);
-        <span class="macro">assert_eq!</span>(<span class="number">32</span>, storage_key.<span class="number">0</span>.len())
     }
 
     <span class="attribute">#[test]
@@ -872,91 +972,71 @@
     }
 
     <span class="attribute">#[test]
-    </span><span class="kw">fn </span>storage_key_encryption_works() -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperError&gt; {
+    </span><span class="kw">fn </span>message_encryption_works() -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperError&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>rng = rand::thread_rng();
-        <span class="kw">let </span>export_key = create_test_export_key(<span class="kw-2">&amp;mut </span>rng);
+        <span class="kw">let </span>session_key = create_test_session_key(<span class="kw-2">&amp;mut </span>rng);
         <span class="kw">let </span>user_id = UserId::new(<span class="kw-2">&amp;mut </span>rng)<span class="question-mark">?</span>;
 
         <span class="comment">// Set up matching RNGs to check behavior of the utility function.
         </span><span class="kw">let </span>seed = <span class="string">b&quot;not-random seed for convenience!&quot;</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>rng = StdRng::from_seed(<span class="kw-2">*</span>seed);
-        <span class="kw">let </span><span class="kw-2">mut </span>rng_copy = StdRng::from_seed(<span class="kw-2">*</span>seed);
 
-        <span class="comment">// Encrypt the storage key
-        </span><span class="kw">let </span>master_key = export_key.derive_master_key()<span class="question-mark">?</span>;
-        <span class="kw">let </span>storage_key = StorageKey::generate(<span class="kw-2">&amp;mut </span>rng);
+        <span class="comment">// Encrypt a message
+        </span><span class="kw">let </span>message = get_user_id::server::Response {
+            user_id: user_id.clone(),
+        }
+        .to_message();
+        <span class="kw">let </span>expected_message = get_user_id::server::Response { user_id };
+        <span class="kw">let </span>encrypted_message = session_key.encrypt(<span class="kw-2">&amp;mut </span>rng, message<span class="question-mark">?</span>)<span class="question-mark">?</span>;
 
-        <span class="kw">let </span>encrypted_key =
-            master_key.encrypt_storage_key(<span class="kw-2">&amp;mut </span>rng, storage_key.clone(), <span class="kw-2">&amp;</span>user_id)<span class="question-mark">?</span>;
-
-        <span class="comment">// Make sure the utility function gives the same result when encrypting the
-        // storage key
-        </span><span class="kw">let </span>utility_encrypted_key = export_key
-            .clone()
-            .create_and_encrypt_storage_key(<span class="kw-2">&amp;mut </span>rng_copy, <span class="kw-2">&amp;</span>user_id)<span class="question-mark">?</span>;
-        <span class="macro">assert_eq!</span>(utility_encrypted_key, encrypted_key);
-
-        <span class="comment">// Decrypt the storage key and check that it worked
-        </span><span class="kw">let </span>decrypted_key = encrypted_key.decrypt_storage_key(export_key, <span class="kw-2">&amp;</span>user_id)<span class="question-mark">?</span>;
-        <span class="macro">assert_eq!</span>(storage_key, decrypted_key);
+        <span class="comment">// Decrypt the message and check that it worked
+        </span><span class="kw">let </span>decrypted_message = get_user_id::server::Response::from_message(
+            encrypted_message.decrypt_message(<span class="kw-2">&amp;</span>session_key)<span class="question-mark">?</span>,
+        )<span class="question-mark">?</span>;
+        <span class="macro">assert_eq!</span>(expected_message.user_id, decrypted_message.user_id);
 
         <span class="prelude-val">Ok</span>(())
     }
 
     <span class="attribute">#[test]
-    </span><span class="kw">fn </span>storage_key_retrieval_requires_correct_aad() -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperError&gt; {
+    </span><span class="kw">fn </span>encrypted_message_to_message_and_back_conversion_works() -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperError&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>rng = rand::thread_rng();
-        <span class="kw">let </span>export_key = create_test_export_key(<span class="kw-2">&amp;mut </span>rng);
+        <span class="kw">let </span>session_key = create_test_session_key(<span class="kw-2">&amp;mut </span>rng);
         <span class="kw">let </span>user_id = UserId::new(<span class="kw-2">&amp;mut </span>rng)<span class="question-mark">?</span>;
 
-        <span class="kw">let </span>master_key = export_key.derive_master_key()<span class="question-mark">?</span>;
-        <span class="kw">let </span>storage_key = StorageKey::generate(<span class="kw-2">&amp;mut </span>rng);
+        <span class="comment">// Set up matching RNGs to check behavior of the utility function.
+        </span><span class="kw">let </span>seed = <span class="string">b&quot;not-random seed for convenience!&quot;</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>rng = StdRng::from_seed(<span class="kw-2">*</span>seed);
 
-        <span class="kw">let </span>bad_aad = AssociatedData::new()
-            .with_bytes(user_id.clone())
-            .with_str(StorageKey::domain_separator())
-            .with_str(<span class="string">&quot;some other content that makes this incorrect&quot;</span>);
+        <span class="comment">// Encrypt a message
+        </span><span class="kw">let </span>message = get_user_id::server::Response { user_id }.to_message()<span class="question-mark">?</span>;
+        <span class="kw">let </span>encrypted_message = session_key.encrypt(<span class="kw-2">&amp;mut </span>rng, message)<span class="question-mark">?</span>;
 
-        <span class="kw">let </span>encrypted_storage_key =
-            Encrypted::encrypt(<span class="kw-2">&amp;mut </span>rng, <span class="kw-2">&amp;</span>master_key.<span class="number">0</span>, storage_key, <span class="kw-2">&amp;</span>bad_aad)<span class="question-mark">?</span>;
-        <span class="macro">assert!</span>(encrypted_storage_key
-            .decrypt_storage_key(export_key, <span class="kw-2">&amp;</span>user_id)
-            .is_err());
+        <span class="kw">let </span>result_to_message = encrypted_message.clone().try_into_message();
+        <span class="macro">assert!</span>(result_to_message.is_ok());
+
+        <span class="kw">let </span>result_from_message =
+            Encrypted::&lt;Message&gt;::try_from_message(result_to_message.unwrap());
+        <span class="macro">assert!</span>(result_from_message.is_ok());
+
+        <span class="macro">assert_eq!</span>(encrypted_message, result_from_message.unwrap());
 
         <span class="prelude-val">Ok</span>(())
     }
 
     <span class="attribute">#[test]
-    </span><span class="kw">fn </span>storage_key_requires_correct_encrypted_blob() -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperError&gt; {
+    </span><span class="kw">fn </span>session_key_to_vec_u8_conversion_works() -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperError&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>rng = rand::thread_rng();
+        <span class="kw">for _ in </span><span class="number">0</span>..<span class="number">1000 </span>{
+            <span class="kw">let </span>session_key = create_test_session_key(<span class="kw-2">&amp;mut </span>rng);
 
-        <span class="comment">// Set up correct parameters to encrypt a storage key.
-        </span><span class="kw">let </span>user_id = UserId::new(<span class="kw-2">&amp;mut </span>rng)<span class="question-mark">?</span>;
-        <span class="kw">let </span>export_key = create_test_export_key(<span class="kw-2">&amp;mut </span>rng);
-        <span class="kw">let </span>aad = AssociatedData::new()
-            .with_bytes(user_id.clone())
-            .with_str(StorageKey::domain_separator());
+            <span class="kw">let </span>vec: Vec&lt;u8&gt; = session_key.clone().into();
+            <span class="kw">let </span>output_session_key = vec.try_into()<span class="question-mark">?</span>;
 
-        <span class="comment">// Encrypt any old key (and make sure it&#39;s decryptable in general)
-        </span><span class="kw">let </span>fake_key = EncryptionKey::new(<span class="kw-2">&amp;mut </span>rng);
-        <span class="kw">let </span>encrypted_fake_key =
-            Encrypted::encrypt(<span class="kw-2">&amp;mut </span>rng, <span class="kw-2">&amp;</span>export_key.derive_master_key()<span class="question-mark">?</span>.<span class="number">0</span>, fake_key, <span class="kw-2">&amp;</span>aad)<span class="question-mark">?</span>;
-        <span class="macro">assert!</span>(encrypted_fake_key
-            .clone()
-            .decrypt(<span class="kw-2">&amp;</span>export_key.derive_master_key()<span class="question-mark">?</span>.<span class="number">0</span>)
-            .is_ok());
-
-        <span class="comment">// Serialize the fake key, and pretend it&#39;s a storage key when you deserialize.
-        </span><span class="kw">let </span>fake_storage_key: Encrypted&lt;StorageKey&gt; =
-            serde_json::from_str(<span class="kw-2">&amp;</span>serde_json::to_string(<span class="kw-2">&amp;</span>encrypted_fake_key).unwrap()).unwrap();
-
-        <span class="comment">// Decryption must fail.
-        </span><span class="macro">assert!</span>(fake_storage_key
-            .decrypt_storage_key(export_key, <span class="kw-2">&amp;</span>user_id)
-            .is_err());
-
+            <span class="macro">assert_eq!</span>(session_key, output_session_key);
+        }
         <span class="prelude-val">Ok</span>(())
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="lock_keeper" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="lock_keeper" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.1 (90743e729 2023-01-10)" ></div></body></html>
