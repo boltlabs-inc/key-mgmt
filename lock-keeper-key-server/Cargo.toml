@@ -6,8 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-# Git dependencies
-lock-keeper = { version = "0.2.0", path = "../lock-keeper" }
+# Local dependencies
+lock-keeper = { path = "../lock-keeper" }
 
 # Workspace dependencies
 argon2.workspace = true

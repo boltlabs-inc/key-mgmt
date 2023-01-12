@@ -160,6 +160,9 @@ args = ["run", "--bin", "lock-keeper-client-cli", "--", "--script-file", "dev/cl
 command = "cargo"
 args = ["run", "--bin", "lock-keeper-client-cli", "--", "--script-file", "dev/cli-scripts/import.lk"]
 
+# Runs all scripts
+[tasks.all-scripts]
+dependencies = ["script-generate", "script-sign", "script-export", "script-import"]
 
 # Generate certificates in the dev/certs/gen directory
 [tasks.certs]
