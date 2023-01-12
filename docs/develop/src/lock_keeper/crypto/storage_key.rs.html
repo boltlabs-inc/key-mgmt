@@ -345,7 +345,6 @@
 <span id="345">345</span>
 <span id="346">346</span>
 <span id="347">347</span>
-<span id="348">348</span>
 </pre><pre class="rust"><code><span class="doccomment">/// This module provides the necessary encryption keys to securely encrypt
 /// secrets in storage.
 /// A [`StorageKey`] that can be used by the client to encrypt secrets and
@@ -505,8 +504,7 @@
 <span class="attribute">#[cfg(test)]
 </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">mod </span>test {
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
-    <span class="kw">use </span><span class="kw">crate</span>::crypto::KeyId;
-    <span class="kw">use </span>generic_array::GenericArray;
+    <span class="kw">use </span><span class="kw">crate</span>::crypto::{test::create_test_session_key, KeyId};
     <span class="kw">use </span>rand::{rngs::StdRng, Rng, SeedableRng};
     <span class="kw">use </span>std::collections::HashSet;
 
@@ -686,7 +684,7 @@
     </span><span class="kw">fn </span>session_key_encryption_works() -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperError&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>rng = rand::thread_rng();
         <span class="kw">let </span>encryption_key = RemoteStorageKey::generate(<span class="kw-2">&amp;mut </span>rng);
-        <span class="kw">let </span>session_key = OpaqueSessionKey::try_from(GenericArray::from([<span class="number">42</span>; <span class="number">64</span>]))<span class="question-mark">?</span>;
+        <span class="kw">let </span>session_key = create_test_session_key(<span class="kw-2">&amp;mut </span>rng);
         <span class="kw">let </span>encrypted = encryption_key.encrypt_session_key(<span class="kw-2">&amp;mut </span>rng, session_key.clone())<span class="question-mark">?</span>;
 
         <span class="kw">let </span>result = encrypted.decrypt_session_key(<span class="kw-2">&amp;</span>encryption_key)<span class="question-mark">?</span>;

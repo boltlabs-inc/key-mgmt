@@ -515,6 +515,9 @@
 <span id="515">515</span>
 <span id="516">516</span>
 <span id="517">517</span>
+<span id="518">518</span>
+<span id="519">519</span>
+<span id="520">520</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Application-specific cryptographic types and operations.
 //!
 //! Defines and implements keys and secret types, and the appropriate
@@ -889,7 +892,9 @@
 
     <span class="comment">// In practice, a session key will be a pseudorandom output from OPAQUE.
     // We&#39;ll use random bytes for the test key.
-    </span><span class="kw">fn </span>create_test_session_key(rng: <span class="kw-2">&amp;mut </span>(<span class="kw">impl </span>CryptoRng + RngCore)) -&gt; OpaqueSessionKey {
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>create_test_session_key(
+        rng: <span class="kw-2">&amp;mut </span>(<span class="kw">impl </span>CryptoRng + RngCore),
+    ) -&gt; OpaqueSessionKey {
         <span class="kw">let </span><span class="kw-2">mut </span>key = [<span class="number">0_u8</span>; <span class="number">64</span>];
         rng.try_fill(<span class="kw-2">&amp;mut </span>key)
             .expect(<span class="string">&quot;Failed to generate random key&quot;</span>);
@@ -1021,8 +1026,9 @@
 
     <span class="attribute">#[test]
     </span><span class="kw">fn </span>session_key_to_vec_u8_conversion_works() -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperError&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>rng = rand::thread_rng();
         <span class="kw">for _ in </span><span class="number">0</span>..<span class="number">1000 </span>{
-            <span class="kw">let </span>session_key = OpaqueSessionKey::try_from(GenericArray::from([<span class="number">42</span>; <span class="number">64</span>]))<span class="question-mark">?</span>;
+            <span class="kw">let </span>session_key = create_test_session_key(<span class="kw-2">&amp;mut </span>rng);
 
             <span class="kw">let </span>vec: Vec&lt;u8&gt; = session_key.clone().into();
             <span class="kw">let </span>output_session_key = vec.try_into()<span class="question-mark">?</span>;
