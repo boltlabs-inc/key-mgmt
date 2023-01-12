@@ -436,6 +436,21 @@
 <span id="436">436</span>
 <span id="437">437</span>
 <span id="438">438</span>
+<span id="439">439</span>
+<span id="440">440</span>
+<span id="441">441</span>
+<span id="442">442</span>
+<span id="443">443</span>
+<span id="444">444</span>
+<span id="445">445</span>
+<span id="446">446</span>
+<span id="447">447</span>
+<span id="448">448</span>
+<span id="449">449</span>
+<span id="450">450</span>
+<span id="451">451</span>
+<span id="452">452</span>
+<span id="453">453</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{
     types::{AccountDB, AuditEventDB, SecretDB},
     Config, PostgresError,
@@ -547,14 +562,16 @@
 
 <span class="kw">impl </span>Debug <span class="kw">for </span>PostgresDB {
     <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; std::fmt::Result {
-        <span class="macro">writeln!</span>(f, <span class="string">&quot;PostgresDB {{ url: {}}}&quot;</span>, <span class="self">self</span>.config.uri())
+        f.debug_struct(<span class="string">&quot;PostgresDB&quot;</span>)
+            .field(<span class="string">&quot;uri&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.config.uri())
+            .finish()
     }
 }
 
 <span class="kw">impl </span>PostgresDB {
-    <span class="attribute">#[instrument(skip_all, err(Debug))]
+    <span class="attribute">#[instrument(err(Debug))]
     </span><span class="kw">pub async fn </span>connect(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, PostgresError&gt; {
-        <span class="macro">info!</span>(<span class="string">&quot;Connecting to database {:?}&quot;</span>, config);
+        <span class="macro">info!</span>(<span class="string">&quot;Connecting to database&quot;</span>);
 
         <span class="comment">// Create a connection pool based on our config.
         </span><span class="kw">let </span>pool = PgPoolOptions::new()
@@ -573,7 +590,7 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>.config.db_name
     }
 
-    <span class="attribute">#[instrument(err(Debug))]
+    <span class="attribute">#[instrument(skip(<span class="self">self</span>), err(Debug))]
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>create_audit_event(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         request_id: Uuid,
@@ -582,18 +599,18 @@
         action: ClientAction,
         status: EventStatus,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), PostgresError&gt; {
-        <span class="macro">debug!</span>(<span class="string">&quot;Storing audit event.&quot;</span>);
+        <span class="macro">debug!</span>(<span class="string">&quot;Storing new audit event.&quot;</span>);
 
         <span class="kw">let </span>timestamp = OffsetDateTime::now_utc();
         <span class="kw">let </span>key_id = key_id.as_ref().map(|k| k.as_bytes());
 
         <span class="kw">let _ </span>= <span class="macro">sqlx::query!</span>(
-            <span class="string">&quot;INSERT INTO AuditEvents (account_name, key_id, request_id, action, event_status, timestamp) \
+            <span class="string">&quot;INSERT INTO AuditEvents (account_name, key_id, request_id, client_action_id, event_status, timestamp) \
              VALUES ($1, $2, $3, $4, $5, $6)&quot;</span>,
             account_name.as_ref(),
             key_id,
             request_id,
-            action.to_string(),
+            action <span class="kw">as </span>i64,
             status.to_string(),
             timestamp,
         )
@@ -604,7 +621,7 @@
     }
 
     <span class="doccomment">/// Create a dynamic query to fetch audit events specified by the caller.
-    </span><span class="attribute">#[instrument(skip_all, err(Debug), fields(account_name=<span class="question-mark">?</span>account_name, event_type=<span class="question-mark">?</span>event_type, options=<span class="question-mark">?</span>options))]
+    </span><span class="attribute">#[instrument(skip(<span class="self">self</span>), err(Debug))]
     </span><span class="kw">async fn </span>find_audit_events(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         account_name: <span class="kw-2">&amp;</span>AccountName,
@@ -614,7 +631,7 @@
         <span class="macro">debug!</span>(<span class="string">&quot;Finding audit event(s)&quot;</span>);
 
         <span class="kw">let </span><span class="kw-2">mut </span>query = QueryBuilder::new(
-            <span class="string">&quot;SELECT audit_event_id, key_id, request_id, account_name, action, event_status, timestamp \
+            <span class="string">&quot;SELECT audit_event_id, key_id, request_id, account_name, client_action_id, event_status, timestamp \
              FROM AuditEvents \
              WHERE &quot;</span>,
         );
@@ -651,12 +668,19 @@
         }
 
         <span class="comment">// Add filtering based on actions.
-        </span><span class="kw">let _ </span>= query.push(<span class="string">&quot;action IN &quot;</span>);
-        <span class="comment">// Turn the actions into strings that postgres understands.
+        </span><span class="kw">let _ </span>= query.push(<span class="string">&quot;client_action_id IN &quot;</span>);
+        <span class="comment">// Turn the actions into their integer value for faster searching.
         </span><span class="kw">let </span>actions = event_type.client_actions();
-        <span class="kw">let </span>actions = actions.iter().map(ToString::to_string);
+        <span class="kw">let </span>actions = actions.iter().map(|a| <span class="kw-2">*</span>a <span class="kw">as </span>i64);
 
         append_value_list(<span class="kw-2">&amp;mut </span>query, actions)<span class="question-mark">?</span>;
+
+        <span class="comment">// Ensure account name matches, otherwise a client could fetch anyone&#39;s audit
+        // events if they guess the request_id.
+        </span><span class="kw">let _ </span>= query
+            .push(<span class="string">&quot;AND account_name=&quot;</span>)
+            .push_bind(account_name.as_ref());
+
         <span class="macro">debug!</span>(<span class="string">&quot;Dynamically generated query: {}&quot;</span>, query.sql());
 
         <span class="kw">let </span>matches: Vec&lt;AuditEventDB&gt; = query
@@ -674,18 +698,20 @@
         logging::record_field(<span class="string">&quot;user_id&quot;</span>, <span class="kw-2">&amp;</span>secret.user_id);
         logging::record_field(<span class="string">&quot;key_id&quot;</span>, <span class="kw-2">&amp;</span>secret.key_id);
         logging::record_field(<span class="string">&quot;secret_type&quot;</span>, <span class="kw-2">&amp;</span>secret.secret_type);
-        <span class="macro">info!</span>(<span class="string">&quot;Adding user secret.&quot;</span>);
+        <span class="macro">debug!</span>(<span class="string">&quot;Adding user secret.&quot;</span>);
 
         <span class="kw">let </span>secret_db: SecretDB = SecretDB::from(secret);
 
         <span class="kw">let _ </span>= <span class="macro">sqlx::query!</span>(
-            <span class="string">&quot;INSERT INTO Secrets (key_id, user_id, secret, secret_type, retrieved) \
-             VALUES ($1, $2, $3, $4, $5)&quot;</span>,
+            <span class="string">&quot;INSERT INTO Secrets (key_id, user_id, secret, secret_type_id, retrieved) \
+             SELECT $1, $2, $3, SecretTypes.secret_type_id, $4 \
+             FROM SecretTypes \
+             WHERE SecretTypes.secret_type=$5&quot;</span>,
             secret_db.key_id,
             secret_db.user_id,
             secret_db.secret,
-            secret_db.secret_type,
             secret_db.retrieved,
+            secret_db.secret_type,
         )
         .execute(<span class="kw-2">&amp;</span><span class="self">self</span>.connection_pool)
         .<span class="kw">await</span><span class="question-mark">?</span>;
@@ -695,27 +721,31 @@
 
     <span class="doccomment">/// This function verifies the user_id and key type matches. Otherwise will
     /// return a IncorrectAssociatedKeyData error.
-    </span><span class="attribute">#[instrument(skip_all, err(Debug), fields(user_id=<span class="question-mark">?</span>user_id, key_id=<span class="question-mark">?</span>key_id, filter=<span class="question-mark">?</span>filter))]
+    </span><span class="attribute">#[instrument(skip(<span class="self">self</span>), err(Debug))]
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>get_secret(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         user_id: <span class="kw-2">&amp;</span>UserId,
         key_id: <span class="kw-2">&amp;</span>KeyId,
         filter: SecretFilter,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;StoredSecret, PostgresError&gt; {
-        <span class="macro">info!</span>(<span class="string">&quot;Fetching user secret.&quot;</span>);
+        <span class="macro">debug!</span>(<span class="string">&quot;Fetching user secret.&quot;</span>);
 
-        <span class="comment">// We use the LIKE operator to support whether filter.secret_type is present or
-        // not. In case it is not, we use a wildcard match for the secret_type
-        // column.
+        <span class="comment">// Join tables to map secret_type to the corresponding secret_type_id.
+        // Update the retrieved value on Secrets.retrieved
         </span><span class="kw">let </span>secret_db: <span class="prelude-ty">Option</span>&lt;SecretDB&gt; = <span class="macro">sqlx::query_as!</span>(
             SecretDB,
             <span class="string">&quot;UPDATE Secrets \
-             SET retrieved=TRUE \
-             WHERE key_id=$1 AND user_id=$2 AND secret_type LIKE $3 \
-             RETURNING key_id, user_id, secret_type, secret, retrieved&quot;</span>,
+                SET retrieved=TRUE \
+             FROM Secrets S LEFT JOIN SecretTypes ST \
+                ON S.secret_type_id=ST.secret_type_id \
+             WHERE S.key_id=$1 AND S.user_id=$2 AND ST.secret_type LIKE $3 \
+             RETURNING S.key_id, S.user_id, ST.secret_type, S.secret, S.retrieved&quot;</span>,
             key_id.as_bytes(),
             user_id.as_ref(),
-            filter.secret_type.unwrap_or_else(|| <span class="string">&quot;%&quot;</span>.to_string())
+            <span class="comment">// We use the LIKE operator to support whether filter.secret_type is present or
+            // not. In case it is not, we use a wildcard match for the secret_type
+            // column.
+            </span>filter.secret_type.unwrap_or_else(|| <span class="string">&quot;%&quot;</span>.to_string())
         )
         .fetch_optional(<span class="kw-2">&amp;</span><span class="self">self</span>.connection_pool)
         .<span class="kw">await</span><span class="question-mark">?</span>;
@@ -745,7 +775,7 @@
         }
     }
 
-    <span class="attribute">#[instrument(skip_all, err(Debug), fields(user_id=<span class="question-mark">?</span>user_id, account_name=<span class="question-mark">?</span>account_name))]
+    <span class="attribute">#[instrument(skip(<span class="self">self</span>, server_registration), err(Debug))]
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>create_account(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         user_id: <span class="kw-2">&amp;</span>UserId,
@@ -773,12 +803,12 @@
         })
     }
 
-    <span class="attribute">#[instrument(skip_all, err(Debug), fields(account_name=<span class="question-mark">?</span>account_name))]
+    <span class="attribute">#[instrument(skip(<span class="self">self</span>), err(Debug))]
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>find_account(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         account_name: <span class="kw-2">&amp;</span>AccountName,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Account&gt;, PostgresError&gt; {
-        <span class="macro">info!</span>(<span class="string">&quot;Searching for user.&quot;</span>);
+        <span class="macro">debug!</span>(<span class="string">&quot;Searching for user.&quot;</span>);
         <span class="kw">let </span>user_db = <span class="macro">sqlx::query_as!</span>(
             AccountDB,
             <span class="string">&quot;SELECT account_id, user_id, account_name, storage_key, server_registration \
@@ -793,12 +823,12 @@
         <span class="prelude-val">Ok</span>(user)
     }
 
-    <span class="attribute">#[instrument(skip_all, err(Debug), fields(user_id=<span class="question-mark">?</span>user_id))]
+    <span class="attribute">#[instrument(skip(<span class="self">self</span>), err(Debug))]
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>find_account_by_id(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         user_id: <span class="kw-2">&amp;</span>UserId,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Account&gt;, PostgresError&gt; {
-        <span class="macro">info!</span>(<span class="string">&quot;Searching for user by ID&quot;</span>);
+        <span class="macro">debug!</span>(<span class="string">&quot;Searching for user by ID&quot;</span>);
 
         <span class="kw">let </span>user_db: <span class="prelude-ty">Option</span>&lt;AccountDB&gt; = <span class="macro">sqlx::query_as!</span>(
             AccountDB,
@@ -814,7 +844,7 @@
         <span class="prelude-val">Ok</span>(user)
     }
 
-    <span class="attribute">#[instrument(skip_all, err(Debug), fields(user_id=<span class="question-mark">?</span>user_id))]
+    <span class="attribute">#[instrument(skip(<span class="self">self</span>), err(Debug))]
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>delete_account(<span class="kw-2">&amp;</span><span class="self">self</span>, user_id: <span class="kw-2">&amp;</span>UserId) -&gt; <span class="prelude-ty">Result</span>&lt;(), PostgresError&gt; {
         <span class="macro">info!</span>(<span class="string">&quot;Deleting user.&quot;</span>);
 
@@ -834,13 +864,13 @@
         }
     }
 
-    <span class="attribute">#[instrument(skip_all, err(Debug), fields(user_id=<span class="question-mark">?</span>user_id))]
+    <span class="attribute">#[instrument(skip(<span class="self">self</span>, storage_key), err(Debug))]
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>set_storage_key(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         user_id: <span class="kw-2">&amp;</span>UserId,
         storage_key: Encrypted&lt;StorageKey&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), PostgresError&gt; {
-        <span class="macro">info!</span>(<span class="string">&quot;Setting storage key for&quot;</span>);
+        <span class="macro">debug!</span>(<span class="string">&quot;Setting storage key for&quot;</span>);
 
         <span class="kw">let </span>storage_key = bincode::serialize(<span class="kw-2">&amp;</span>storage_key)<span class="question-mark">?</span>;
 

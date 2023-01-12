@@ -136,49 +136,30 @@
 <span id="136">136</span>
 <span id="137">137</span>
 <span id="138">138</span>
-<span id="139">139</span>
-<span id="140">140</span>
-<span id="141">141</span>
-<span id="142">142</span>
-<span id="143">143</span>
-<span id="144">144</span>
-<span id="145">145</span>
-<span id="146">146</span>
-<span id="147">147</span>
-<span id="148">148</span>
-<span id="149">149</span>
-<span id="150">150</span>
-<span id="151">151</span>
-<span id="152">152</span>
-<span id="153">153</span>
-<span id="154">154</span>
-<span id="155">155</span>
-<span id="156">156</span>
-<span id="157">157</span>
-<span id="158">158</span>
-<span id="159">159</span>
-</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::error::{
-    ConfigError,
-    ConfigError::{MissingPassword, MissingUsername},
-};
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::error::ConfigError;
 <span class="kw">use </span>serde::{Deserialize, Serialize};
-<span class="kw">use </span>std::{env, fs::read_to_string, path::Path, str::FromStr, time::Duration};
-<span class="kw">use </span>tracing::log::warn;
+<span class="kw">use </span>std::{
+    fmt::{Debug, Formatter},
+    fs::read_to_string,
+    path::Path,
+    str::FromStr,
+    time::Duration,
+};
 
 <span class="attribute">#[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq)]
 #[serde(deny_unknown_fields, rename_all = <span class="string">&quot;snake_case&quot;</span>)]
 </span><span class="kw">pub struct </span>ConfigFile {
     <span class="doccomment">/// Optional, convenience field for specifying the username. Should only be
     /// used for development!
-    </span>username: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    </span><span class="kw">pub </span>username: <span class="prelude-ty">Option</span>&lt;String&gt;,
     <span class="doccomment">/// Optional, convenience field for specifying the password. Should only be
     /// used for development!
-    </span>password: <span class="prelude-ty">Option</span>&lt;String&gt;,
-    address: String,
-    db_name: String,
-    max_connections: u32,
+    </span><span class="kw">pub </span>password: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    <span class="kw">pub </span>address: String,
+    <span class="kw">pub </span>db_name: String,
+    <span class="kw">pub </span>max_connections: u32,
     <span class="attribute">#[serde(with = <span class="string">&quot;humantime_serde&quot;</span>)]
-    </span>connection_timeout: Duration,
+    </span><span class="kw">pub </span>connection_timeout: Duration,
 }
 
 <span class="kw">impl </span>ConfigFile {
@@ -198,8 +179,7 @@
     }
 }
 
-<span class="attribute">#[derive(Debug)]
-</span><span class="kw">pub struct </span>Config {
+<span class="kw">pub struct </span>Config {
     <span class="kw">pub </span>username: String,
     <span class="kw">pub </span>password: String,
     <span class="kw">pub </span>address: String,
@@ -210,9 +190,22 @@
     <span class="kw">pub </span>connection_timeout: Duration,
 }
 
+<span class="kw">impl </span>Debug <span class="kw">for </span>Config {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; std::fmt::Result {
+        f.debug_struct(<span class="string">&quot;Config&quot;</span>)
+            .field(<span class="string">&quot;username&quot;</span>, <span class="kw-2">&amp;</span><span class="string">&quot;REDACTED&quot;</span>)
+            .field(<span class="string">&quot;password&quot;</span>, <span class="kw-2">&amp;</span><span class="string">&quot;REDACTED&quot;</span>)
+            .field(<span class="string">&quot;address&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.address)
+            .field(<span class="string">&quot;db_name&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.db_name)
+            .field(<span class="string">&quot;max_connections&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.max_connections)
+            .field(<span class="string">&quot;connection_timeout&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.connection_timeout)
+            .finish()
+    }
+}
+
 <span class="kw">impl </span>Config {
-    <span class="kw">const </span>DB_USERNAME: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str = <span class="string">&quot;DB_USERNAME&quot;</span>;
-    <span class="kw">const </span>DB_PASSWORD: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str = <span class="string">&quot;DB_PASSWORD&quot;</span>;
+    <span class="kw">pub const </span>DB_USERNAME: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str = <span class="string">&quot;DB_USERNAME&quot;</span>;
+    <span class="kw">pub const </span>DB_PASSWORD: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str = <span class="string">&quot;DB_PASSWORD&quot;</span>;
 
     <span class="doccomment">/// Generate full URI for our database based on the config in the form of:
     /// postgres://username:password@address/db_name.
@@ -226,28 +219,11 @@
 
 <span class="kw">impl </span>TryFrom&lt;ConfigFile&gt; <span class="kw">for </span>Config {
     <span class="kw">type </span>Error = ConfigError;
-    <span class="doccomment">/// Optional, convenience field for specifying the username. Should only be
-    /// used for development!
-    </span><span class="kw">fn </span>try_from(config: ConfigFile) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
-        <span class="kw">let </span>username = <span class="kw">match </span>config.username {
-            <span class="prelude-val">None </span>=&gt; env::var(Config::DB_USERNAME).map_err(MissingUsername)<span class="question-mark">?</span>,
-            <span class="prelude-val">Some</span>(username) =&gt; {
-                <span class="macro">warn!</span>(<span class="string">&quot;Username found via config file. Ensure you are not running in production.&quot;</span>);
-                username
-            }
-        };
 
-        <span class="kw">let </span>password = <span class="kw">match </span>config.password {
-            <span class="prelude-val">None </span>=&gt; env::var(Config::DB_PASSWORD).map_err(MissingPassword)<span class="question-mark">?</span>,
-            <span class="prelude-val">Some</span>(password) =&gt; {
-                <span class="macro">warn!</span>(<span class="string">&quot;Password found via config file. Ensure you are not running in production.&quot;</span>);
-                password
-            }
-        };
-
+    <span class="kw">fn </span>try_from(config: ConfigFile) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
         <span class="kw">let </span>config = Config {
-            username,
-            password,
+            username: config.username.ok_or(ConfigError::MissingUsername)<span class="question-mark">?</span>,
+            password: config.password.ok_or(ConfigError::MissingPassword)<span class="question-mark">?</span>,
             address: config.address,
             db_name: config.db_name,
             max_connections: config.max_connections,
@@ -291,25 +267,7 @@
 
     <span class="attribute">#[test]
     </span><span class="kw">fn </span>correct_uri() {
-        <span class="kw">let </span>config: Config = TryFrom::try_from(test_config_file()).unwrap();
-        <span class="macro">assert_eq!</span>(
-            config.uri(),
-            <span class="string">&quot;postgres://test_user:test_password@localhost/test_db&quot;
-        </span>);
-    }
-
-    <span class="attribute">#[test]
-    </span><span class="kw">fn </span>correct_uri_from_env_vars() {
-        <span class="kw">let </span>config_file = ConfigFile {
-            username: <span class="prelude-val">None</span>,
-            password: <span class="prelude-val">None</span>,
-            ..test_config_file()
-        };
-
-        env::set_var(Config::DB_USERNAME, <span class="string">&quot;test_user&quot;</span>);
-        env::set_var(Config::DB_PASSWORD, <span class="string">&quot;test_password&quot;</span>);
-
-        <span class="kw">let </span>config: Config = TryFrom::try_from(config_file).unwrap();
+        <span class="kw">let </span>config: Config = test_config_file().try_into().unwrap();
         <span class="macro">assert_eq!</span>(
             config.uri(),
             <span class="string">&quot;postgres://test_user:test_password@localhost/test_db&quot;

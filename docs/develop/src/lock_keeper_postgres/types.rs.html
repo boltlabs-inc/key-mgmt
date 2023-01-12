@@ -133,6 +133,9 @@
 <span id="133">133</span>
 <span id="134">134</span>
 <span id="135">135</span>
+<span id="136">136</span>
+<span id="137">137</span>
+<span id="138">138</span>
 </pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::error::PostgresError;
 <span class="kw">use </span>lock_keeper::{
     crypto::KeyId,
@@ -183,7 +186,7 @@
     <span class="kw">pub</span>(<span class="kw">crate</span>) account_name: String,
     <span class="kw">pub</span>(<span class="kw">crate</span>) key_id: <span class="prelude-ty">Option</span>&lt;Vec&lt;u8&gt;&gt;,
     <span class="kw">pub</span>(<span class="kw">crate</span>) request_id: Uuid,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) action: String,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) client_action_id: i64,
     <span class="kw">pub</span>(<span class="kw">crate</span>) event_status: String,
     <span class="kw">pub</span>(<span class="kw">crate</span>) timestamp: OffsetDateTime,
 }
@@ -238,8 +241,11 @@
     <span class="kw">type </span>Error = PostgresError;
 
     <span class="kw">fn </span>try_from(event: AuditEventDB) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
-        <span class="kw">let </span>action = ClientAction::from_str(<span class="kw-2">&amp;</span>event.action).map_err(|e| {
-            PostgresError::AuditEventConversion(<span class="macro">format!</span>(<span class="string">&quot;ClientAction conversion failed {}&quot;</span>, e))
+        <span class="kw">let </span>client_action = ClientAction::try_from(event.client_action_id).map_err(|i| {
+            PostgresError::AuditEventConversion(<span class="macro">format!</span>(
+                <span class="string">&quot;ClientAction conversion failed. Unknown integer {}&quot;</span>,
+                i
+            ))
         })<span class="question-mark">?</span>;
 
         <span class="kw">let </span>secret_id: <span class="prelude-ty">Option</span>&lt;KeyId&gt; = <span class="kw">match </span>event.key_id {
@@ -261,7 +267,7 @@
             account_name: AccountName::from(event.account_name.as_str()),
             key_id: secret_id,
             timestamp: event.timestamp,
-            action,
+            client_action,
             status,
         };
 

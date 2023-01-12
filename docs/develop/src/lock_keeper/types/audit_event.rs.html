@@ -193,7 +193,7 @@
     <span class="doccomment">/// We use [OffsetDateTime] as this is compatible with SQLx. Easily
     /// convertible to a postgres&#39; TIMESTAMPTZ type.
     </span><span class="kw">pub </span>timestamp: OffsetDateTime,
-    <span class="kw">pub </span>action: ClientAction,
+    <span class="kw">pub </span>client_action: ClientAction,
     <span class="kw">pub </span>status: EventStatus,
 }
 
@@ -203,7 +203,7 @@
     }
 
     <span class="kw">pub fn </span>action(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ClientAction {
-        <span class="self">self</span>.action
+        <span class="self">self</span>.client_action
     }
 
     <span class="kw">pub fn </span>key_id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>KeyId&gt; {

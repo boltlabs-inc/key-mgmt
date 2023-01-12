@@ -34,7 +34,7 @@
 <span id="34">34</span>
 <span id="35">35</span>
 <span id="36">36</span>
-</pre><pre class="rust"><code><span class="kw">use </span>std::{array::TryFromSliceError, env::VarError, path::PathBuf};
+</pre><pre class="rust"><code><span class="kw">use </span>std::{array::TryFromSliceError, path::PathBuf};
 <span class="kw">use </span>thiserror::Error;
 
 <span class="attribute">#[derive(Debug, Error)]
@@ -65,10 +65,10 @@
     </span>ConfigFileReadFailure(std::io::Error, PathBuf),
     <span class="attribute">#[error(<span class="string">&quot;Fail to read TOML file contents.&quot;</span>)]
     </span>TomlReadFailure(<span class="attribute">#[from] </span>toml::de::Error),
-    <span class="attribute">#[error(<span class="string">&quot;Failed to get database username: {0}&quot;</span>)]
-    </span>MissingUsername(VarError),
-    <span class="attribute">#[error(<span class="string">&quot;Failed to get database password: {0}&quot;</span>)]
-    </span>MissingPassword(VarError),
+    <span class="attribute">#[error(<span class="string">&quot;Missing database username.&quot;</span>)]
+    </span>MissingUsername,
+    <span class="attribute">#[error(<span class="string">&quot;Missing database password.&quot;</span>)]
+    </span>MissingPassword,
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="lock_keeper_postgres" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.1 (90743e729 2023-01-10)" ></div></body></html>

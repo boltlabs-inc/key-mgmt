@@ -46,7 +46,7 @@
 <span id="46">46</span>
 <span id="47">47</span>
 <span id="48">48</span>
-</pre><pre class="rust"><code><span class="kw">use </span>std::{array::TryFromSliceError, env::VarError, path::PathBuf};
+</pre><pre class="rust"><code><span class="kw">use </span>std::{array::TryFromSliceError, path::PathBuf};
 
 <span class="kw">use </span>lock_keeper_key_server::server::session_cache::SessionCacheError;
 <span class="kw">use </span>thiserror::Error;
@@ -89,10 +89,10 @@
     </span>ConfigFileReadFailure(std::io::Error, PathBuf),
     <span class="attribute">#[error(<span class="string">&quot;Fail to read TOML file contents.&quot;</span>)]
     </span>TomlReadFailure(<span class="attribute">#[from] </span>toml::de::Error),
-    <span class="attribute">#[error(<span class="string">&quot;Failed to get database username: {0}&quot;</span>)]
-    </span>MissingUsername(VarError),
-    <span class="attribute">#[error(<span class="string">&quot;Failed to get database password: {0}&quot;</span>)]
-    </span>MissingPassword(VarError),
+    <span class="attribute">#[error(<span class="string">&quot;Missing session cache username.&quot;</span>)]
+    </span>MissingUsername,
+    <span class="attribute">#[error(<span class="string">&quot;Missing session cache password.&quot;</span>)]
+    </span>MissingPassword,
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="lock_keeper_session_cache_sql" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.1 (90743e729 2023-01-10)" ></div></body></html>
