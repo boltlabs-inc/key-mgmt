@@ -3,15 +3,11 @@ name = "lock-keeper-client"
 version.workspace = true
 edition = "2021"
 
-
-[features]
-allow_explicit_certificate_trust = []
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 # Git dependencies
-lock-keeper = { version = "0.2.0", path = "../lock-keeper" }
+lock-keeper = { path = "../lock-keeper" }
 
 # Workspace dependencies
 argon2.workspace = true

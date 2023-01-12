@@ -6,11 +6,11 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-# Git dependencies
-lock-keeper = { version = "0.2.0", path = "../lock-keeper" }
-lock-keeper-key-server = { version = "0.2.0", path = "../lock-keeper-key-server" }
-lock-keeper-client = { version = "0.2.0", path = "../lock-keeper-client", features=["allow_explicit_certificate_trust"] }
-lock-keeper-session-cache-sql = { version = "0.2.0", path = "../persistence/lock-keeper-session-cache-sql" }
+# Local dependencies
+lock-keeper = { path = "../lock-keeper" }
+lock-keeper-key-server = { path = "../lock-keeper-key-server" }
+lock-keeper-client = { path = "../lock-keeper-client" }
+lock-keeper-session-cache-sql = { path = "../persistence/lock-keeper-session-cache-sql" }
 lock-keeper-postgres = { path = "../persistence/lock-keeper-sql"}
 
 # Workspace dependencies
