@@ -6,6 +6,8 @@ pub type Result<T> = std::result::Result<T, LockKeeperTestError>;
 
 #[derive(Debug, Error)]
 pub enum LockKeeperTestError {
+    #[error("\"--standard-only\" flag can only be used when `--test-type=e2e`")]
+    StandardOnlyFlag,
     #[error("Client config missing for required environment: \"{0}\". Check TestEnvironments.toml if you're using the default environment config.")]
     MissingRequiredConfig(String),
     #[error("Invalid test type: {0}")]
@@ -37,7 +39,7 @@ pub enum LockKeeperTestError {
     #[error("SessionCacheError: {0:?}")]
     SessionCache(#[from] lock_keeper_key_server::server::session_cache::SessionCacheError),
     #[error("DatabaseError: {0:?}")]
-    Database(#[from] lock_keeper_key_server::database::DatabaseError),
+    Database(#[from] lock_keeper_key_server::server::database::DatabaseError),
     #[error("PostgresError error: {0:?}")]
     LockKeeperPostgres(#[from] PostgresError),
     #[error("RandError: {0:?}")]

@@ -13,10 +13,7 @@ pub mod retrieve_audit_events;
 pub mod retrieve_secret;
 pub mod retrieve_storage_key;
 
-use crate::{
-    types::database::user::{AccountName, UserId},
-    LockKeeperError,
-};
+use crate::{types::database::account::AccountName, LockKeeperError};
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumIter, EnumString};
 use tonic::metadata::{Ascii, MetadataValue};
@@ -105,7 +102,6 @@ impl<T: for<'a> Deserialize<'a> + Serialize> ConvertMessage for T {}
 pub struct RequestMetadata {
     account_name: AccountName,
     action: ClientAction,
-    user_id: Option<UserId>,
     session_id: Option<Uuid>,
     request_id: Uuid,
 }
@@ -114,14 +110,12 @@ impl RequestMetadata {
     pub fn new(
         account_name: &AccountName,
         action: ClientAction,
-        user_id: Option<&UserId>,
         session_id: Option<&Uuid>,
         request_id: Uuid,
     ) -> Self {
         Self {
             account_name: account_name.clone(),
             action,
-            user_id: user_id.cloned(),
             session_id: session_id.cloned(),
             request_id,
         }
@@ -139,16 +133,8 @@ impl RequestMetadata {
         self.request_id
     }
 
-    pub fn user_id(&self) -> Option<&UserId> {
-        self.user_id.as_ref()
-    }
-
     pub fn session_id(&self) -> Option<&Uuid> {
         self.session_id.as_ref()
-    }
-
-    pub fn set_user_id(&mut self, user_id: UserId) {
-        self.user_id = Some(user_id);
     }
 }
 

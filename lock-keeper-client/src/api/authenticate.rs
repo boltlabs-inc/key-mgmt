@@ -1,13 +1,15 @@
-use crate::client::{AuthenticateResult, LockKeeperClient, Password};
+use crate::{
+    channel::{Channel, Unauthenticated},
+    client::{AuthenticateResult, LockKeeperClient, Password},
+};
 use std::sync::Arc;
 
 use crate::LockKeeperClientError;
 use lock_keeper::{
     config::opaque::OpaqueCipherSuite,
     crypto::{MasterKey, OpaqueSessionKey},
-    infrastructure::channel::{ClientChannel, Unauthenticated},
     types::{
-        database::user::AccountName,
+        database::account::AccountName,
         operations::authenticate::{client, server},
     },
 };
@@ -17,7 +19,7 @@ use tokio::sync::Mutex;
 
 impl LockKeeperClient {
     pub(crate) async fn handle_authentication(
-        mut channel: ClientChannel<Unauthenticated>,
+        mut channel: Channel<Unauthenticated>,
         rng: Arc<Mutex<StdRng>>,
         account_name: &AccountName,
         password: &Password,
@@ -34,7 +36,6 @@ impl LockKeeperClient {
         // Handle finish step
         let auth_result = authenticate_finish(
             &mut channel,
-            account_name,
             password,
             client_login_start_result,
             server_start_result,
@@ -46,7 +47,7 @@ impl LockKeeperClient {
 }
 
 async fn authenticate_start(
-    channel: &mut ClientChannel<Unauthenticated>,
+    channel: &mut Channel<Unauthenticated>,
     client_login_start_result: &ClientLoginStartResult<OpaqueCipherSuite>,
     account_name: &AccountName,
 ) -> Result<server::AuthenticateStart, LockKeeperClientError> {
@@ -61,8 +62,7 @@ async fn authenticate_start(
 }
 
 async fn authenticate_finish(
-    channel: &mut ClientChannel<Unauthenticated>,
-    account_name: &AccountName,
+    channel: &mut Channel<Unauthenticated>,
     password: &Password,
     client_start_result: ClientLoginStartResult<OpaqueCipherSuite>,
     server_start_result: server::AuthenticateStart,
@@ -75,7 +75,6 @@ async fn authenticate_finish(
 
     let reply = client::AuthenticateFinish {
         credential_finalization: client_login_finish_result.message.clone(),
-        account_name: account_name.clone(),
     };
 
     channel.send(reply).await?;

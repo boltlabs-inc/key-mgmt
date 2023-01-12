@@ -1,20 +1,24 @@
 use crate::{
     error::LockKeeperServerError,
-    server::{Context, Operation},
+    server::{
+        channel::{Channel, Unauthenticated},
+        Context, Operation,
+    },
 };
 use std::ops::DerefMut;
 
-use crate::database::DataStore;
+use crate::server::database::DataStore;
 use async_trait::async_trait;
 use lock_keeper::{
     config::opaque::OpaqueCipherSuite,
-    infrastructure::{
-        channel::{ServerChannel, Unauthenticated},
-        logging,
-    },
+    infrastructure::logging,
     types::{
-        database::user::{AccountName, UserId},
-        operations::register::{client, server},
+        audit_event::EventStatus,
+        database::account::{AccountName, UserId},
+        operations::{
+            register::{client, server},
+            ClientAction,
+        },
     },
 };
 use opaque_ke::ServerRegistration;
@@ -28,7 +32,7 @@ impl<DB: DataStore> Operation<Unauthenticated, DB> for Register {
     #[instrument(skip_all, err(Debug), fields(account_name))]
     async fn operation(
         self,
-        channel: &mut ServerChannel<Unauthenticated>,
+        channel: &mut Channel<Unauthenticated>,
         context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
         info!("Starting register protocol.");
@@ -44,14 +48,17 @@ impl<DB: DataStore> Operation<Unauthenticated, DB> for Register {
 
 #[instrument(skip_all, err(Debug), fields(user_id))]
 async fn register_start<DB: DataStore>(
-    channel: &mut ServerChannel<Unauthenticated>,
+    channel: &mut Channel<Unauthenticated>,
     context: &Context<DB>,
 ) -> Result<AccountName, LockKeeperServerError> {
     // Receive start message from client
     let start_message: client::RegisterStart = channel.receive().await?;
 
     // Abort registration if UserId already exists
-    let user = context.db.find_account(&start_message.account_name).await?;
+    let user = context
+        .db
+        .find_account_by_name(&start_message.account_name)
+        .await?;
 
     match user {
         // Abort registration if UserId already exists
@@ -83,7 +90,7 @@ async fn register_start<DB: DataStore>(
 #[instrument(skip(channel, context), err(Debug))]
 async fn register_finish<DB: DataStore>(
     account_name: &AccountName,
-    channel: &mut ServerChannel<Unauthenticated>,
+    channel: &mut Channel<Unauthenticated>,
     context: &Context<DB>,
 ) -> Result<(), LockKeeperServerError> {
     // Receive finish message from client
@@ -100,12 +107,24 @@ async fn register_finish<DB: DataStore>(
             UserId::new(rng.deref_mut())?
         };
 
-        // If the user ID is fresh, create the new user
-        if context.db.find_account_by_id(&user_id).await?.is_none() {
+        let user_id_exists = context.db.user_id_exists(&user_id).await?;
+
+        if !user_id_exists {
             info!("Fresh user id generated: {:?}", user_id);
-            let _user = context
+            let account = context
                 .db
                 .create_account(&user_id, account_name, &server_registration)
+                .await?;
+            let account_id = account.id();
+            let request_id = channel.metadata().request_id();
+
+            context
+                .create_audit_event(
+                    account_id,
+                    request_id,
+                    ClientAction::Register,
+                    EventStatus::Successful,
+                )
                 .await?;
             break;
         }

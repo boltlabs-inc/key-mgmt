@@ -1,8 +1,11 @@
-use crate::{database::DataStore, server::Context, LockKeeperServerError};
+use crate::{
+    server::{database::DataStore, Context},
+    LockKeeperServerError,
+};
 use async_trait::async_trait;
 use lock_keeper::{
     crypto::{Encrypted, OpaqueSessionKey},
-    types::database::user::UserId,
+    types::database::account::AccountId,
 };
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -14,7 +17,7 @@ use uuid::Uuid;
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Session {
     pub session_id: Uuid,
-    pub user_id: UserId,
+    pub account_id: AccountId,
     pub timestamp: OffsetDateTime,
     pub session_key: Encrypted<OpaqueSessionKey>,
 }
@@ -48,7 +51,7 @@ pub enum SessionCacheError {
 }
 
 /// Cache holding our sessions, per user, after authentication. Maps
-/// [`UserId`]s to [`Session`]s. Sessions should be tagged with a
+/// [`AccountId`]s to [`Session`]s. Sessions should be tagged with a
 /// timestamp. A session is considered invalid after the expiration time has
 /// elapsed.
 #[async_trait]
@@ -57,18 +60,14 @@ pub trait SessionCache: Send + Sync {
     /// session for that user should be overwritten.
     async fn create_session(
         &self,
-        user_id: UserId,
+        account_id: AccountId,
         session_key: Encrypted<OpaqueSessionKey>,
     ) -> Result<Uuid, SessionCacheError>;
 
     /// Get the session for the specified user, if one exists.
     /// This function should check if the session has expired and return an
     /// error if so.
-    async fn find_session(
-        &self,
-        session_id: Uuid,
-        user_id: UserId,
-    ) -> Result<Session, SessionCacheError>;
+    async fn find_session(&self, session_id: Uuid) -> Result<Session, SessionCacheError>;
 
     /// Indicate that the session for this user has expired. If the same
     /// user attempts to make a server call after expiring their session,

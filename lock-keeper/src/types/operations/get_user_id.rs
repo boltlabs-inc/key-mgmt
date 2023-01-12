@@ -1,5 +1,5 @@
 pub mod server {
-    use crate::types::database::user::UserId;
+    use crate::types::database::account::UserId;
     use serde::{Deserialize, Serialize};
 
     #[derive(Debug, Deserialize, Serialize)]

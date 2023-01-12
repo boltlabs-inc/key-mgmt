@@ -6,7 +6,7 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 
-use super::user::UserId;
+use super::account::AccountId;
 
 /// Generic representation of a secret that is stored in a database.
 /// Databased implementors must be able to store and return [StoredSecret]s. So
@@ -14,7 +14,7 @@ use super::user::UserId;
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct StoredSecret {
     pub key_id: KeyId,
-    pub user_id: UserId,
+    pub account_id: AccountId,
     pub secret_type: String,
     pub bytes: Vec<u8>,
     /// Whether or not this secret has been retrieved.
@@ -24,7 +24,7 @@ pub struct StoredSecret {
 impl StoredSecret {
     pub fn new(
         key_id: KeyId,
-        user_id: UserId,
+        account_id: AccountId,
         secret_type: impl Into<String>,
         secret: impl Into<Vec<u8>>,
     ) -> Result<Self, LockKeeperError> {
@@ -32,7 +32,7 @@ impl StoredSecret {
 
         Ok(Self {
             key_id,
-            user_id,
+            account_id,
             secret_type: secret_type.into(),
             bytes: serde_json::to_vec(&secret)?,
             retrieved: false,
@@ -41,12 +41,12 @@ impl StoredSecret {
 
     pub fn from_arbitrary_secret(
         key_id: KeyId,
-        user_id: UserId,
+        account_id: AccountId,
         secret: Encrypted<Secret>,
     ) -> Result<Self, LockKeeperError> {
         Ok(Self {
             key_id,
-            user_id,
+            account_id,
             secret_type: secret_types::ARBITRARY_SECRET.to_string(),
             bytes: serde_json::to_vec(&secret)?,
             retrieved: false,
@@ -55,12 +55,12 @@ impl StoredSecret {
 
     pub fn from_signing_key_pair(
         key_id: KeyId,
-        user_id: UserId,
+        account_id: AccountId,
         secret: Encrypted<SigningKeyPair>,
     ) -> Result<Self, LockKeeperError> {
         Ok(Self {
             key_id,
-            user_id,
+            account_id,
             secret_type: secret_types::SIGNING_KEY_PAIR.to_string(),
             bytes: serde_json::to_vec(&secret)?,
             retrieved: false,
@@ -70,11 +70,11 @@ impl StoredSecret {
     pub fn from_remote_signing_key_pair(
         key_id: KeyId,
         secret: Encrypted<SigningKeyPair>,
-        user_id: UserId,
+        account_id: AccountId,
     ) -> Result<Self, LockKeeperError> {
         Ok(Self {
             key_id,
-            user_id,
+            account_id,
             secret_type: secret_types::REMOTE_SIGNING_KEY.to_string(),
             bytes: serde_json::to_vec(&secret)?,
             retrieved: false,

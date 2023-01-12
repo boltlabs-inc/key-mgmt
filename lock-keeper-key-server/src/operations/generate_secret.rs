@@ -1,13 +1,15 @@
 use crate::{
-    server::{Context, Operation},
+    server::{
+        channel::{Authenticated, Channel},
+        Context, Operation,
+    },
     LockKeeperServerError,
 };
 
-use crate::database::DataStore;
+use crate::server::database::DataStore;
 use async_trait::async_trait;
 use lock_keeper::{
     crypto::KeyId,
-    infrastructure::channel::{Authenticated, ServerChannel},
     types::{
         database::secrets::StoredSecret,
         operations::generate::{client, server},
@@ -27,7 +29,7 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for GenerateSecret {
     #[instrument(skip_all, err(Debug))]
     async fn operation(
         self,
-        channel: &mut ServerChannel<Authenticated<StdRng>>,
+        channel: &mut Channel<Authenticated<StdRng>>,
         context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
         info!("Starting generate protocol");
@@ -50,13 +52,10 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for GenerateSecret {
 /// Returns the key_id we generated.
 #[instrument(skip_all, err(Debug))]
 async fn generate_key<DB: DataStore>(
-    channel: &mut ServerChannel<Authenticated<StdRng>>,
+    channel: &mut Channel<Authenticated<StdRng>>,
     context: &Context<DB>,
 ) -> Result<KeyId, LockKeeperServerError> {
-    let user_id = channel
-        .metadata()
-        .user_id()
-        .ok_or(LockKeeperServerError::InvalidAccount)?;
+    let user_id = channel.user_id();
 
     // Generate new KeyId
     let key_id = {
@@ -79,19 +78,16 @@ async fn generate_key<DB: DataStore>(
 /// 3) Reply to client if successful.
 #[instrument(skip_all, err(Debug))]
 async fn store_key<DB: DataStore>(
-    channel: &mut ServerChannel<Authenticated<StdRng>>,
+    channel: &mut Channel<Authenticated<StdRng>>,
     context: &Context<DB>,
     key_id: &KeyId,
 ) -> Result<(), LockKeeperServerError> {
     // Receive Encrypted<Secret> from client
     let store_message: client::Store = channel.receive().await?;
-    let user_id = channel
-        .metadata()
-        .user_id()
-        .ok_or(LockKeeperServerError::InvalidAccount)?;
+
     let secret = StoredSecret::from_arbitrary_secret(
         key_id.clone(),
-        user_id.clone(),
+        channel.account_id(),
         store_message.ciphertext,
     )?;
 

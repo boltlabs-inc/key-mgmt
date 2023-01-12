@@ -24,7 +24,7 @@ use lock_keeper::{
     crypto::{Export, Import, KeyId, Secret, Signable, Signature},
     types::{
         audit_event::{AuditEvent, AuditEventOptions, EventType},
-        database::user::AccountName,
+        database::account::AccountName,
         operations::{retrieve_secret::RetrieveContext, ClientAction, RequestMetadata},
     },
 };
@@ -117,8 +117,7 @@ impl LockKeeperClient {
     ) -> Result<(), LockKeeperClientError> {
         let rng = StdRng::from_entropy();
         let mut client = Self::connect(config).await?;
-        let metadata =
-            RequestMetadata::new(account_name, ClientAction::Register, None, None, request_id);
+        let metadata = RequestMetadata::new(account_name, ClientAction::Register, None, request_id);
         let rng_arc_mutex = Arc::new(Mutex::new(rng));
         let client_channel = Self::create_channel(&mut client, &metadata).await?;
         let master_key = Self::handle_registration(
@@ -382,10 +381,8 @@ impl LockKeeperClient {
     /// and each asset fiduciary (if relevant), and any other relevant
     /// details.
     ///
-    /// The [`lock_keeper::types::database::user::UserId`] must match the asset
-    /// owner authenticated in the [`crate::LockKeeperClient`], and if
-    /// specified, the [`KeyId`] must correspond to a key owned by the
-    /// [`lock_keeper::types::database::user::UserId`].
+    /// If specified, the [`KeyId`] must correspond to a key owned by the
+    /// authenticated account.
     ///
     /// Output: if successful, returns a [`String`] representation of the logs.
     pub async fn retrieve_audit_event_log(

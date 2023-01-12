@@ -1,16 +1,16 @@
 use crate::{
     error::LockKeeperServerError,
-    server::{Context, Operation},
+    server::{
+        channel::{Authenticated, Channel},
+        Context, Operation,
+    },
 };
 
-use crate::database::DataStore;
+use crate::server::database::DataStore;
 use async_trait::async_trait;
 use lock_keeper::{
-    infrastructure::channel::{Authenticated, ServerChannel},
-    types::{
-        database::user::UserId,
-        operations::create_storage_key::{client, server},
-    },
+    infrastructure::logging,
+    types::operations::create_storage_key::{client, server},
 };
 use rand::rngs::StdRng;
 use tracing::{error, info, instrument};
@@ -23,17 +23,14 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for CreateStorageKey {
     #[instrument(skip_all, err(Debug))]
     async fn operation(
         self,
-        channel: &mut ServerChannel<Authenticated<StdRng>>,
+        channel: &mut Channel<Authenticated<StdRng>>,
         context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
         info!("Starting create storage key operation.");
 
-        let user_id = channel
-            .metadata()
-            .user_id()
-            .ok_or(LockKeeperServerError::InvalidAccount)?;
-        store_storage_key(user_id.clone(), channel, context).await?;
+        store_storage_key(channel, context).await?;
         info!("Successfully finished set storage key protocol.");
+
         Ok(())
     }
 }
@@ -43,40 +40,39 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for CreateStorageKey {
 /// 2) Look up user in database.
 /// 3) Ensure this user doesn't already have a storage key.
 /// 4) Reply to client via channel.
-#[instrument(skip_all, err(Debug), fields(user_id))]
+#[instrument(skip_all, err(Debug), fields(account_id))]
 async fn store_storage_key<DB: DataStore>(
-    user_id: UserId,
-    channel: &mut ServerChannel<Authenticated<StdRng>>,
+    channel: &mut Channel<Authenticated<StdRng>>,
     context: &Context<DB>,
 ) -> Result<(), LockKeeperServerError> {
     info!("Storing storage key.");
     let client_message: client::SendStorageKey = channel.receive().await?;
 
-    let user = context
-        .db
-        .find_account_by_id(&user_id)
-        .await?
-        .ok_or(LockKeeperServerError::InvalidAccount)?;
+    let account_id = channel.account_id();
+    logging::record_field("account_id", &account_id);
 
-    if user.storage_key.is_some() {
+    if channel.account().storage_key.is_some() {
         return Err(LockKeeperServerError::StorageKeyAlreadySet);
     }
 
     let store_key_result = context
         .db
-        .set_storage_key(&user_id, client_message.storage_key)
+        .set_storage_key(account_id, client_message.storage_key.clone())
         .await;
 
     // Delete user if we fail to set the storage key.
     if let Err(e) = store_key_result {
         error!("Failed to set storage key for user.");
-        context.db.delete_account(&user_id).await?;
+        context.db.delete_account(account_id).await?;
         info!("Deleted user due to failure to set storage key.");
         return Err(e.into());
     }
 
     let reply = server::CreateStorageKeyResult { success: true };
     channel.send(reply).await?;
+
+    // Set the storage key in the cached account data stored in the channel.
+    channel.set_storage_key(client_message.storage_key);
 
     Ok(())
 }

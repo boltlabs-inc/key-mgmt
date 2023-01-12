@@ -1,16 +1,18 @@
 //! This operation allows client to specify a key ID for a key that was remotely
 //! generated on the server and use this key to sign a message.
 use crate::{
-    server::{Context, Operation},
+    server::{
+        channel::{Authenticated, Channel},
+        Context, Operation,
+    },
     LockKeeperServerError,
 };
 
-use crate::database::DataStore;
+use crate::server::database::DataStore;
 use async_trait::async_trait;
 
 use lock_keeper::{
     crypto::{Encrypted, Signable, SigningKeyPair},
-    infrastructure::channel::{Authenticated, ServerChannel},
     types::operations::remote_sign_bytes::{client, server},
 };
 use rand::rngs::StdRng;
@@ -29,25 +31,26 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for RemoteSignBytes {
     #[instrument(skip_all, err(Debug))]
     async fn operation(
         self,
-        channel: &mut ServerChannel<Authenticated<StdRng>>,
+        channel: &mut Channel<Authenticated<StdRng>>,
         context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
         info!("Starting remote sign protocol.");
         let request: client::RequestRemoteSign = channel.receive().await?;
-        let user_id = channel
-            .metadata()
-            .user_id()
-            .ok_or(LockKeeperServerError::InvalidAccount)?;
+
+        let account_id = channel.account_id();
+
         let encrypted_key: Encrypted<SigningKeyPair> = context
             .db
-            .get_secret(user_id, &request.key_id, Default::default())
+            .get_secret(account_id, &request.key_id, Default::default())
             .await?
             .try_into()?;
         info!("Signing key found. Signing...");
 
+        let user_id = channel.user_id().clone();
+
         let key = encrypted_key.decrypt_signing_key_by_server(
             &context.config.remote_storage_key,
-            user_id.clone(),
+            user_id,
             request.key_id,
         )?;
 

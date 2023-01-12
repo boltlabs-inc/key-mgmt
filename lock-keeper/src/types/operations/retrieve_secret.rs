@@ -1,8 +1,8 @@
 use crate::{
     crypto::{Encrypted, KeyId, RemoteStorageKey, Secret, SigningKeyPair},
     types::database::{
+        account::UserId,
         secrets::{secret_types, StoredSecret},
-        user::UserId,
     },
     LockKeeperError,
 };

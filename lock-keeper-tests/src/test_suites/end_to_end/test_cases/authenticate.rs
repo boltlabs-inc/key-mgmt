@@ -1,6 +1,6 @@
 use colored::Colorize;
 use lock_keeper::types::{
-    audit_event::EventStatus, database::user::AccountName, operations::ClientAction,
+    audit_event::EventStatus, database::account::AccountName, operations::ClientAction,
 };
 use lock_keeper_client::{client::Password, Config, LockKeeperClientError};
 use std::str::FromStr;

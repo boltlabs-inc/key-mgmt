@@ -5,6 +5,7 @@
 #![forbid(rustdoc::broken_intra_doc_links)]
 
 pub mod api;
+pub mod channel;
 pub mod client;
 pub mod config;
 pub mod error;

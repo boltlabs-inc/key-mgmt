@@ -1,13 +1,13 @@
 use crate::{
-    database::DataStore,
-    server::{Context, Operation},
+    server::{
+        channel::{Authenticated, Channel},
+        database::DataStore,
+        Context, Operation,
+    },
     LockKeeperServerError,
 };
 use async_trait::async_trait;
-use lock_keeper::{
-    infrastructure::channel::{Authenticated, ServerChannel},
-    types::operations::retrieve_storage_key::server,
-};
+use lock_keeper::{infrastructure::logging, types::operations::retrieve_storage_key::server};
 use rand::rngs::StdRng;
 use tracing::{info, instrument};
 
@@ -16,28 +16,23 @@ pub struct RetrieveStorageKey;
 
 #[async_trait]
 impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for RetrieveStorageKey {
-    #[instrument(skip_all, err(Debug))]
+    #[instrument(skip_all, err(Debug), fields(account_id))]
     async fn operation(
         self,
-        channel: &mut ServerChannel<Authenticated<StdRng>>,
-        context: &mut Context<DB>,
+        channel: &mut Channel<Authenticated<StdRng>>,
+        _context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
         info!("Starting retrieve storage key protocol.");
-        let user_id = channel
-            .metadata()
-            .user_id()
-            .ok_or(LockKeeperServerError::InvalidAccount)?;
-        // Find user by user ID.
-        let user = context
-            .db
-            .find_account_by_id(user_id)
-            .await?
-            .ok_or(LockKeeperServerError::InvalidAccount)?;
+        let account_id = channel.account_id();
+        logging::record_field("account_id", &account_id);
 
         // Send storage key if set
-        let storage_key = user
+        let storage_key = channel
+            .account()
             .storage_key
+            .clone()
             .ok_or(LockKeeperServerError::StorageKeyNotSet)?;
+
         let reply = server::Response {
             ciphertext: storage_key,
         };

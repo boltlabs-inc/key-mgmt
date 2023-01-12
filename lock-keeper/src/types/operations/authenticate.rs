@@ -1,5 +1,5 @@
 pub mod client {
-    use crate::{config::opaque::OpaqueCipherSuite, types::database::user::AccountName};
+    use crate::{config::opaque::OpaqueCipherSuite, types::database::account::AccountName};
     use opaque_ke::{CredentialFinalization, CredentialRequest};
     use serde::{Deserialize, Serialize};
 
@@ -14,7 +14,6 @@ pub mod client {
     /// Pass account name and registration-finish message from OPAQUE.
     pub struct AuthenticateFinish {
         pub credential_finalization: CredentialFinalization<OpaqueCipherSuite>,
-        pub account_name: AccountName,
     }
 }
 

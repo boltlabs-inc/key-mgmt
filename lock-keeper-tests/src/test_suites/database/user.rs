@@ -1,8 +1,8 @@
 //! Integration tests for user objects in the database
 
 use colored::Colorize;
-use lock_keeper::types::database::user::{AccountName, UserId};
-use lock_keeper_key_server::database::DataStore;
+use lock_keeper::types::database::account::{AccountName, UserId};
+use lock_keeper_key_server::server::database::DataStore;
 use rand::{rngs::StdRng, SeedableRng};
 
 use crate::{
@@ -31,25 +31,24 @@ pub async fn run_tests(filters: &TestFilters) -> Result<Vec<TestResult>> {
 }
 
 async fn user_findable_by_account_name(db: TestDatabase) -> Result<()> {
-    let (_, account_name) = db.create_test_user().await?;
+    let account = db.create_test_user().await?;
 
-    let user = db.find_account(&account_name).await?.unwrap();
-    assert_eq!(user.account_name, account_name);
+    let user = db.find_account(account.id()).await?.unwrap();
+    assert_eq!(user.account_id, account.id());
 
     Ok(())
 }
 
 async fn user_findable_by_id(db: TestDatabase) -> Result<()> {
-    let (user_id, account_name) = db.create_test_user().await?;
+    let account = db.create_test_user().await?;
 
-    let user = db.find_account(&account_name).await?.unwrap();
-    assert_eq!(user.user_id, user_id);
+    let user = db.find_account(account.id()).await?.unwrap();
+    assert_eq!(user.account_id, account.id());
 
-    let user = db.find_account_by_id(&user_id).await?;
-    assert!(user.is_some());
+    let user = db.find_account_by_name(&account.account_name).await?;
 
     let user = user.unwrap();
-    assert_eq!(user.user_id, user_id);
+    assert_eq!(user.account_id, account.account_id);
 
     Ok(())
 }
@@ -90,21 +89,21 @@ async fn unique_indices_enforced(db: TestDatabase) -> Result<()> {
 }
 
 async fn user_is_deleted(db: TestDatabase) -> Result<()> {
-    let (user_id, _) = db.create_test_user().await?;
+    let account = db.create_test_user().await?;
 
     // Ensure that the user was created
-    let user = db.find_account_by_id(&user_id).await?;
+    let user = db.find_account(account.id()).await?;
     assert!(user.is_some());
 
     // Delete the user
-    db.delete_account(&user_id).await?;
+    db.delete_account(account.id()).await?;
 
     // Ensure that the user was deleted
-    let user = db.find_account_by_id(&user_id).await?;
+    let user = db.find_account(account.id()).await?;
     assert!(user.is_none());
 
     // Ensure that an error is returned if the user is deleted again
-    let result = db.delete_account(&user_id).await;
+    let result = db.delete_account(account.id()).await;
     assert!(result.is_err());
 
     Ok(())
@@ -112,19 +111,20 @@ async fn user_is_deleted(db: TestDatabase) -> Result<()> {
 
 /// Test that `set_storage_key` works correctly
 async fn storage_key_is_set(db: TestDatabase) -> Result<()> {
-    let (user_id, account_name) = db.create_test_user().await?;
+    let account = db.create_test_user().await?;
 
     // Ensure that the user was created an no storage key is set
-    let user = db.find_account(&account_name).await?.unwrap();
+    let user = db.find_account(account.id()).await?.unwrap();
     assert!(user.storage_key.is_none());
 
     // Create a storage key
-    let (storage_key, _) = db.create_test_storage_key(&user_id)?;
+    let (storage_key, _) = db.create_test_storage_key(&account.user_id)?;
 
     // Set storage key and check that it is correct in the database
-    db.set_storage_key(&user_id, storage_key.clone()).await?;
+    db.set_storage_key(account.id(), storage_key.clone())
+        .await?;
 
-    let user = db.find_account(&account_name).await?.unwrap();
+    let user = db.find_account(account.id()).await?.unwrap();
     assert_eq!(user.storage_key, Some(storage_key.clone()));
 
     Ok(())

@@ -1,9 +1,12 @@
-use crate::{client::LockKeeperClient, LockKeeperClientError};
+use crate::{
+    channel::{Authenticated, Channel},
+    client::LockKeeperClient,
+    LockKeeperClientError,
+};
 use lock_keeper::{
     crypto::MasterKey,
-    infrastructure::channel::{Authenticated, ClientChannel},
     types::{
-        database::user::UserId,
+        database::account::UserId,
         operations::create_storage_key::{client, server},
     },
 };
@@ -15,7 +18,7 @@ impl LockKeeperClient {
     /// Creates a storage key and sends it to the key server
     pub(crate) async fn handle_create_storage_key<T: CryptoRng + RngCore>(
         &self,
-        mut channel: ClientChannel<Authenticated<StdRng>>,
+        mut channel: Channel<Authenticated<StdRng>>,
         rng: Arc<Mutex<T>>,
         master_key: MasterKey,
     ) -> Result<(), LockKeeperClientError> {
@@ -27,7 +30,7 @@ impl LockKeeperClient {
 }
 
 async fn create_and_send_storage_key<T: CryptoRng + RngCore>(
-    channel: &mut ClientChannel<Authenticated<StdRng>>,
+    channel: &mut Channel<Authenticated<StdRng>>,
     rng: Arc<Mutex<T>>,
     user_id: UserId,
     master_key: MasterKey,

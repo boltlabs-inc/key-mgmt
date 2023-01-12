@@ -1,17 +1,17 @@
-use crate::{LockKeeperClient, LockKeeperClientError};
-use lock_keeper::{
-    infrastructure::channel::{Authenticated, ClientChannel},
-    types::{
-        audit_event::{AuditEvent, AuditEventOptions, EventType},
-        operations::retrieve_audit_events::{client, server},
-    },
+use crate::{
+    channel::{Authenticated, Channel},
+    LockKeeperClient, LockKeeperClientError,
+};
+use lock_keeper::types::{
+    audit_event::{AuditEvent, AuditEventOptions, EventType},
+    operations::retrieve_audit_events::{client, server},
 };
 use rand::rngs::StdRng;
 
 impl LockKeeperClient {
     pub(crate) async fn handle_retrieve_audit_events(
         &self,
-        mut channel: ClientChannel<Authenticated<StdRng>>,
+        mut channel: Channel<Authenticated<StdRng>>,
         event_type: EventType,
         options: AuditEventOptions,
     ) -> Result<Vec<AuditEvent>, LockKeeperClientError> {

@@ -1,16 +1,19 @@
 //! Client object to interact with the key server.
 
-use crate::{config::Config, LockKeeperClientError, Result};
+use crate::{
+    channel::{Authenticated, Channel, Unauthenticated},
+    config::Config,
+    LockKeeperClientError, Result,
+};
 use http_body::combinators::UnsyncBoxBody;
 use hyper::client::HttpConnector;
 use hyper_rustls::HttpsConnector;
 use lock_keeper::{
     constants::METADATA,
     crypto::{MasterKey, OpaqueSessionKey, StorageKey},
-    infrastructure::channel::{Authenticated, ClientChannel, Unauthenticated},
     rpc::lock_keeper_rpc_client::LockKeeperRpcClient,
     types::{
-        database::user::{AccountName, UserId},
+        database::account::{AccountName, UserId},
         operations::{
             logout::server as logout_server, retrieve_storage_key::server, ClientAction,
             RequestMetadata,
@@ -137,13 +140,8 @@ impl LockKeeperClient {
             None => Self::connect(config).await?,
         };
 
-        let metadata = RequestMetadata::new(
-            account_name,
-            ClientAction::Authenticate,
-            None,
-            None,
-            request_id,
-        );
+        let metadata =
+            RequestMetadata::new(account_name, ClientAction::Authenticate, None, request_id);
         let mut rng = StdRng::from_entropy();
         let rng_arc_mutex = Arc::new(Mutex::new(rng));
         let mut client_channel = Self::create_channel(&mut client, &metadata).await?;
@@ -159,7 +157,6 @@ impl LockKeeperClient {
         let metadata = RequestMetadata::new(
             account_name,
             ClientAction::GetUserId,
-            None,
             Some(&auth_result.session_id),
             request_id,
         );
@@ -197,13 +194,12 @@ impl LockKeeperClient {
         RequestMetadata::new(
             self.account_name(),
             action,
-            Some(self.user_id()),
             Some(&self.session.session_id),
             request_id,
         )
     }
 
-    /// Helper to create the appropriate [`ClientChannel`] to send to tonic
+    /// Helper to create the appropriate [`Channel`] to send to tonic
     /// handler functions based on the client's action. This function creates
     /// unauthenticated channels. Use `create_authenticated_channel` to create
     /// an authenticated channel.
@@ -213,7 +209,7 @@ impl LockKeeperClient {
     pub(crate) async fn create_channel(
         client: &mut LockKeeperRpcClient<LockKeeperRpcClientInner>,
         metadata: &RequestMetadata,
-    ) -> Result<ClientChannel<Unauthenticated>> {
+    ) -> Result<Channel<Unauthenticated>> {
         // Create channel to send messages to server after connection is established via
         // RPC
         let (tx, rx) = mpsc::channel(2);
@@ -245,11 +241,11 @@ impl LockKeeperClient {
             }
         }?;
 
-        let mut channel = ClientChannel::new(tx, server_response)?;
+        let mut channel = Channel::new(tx, server_response)?;
         Ok(channel)
     }
 
-    /// Helper to create the appropriate [`ClientChannel`] to send to tonic
+    /// Helper to create the appropriate [`Channel`] to send to tonic
     /// handler functions based on the client's action. This function creates
     /// authenticated channels. Use `create_channel` to create
     /// an unauthenticated channel.
@@ -261,7 +257,7 @@ impl LockKeeperClient {
         metadata: &RequestMetadata,
         session_key: OpaqueSessionKey,
         rng: Arc<Mutex<StdRng>>,
-    ) -> Result<ClientChannel<Authenticated<StdRng>>> {
+    ) -> Result<Channel<Authenticated<StdRng>>> {
         // Create channel to send messages to server after connection is established via
         // RPC
         let (tx, rx) = mpsc::channel(2);
@@ -294,7 +290,7 @@ impl LockKeeperClient {
         }?;
 
         let mut channel =
-            ClientChannel::new(tx, server_response)?.into_authenticated(session_key, rng.clone());
+            Channel::new(tx, server_response)?.into_authenticated(session_key, rng.clone());
         Ok(channel)
     }
 

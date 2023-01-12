@@ -7,11 +7,11 @@ use colored::Colorize;
 use generic_array::GenericArray;
 use lock_keeper::{
     crypto::{OpaqueSessionKey, RemoteStorageKey},
-    types::database::user::UserId,
+    types::database::account::AccountId,
 };
 use lock_keeper_key_server::server::session_cache::{SessionCache, SessionCacheError};
 use lock_keeper_session_cache_sql::{config::Config as SessionConfig, PostgresSessionCache};
-use rand::{rngs::StdRng, SeedableRng};
+use rand::{rngs::StdRng, RngCore, SeedableRng};
 use std::{str::FromStr, time::Duration};
 use uuid::Uuid;
 
@@ -21,7 +21,7 @@ const SEED: u64 = 1234;
 struct TestState {
     remote_key: RemoteStorageKey,
     session_key: OpaqueSessionKey,
-    user_id: UserId,
+    account_id: AccountId,
 }
 
 pub async fn run_tests(filters: &TestFilters) -> Result<Vec<TestResult>> {
@@ -67,17 +67,15 @@ fn test_state(rng: &mut StdRng) -> Result<TestState> {
     Ok(TestState {
         remote_key: get_temp_remote_key(rng)?,
         session_key: get_temp_session_key()?,
-        user_id: get_temp_user_id(rng)?,
+        account_id: get_temp_account_id(rng),
     })
 }
 
 async fn key_does_not_exist() -> Result<()> {
-    let mut rng = StdRng::seed_from_u64(SEED);
     let cache = new_cache("60s").await?;
     let session_id = get_temp_session_id();
-    let user_id = get_temp_user_id(&mut rng)?;
 
-    match cache.find_session(session_id, user_id).await {
+    match cache.find_session(session_id).await {
         Ok(_) => {
             panic!("Key should not exist.")
         }
@@ -100,11 +98,11 @@ async fn get_key_back() -> Result<()> {
         .encrypt_session_key(&mut rng, state.session_key)?;
 
     let session_id = cache
-        .create_session(state.user_id.clone(), encrypted_key)
+        .create_session(state.account_id, encrypted_key)
         .await?;
 
     // We got a key back.
-    let _key_ref = cache.find_session(session_id, state.user_id).await?;
+    let _key_ref = cache.find_session(session_id).await?;
     Ok(())
 }
 
@@ -118,13 +116,13 @@ async fn overwrite_existing_key() -> Result<()> {
         .remote_key
         .encrypt_session_key(&mut rng, state.session_key)?;
     cache
-        .create_session(state.user_id.clone(), encrypted_key)
+        .create_session(state.account_id, encrypted_key)
         .await?;
 
     let second_key = get_temp_session_key()?;
     let second_encrypted_key = state.remote_key.encrypt_session_key(&mut rng, second_key)?;
     cache
-        .create_session(state.user_id, second_encrypted_key)
+        .create_session(state.account_id, second_encrypted_key)
         .await?;
 
     Ok(())
@@ -142,11 +140,11 @@ async fn key_expired() -> Result<()> {
         .remote_key
         .encrypt_session_key(&mut rng, state.session_key)?;
     let session_id = cache
-        .create_session(state.user_id.clone(), encrypted_key)
+        .create_session(state.account_id, encrypted_key)
         .await?;
 
     // Verify key is expired.
-    match cache.find_session(session_id, state.user_id).await {
+    match cache.find_session(session_id).await {
         Ok(_) => panic!("Key should be expired"),
         Err(e) => {
             assert!(
@@ -169,14 +167,14 @@ async fn key_expired2() -> Result<()> {
         .remote_key
         .encrypt_session_key(&mut rng, state.session_key)?;
     let session_id = cache
-        .create_session(state.user_id.clone(), encrypted_key)
+        .create_session(state.account_id, encrypted_key)
         .await?;
 
     // Sleep for a while so key expires.
     tokio::time::sleep(Duration::from_secs(1)).await;
 
     // Verify key is expired.
-    match cache.find_session(session_id, state.user_id).await {
+    match cache.find_session(session_id).await {
         Ok(_) => panic!("Key should be expired"),
         Err(e) => {
             assert!(
@@ -198,9 +196,9 @@ fn get_temp_session_id() -> Uuid {
     Uuid::new_v4()
 }
 
-fn get_temp_user_id(rng: &mut StdRng) -> Result<UserId> {
-    // Deterministic seed. No need for our test to be nondeterministic.
-    Ok(UserId::new(rng)?)
+fn get_temp_account_id(rng: &mut StdRng) -> AccountId {
+    let id = rng.next_u64() as i64;
+    id.into()
 }
 
 fn get_temp_remote_key(rng: &mut StdRng) -> Result<RemoteStorageKey> {
