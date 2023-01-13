@@ -80,9 +80,8 @@ async fn audit_event<AUTH, DB: DataStore>(
     let audit_event = context
         .db
         .create_audit_event(request_id, account_name, &context.key_id, action, status)
-        .await
-        .map_err(|e| LockKeeperServerError::Database(Box::new(e)));
+        .await;
     if let Err(e) = audit_event {
-        handle_error(channel, e).await;
+        handle_error(channel, e.into()).await;
     };
 }

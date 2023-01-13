@@ -9,7 +9,7 @@ use crate::{
     run_parallel,
     test_suites::end_to_end::{
         operations::{authenticate, check_audit_events, compare_status_errors},
-        test_cases::init_test_state,
+        test_cases::{init_test_state, NO_SESSION},
     },
     utils::TestResult,
 };
@@ -50,7 +50,7 @@ async fn cannot_generate_after_logout(config: Config) -> Result<()> {
     client.logout().await.result?;
 
     let res = client.generate_secret().await;
-    compare_status_errors(res, Status::unauthenticated("No session key for this user"))?;
+    compare_status_errors(res, Status::unauthenticated(NO_SESSION))?;
 
     Ok(())
 }

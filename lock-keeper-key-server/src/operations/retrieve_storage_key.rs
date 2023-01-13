@@ -31,8 +31,7 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for RetrieveStorageKey 
         let user = context
             .db
             .find_account_by_id(user_id)
-            .await
-            .map_err(LockKeeperServerError::database)?
+            .await?
             .ok_or(LockKeeperServerError::InvalidAccount)?;
 
         // Send storage key if set

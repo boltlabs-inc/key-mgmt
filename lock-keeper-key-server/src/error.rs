@@ -1,4 +1,4 @@
-use crate::server::session_cache::SessionCacheError;
+use crate::{database::DatabaseError, server::session_cache::SessionCacheError};
 use std::path::PathBuf;
 use thiserror::Error;
 use tonic::Status;
@@ -39,7 +39,7 @@ pub enum LockKeeperServerError {
     #[error(transparent)]
     Bincode(#[from] bincode::Error),
     #[error("Database error: {0}")]
-    Database(Box<dyn std::error::Error + Send + Sync>),
+    Database(#[from] DatabaseError),
     #[error(transparent)]
     EnvVar(#[from] std::env::VarError),
     #[error(transparent)]
@@ -64,12 +64,6 @@ pub enum LockKeeperServerError {
     WebPki(#[from] tokio_rustls::webpki::Error),
 }
 
-impl LockKeeperServerError {
-    pub fn database(error: impl std::error::Error + Send + Sync + 'static) -> Self {
-        Self::Database(Box::new(error))
-    }
-}
-
 impl From<opaque_ke::errors::ProtocolError> for LockKeeperServerError {
     fn from(error: opaque_ke::errors::ProtocolError) -> Self {
         Self::OpaqueProtocol(error)
@@ -83,7 +77,7 @@ impl From<LockKeeperServerError> for Status {
         match error {
             LockKeeperServerError::SessionCache(ExpiredSession)
             | LockKeeperServerError::SessionCache(MissingSession) => {
-                Status::unauthenticated("No session key for this user")
+                Status::unauthenticated("No session for this user")
             }
             // Errors that are safe to return to the client
             LockKeeperServerError::AccountAlreadyRegistered
@@ -95,6 +89,7 @@ impl From<LockKeeperServerError> for Status {
             | LockKeeperServerError::StorageKeyNotSet => Status::internal(error.to_string()),
 
             LockKeeperServerError::TonicTransport(err) => Status::internal(err.to_string()),
+            LockKeeperServerError::Database(err) => err.into(),
             LockKeeperServerError::TonicStatus(status) => status,
             // These errors are are sanitized in the [`LockKeeperError`] module
             LockKeeperServerError::LockKeeper(err) => err.into(),
@@ -114,7 +109,6 @@ impl From<LockKeeperServerError> for Status {
             | LockKeeperServerError::Rustls(_)
             | LockKeeperServerError::StrumParseError(_)
             | LockKeeperServerError::Toml(_)
-            | LockKeeperServerError::Database(_)
             | LockKeeperServerError::WebPki(_) => Status::internal("Internal server error"),
         }
     }

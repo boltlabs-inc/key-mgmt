@@ -55,8 +55,7 @@ async fn store_storage_key<DB: DataStore>(
     let user = context
         .db
         .find_account_by_id(&user_id)
-        .await
-        .map_err(LockKeeperServerError::database)?
+        .await?
         .ok_or(LockKeeperServerError::InvalidAccount)?;
 
     if user.storage_key.is_some() {
@@ -66,19 +65,14 @@ async fn store_storage_key<DB: DataStore>(
     let store_key_result = context
         .db
         .set_storage_key(&user_id, client_message.storage_key)
-        .await
-        .map_err(|e| LockKeeperServerError::Database(Box::new(e)));
+        .await;
 
     // Delete user if we fail to set the storage key.
     if let Err(e) = store_key_result {
         error!("Failed to set storage key for user.");
-        context
-            .db
-            .delete_account(&user_id)
-            .await
-            .map_err(LockKeeperServerError::database)?;
+        context.db.delete_account(&user_id).await?;
         info!("Deleted user due to failure to set storage key.");
-        return Err(e);
+        return Err(e.into());
     }
 
     let reply = server::CreateStorageKeyResult { success: true };

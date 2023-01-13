@@ -51,11 +51,7 @@ async fn register_start<DB: DataStore>(
     let start_message: client::RegisterStart = channel.receive().await?;
 
     // Abort registration if UserId already exists
-    let user = context
-        .db
-        .find_account(&start_message.account_name)
-        .await
-        .map_err(LockKeeperServerError::database)?;
+    let user = context.db.find_account(&start_message.account_name).await?;
 
     match user {
         // Abort registration if UserId already exists
@@ -105,19 +101,12 @@ async fn register_finish<DB: DataStore>(
         };
 
         // If the user ID is fresh, create the new user
-        if context
-            .db
-            .find_account_by_id(&user_id)
-            .await
-            .map_err(LockKeeperServerError::database)?
-            .is_none()
-        {
+        if context.db.find_account_by_id(&user_id).await?.is_none() {
             info!("Fresh user id generated: {:?}", user_id);
             let _user = context
                 .db
                 .create_account(&user_id, account_name, &server_registration)
-                .await
-                .map_err(LockKeeperServerError::database)?;
+                .await?;
             break;
         }
     }

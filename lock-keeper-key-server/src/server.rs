@@ -168,8 +168,7 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         let user_id = context
             .db
             .find_account(metadata.account_name())
-            .await
-            .map_err(LockKeeperServerError::database)?
+            .await?
             .ok_or(LockKeeperServerError::InvalidAccount)?
             .user_id;
 
