@@ -16,7 +16,7 @@ use lock_keeper::{
         operations::ClientAction,
     },
 };
-use lock_keeper_key_server::database::{DataStore, SecretFilter};
+use lock_keeper_key_server::database::{DataStore, DatabaseError, SecretFilter};
 use opaque_ke::ServerRegistration;
 use sqlx::{postgres::PgPoolOptions, Encode, PgPool, Postgres, QueryBuilder, Type};
 use std::{
@@ -36,8 +36,6 @@ pub struct PostgresDB {
 
 #[async_trait]
 impl DataStore for PostgresDB {
-    type Error = PostgresError;
-
     async fn create_audit_event(
         &self,
         request_id: Uuid,
@@ -45,9 +43,10 @@ impl DataStore for PostgresDB {
         key_id: &Option<KeyId>,
         action: ClientAction,
         status: EventStatus,
-    ) -> Result<(), PostgresError> {
-        self.create_audit_event(request_id, account_name, key_id, action, status)
-            .await
+    ) -> Result<(), DatabaseError> {
+        Ok(self
+            .create_audit_event(request_id, account_name, key_id, action, status)
+            .await?)
     }
 
     async fn find_audit_events(
@@ -55,13 +54,14 @@ impl DataStore for PostgresDB {
         account_name: &AccountName,
         event_type: EventType,
         options: AuditEventOptions,
-    ) -> Result<Vec<AuditEvent>, Self::Error> {
-        self.find_audit_events(account_name, event_type, options)
-            .await
+    ) -> Result<Vec<AuditEvent>, DatabaseError> {
+        Ok(self
+            .find_audit_events(account_name, event_type, options)
+            .await?)
     }
 
-    async fn add_secret(&self, secret: StoredSecret) -> Result<(), Self::Error> {
-        self.add_secret(secret).await
+    async fn add_secret(&self, secret: StoredSecret) -> Result<(), DatabaseError> {
+        Ok(self.add_secret(secret).await?)
     }
 
     async fn get_secret(
@@ -69,8 +69,8 @@ impl DataStore for PostgresDB {
         user_id: &UserId,
         key_id: &KeyId,
         filter: SecretFilter,
-    ) -> Result<StoredSecret, Self::Error> {
-        self.get_secret(user_id, key_id, filter).await
+    ) -> Result<StoredSecret, DatabaseError> {
+        Ok(self.get_secret(user_id, key_id, filter).await?)
     }
 
     async fn create_account(
@@ -78,32 +78,33 @@ impl DataStore for PostgresDB {
         user_id: &UserId,
         account_name: &AccountName,
         server_registration: &ServerRegistration<OpaqueCipherSuite>,
-    ) -> Result<Account, Self::Error> {
-        self.create_account(user_id, account_name, server_registration)
-            .await
+    ) -> Result<Account, DatabaseError> {
+        Ok(self
+            .create_account(user_id, account_name, server_registration)
+            .await?)
     }
 
     async fn find_account(
         &self,
         account_name: &AccountName,
-    ) -> Result<Option<Account>, Self::Error> {
-        self.find_account(account_name).await
+    ) -> Result<Option<Account>, DatabaseError> {
+        Ok(self.find_account(account_name).await?)
     }
 
-    async fn find_account_by_id(&self, user_id: &UserId) -> Result<Option<Account>, Self::Error> {
-        self.find_account_by_id(user_id).await
+    async fn find_account_by_id(&self, user_id: &UserId) -> Result<Option<Account>, DatabaseError> {
+        Ok(self.find_account_by_id(user_id).await?)
     }
 
-    async fn delete_account(&self, user_id: &UserId) -> Result<(), Self::Error> {
-        self.delete_account(user_id).await
+    async fn delete_account(&self, user_id: &UserId) -> Result<(), DatabaseError> {
+        Ok(self.delete_account(user_id).await?)
     }
 
     async fn set_storage_key(
         &self,
         user_id: &UserId,
         storage_key: Encrypted<StorageKey>,
-    ) -> Result<(), Self::Error> {
-        self.set_storage_key(user_id, storage_key).await
+    ) -> Result<(), DatabaseError> {
+        Ok(self.set_storage_key(user_id, storage_key).await?)
     }
 }
 
@@ -314,7 +315,7 @@ impl PostgresDB {
                     // The key doesn't even exist.
                     0 => Err(PostgresError::NoEntry),
                     // The key exists but the secret_type or user_id were incorrect.
-                    1 => Err(PostgresError::IncorrectAssociatedKeyData),
+                    1 => Err(PostgresError::IncorrectKeyMetadata),
                     _ => Err(PostgresError::InvalidRowCountFound),
                 }
             }
@@ -441,7 +442,7 @@ fn append_value_list<'a, I: 'a + Encode<'a, Postgres> + Send + Type<Postgres>>(
     values: impl Iterator<Item = I> + Clone,
 ) -> Result<(), PostgresError> {
     if values.clone().count() == 0 {
-        return Err(PostgresError::EmptyIterator);
+        return Err(PostgresError::InvalidAuditEventOptions);
     }
     query.push("(");
     let mut separated = query.separated(", ");

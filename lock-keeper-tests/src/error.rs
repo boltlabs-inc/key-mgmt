@@ -36,6 +36,8 @@ pub enum LockKeeperTestError {
     LockKeeperSessionCache(#[from] SessionCachePostgresError),
     #[error("SessionCacheError: {0:?}")]
     SessionCache(#[from] lock_keeper_key_server::server::session_cache::SessionCacheError),
+    #[error("DatabaseError: {0:?}")]
+    Database(#[from] lock_keeper_key_server::database::DatabaseError),
     #[error("PostgresError error: {0:?}")]
     LockKeeperPostgres(#[from] PostgresError),
     #[error("RandError: {0:?}")]

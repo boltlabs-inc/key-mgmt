@@ -41,8 +41,7 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for RemoteSignBytes {
         let encrypted_key: Encrypted<SigningKeyPair> = context
             .db
             .get_secret(user_id, &request.key_id, Default::default())
-            .await
-            .map_err(LockKeeperServerError::database)?
+            .await?
             .try_into()?;
         info!("Signing key found. Signing...");
 

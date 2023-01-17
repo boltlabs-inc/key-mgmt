@@ -63,11 +63,7 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for ImportSigningKey {
         )?;
 
         // Check validity of ciphertext and store in DB
-        context
-            .db
-            .add_secret(secret)
-            .await
-            .map_err(LockKeeperServerError::database)?;
+        context.db.add_secret(secret).await?;
 
         // Serialize KeyId and send to client
         let reply = server::Response {

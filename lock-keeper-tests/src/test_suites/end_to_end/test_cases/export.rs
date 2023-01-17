@@ -15,7 +15,7 @@ use crate::{
             authenticate, check_audit_events, compare_errors, compare_status_errors,
             generate_fake_key_id, import_signing_key,
         },
-        test_cases::init_test_state,
+        test_cases::{init_test_state, NO_ENTRY_FOUND, NO_SESSION, WRONG_KEY_DATA},
     },
     utils::TestResult,
 };
@@ -70,7 +70,7 @@ async fn cannot_export_fake_key(config: Config) -> Result<()> {
     let fake_key_id = generate_fake_key_id(&client).await?;
     let bytes_res = client.export_secret(&fake_key_id).await;
     let request_id = bytes_res.metadata.clone().unwrap().request_id;
-    compare_errors(bytes_res, Status::internal("Internal server error"));
+    compare_errors(bytes_res, Status::internal(NO_ENTRY_FOUND));
     check_audit_events(
         &state,
         EventStatus::Failed,
@@ -89,7 +89,7 @@ async fn cannot_export_signing_key_as_secret(config: Config) -> Result<()> {
     let (key_id, _) = import_signing_key(&client).await.result?;
     let export_res = client.export_secret(&key_id).await;
     let request_id = export_res.metadata.clone().unwrap().request_id;
-    compare_errors(export_res, Status::internal("Internal server error"));
+    compare_errors(export_res, Status::internal(WRONG_KEY_DATA));
     check_audit_events(
         &state,
         EventStatus::Failed,
@@ -112,7 +112,7 @@ async fn cannot_export_after_logout(config: Config) -> Result<()> {
     client.logout().await.result?;
 
     let res = client.export_secret(&key_id).await;
-    compare_status_errors(res, Status::unauthenticated("No session key for this user"))?;
+    compare_status_errors(res, Status::unauthenticated(NO_SESSION))?;
 
     Ok(())
 }
@@ -150,7 +150,7 @@ async fn cannot_export_fake_signing_key(config: Config) -> Result<()> {
     let fake_key_id = generate_fake_key_id(&client).await?;
     let export_res = client.export_signing_key(&fake_key_id).await;
     let request_id = export_res.metadata.clone().unwrap().request_id;
-    compare_errors(export_res, Status::internal("Internal server error"));
+    compare_errors(export_res, Status::internal(NO_ENTRY_FOUND));
     check_audit_events(
         &state,
         EventStatus::Failed,
@@ -172,7 +172,7 @@ async fn cannot_export_secret_as_signing_key(config: Config) -> Result<()> {
     } = client.generate_secret().await.result?;
     let export_res = client.export_signing_key(&key_id).await;
     let request_id = export_res.metadata.clone().unwrap().request_id;
-    compare_errors(export_res, Status::internal("Internal server error"));
+    compare_errors(export_res, Status::internal(WRONG_KEY_DATA));
     check_audit_events(
         &state,
         EventStatus::Failed,
@@ -192,7 +192,7 @@ async fn cannot_export_signing_key_after_logout(config: Config) -> Result<()> {
     client.logout().await.result?;
 
     let res = client.export_signing_key(&key_id).await;
-    compare_status_errors(res, Status::unauthenticated("No session key for this user"))?;
+    compare_status_errors(res, Status::unauthenticated(NO_SESSION))?;
 
     Ok(())
 }

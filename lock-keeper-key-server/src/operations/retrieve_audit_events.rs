@@ -31,8 +31,7 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for RetrieveAuditEvents
         let audit_events = context
             .db
             .find_audit_events(account_name, request.event_type, request.options)
-            .await
-            .map_err(LockKeeperServerError::database)?;
+            .await?;
 
         let reply = server::Response {
             summary_record: audit_events,

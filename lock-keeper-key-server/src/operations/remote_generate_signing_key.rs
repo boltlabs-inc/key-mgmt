@@ -63,11 +63,7 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for RemoteGenerateSigni
         )?;
 
         // Store key in database
-        context
-            .db
-            .add_secret(secret)
-            .await
-            .map_err(LockKeeperServerError::database)?;
+        context.db.add_secret(secret).await?;
 
         channel
             .send(server::ReturnKeyId { key_id, public_key })

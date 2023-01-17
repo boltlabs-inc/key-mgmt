@@ -14,7 +14,7 @@ use crate::{
     run_parallel,
     test_suites::end_to_end::{
         operations::{authenticate, check_audit_events, compare_status_errors},
-        test_cases::init_test_state,
+        test_cases::{init_test_state, NO_SESSION},
     },
     utils::{self, TestResult, RNG_SEED},
 };
@@ -74,7 +74,7 @@ async fn cannot_remote_sign_after_logout(config: Config) -> Result<()> {
     let mut rng = StdRng::from_seed(*RNG_SEED);
     let data = SignableBytes(utils::random_bytes(&mut rng, 100));
     let res = client.remote_sign_bytes(res.key_id, data).await;
-    compare_status_errors(res, Status::unauthenticated("No session key for this user"))?;
+    compare_status_errors(res, Status::unauthenticated(NO_SESSION))?;
 
     Ok(())
 }

@@ -44,8 +44,7 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for RetrieveSecret {
         let stored_secret = context
             .db
             .get_secret(user_id, &request.key_id, secret_filter)
-            .await
-            .map_err(LockKeeperServerError::database)?;
+            .await?;
 
         let reply = server::Response {
             secret: RetrievedSecret::try_from_stored_secret(

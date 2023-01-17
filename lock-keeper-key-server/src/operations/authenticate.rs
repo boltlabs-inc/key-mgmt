@@ -59,15 +59,11 @@ async fn authenticate_start<DB: DataStore>(
 
     // Check that user with corresponding UserId exists and get their
     // server_registration
-    let (server_registration, user_id) = match context
-        .db
-        .find_account(&start_message.account_name)
-        .await
-        .map_err(LockKeeperServerError::database)?
-    {
-        Some(user) => user.into_parts(),
-        None => return Err(LockKeeperServerError::InvalidAccount),
-    };
+    let (server_registration, user_id) =
+        match context.db.find_account(&start_message.account_name).await? {
+            Some(user) => user.into_parts(),
+            None => return Err(LockKeeperServerError::InvalidAccount),
+        };
 
     logging::record_field("user_id", &user_id);
     debug!("User ID found.");

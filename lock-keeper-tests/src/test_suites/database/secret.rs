@@ -1,8 +1,7 @@
 //! Integration tests for secret objects in the database
 
 use colored::Colorize;
-use lock_keeper_key_server::database::{DataStore, SecretFilter};
-use lock_keeper_postgres::PostgresError;
+use lock_keeper_key_server::database::{DataStore, DatabaseError, SecretFilter};
 use rand::{rngs::StdRng, SeedableRng};
 
 use crate::{config::TestFilters, error::Result, run_parallel, utils::TestResult};
@@ -70,19 +69,19 @@ async fn cannot_get_another_users_secrets(db: TestDatabase) -> Result<()> {
         db.db
             .get_secret(&other_user, &key_id1, Default::default())
             .await,
-        Err(PostgresError::IncorrectAssociatedKeyData)
+        Err(DatabaseError::IncorrectKeyMetadata)
     ));
     assert!(matches!(
         db.db
             .get_secret(&other_user, &key_id2, Default::default())
             .await,
-        Err(PostgresError::IncorrectAssociatedKeyData)
+        Err(DatabaseError::IncorrectKeyMetadata)
     ));
     assert!(matches!(
         db.db
             .get_secret(&other_user, &key_id3, Default::default())
             .await,
-        Err(PostgresError::IncorrectAssociatedKeyData)
+        Err(DatabaseError::IncorrectKeyMetadata)
     ));
 
     Ok(())
@@ -109,7 +108,7 @@ async fn incorrect_key_type_specified(db: TestDatabase) -> Result<()> {
         db.db
             .get_secret(&user, &key_id, SecretFilter::secret_type("Foo"))
             .await,
-        Err(PostgresError::IncorrectAssociatedKeyData)
+        Err(DatabaseError::IncorrectKeyMetadata)
     ));
 
     Ok(())

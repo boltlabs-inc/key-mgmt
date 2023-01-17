@@ -15,7 +15,7 @@ use crate::{
             authenticate, check_audit_events, compare_errors, compare_status_errors,
             generate_fake_key_id,
         },
-        test_cases::init_test_state,
+        test_cases::{init_test_state, NO_ENTRY_FOUND, NO_SESSION},
     },
     utils::TestResult,
 };
@@ -95,7 +95,7 @@ async fn cannot_retrieve_fake_key(config: Config) -> Result<()> {
         .retrieve_secret(&fake_key_id, RetrieveContext::LocalOnly)
         .await;
     let request_id = local_storage_res.metadata.clone().unwrap().request_id;
-    compare_errors(local_storage_res, Status::internal("Internal server error"));
+    compare_errors(local_storage_res, Status::internal(NO_ENTRY_FOUND));
     check_audit_events(
         &state,
         EventStatus::Failed,
@@ -119,7 +119,7 @@ async fn cannot_retrieve_after_logout(config: Config) -> Result<()> {
     client.logout().await.result?;
 
     let res = client.retrieve_secret(&key_id, RetrieveContext::Null).await;
-    compare_status_errors(res, Status::unauthenticated("No session key for this user"))?;
+    compare_status_errors(res, Status::unauthenticated(NO_SESSION))?;
 
     Ok(())
 }
