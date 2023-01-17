@@ -313,7 +313,6 @@
 <span id="313">313</span>
 <span id="314">314</span>
 <span id="315">315</span>
-<span id="316">316</span>
 </pre><pre class="rust"><code><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>opaque_storage;
 <span class="kw">mod </span>operation;
 <span class="kw">mod </span>service;
@@ -484,8 +483,7 @@
         <span class="kw">let </span>user_id = context
             .db
             .find_account(metadata.account_name())
-            .<span class="kw">await
-            </span>.map_err(LockKeeperServerError::database)<span class="question-mark">?
+            .<span class="kw">await</span><span class="question-mark">?
             </span>.ok_or(LockKeeperServerError::InvalidAccount)<span class="question-mark">?
             </span>.user_id;
 

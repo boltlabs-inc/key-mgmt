@@ -43,6 +43,8 @@
 <span id="43">43</span>
 <span id="44">44</span>
 <span id="45">45</span>
+<span id="46">46</span>
+<span id="47">47</span>
 </pre><pre class="rust"><code><span class="kw">use </span>lock_keeper_postgres::PostgresError;
 <span class="kw">use </span>lock_keeper_session_cache_sql::Error <span class="kw">as </span>SessionCachePostgresError;
 <span class="kw">use </span>thiserror::Error;
@@ -81,6 +83,8 @@
     </span>LockKeeperSessionCache(<span class="attribute">#[from] </span>SessionCachePostgresError),
     <span class="attribute">#[error(<span class="string">&quot;SessionCacheError: {0:?}&quot;</span>)]
     </span>SessionCache(<span class="attribute">#[from] </span>lock_keeper_key_server::server::session_cache::SessionCacheError),
+    <span class="attribute">#[error(<span class="string">&quot;DatabaseError: {0:?}&quot;</span>)]
+    </span>Database(<span class="attribute">#[from] </span>lock_keeper_key_server::database::DatabaseError),
     <span class="attribute">#[error(<span class="string">&quot;PostgresError error: {0:?}&quot;</span>)]
     </span>LockKeeperPostgres(<span class="attribute">#[from] </span>PostgresError),
     <span class="attribute">#[error(<span class="string">&quot;RandError: {0:?}&quot;</span>)]

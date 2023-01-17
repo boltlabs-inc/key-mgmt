@@ -119,17 +119,6 @@
 <span id="119">119</span>
 <span id="120">120</span>
 <span id="121">121</span>
-<span id="122">122</span>
-<span id="123">123</span>
-<span id="124">124</span>
-<span id="125">125</span>
-<span id="126">126</span>
-<span id="127">127</span>
-<span id="128">128</span>
-<span id="129">129</span>
-<span id="130">130</span>
-<span id="131">131</span>
-<span id="132">132</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{
     error::LockKeeperServerError,
     server::{Context, Operation},
@@ -183,11 +172,7 @@
     </span><span class="kw">let </span>start_message: client::RegisterStart = channel.receive().<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="comment">// Abort registration if UserId already exists
-    </span><span class="kw">let </span>user = context
-        .db
-        .find_account(<span class="kw-2">&amp;</span>start_message.account_name)
-        .<span class="kw">await
-        </span>.map_err(LockKeeperServerError::database)<span class="question-mark">?</span>;
+    </span><span class="kw">let </span>user = context.db.find_account(<span class="kw-2">&amp;</span>start_message.account_name).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="kw">match </span>user {
         <span class="comment">// Abort registration if UserId already exists
@@ -237,19 +222,12 @@
         </span>};
 
         <span class="comment">// If the user ID is fresh, create the new user
-        </span><span class="kw">if </span>context
-            .db
-            .find_account_by_id(<span class="kw-2">&amp;</span>user_id)
-            .<span class="kw">await
-            </span>.map_err(LockKeeperServerError::database)<span class="question-mark">?
-            </span>.is_none()
-        {
+        </span><span class="kw">if </span>context.db.find_account_by_id(<span class="kw-2">&amp;</span>user_id).<span class="kw">await</span><span class="question-mark">?</span>.is_none() {
             <span class="macro">info!</span>(<span class="string">&quot;Fresh user id generated: {:?}&quot;</span>, user_id);
             <span class="kw">let </span>_user = context
                 .db
                 .create_account(<span class="kw-2">&amp;</span>user_id, account_name, <span class="kw-2">&amp;</span>server_registration)
-                .<span class="kw">await
-                </span>.map_err(LockKeeperServerError::database)<span class="question-mark">?</span>;
+                .<span class="kw">await</span><span class="question-mark">?</span>;
             <span class="kw">break</span>;
         }
     }

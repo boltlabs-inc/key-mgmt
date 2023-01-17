@@ -59,7 +59,6 @@
 <span id="59">59</span>
 <span id="60">60</span>
 <span id="61">61</span>
-<span id="62">62</span>
 </pre><pre class="rust"><code><span class="doccomment">//! This operation allows client to specify a key ID for a key that was remotely
 //! generated on the server and use this key to sign a message.
 </span><span class="kw">use crate</span>::{
@@ -103,8 +102,7 @@
         <span class="kw">let </span>encrypted_key: Encrypted&lt;SigningKeyPair&gt; = context
             .db
             .get_secret(user_id, <span class="kw-2">&amp;</span>request.key_id, Default::default())
-            .<span class="kw">await
-            </span>.map_err(LockKeeperServerError::database)<span class="question-mark">?
+            .<span class="kw">await</span><span class="question-mark">?
             </span>.try_into()<span class="question-mark">?</span>;
         <span class="macro">info!</span>(<span class="string">&quot;Signing key found. Signing...&quot;</span>);
 

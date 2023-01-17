@@ -30,6 +30,11 @@
 <span id="30">30</span>
 <span id="31">31</span>
 <span id="32">32</span>
+<span id="33">33</span>
+<span id="34">34</span>
+<span id="35">35</span>
+<span id="36">36</span>
+<span id="37">37</span>
 </pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::utils::tagged;
 <span class="kw">use </span>lock_keeper::types::database::user::AccountName;
 <span class="kw">use </span>lock_keeper_client::{client::Password, Config, LockKeeperClient, LockKeeperClientError};
@@ -43,6 +48,11 @@
 <span class="kw">pub mod </span>remote_generate;
 <span class="kw">pub mod </span>remote_sign;
 <span class="kw">pub mod </span>retrieve;
+
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const </span>NO_ENTRY_FOUND: <span class="kw-2">&amp;</span>str = <span class="string">&quot;No such entry in table.&quot;</span>;
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const </span>NO_SESSION: <span class="kw-2">&amp;</span>str = <span class="string">&quot;No session for this user&quot;</span>;
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const </span>WRONG_KEY_DATA: <span class="kw-2">&amp;</span>str =
+    <span class="string">&quot;Key ID exists but associated user ID or key type were incorrect.&quot;</span>;
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>TestState {
     <span class="kw">pub</span>(<span class="kw">crate</span>) account_name: AccountName,

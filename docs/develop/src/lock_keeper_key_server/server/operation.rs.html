@@ -85,7 +85,6 @@
 <span id="85">85</span>
 <span id="86">86</span>
 <span id="87">87</span>
-<span id="88">88</span>
 </pre><pre class="rust"><code><span class="kw">use </span>async_trait::async_trait;
 
 <span class="kw">use </span>lock_keeper::{
@@ -168,10 +167,9 @@
     <span class="kw">let </span>audit_event = context
         .db
         .create_audit_event(request_id, account_name, <span class="kw-2">&amp;</span>context.key_id, action, status)
-        .<span class="kw">await
-        </span>.map_err(|e| LockKeeperServerError::Database(Box::new(e)));
+        .<span class="kw">await</span>;
     <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = audit_event {
-        handle_error(channel, e).<span class="kw">await</span>;
+        handle_error(channel, e.into()).<span class="kw">await</span>;
     };
 }
 </code></pre></div>

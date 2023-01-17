@@ -78,10 +78,6 @@
 <span id="78">78</span>
 <span id="79">79</span>
 <span id="80">80</span>
-<span id="81">81</span>
-<span id="82">82</span>
-<span id="83">83</span>
-<span id="84">84</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Import signing key operation. This protocol allows the client to import a
 //! key into the server.
 </span><span class="kw">use crate</span>::{
@@ -147,11 +143,7 @@
         )<span class="question-mark">?</span>;
 
         <span class="comment">// Check validity of ciphertext and store in DB
-        </span>context
-            .db
-            .add_secret(secret)
-            .<span class="kw">await
-            </span>.map_err(LockKeeperServerError::database)<span class="question-mark">?</span>;
+        </span>context.db.add_secret(secret).<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="comment">// Serialize KeyId and send to client
         </span><span class="kw">let </span>reply = server::Response {

@@ -42,7 +42,6 @@
 <span id="42">42</span>
 <span id="43">43</span>
 <span id="44">44</span>
-<span id="45">45</span>
 </pre><pre class="rust"><code><span class="doccomment">//! This operation allows client to retrieve the stored audit event logs.
 </span><span class="kw">use crate</span>::{
     database::DataStore,
@@ -76,8 +75,7 @@
         <span class="kw">let </span>audit_events = context
             .db
             .find_audit_events(account_name, request.event_type, request.options)
-            .<span class="kw">await
-            </span>.map_err(LockKeeperServerError::database)<span class="question-mark">?</span>;
+            .<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="kw">let </span>reply = server::Response {
             summary_record: audit_events,

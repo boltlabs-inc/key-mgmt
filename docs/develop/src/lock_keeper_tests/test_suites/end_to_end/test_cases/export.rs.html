@@ -213,7 +213,7 @@
             authenticate, check_audit_events, compare_errors, compare_status_errors,
             generate_fake_key_id, import_signing_key,
         },
-        test_cases::init_test_state,
+        test_cases::{init_test_state, NO_ENTRY_FOUND, NO_SESSION, WRONG_KEY_DATA},
     },
     utils::TestResult,
 };
@@ -268,7 +268,7 @@
     <span class="kw">let </span>fake_key_id = generate_fake_key_id(<span class="kw-2">&amp;</span>client).<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="kw">let </span>bytes_res = client.export_secret(<span class="kw-2">&amp;</span>fake_key_id).<span class="kw">await</span>;
     <span class="kw">let </span>request_id = bytes_res.metadata.clone().unwrap().request_id;
-    compare_errors(bytes_res, Status::internal(<span class="string">&quot;Internal server error&quot;</span>));
+    compare_errors(bytes_res, Status::internal(NO_ENTRY_FOUND));
     check_audit_events(
         <span class="kw-2">&amp;</span>state,
         EventStatus::Failed,
@@ -287,7 +287,7 @@
     <span class="kw">let </span>(key_id, <span class="kw">_</span>) = import_signing_key(<span class="kw-2">&amp;</span>client).<span class="kw">await</span>.result<span class="question-mark">?</span>;
     <span class="kw">let </span>export_res = client.export_secret(<span class="kw-2">&amp;</span>key_id).<span class="kw">await</span>;
     <span class="kw">let </span>request_id = export_res.metadata.clone().unwrap().request_id;
-    compare_errors(export_res, Status::internal(<span class="string">&quot;Internal server error&quot;</span>));
+    compare_errors(export_res, Status::internal(WRONG_KEY_DATA));
     check_audit_events(
         <span class="kw-2">&amp;</span>state,
         EventStatus::Failed,
@@ -310,7 +310,7 @@
     client.logout().<span class="kw">await</span>.result<span class="question-mark">?</span>;
 
     <span class="kw">let </span>res = client.export_secret(<span class="kw-2">&amp;</span>key_id).<span class="kw">await</span>;
-    compare_status_errors(res, Status::unauthenticated(<span class="string">&quot;No session key for this user&quot;</span>))<span class="question-mark">?</span>;
+    compare_status_errors(res, Status::unauthenticated(NO_SESSION))<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
 }
@@ -348,7 +348,7 @@
     <span class="kw">let </span>fake_key_id = generate_fake_key_id(<span class="kw-2">&amp;</span>client).<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="kw">let </span>export_res = client.export_signing_key(<span class="kw-2">&amp;</span>fake_key_id).<span class="kw">await</span>;
     <span class="kw">let </span>request_id = export_res.metadata.clone().unwrap().request_id;
-    compare_errors(export_res, Status::internal(<span class="string">&quot;Internal server error&quot;</span>));
+    compare_errors(export_res, Status::internal(NO_ENTRY_FOUND));
     check_audit_events(
         <span class="kw-2">&amp;</span>state,
         EventStatus::Failed,
@@ -370,7 +370,7 @@
     } = client.generate_secret().<span class="kw">await</span>.result<span class="question-mark">?</span>;
     <span class="kw">let </span>export_res = client.export_signing_key(<span class="kw-2">&amp;</span>key_id).<span class="kw">await</span>;
     <span class="kw">let </span>request_id = export_res.metadata.clone().unwrap().request_id;
-    compare_errors(export_res, Status::internal(<span class="string">&quot;Internal server error&quot;</span>));
+    compare_errors(export_res, Status::internal(WRONG_KEY_DATA));
     check_audit_events(
         <span class="kw-2">&amp;</span>state,
         EventStatus::Failed,
@@ -390,7 +390,7 @@
     client.logout().<span class="kw">await</span>.result<span class="question-mark">?</span>;
 
     <span class="kw">let </span>res = client.export_signing_key(<span class="kw-2">&amp;</span>key_id).<span class="kw">await</span>;
-    compare_status_errors(res, Status::unauthenticated(<span class="string">&quot;No session key for this user&quot;</span>))<span class="question-mark">?</span>;
+    compare_status_errors(res, Status::unauthenticated(NO_SESSION))<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
 }

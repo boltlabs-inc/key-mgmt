@@ -134,10 +134,6 @@
 <span id="134">134</span>
 <span id="135">135</span>
 <span id="136">136</span>
-<span id="137">137</span>
-<span id="138">138</span>
-<span id="139">139</span>
-<span id="140">140</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{
     error::LockKeeperServerError,
     server::{Context, Operation},
@@ -199,15 +195,11 @@
 
     <span class="comment">// Check that user with corresponding UserId exists and get their
     // server_registration
-    </span><span class="kw">let </span>(server_registration, user_id) = <span class="kw">match </span>context
-        .db
-        .find_account(<span class="kw-2">&amp;</span>start_message.account_name)
-        .<span class="kw">await
-        </span>.map_err(LockKeeperServerError::database)<span class="question-mark">?
-    </span>{
-        <span class="prelude-val">Some</span>(user) =&gt; user.into_parts(),
-        <span class="prelude-val">None </span>=&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(LockKeeperServerError::InvalidAccount),
-    };
+    </span><span class="kw">let </span>(server_registration, user_id) =
+        <span class="kw">match </span>context.db.find_account(<span class="kw-2">&amp;</span>start_message.account_name).<span class="kw">await</span><span class="question-mark">? </span>{
+            <span class="prelude-val">Some</span>(user) =&gt; user.into_parts(),
+            <span class="prelude-val">None </span>=&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(LockKeeperServerError::InvalidAccount),
+        };
 
     logging::record_field(<span class="string">&quot;user_id&quot;</span>, <span class="kw-2">&amp;</span>user_id);
     <span class="macro">debug!</span>(<span class="string">&quot;User ID found.&quot;</span>);

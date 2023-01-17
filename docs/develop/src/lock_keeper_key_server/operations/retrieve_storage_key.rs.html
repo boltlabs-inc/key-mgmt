@@ -47,7 +47,6 @@
 <span id="47">47</span>
 <span id="48">48</span>
 <span id="49">49</span>
-<span id="50">50</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{
     database::DataStore,
     server::{Context, Operation},
@@ -81,8 +80,7 @@
         </span><span class="kw">let </span>user = context
             .db
             .find_account_by_id(user_id)
-            .<span class="kw">await
-            </span>.map_err(LockKeeperServerError::database)<span class="question-mark">?
+            .<span class="kw">await</span><span class="question-mark">?
             </span>.ok_or(LockKeeperServerError::InvalidAccount)<span class="question-mark">?</span>;
 
         <span class="comment">// Send storage key if set

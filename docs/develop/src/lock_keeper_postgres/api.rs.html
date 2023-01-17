@@ -451,6 +451,7 @@
 <span id="451">451</span>
 <span id="452">452</span>
 <span id="453">453</span>
+<span id="454">454</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{
     types::{AccountDB, AuditEventDB, SecretDB},
     Config, PostgresError,
@@ -469,7 +470,7 @@
         operations::ClientAction,
     },
 };
-<span class="kw">use </span>lock_keeper_key_server::database::{DataStore, SecretFilter};
+<span class="kw">use </span>lock_keeper_key_server::database::{DataStore, DatabaseError, SecretFilter};
 <span class="kw">use </span>opaque_ke::ServerRegistration;
 <span class="kw">use </span>sqlx::{postgres::PgPoolOptions, Encode, PgPool, Postgres, QueryBuilder, Type};
 <span class="kw">use </span>std::{
@@ -489,8 +490,6 @@
 
 <span class="attribute">#[async_trait]
 </span><span class="kw">impl </span>DataStore <span class="kw">for </span>PostgresDB {
-    <span class="kw">type </span>Error = PostgresError;
-
     <span class="kw">async fn </span>create_audit_event(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         request_id: Uuid,
@@ -498,66 +497,69 @@
         key_id: <span class="kw-2">&amp;</span><span class="prelude-ty">Option</span>&lt;KeyId&gt;,
         action: ClientAction,
         status: EventStatus,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), PostgresError&gt; {
-        <span class="self">self</span>.create_audit_event(request_id, account_name, key_id, action, status)
-            .<span class="kw">await
-    </span>}
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), DatabaseError&gt; {
+        <span class="prelude-val">Ok</span>(<span class="self">self
+            </span>.create_audit_event(request_id, account_name, key_id, action, status)
+            .<span class="kw">await</span><span class="question-mark">?</span>)
+    }
 
     <span class="kw">async fn </span>find_audit_events(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         account_name: <span class="kw-2">&amp;</span>AccountName,
         event_type: EventType,
         options: AuditEventOptions,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;AuditEvent&gt;, <span class="self">Self</span>::Error&gt; {
-        <span class="self">self</span>.find_audit_events(account_name, event_type, options)
-            .<span class="kw">await
-    </span>}
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;AuditEvent&gt;, DatabaseError&gt; {
+        <span class="prelude-val">Ok</span>(<span class="self">self
+            </span>.find_audit_events(account_name, event_type, options)
+            .<span class="kw">await</span><span class="question-mark">?</span>)
+    }
 
-    <span class="kw">async fn </span>add_secret(<span class="kw-2">&amp;</span><span class="self">self</span>, secret: StoredSecret) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt; {
-        <span class="self">self</span>.add_secret(secret).<span class="kw">await
-    </span>}
+    <span class="kw">async fn </span>add_secret(<span class="kw-2">&amp;</span><span class="self">self</span>, secret: StoredSecret) -&gt; <span class="prelude-ty">Result</span>&lt;(), DatabaseError&gt; {
+        <span class="prelude-val">Ok</span>(<span class="self">self</span>.add_secret(secret).<span class="kw">await</span><span class="question-mark">?</span>)
+    }
 
     <span class="kw">async fn </span>get_secret(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         user_id: <span class="kw-2">&amp;</span>UserId,
         key_id: <span class="kw-2">&amp;</span>KeyId,
         filter: SecretFilter,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;StoredSecret, <span class="self">Self</span>::Error&gt; {
-        <span class="self">self</span>.get_secret(user_id, key_id, filter).<span class="kw">await
-    </span>}
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;StoredSecret, DatabaseError&gt; {
+        <span class="prelude-val">Ok</span>(<span class="self">self</span>.get_secret(user_id, key_id, filter).<span class="kw">await</span><span class="question-mark">?</span>)
+    }
 
     <span class="kw">async fn </span>create_account(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         user_id: <span class="kw-2">&amp;</span>UserId,
         account_name: <span class="kw-2">&amp;</span>AccountName,
         server_registration: <span class="kw-2">&amp;</span>ServerRegistration&lt;OpaqueCipherSuite&gt;,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;Account, <span class="self">Self</span>::Error&gt; {
-        <span class="self">self</span>.create_account(user_id, account_name, server_registration)
-            .<span class="kw">await
-    </span>}
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Account, DatabaseError&gt; {
+        <span class="prelude-val">Ok</span>(<span class="self">self
+            </span>.create_account(user_id, account_name, server_registration)
+            .<span class="kw">await</span><span class="question-mark">?</span>)
+    }
 
     <span class="kw">async fn </span>find_account(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         account_name: <span class="kw-2">&amp;</span>AccountName,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Account&gt;, <span class="self">Self</span>::Error&gt; {
-        <span class="self">self</span>.find_account(account_name).<span class="kw">await
-    </span>}
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Account&gt;, DatabaseError&gt; {
+        <span class="prelude-val">Ok</span>(<span class="self">self</span>.find_account(account_name).<span class="kw">await</span><span class="question-mark">?</span>)
+    }
 
-    <span class="kw">async fn </span>find_account_by_id(<span class="kw-2">&amp;</span><span class="self">self</span>, user_id: <span class="kw-2">&amp;</span>UserId) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Account&gt;, <span class="self">Self</span>::Error&gt; {
-        <span class="self">self</span>.find_account_by_id(user_id).<span class="kw">await
-    </span>}
+    <span class="kw">async fn </span>find_account_by_id(<span class="kw-2">&amp;</span><span class="self">self</span>, user_id: <span class="kw-2">&amp;</span>UserId) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Account&gt;, DatabaseError&gt; {
+        <span class="prelude-val">Ok</span>(<span class="self">self</span>.find_account_by_id(user_id).<span class="kw">await</span><span class="question-mark">?</span>)
+    }
 
-    <span class="kw">async fn </span>delete_account(<span class="kw-2">&amp;</span><span class="self">self</span>, user_id: <span class="kw-2">&amp;</span>UserId) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt; {
-        <span class="self">self</span>.delete_account(user_id).<span class="kw">await
-    </span>}
+    <span class="kw">async fn </span>delete_account(<span class="kw-2">&amp;</span><span class="self">self</span>, user_id: <span class="kw-2">&amp;</span>UserId) -&gt; <span class="prelude-ty">Result</span>&lt;(), DatabaseError&gt; {
+        <span class="prelude-val">Ok</span>(<span class="self">self</span>.delete_account(user_id).<span class="kw">await</span><span class="question-mark">?</span>)
+    }
 
     <span class="kw">async fn </span>set_storage_key(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         user_id: <span class="kw-2">&amp;</span>UserId,
         storage_key: Encrypted&lt;StorageKey&gt;,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt; {
-        <span class="self">self</span>.set_storage_key(user_id, storage_key).<span class="kw">await
-    </span>}
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), DatabaseError&gt; {
+        <span class="prelude-val">Ok</span>(<span class="self">self</span>.set_storage_key(user_id, storage_key).<span class="kw">await</span><span class="question-mark">?</span>)
+    }
 }
 
 <span class="kw">impl </span>Debug <span class="kw">for </span>PostgresDB {
@@ -767,7 +769,7 @@
                     <span class="comment">// The key doesn&#39;t even exist.
                     </span><span class="number">0 </span>=&gt; <span class="prelude-val">Err</span>(PostgresError::NoEntry),
                     <span class="comment">// The key exists but the secret_type or user_id were incorrect.
-                    </span><span class="number">1 </span>=&gt; <span class="prelude-val">Err</span>(PostgresError::IncorrectAssociatedKeyData),
+                    </span><span class="number">1 </span>=&gt; <span class="prelude-val">Err</span>(PostgresError::IncorrectKeyMetadata),
                     <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(PostgresError::InvalidRowCountFound),
                 }
             }
@@ -894,7 +896,7 @@
     values: <span class="kw">impl </span>Iterator&lt;Item = I&gt; + Clone,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(), PostgresError&gt; {
     <span class="kw">if </span>values.clone().count() == <span class="number">0 </span>{
-        <span class="kw">return </span><span class="prelude-val">Err</span>(PostgresError::EmptyIterator);
+        <span class="kw">return </span><span class="prelude-val">Err</span>(PostgresError::InvalidAuditEventOptions);
     }
     query.push(<span class="string">&quot;(&quot;</span>);
     <span class="kw">let </span><span class="kw-2">mut </span>separated = query.separated(<span class="string">&quot;, &quot;</span>);

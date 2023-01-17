@@ -73,10 +73,6 @@
 <span id="73">73</span>
 <span id="74">74</span>
 <span id="75">75</span>
-<span id="76">76</span>
-<span id="77">77</span>
-<span id="78">78</span>
-<span id="79">79</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Client has asked server to generate a new signing key and store it in the
 //! server.
 </span><span class="kw">use crate</span>::{
@@ -142,11 +138,7 @@
         )<span class="question-mark">?</span>;
 
         <span class="comment">// Store key in database
-        </span>context
-            .db
-            .add_secret(secret)
-            .<span class="kw">await
-            </span>.map_err(LockKeeperServerError::database)<span class="question-mark">?</span>;
+        </span>context.db.add_secret(secret).<span class="kw">await</span><span class="question-mark">?</span>;
 
         channel
             .send(server::ReturnKeyId { key_id, public_key })

@@ -94,7 +94,7 @@
     run_parallel,
     test_suites::end_to_end::{
         operations::{authenticate, check_audit_events, compare_status_errors},
-        test_cases::init_test_state,
+        test_cases::{init_test_state, NO_SESSION},
     },
     utils::{<span class="self">self</span>, TestResult, RNG_SEED},
 };
@@ -154,7 +154,7 @@
     <span class="kw">let </span><span class="kw-2">mut </span>rng = StdRng::from_seed(<span class="kw-2">*</span>RNG_SEED);
     <span class="kw">let </span>data = SignableBytes(utils::random_bytes(<span class="kw-2">&amp;mut </span>rng, <span class="number">100</span>));
     <span class="kw">let </span>res = client.remote_sign_bytes(res.key_id, data).<span class="kw">await</span>;
-    compare_status_errors(res, Status::unauthenticated(<span class="string">&quot;No session key for this user&quot;</span>))<span class="question-mark">?</span>;
+    compare_status_errors(res, Status::unauthenticated(NO_SESSION))<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
 }

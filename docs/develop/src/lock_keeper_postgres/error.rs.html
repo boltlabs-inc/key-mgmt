@@ -34,7 +34,21 @@
 <span id="34">34</span>
 <span id="35">35</span>
 <span id="36">36</span>
-</pre><pre class="rust"><code><span class="kw">use </span>std::{array::TryFromSliceError, path::PathBuf};
+<span id="37">37</span>
+<span id="38">38</span>
+<span id="39">39</span>
+<span id="40">40</span>
+<span id="41">41</span>
+<span id="42">42</span>
+<span id="43">43</span>
+<span id="44">44</span>
+<span id="45">45</span>
+<span id="46">46</span>
+<span id="47">47</span>
+<span id="48">48</span>
+<span id="49">49</span>
+</pre><pre class="rust"><code><span class="kw">use </span>lock_keeper_key_server::database::DatabaseError;
+<span class="kw">use </span>std::{array::TryFromSliceError, path::PathBuf};
 <span class="kw">use </span>thiserror::Error;
 
 <span class="attribute">#[derive(Debug, Error)]
@@ -52,9 +66,9 @@
     <span class="attribute">#[error(<span class="string">&quot;Unexpected number of rows returned.&quot;</span>)]
     </span>InvalidRowCountFound,
     <span class="attribute">#[error(<span class="string">&quot;Key ID exists but associated user ID or key type were incorrect.&quot;</span>)]
-    </span>IncorrectAssociatedKeyData,
+    </span>IncorrectKeyMetadata,
     <span class="attribute">#[error(<span class="string">&quot;Empty iterator for append_value_list function.&quot;</span>)]
-    </span>EmptyIterator,
+    </span>InvalidAuditEventOptions,
     <span class="attribute">#[error(<span class="string">&quot;Config file error.&quot;</span>)]
     </span>ConfigError(<span class="attribute">#[from] </span>ConfigError),
 }
@@ -69,6 +83,18 @@
     </span>MissingUsername,
     <span class="attribute">#[error(<span class="string">&quot;Missing database password.&quot;</span>)]
     </span>MissingPassword,
+}
+
+<span class="kw">impl </span>From&lt;PostgresError&gt; <span class="kw">for </span>DatabaseError {
+    <span class="kw">fn </span>from(error: PostgresError) -&gt; <span class="self">Self </span>{
+        <span class="kw">match </span>error {
+            PostgresError::InvalidRowCountFound =&gt; <span class="self">Self</span>::InvalidCountFound,
+            PostgresError::NoEntry =&gt; <span class="self">Self</span>::NoEntry,
+            PostgresError::InvalidAuditEventOptions =&gt; <span class="self">Self</span>::InvalidAuditEventOptions,
+            PostgresError::IncorrectKeyMetadata =&gt; <span class="self">Self</span>::IncorrectKeyMetadata,
+            <span class="kw">_ </span>=&gt; <span class="self">Self</span>::InternalDatabaseError(error.to_string()),
+        }
+    }
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="lock_keeper_postgres" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.1 (90743e729 2023-01-10)" ></div></body></html>
