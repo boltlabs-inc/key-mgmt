@@ -13,6 +13,8 @@ pub struct Config {
     /// Name of database. Appended to URI to make the full path.
     pub db_name: String,
     pub max_connections: u32,
+    pub connection_retries: u32,
+    pub connection_retry_delay: Duration,
     pub connection_timeout: Duration,
     pub session_expiration: Duration,
 }
@@ -50,6 +52,8 @@ impl TryFrom<ConfigFile> for Config {
             address: config.address,
             db_name: config.db_name,
             max_connections: config.max_connections,
+            connection_retries: config.connection_retries,
+            connection_retry_delay: config.connection_retry_delay,
             connection_timeout: config.connection_timeout,
             session_expiration: config.session_expiration,
         };
@@ -70,6 +74,9 @@ pub struct ConfigFile {
     pub address: String,
     pub db_name: String,
     pub max_connections: u32,
+    pub connection_retries: u32,
+    #[serde(with = "humantime_serde")]
+    pub connection_retry_delay: Duration,
     #[serde(with = "humantime_serde")]
     pub connection_timeout: Duration,
     #[serde(with = "humantime_serde")]

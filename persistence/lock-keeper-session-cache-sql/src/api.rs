@@ -10,7 +10,7 @@ use std::sync::Arc;
 use uuid::Uuid;
 
 use crate::{config::Config, types::SessionDB, Error};
-use tracing::{info, instrument};
+use tracing::{error, info, instrument};
 
 /// Cache holding sessions, per user, after authentication. Maps
 /// [`UserId`]s to their [`Session`]s. Sessions are tagged with a timestamp. A
@@ -26,12 +26,35 @@ impl PostgresSessionCache {
     pub async fn connect(config: Config) -> Result<Self, Error> {
         info!("Connecting to database {:?}", config);
 
-        // Create a connection pool based on our config.
-        let pool = PgPoolOptions::new()
-            .max_connections(config.max_connections)
-            .acquire_timeout(config.connection_timeout)
-            .connect(&config.uri())
-            .await?;
+        let mut attempts = 0;
+
+        // We have to use `loop` instead of `while` here so that we can return a value
+        // after a successful connection.
+        let pool = loop {
+            if attempts > config.connection_retries {
+                return Err(Error::ExceededMaxConnectionAttempts);
+            }
+
+            // Create a connection pool based on our config.
+            let pool = PgPoolOptions::new()
+                .max_connections(config.max_connections)
+                .acquire_timeout(config.connection_timeout)
+                .connect(&config.uri())
+                .await;
+
+            match pool {
+                Ok(pool) => break pool,
+                Err(e) => {
+                    attempts += 1;
+                    error!("{e}");
+                    error!(
+                        "Failed to connect to db. Attempts: {attempts}. Retrying in {:?}",
+                        config.connection_retry_delay
+                    );
+                    tokio::time::sleep(config.connection_retry_delay).await;
+                }
+            }
+        };
 
         Ok(PostgresSessionCache {
             config: Arc::new(config),
