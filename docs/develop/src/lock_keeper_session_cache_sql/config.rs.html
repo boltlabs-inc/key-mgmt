@@ -90,6 +90,13 @@
 <span id="90">90</span>
 <span id="91">91</span>
 <span id="92">92</span>
+<span id="93">93</span>
+<span id="94">94</span>
+<span id="95">95</span>
+<span id="96">96</span>
+<span id="97">97</span>
+<span id="98">98</span>
+<span id="99">99</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Config for session cache.
 
 </span><span class="kw">use crate</span>::{error::ConfigError, Error};
@@ -105,6 +112,8 @@
     <span class="doccomment">/// Name of database. Appended to URI to make the full path.
     </span><span class="kw">pub </span>db_name: String,
     <span class="kw">pub </span>max_connections: u32,
+    <span class="kw">pub </span>connection_retries: u32,
+    <span class="kw">pub </span>connection_retry_delay: Duration,
     <span class="kw">pub </span>connection_timeout: Duration,
     <span class="kw">pub </span>session_expiration: Duration,
 }
@@ -142,6 +151,8 @@
             address: config.address,
             db_name: config.db_name,
             max_connections: config.max_connections,
+            connection_retries: config.connection_retries,
+            connection_retry_delay: config.connection_retry_delay,
             connection_timeout: config.connection_timeout,
             session_expiration: config.session_expiration,
         };
@@ -162,6 +173,9 @@
     <span class="kw">pub </span>address: String,
     <span class="kw">pub </span>db_name: String,
     <span class="kw">pub </span>max_connections: u32,
+    <span class="kw">pub </span>connection_retries: u32,
+    <span class="attribute">#[serde(with = <span class="string">&quot;humantime_serde&quot;</span>)]
+    </span><span class="kw">pub </span>connection_retry_delay: Duration,
     <span class="attribute">#[serde(with = <span class="string">&quot;humantime_serde&quot;</span>)]
     </span><span class="kw">pub </span>connection_timeout: Duration,
     <span class="attribute">#[serde(with = <span class="string">&quot;humantime_serde&quot;</span>)]

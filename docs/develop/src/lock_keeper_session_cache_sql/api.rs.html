@@ -149,6 +149,29 @@
 <span id="149">149</span>
 <span id="150">150</span>
 <span id="151">151</span>
+<span id="152">152</span>
+<span id="153">153</span>
+<span id="154">154</span>
+<span id="155">155</span>
+<span id="156">156</span>
+<span id="157">157</span>
+<span id="158">158</span>
+<span id="159">159</span>
+<span id="160">160</span>
+<span id="161">161</span>
+<span id="162">162</span>
+<span id="163">163</span>
+<span id="164">164</span>
+<span id="165">165</span>
+<span id="166">166</span>
+<span id="167">167</span>
+<span id="168">168</span>
+<span id="169">169</span>
+<span id="170">170</span>
+<span id="171">171</span>
+<span id="172">172</span>
+<span id="173">173</span>
+<span id="174">174</span>
 </pre><pre class="rust"><code><span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>lock_keeper::{
     crypto::{Encrypted, OpaqueSessionKey},
@@ -161,7 +184,7 @@
 <span class="kw">use </span>uuid::Uuid;
 
 <span class="kw">use crate</span>::{config::Config, types::SessionDB, Error};
-<span class="kw">use </span>tracing::{info, instrument};
+<span class="kw">use </span>tracing::{error, info, instrument};
 
 <span class="doccomment">/// Cache holding sessions, per user, after authentication. Maps
 /// [`UserId`]s to their [`Session`]s. Sessions are tagged with a timestamp. A
@@ -177,12 +200,35 @@
     </span><span class="kw">pub async fn </span>connect(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, Error&gt; {
         <span class="macro">info!</span>(<span class="string">&quot;Connecting to database {:?}&quot;</span>, config);
 
-        <span class="comment">// Create a connection pool based on our config.
-        </span><span class="kw">let </span>pool = PgPoolOptions::new()
-            .max_connections(config.max_connections)
-            .acquire_timeout(config.connection_timeout)
-            .connect(<span class="kw-2">&amp;</span>config.uri())
-            .<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>attempts = <span class="number">0</span>;
+
+        <span class="comment">// We have to use `loop` instead of `while` here so that we can return a value
+        // after a successful connection.
+        </span><span class="kw">let </span>pool = <span class="kw">loop </span>{
+            <span class="kw">if </span>attempts &gt; config.connection_retries {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(Error::ExceededMaxConnectionAttempts);
+            }
+
+            <span class="comment">// Create a connection pool based on our config.
+            </span><span class="kw">let </span>pool = PgPoolOptions::new()
+                .max_connections(config.max_connections)
+                .acquire_timeout(config.connection_timeout)
+                .connect(<span class="kw-2">&amp;</span>config.uri())
+                .<span class="kw">await</span>;
+
+            <span class="kw">match </span>pool {
+                <span class="prelude-val">Ok</span>(pool) =&gt; <span class="kw">break </span>pool,
+                <span class="prelude-val">Err</span>(e) =&gt; {
+                    attempts += <span class="number">1</span>;
+                    <span class="macro">error!</span>(<span class="string">&quot;{e}&quot;</span>);
+                    <span class="macro">error!</span>(
+                        <span class="string">&quot;Failed to connect to db. Attempts: {attempts}. Retrying in {:?}&quot;</span>,
+                        config.connection_retry_delay
+                    );
+                    tokio::time::sleep(config.connection_retry_delay).<span class="kw">await</span>;
+                }
+            }
+        };
 
         <span class="prelude-val">Ok</span>(PostgresSessionCache {
             config: Arc::new(config),

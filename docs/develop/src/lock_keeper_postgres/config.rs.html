@@ -136,6 +136,19 @@
 <span id="136">136</span>
 <span id="137">137</span>
 <span id="138">138</span>
+<span id="139">139</span>
+<span id="140">140</span>
+<span id="141">141</span>
+<span id="142">142</span>
+<span id="143">143</span>
+<span id="144">144</span>
+<span id="145">145</span>
+<span id="146">146</span>
+<span id="147">147</span>
+<span id="148">148</span>
+<span id="149">149</span>
+<span id="150">150</span>
+<span id="151">151</span>
 </pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::error::ConfigError;
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>std::{
@@ -158,6 +171,9 @@
     <span class="kw">pub </span>address: String,
     <span class="kw">pub </span>db_name: String,
     <span class="kw">pub </span>max_connections: u32,
+    <span class="kw">pub </span>connection_retries: u32,
+    <span class="attribute">#[serde(with = <span class="string">&quot;humantime_serde&quot;</span>)]
+    </span><span class="kw">pub </span>connection_retry_delay: Duration,
     <span class="attribute">#[serde(with = <span class="string">&quot;humantime_serde&quot;</span>)]
     </span><span class="kw">pub </span>connection_timeout: Duration,
 }
@@ -187,6 +203,8 @@
     <span class="doccomment">/// Name of database. Appended to URI to make the full path.
     </span><span class="kw">pub </span>db_name: String,
     <span class="kw">pub </span>max_connections: u32,
+    <span class="kw">pub </span>connection_retries: u32,
+    <span class="kw">pub </span>connection_retry_delay: Duration,
     <span class="kw">pub </span>connection_timeout: Duration,
 }
 
@@ -198,6 +216,8 @@
             .field(<span class="string">&quot;address&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.address)
             .field(<span class="string">&quot;db_name&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.db_name)
             .field(<span class="string">&quot;max_connections&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.max_connections)
+            .field(<span class="string">&quot;connection_retries&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.connection_retries)
+            .field(<span class="string">&quot;connection_retry_delay&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.connection_retry_delay)
             .field(<span class="string">&quot;connection_timeout&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.connection_timeout)
             .finish()
     }
@@ -227,6 +247,8 @@
             address: config.address,
             db_name: config.db_name,
             max_connections: config.max_connections,
+            connection_retries: config.connection_retries,
+            connection_retry_delay: config.connection_retry_delay,
             connection_timeout: config.connection_timeout,
         };
 
@@ -246,6 +268,8 @@
             address: <span class="string">&quot;localhost&quot;</span>.to_string(),
             db_name: <span class="string">&quot;test_db&quot;</span>.to_string(),
             max_connections: <span class="number">5</span>,
+            connection_retries: <span class="number">5</span>,
+            connection_retry_delay: Duration::from_secs(<span class="number">5</span>),
             connection_timeout: Duration::from_secs(<span class="number">3</span>),
         }
     }
@@ -258,6 +282,8 @@
             address = &quot;localhost&quot;
             db_name = &quot;test_db&quot;
             max_connections = 5
+            connection_retries = 5
+            connection_retry_delay = &quot;5s&quot;
             connection_timeout = &quot;3s&quot;
             &quot;#</span>;
 

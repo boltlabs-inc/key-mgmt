@@ -220,6 +220,8 @@
 <span id="220">220</span>
 <span id="221">221</span>
 <span id="222">222</span>
+<span id="223">223</span>
+<span id="224">224</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Database integration tests
 
 </span><span class="kw">pub mod </span>audit_event;
@@ -296,6 +298,8 @@
             address = &#39;localhost&#39;
             db_name = &#39;test&#39;
             max_connections = 5
+            connection_retries = 5
+            connection_retry_delay = &quot;5s&quot;
             connection_timeout = &quot;3s&quot;
             &quot;#</span>;
 

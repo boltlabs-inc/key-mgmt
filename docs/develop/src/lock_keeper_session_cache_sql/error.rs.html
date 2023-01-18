@@ -46,6 +46,8 @@
 <span id="46">46</span>
 <span id="47">47</span>
 <span id="48">48</span>
+<span id="49">49</span>
+<span id="50">50</span>
 </pre><pre class="rust"><code><span class="kw">use </span>std::{array::TryFromSliceError, path::PathBuf};
 
 <span class="kw">use </span>lock_keeper_key_server::server::session_cache::SessionCacheError;
@@ -53,6 +55,8 @@
 
 <span class="attribute">#[derive(Debug, Error)]
 </span><span class="kw">pub enum </span>Error {
+    <span class="attribute">#[error(<span class="string">&quot;Failed to connect to database after maximum number of attempts&quot;</span>)]
+    </span>ExceededMaxConnectionAttempts,
     <span class="attribute">#[error(<span class="string">&quot;Could not serialize/deserialize data to/from databases.&quot;</span>)]
     </span>Bincode(<span class="attribute">#[from] </span>bincode::Error),
     <span class="attribute">#[error(transparent)]

@@ -47,12 +47,16 @@
 <span id="47">47</span>
 <span id="48">48</span>
 <span id="49">49</span>
+<span id="50">50</span>
+<span id="51">51</span>
 </pre><pre class="rust"><code><span class="kw">use </span>lock_keeper_key_server::database::DatabaseError;
 <span class="kw">use </span>std::{array::TryFromSliceError, path::PathBuf};
 <span class="kw">use </span>thiserror::Error;
 
 <span class="attribute">#[derive(Debug, Error)]
 </span><span class="kw">pub enum </span>PostgresError {
+    <span class="attribute">#[error(<span class="string">&quot;Failed to connect to database after maximum number of attempts&quot;</span>)]
+    </span>ExceededMaxConnectionAttempts,
     <span class="attribute">#[error(<span class="string">&quot;sqlx error&quot;</span>)]
     </span>Sqlx(<span class="attribute">#[from] </span>sqlx::Error),
     <span class="attribute">#[error(<span class="string">&quot;Could not serialize/deserialize data to/from databases.&quot;</span>)]

@@ -452,6 +452,29 @@
 <span id="452">452</span>
 <span id="453">453</span>
 <span id="454">454</span>
+<span id="455">455</span>
+<span id="456">456</span>
+<span id="457">457</span>
+<span id="458">458</span>
+<span id="459">459</span>
+<span id="460">460</span>
+<span id="461">461</span>
+<span id="462">462</span>
+<span id="463">463</span>
+<span id="464">464</span>
+<span id="465">465</span>
+<span id="466">466</span>
+<span id="467">467</span>
+<span id="468">468</span>
+<span id="469">469</span>
+<span id="470">470</span>
+<span id="471">471</span>
+<span id="472">472</span>
+<span id="473">473</span>
+<span id="474">474</span>
+<span id="475">475</span>
+<span id="476">476</span>
+<span id="477">477</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{
     types::{AccountDB, AuditEventDB, SecretDB},
     Config, PostgresError,
@@ -478,7 +501,7 @@
     sync::Arc,
 };
 <span class="kw">use </span>time::OffsetDateTime;
-<span class="kw">use </span>tracing::{debug, info, instrument};
+<span class="kw">use </span>tracing::{debug, error, info, instrument};
 <span class="kw">use </span>uuid::Uuid;
 
 <span class="attribute">#[derive(Clone)]
@@ -575,12 +598,35 @@
     </span><span class="kw">pub async fn </span>connect(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, PostgresError&gt; {
         <span class="macro">info!</span>(<span class="string">&quot;Connecting to database&quot;</span>);
 
-        <span class="comment">// Create a connection pool based on our config.
-        </span><span class="kw">let </span>pool = PgPoolOptions::new()
-            .max_connections(config.max_connections)
-            .acquire_timeout(config.connection_timeout)
-            .connect(<span class="kw-2">&amp;</span>config.uri())
-            .<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>attempts = <span class="number">0</span>;
+
+        <span class="comment">// We have to use `loop` instead of `while` here so that we can return a value
+        // after a successful connection.
+        </span><span class="kw">let </span>pool = <span class="kw">loop </span>{
+            <span class="kw">if </span>attempts &gt; config.connection_retries {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(PostgresError::ExceededMaxConnectionAttempts);
+            }
+
+            <span class="comment">// Create a connection pool based on our config.
+            </span><span class="kw">let </span>pool = PgPoolOptions::new()
+                .max_connections(config.max_connections)
+                .acquire_timeout(config.connection_timeout)
+                .connect(<span class="kw-2">&amp;</span>config.uri())
+                .<span class="kw">await</span>;
+
+            <span class="kw">match </span>pool {
+                <span class="prelude-val">Ok</span>(pool) =&gt; <span class="kw">break </span>pool,
+                <span class="prelude-val">Err</span>(e) =&gt; {
+                    attempts += <span class="number">1</span>;
+                    <span class="macro">error!</span>(<span class="string">&quot;{e}&quot;</span>);
+                    <span class="macro">error!</span>(
+                        <span class="string">&quot;Failed to connect to db. Attempts: {attempts}. Retrying in {:?}&quot;</span>,
+                        config.connection_retry_delay
+                    );
+                    tokio::time::sleep(config.connection_retry_delay).<span class="kw">await</span>;
+                }
+            }
+        };
 
         <span class="prelude-val">Ok</span>(PostgresDB {
             config: Arc::new(config),
