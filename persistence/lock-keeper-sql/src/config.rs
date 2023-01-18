@@ -20,6 +20,9 @@ pub struct ConfigFile {
     pub address: String,
     pub db_name: String,
     pub max_connections: u32,
+    pub connection_retries: u32,
+    #[serde(with = "humantime_serde")]
+    pub connection_retry_delay: Duration,
     #[serde(with = "humantime_serde")]
     pub connection_timeout: Duration,
 }
@@ -49,6 +52,8 @@ pub struct Config {
     /// Name of database. Appended to URI to make the full path.
     pub db_name: String,
     pub max_connections: u32,
+    pub connection_retries: u32,
+    pub connection_retry_delay: Duration,
     pub connection_timeout: Duration,
 }
 
@@ -60,6 +65,8 @@ impl Debug for Config {
             .field("address", &self.address)
             .field("db_name", &self.db_name)
             .field("max_connections", &self.max_connections)
+            .field("connection_retries", &self.connection_retries)
+            .field("connection_retry_delay", &self.connection_retry_delay)
             .field("connection_timeout", &self.connection_timeout)
             .finish()
     }
@@ -89,6 +96,8 @@ impl TryFrom<ConfigFile> for Config {
             address: config.address,
             db_name: config.db_name,
             max_connections: config.max_connections,
+            connection_retries: config.connection_retries,
+            connection_retry_delay: config.connection_retry_delay,
             connection_timeout: config.connection_timeout,
         };
 
@@ -108,6 +117,8 @@ mod test {
             address: "localhost".to_string(),
             db_name: "test_db".to_string(),
             max_connections: 5,
+            connection_retries: 5,
+            connection_retry_delay: Duration::from_secs(5),
             connection_timeout: Duration::from_secs(3),
         }
     }
@@ -120,6 +131,8 @@ mod test {
             address = "localhost"
             db_name = "test_db"
             max_connections = 5
+            connection_retries = 5
+            connection_retry_delay = "5s"
             connection_timeout = "3s"
             "#;
 

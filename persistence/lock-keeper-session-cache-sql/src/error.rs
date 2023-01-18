@@ -5,6 +5,8 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum Error {
+    #[error("Failed to connect to database after maximum number of attempts")]
+    ExceededMaxConnectionAttempts,
     #[error("Could not serialize/deserialize data to/from databases.")]
     Bincode(#[from] bincode::Error),
     #[error(transparent)]
