@@ -74,6 +74,8 @@ impl TestDatabase {
             address = 'localhost'
             db_name = 'test'
             max_connections = 5
+            connection_retries = 5
+            connection_retry_delay = "5s"
             connection_timeout = "3s"
             "#;
 

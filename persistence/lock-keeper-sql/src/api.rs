@@ -24,7 +24,7 @@ use std::{
     sync::Arc,
 };
 use time::OffsetDateTime;
-use tracing::{debug, info, instrument};
+use tracing::{debug, error, info, instrument};
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -125,12 +125,35 @@ impl PostgresDB {
     pub async fn connect(config: Config) -> Result<Self, PostgresError> {
         info!("Connecting to database");
 
-        // Create a connection pool based on our config.
-        let pool = PgPoolOptions::new()
-            .max_connections(config.max_connections)
-            .acquire_timeout(config.connection_timeout)
-            .connect(&config.uri())
-            .await?;
+        let mut attempts = 0;
+
+        // We have to use `loop` instead of `while` here so that we can return a value
+        // after a successful connection.
+        let pool = loop {
+            if attempts > config.connection_retries {
+                return Err(PostgresError::ExceededMaxConnectionAttempts);
+            }
+
+            // Create a connection pool based on our config.
+            let pool = PgPoolOptions::new()
+                .max_connections(config.max_connections)
+                .acquire_timeout(config.connection_timeout)
+                .connect(&config.uri())
+                .await;
+
+            match pool {
+                Ok(pool) => break pool,
+                Err(e) => {
+                    attempts += 1;
+                    error!("{e}");
+                    error!(
+                        "Failed to connect to db. Attempts: {attempts}. Retrying in {:?}",
+                        config.connection_retry_delay
+                    );
+                    tokio::time::sleep(config.connection_retry_delay).await;
+                }
+            }
+        };
 
         Ok(PostgresDB {
             config: Arc::new(config),

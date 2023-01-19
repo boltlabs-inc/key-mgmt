@@ -4,6 +4,8 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum PostgresError {
+    #[error("Failed to connect to database after maximum number of attempts")]
+    ExceededMaxConnectionAttempts,
     #[error("sqlx error")]
     Sqlx(#[from] sqlx::Error),
     #[error("Could not serialize/deserialize data to/from databases.")]
