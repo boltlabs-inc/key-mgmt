@@ -100,6 +100,18 @@
 <span id="100">100</span>
 <span id="101">101</span>
 <span id="102">102</span>
+<span id="103">103</span>
+<span id="104">104</span>
+<span id="105">105</span>
+<span id="106">106</span>
+<span id="107">107</span>
+<span id="108">108</span>
+<span id="109">109</span>
+<span id="110">110</span>
+<span id="111">111</span>
+<span id="112">112</span>
+<span id="113">113</span>
+<span id="114">114</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Test config types
 
 </span><span class="kw">use </span>std::{collections::HashMap, path::PathBuf};
@@ -132,11 +144,23 @@
 
         <span class="kw">let </span><span class="kw-2">mut </span>configs = HashMap::new();
         <span class="kw">for </span>(name, path) <span class="kw">in </span>environment_paths {
+            <span class="comment">// The `standard_only` flag lets you run e2e tests locally against a single
+            // environment
+            </span><span class="kw">if </span>cli.standard_only &amp;&amp; name != STANDARD_CONFIG_NAME {
+                <span class="kw">continue</span>;
+            }
             <span class="kw">let </span>client_config = Config::from_file(path, <span class="prelude-val">None</span>)<span class="question-mark">?</span>;
             configs.insert(name, client_config);
         }
 
-        <span class="kw">for </span>required_config <span class="kw">in </span>REQUIRED_CONFIGS {
+        <span class="comment">// Set required configs based on simple flag
+        </span><span class="kw">let </span>required_configs = <span class="kw">if </span>cli.standard_only {
+            <span class="kw-2">&amp;</span>[STANDARD_CONFIG_NAME]
+        } <span class="kw">else </span>{
+            REQUIRED_CONFIGS
+        };
+
+        <span class="kw">for </span>required_config <span class="kw">in </span>required_configs {
             <span class="kw">if </span>!configs.contains_key(<span class="kw-2">*</span>required_config) {
                 <span class="kw">return </span><span class="prelude-val">Err</span>(LockKeeperTestError::MissingRequiredConfig(
                     required_config.to_string(),

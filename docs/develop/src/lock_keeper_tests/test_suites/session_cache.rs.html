@@ -205,8 +205,6 @@
 <span id="205">205</span>
 <span id="206">206</span>
 <span id="207">207</span>
-<span id="208">208</span>
-<span id="209">209</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Session cache integration tests.
 
 </span><span class="kw">use crate</span>::{
@@ -216,11 +214,11 @@
 <span class="kw">use </span>generic_array::GenericArray;
 <span class="kw">use </span>lock_keeper::{
     crypto::{OpaqueSessionKey, RemoteStorageKey},
-    types::database::user::UserId,
+    types::database::account::AccountId,
 };
 <span class="kw">use </span>lock_keeper_key_server::server::session_cache::{SessionCache, SessionCacheError};
 <span class="kw">use </span>lock_keeper_session_cache_sql::{config::Config <span class="kw">as </span>SessionConfig, PostgresSessionCache};
-<span class="kw">use </span>rand::{rngs::StdRng, SeedableRng};
+<span class="kw">use </span>rand::{rngs::StdRng, RngCore, SeedableRng};
 <span class="kw">use </span>std::{str::FromStr, time::Duration};
 <span class="kw">use </span>uuid::Uuid;
 
@@ -230,7 +228,7 @@
 <span class="kw">struct </span>TestState {
     remote_key: RemoteStorageKey,
     session_key: OpaqueSessionKey,
-    user_id: UserId,
+    account_id: AccountId,
 }
 
 <span class="kw">pub async fn </span>run_tests(filters: <span class="kw-2">&amp;</span>TestFilters) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;TestResult&gt;&gt; {
@@ -276,17 +274,15 @@
     <span class="prelude-val">Ok</span>(TestState {
         remote_key: get_temp_remote_key(rng)<span class="question-mark">?</span>,
         session_key: get_temp_session_key()<span class="question-mark">?</span>,
-        user_id: get_temp_user_id(rng)<span class="question-mark">?</span>,
+        account_id: get_temp_account_id(rng),
     })
 }
 
 <span class="kw">async fn </span>key_does_not_exist() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    <span class="kw">let </span><span class="kw-2">mut </span>rng = StdRng::seed_from_u64(SEED);
     <span class="kw">let </span>cache = new_cache(<span class="string">&quot;60s&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="kw">let </span>session_id = get_temp_session_id();
-    <span class="kw">let </span>user_id = get_temp_user_id(<span class="kw-2">&amp;mut </span>rng)<span class="question-mark">?</span>;
 
-    <span class="kw">match </span>cache.find_session(session_id, user_id).<span class="kw">await </span>{
+    <span class="kw">match </span>cache.find_session(session_id).<span class="kw">await </span>{
         <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; {
             <span class="macro">panic!</span>(<span class="string">&quot;Key should not exist.&quot;</span>)
         }
@@ -309,11 +305,11 @@
         .encrypt_session_key(<span class="kw-2">&amp;mut </span>rng, state.session_key)<span class="question-mark">?</span>;
 
     <span class="kw">let </span>session_id = cache
-        .create_session(state.user_id.clone(), encrypted_key)
+        .create_session(state.account_id, encrypted_key)
         .<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="comment">// We got a key back.
-    </span><span class="kw">let </span>_key_ref = cache.find_session(session_id, state.user_id).<span class="kw">await</span><span class="question-mark">?</span>;
+    </span><span class="kw">let </span>_key_ref = cache.find_session(session_id).<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="prelude-val">Ok</span>(())
 }
 
@@ -327,13 +323,13 @@
         .remote_key
         .encrypt_session_key(<span class="kw-2">&amp;mut </span>rng, state.session_key)<span class="question-mark">?</span>;
     cache
-        .create_session(state.user_id.clone(), encrypted_key)
+        .create_session(state.account_id, encrypted_key)
         .<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="kw">let </span>second_key = get_temp_session_key()<span class="question-mark">?</span>;
     <span class="kw">let </span>second_encrypted_key = state.remote_key.encrypt_session_key(<span class="kw-2">&amp;mut </span>rng, second_key)<span class="question-mark">?</span>;
     cache
-        .create_session(state.user_id, second_encrypted_key)
+        .create_session(state.account_id, second_encrypted_key)
         .<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
@@ -351,11 +347,11 @@
         .remote_key
         .encrypt_session_key(<span class="kw-2">&amp;mut </span>rng, state.session_key)<span class="question-mark">?</span>;
     <span class="kw">let </span>session_id = cache
-        .create_session(state.user_id.clone(), encrypted_key)
+        .create_session(state.account_id, encrypted_key)
         .<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="comment">// Verify key is expired.
-    </span><span class="kw">match </span>cache.find_session(session_id, state.user_id).<span class="kw">await </span>{
+    </span><span class="kw">match </span>cache.find_session(session_id).<span class="kw">await </span>{
         <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Key should be expired&quot;</span>),
         <span class="prelude-val">Err</span>(e) =&gt; {
             <span class="macro">assert!</span>(
@@ -378,14 +374,14 @@
         .remote_key
         .encrypt_session_key(<span class="kw-2">&amp;mut </span>rng, state.session_key)<span class="question-mark">?</span>;
     <span class="kw">let </span>session_id = cache
-        .create_session(state.user_id.clone(), encrypted_key)
+        .create_session(state.account_id, encrypted_key)
         .<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="comment">// Sleep for a while so key expires.
     </span>tokio::time::sleep(Duration::from_secs(<span class="number">1</span>)).<span class="kw">await</span>;
 
     <span class="comment">// Verify key is expired.
-    </span><span class="kw">match </span>cache.find_session(session_id, state.user_id).<span class="kw">await </span>{
+    </span><span class="kw">match </span>cache.find_session(session_id).<span class="kw">await </span>{
         <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Key should be expired&quot;</span>),
         <span class="prelude-val">Err</span>(e) =&gt; {
             <span class="macro">assert!</span>(
@@ -407,9 +403,9 @@
     </span>Uuid::new_v4()
 }
 
-<span class="kw">fn </span>get_temp_user_id(rng: <span class="kw-2">&amp;mut </span>StdRng) -&gt; <span class="prelude-ty">Result</span>&lt;UserId&gt; {
-    <span class="comment">// Deterministic seed. No need for our test to be nondeterministic.
-    </span><span class="prelude-val">Ok</span>(UserId::new(rng)<span class="question-mark">?</span>)
+<span class="kw">fn </span>get_temp_account_id(rng: <span class="kw-2">&amp;mut </span>StdRng) -&gt; AccountId {
+    <span class="kw">let </span>id = rng.next_u64() <span class="kw">as </span>i64;
+    id.into()
 }
 
 <span class="kw">fn </span>get_temp_remote_key(rng: <span class="kw-2">&amp;mut </span>StdRng) -&gt; <span class="prelude-ty">Result</span>&lt;RemoteStorageKey&gt; {

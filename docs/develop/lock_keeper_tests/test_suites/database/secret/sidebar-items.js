@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":[["cannot_get_another_users_secrets",""],["incorrect_key_type_specified","An error is returned if a wrong key type is specified."],["run_tests",""],["user_is_serializable_after_adding_secrets",""]]};
+window.SIDEBAR_ITEMS = {"fn":[["cannot_get_another_users_secrets",""],["incorrect_key_type_specified","An error is returned if a wrong key type is specified."],["run_tests",""]]};

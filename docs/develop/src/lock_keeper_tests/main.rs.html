@@ -122,6 +122,12 @@
 <span id="122">122</span>
 <span id="123">123</span>
 <span id="124">124</span>
+<span id="125">125</span>
+<span id="126">126</span>
+<span id="127">127</span>
+<span id="128">128</span>
+<span id="129">129</span>
+<span id="130">130</span>
 </pre><pre class="rust"><code><span class="kw">pub mod </span>config;
 <span class="kw">pub mod </span>error;
 <span class="kw">pub mod </span>test_suites;
@@ -144,6 +150,8 @@
     </span><span class="kw">pub </span>filters: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
     <span class="attribute">#[clap(long, default_value = <span class="string">&quot;all&quot;</span>)]
     </span><span class="kw">pub </span>test_type: TestType,
+    <span class="attribute">#[clap(long, short = <span class="string">&#39;s&#39;</span>)]
+    </span><span class="kw">pub </span>standard_only: bool,
 }
 
 <span class="attribute">#[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -177,6 +185,10 @@
 
 <span class="kw">async fn </span>run() -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperTestError&gt; {
     <span class="kw">let </span>cli = Cli::try_parse()<span class="question-mark">?</span>;
+    <span class="kw">if </span>cli.standard_only &amp;&amp; cli.test_type != TestType::E2E {
+        <span class="kw">return </span><span class="prelude-val">Err</span>(LockKeeperTestError::StandardOnlyFlag);
+    }
+
     <span class="kw">let </span>test_type = cli.test_type;
     <span class="kw">let </span>environments = Environments::try_from(cli)<span class="question-mark">?</span>;
 

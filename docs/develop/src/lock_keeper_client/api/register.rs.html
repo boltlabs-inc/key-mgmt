@@ -91,15 +91,15 @@
 <span id="91">91</span>
 <span id="92">92</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{
+    channel::{Channel, Unauthenticated},
     client::{LockKeeperClient, Password},
     LockKeeperClientError,
 };
 <span class="kw">use </span>lock_keeper::{
     config::opaque::OpaqueCipherSuite,
     crypto::MasterKey,
-    infrastructure::channel::{ClientChannel, Unauthenticated},
     types::{
-        database::user::AccountName,
+        database::account::AccountName,
         operations::register::{client, server},
     },
 };
@@ -112,7 +112,7 @@
 
 <span class="kw">impl </span>LockKeeperClient {
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>handle_registration(
-        <span class="kw-2">mut </span>channel: ClientChannel&lt;Unauthenticated&gt;,
+        <span class="kw-2">mut </span>channel: Channel&lt;Unauthenticated&gt;,
         rng: Arc&lt;Mutex&lt;StdRng&gt;&gt;,
         account_name: <span class="kw-2">&amp;</span>AccountName,
         password: <span class="kw-2">&amp;</span>Password,
@@ -129,7 +129,7 @@
 }
 
 <span class="kw">async fn </span>register_start(
-    channel: <span class="kw-2">&amp;mut </span>ClientChannel&lt;Unauthenticated&gt;,
+    channel: <span class="kw-2">&amp;mut </span>Channel&lt;Unauthenticated&gt;,
     rng: Arc&lt;Mutex&lt;StdRng&gt;&gt;,
     account_name: <span class="kw-2">&amp;</span>AccountName,
     password: <span class="kw-2">&amp;</span>Password,
@@ -150,7 +150,7 @@
 }
 
 <span class="kw">async fn </span>register_finish(
-    channel: <span class="kw-2">&amp;mut </span>ClientChannel&lt;Unauthenticated&gt;,
+    channel: <span class="kw-2">&amp;mut </span>Channel&lt;Unauthenticated&gt;,
     rng: Arc&lt;Mutex&lt;StdRng&gt;&gt;,
     password: <span class="kw-2">&amp;</span>Password,
     client_start_result: ClientRegistrationStartResult&lt;OpaqueCipherSuite&gt;,

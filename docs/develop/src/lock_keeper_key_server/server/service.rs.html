@@ -122,12 +122,10 @@
 <span id="122">122</span>
 <span id="123">123</span>
 <span id="124">124</span>
-<span id="125">125</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{
     config::Config,
-    database::DataStore,
     error::LockKeeperServerError,
-    server::{session_cache::SessionCache, LockKeeperKeyServer},
+    server::{database::DataStore, session_cache::SessionCache, LockKeeperKeyServer},
 };
 
 <span class="kw">use </span>hyper::server::conn::Http;

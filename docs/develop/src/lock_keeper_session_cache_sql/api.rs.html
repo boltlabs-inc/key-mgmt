@@ -165,18 +165,11 @@
 <span id="165">165</span>
 <span id="166">166</span>
 <span id="167">167</span>
-<span id="168">168</span>
-<span id="169">169</span>
-<span id="170">170</span>
-<span id="171">171</span>
-<span id="172">172</span>
-<span id="173">173</span>
-<span id="174">174</span>
 </pre><pre class="rust"><code><span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>lock_keeper::{
     crypto::{Encrypted, OpaqueSessionKey},
     infrastructure::logging,
-    types::database::user::UserId,
+    types::database::account::AccountId,
 };
 <span class="kw">use </span>lock_keeper_key_server::server::session_cache::{Session, SessionCache, SessionCacheError};
 <span class="kw">use </span>sqlx::{postgres::PgPoolOptions, types::time::OffsetDateTime, PgPool};
@@ -187,8 +180,8 @@
 <span class="kw">use </span>tracing::{error, info, instrument};
 
 <span class="doccomment">/// Cache holding sessions, per user, after authentication. Maps
-/// [`UserId`]s to their [`Session`]s. Sessions are tagged with a timestamp. A
-/// session is considered invalid after the `expiration` time has elapsed.
+/// [`AccountId`]s to their [`Session`]s. Sessions are tagged with a timestamp.
+/// A session is considered invalid after the `expiration` time has elapsed.
 </span><span class="kw">pub struct </span>PostgresSessionCache {
     config: Arc&lt;Config&gt;,
     <span class="doccomment">/// PgPool is already implemented in terms of an Arc. No need to wrap it.
@@ -247,10 +240,10 @@
     /// user will be overwritten.
     </span><span class="kw">async fn </span>create_session(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        user_id: UserId,
+        account_id: AccountId,
         session_key: Encrypted&lt;OpaqueSessionKey&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Uuid, SessionCacheError&gt; {
-        <span class="kw">let </span>session_id = <span class="self">self</span>.create_session(user_id, session_key).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>session_id = <span class="self">self</span>.create_session(account_id, session_key).<span class="kw">await</span><span class="question-mark">?</span>;
         logging::record_field(<span class="string">&quot;session_id&quot;</span>, <span class="kw-2">&amp;</span>session_id);
         <span class="prelude-val">Ok</span>(session_id)
     }
@@ -258,12 +251,8 @@
     <span class="doccomment">/// Get the session for the specified user, if one exists.
     /// This function checks if the session has expired and returns an error
     /// instead.
-    </span><span class="kw">async fn </span>find_session(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
-        session_id: Uuid,
-        user_id: UserId,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;Session, SessionCacheError&gt; {
-        <span class="prelude-val">Ok</span>(<span class="self">self</span>.find_session(session_id, user_id).<span class="kw">await</span><span class="question-mark">?</span>)
+    </span><span class="kw">async fn </span>find_session(<span class="kw-2">&amp;</span><span class="self">self</span>, session_id: Uuid) -&gt; <span class="prelude-ty">Result</span>&lt;Session, SessionCacheError&gt; {
+        <span class="prelude-val">Ok</span>(<span class="self">self</span>.find_session(session_id).<span class="kw">await</span><span class="question-mark">?</span>)
     }
 
     <span class="doccomment">/// Remove the session key for this user from the hashmap.
@@ -275,10 +264,10 @@
 <span class="kw">impl </span>PostgresSessionCache {
     <span class="doccomment">/// Add a new session for the specified user. The previous session for that
     /// user will be overwritten.
-    </span><span class="attribute">#[instrument(skip_all, err(Debug), fields(session_id))]
+    </span><span class="attribute">#[instrument(skip_all, err(Debug), fields(account_id=<span class="question-mark">?</span>account_id, session_id))]
     </span><span class="kw">async fn </span>create_session(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        user_id: UserId,
+        account_id: AccountId,
         session_key: Encrypted&lt;OpaqueSessionKey&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Uuid, Error&gt; {
         <span class="macro">info!</span>(<span class="string">&quot;Creating session.&quot;</span>);
@@ -286,10 +275,10 @@
         <span class="kw">let </span>session_key = bincode::serialize(<span class="kw-2">&amp;</span>session_key)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>session_id = <span class="macro">sqlx::query!</span>(
-            <span class="string">&quot;INSERT INTO Session (user_id, session_key) \
+            <span class="string">&quot;INSERT INTO Session (account_id, session_key) \
              VALUES ($1, $2) \
              RETURNING session_id&quot;</span>,
-            user_id.as_ref(),
+            account_id.<span class="number">0</span>,
             session_key,
         )
         .fetch_one(<span class="kw-2">&amp;</span><span class="self">self</span>.connection_pool)
@@ -305,16 +294,13 @@
     /// This function checks if the session has expired and returns an error
     /// instead.
     </span><span class="attribute">#[instrument(skip(<span class="self">self</span>), err(Debug))]
-    </span><span class="kw">async fn </span>find_session(<span class="kw-2">&amp;</span><span class="self">self</span>, session_id: Uuid, user_id: UserId) -&gt; <span class="prelude-ty">Result</span>&lt;Session, Error&gt; {
-        <span class="macro">info!</span>(<span class="string">&quot;Finding session.&quot;</span>);
-
+    </span><span class="kw">async fn </span>find_session(<span class="kw-2">&amp;</span><span class="self">self</span>, session_id: Uuid) -&gt; <span class="prelude-ty">Result</span>&lt;Session, Error&gt; {
         <span class="kw">let </span>session_db = <span class="macro">sqlx::query_as!</span>(
             SessionDB,
-            <span class="string">&quot;SELECT session_id, user_id, timestamp, session_key \
+            <span class="string">&quot;SELECT session_id, account_id, timestamp, session_key \
             FROM Session \
-            WHERE session_id=$1 AND user_id=$2&quot;</span>,
+            WHERE session_id=$1&quot;</span>,
             session_id,
-            user_id.as_ref(),
         )
         .fetch_optional(<span class="kw-2">&amp;</span><span class="self">self</span>.connection_pool)
         .<span class="kw">await</span><span class="question-mark">?</span>;

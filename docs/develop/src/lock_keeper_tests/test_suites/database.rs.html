@@ -213,15 +213,6 @@
 <span id="213">213</span>
 <span id="214">214</span>
 <span id="215">215</span>
-<span id="216">216</span>
-<span id="217">217</span>
-<span id="218">218</span>
-<span id="219">219</span>
-<span id="220">220</span>
-<span id="221">221</span>
-<span id="222">222</span>
-<span id="223">223</span>
-<span id="224">224</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Database integration tests
 
 </span><span class="kw">pub mod </span>audit_event;
@@ -241,11 +232,11 @@
         Encrypted, Import, KeyId, MasterKey, RemoteStorageKey, Secret, SigningKeyPair, StorageKey,
     },
     types::database::{
+        account::{Account, AccountName, UserId},
         secrets::StoredSecret,
-        user::{AccountName, UserId},
     },
 };
-<span class="kw">use </span>lock_keeper_key_server::database::DataStore;
+<span class="kw">use </span>lock_keeper_key_server::server::database::DataStore;
 <span class="kw">use </span>lock_keeper_postgres::{Config, ConfigFile <span class="kw">as </span>DatabaseConfigFile, PostgresDB, PostgresError};
 <span class="kw">use </span>rand::{rngs::StdRng, Rng, SeedableRng};
 
@@ -341,45 +332,36 @@
 
     <span class="doccomment">/// Creates a test user with a randomized name and returns the id and
     /// account name.
-    </span><span class="kw">pub async fn </span>create_test_user(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(UserId, AccountName)&gt; {
+    </span><span class="kw">pub async fn </span>create_test_user(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Account&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>rng = StdRng::from_entropy();
 
         <span class="kw">let </span>user_id = UserId::new(<span class="kw-2">&amp;mut </span>rng)<span class="question-mark">?</span>;
         <span class="kw">let </span>account_name = AccountName::from(tagged(<span class="string">&quot;user&quot;</span>).as_str());
 
         <span class="kw">let </span>server_registration = server_registration();
-        <span class="kw">let _ </span>= <span class="self">self
+        <span class="kw">let </span>account_id = <span class="self">self
             </span>.db
             .create_account(<span class="kw-2">&amp;</span>user_id, <span class="kw-2">&amp;</span>account_name, <span class="kw-2">&amp;</span>server_registration)
             .<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="prelude-val">Ok</span>((user_id, account_name))
-    }
-
-    <span class="doccomment">/// Retrieves a user from the database and ensures that it can be
-    /// deserialized to the `User` type. Returns true if retrieval and
-    /// deserialization were successful.
-    </span><span class="kw">pub async fn </span>is_user_valid(<span class="kw-2">&amp;</span><span class="self">self</span>, account_name: <span class="kw-2">&amp;</span>AccountName) -&gt; bool {
-        <span class="kw">match </span><span class="self">self</span>.find_account(account_name).<span class="kw">await </span>{
-            <span class="prelude-val">Ok</span>(maybe_user) =&gt; maybe_user.is_some(),
-            <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="bool-val">false</span>,
-        }
+        <span class="prelude-val">Ok</span>(account_id)
     }
 
     <span class="doccomment">/// Generate and store `n` random secrets in our database.
     </span><span class="kw">async fn </span>create_random_arbitrary_secrets(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         n: usize,
-        user_id: <span class="kw-2">&amp;</span>UserId,
+        account: <span class="kw-2">&amp;</span>Account,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;KeyId&gt;&gt; {
-        <span class="kw">let </span>(encrypted_storage_key, master_key) = <span class="self">self</span>.create_test_storage_key(user_id)<span class="question-mark">?</span>;
-        <span class="kw">let </span>storage_key = encrypted_storage_key.decrypt_storage_key(master_key, user_id)<span class="question-mark">?</span>;
+        <span class="kw">let </span>(encrypted_storage_key, master_key) = <span class="self">self</span>.create_test_storage_key(<span class="kw-2">&amp;</span>account.user_id)<span class="question-mark">?</span>;
+        <span class="kw">let </span>storage_key =
+            encrypted_storage_key.decrypt_storage_key(master_key, <span class="kw-2">&amp;</span>account.user_id)<span class="question-mark">?</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>rng = StdRng::from_entropy();
 
         <span class="kw">let </span><span class="kw-2">mut </span>key_ids: Vec&lt;KeyId&gt; = <span class="macro">vec!</span>[];
         <span class="kw">for _ in </span><span class="number">0</span>..n {
             <span class="kw">let </span>key_id = <span class="self">self
-                </span>.add_arbitrary_secret(<span class="kw-2">&amp;mut </span>rng, <span class="kw-2">&amp;</span>storage_key, user_id)
+                </span>.add_arbitrary_secret(<span class="kw-2">&amp;mut </span>rng, <span class="kw-2">&amp;</span>storage_key, account)
                 .<span class="kw">await</span><span class="question-mark">?</span>;
             key_ids.push(key_id);
         }
@@ -392,23 +374,23 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         rng: <span class="kw-2">&amp;mut </span>StdRng,
         storage_key: <span class="kw-2">&amp;</span>StorageKey,
-        user_id: <span class="kw-2">&amp;</span>UserId,
+        account: <span class="kw-2">&amp;</span>Account,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;KeyId&gt; {
-        <span class="kw">let </span>key_id = KeyId::generate(rng, user_id)<span class="question-mark">?</span>;
-        <span class="kw">let </span>(<span class="kw">_</span>, encrypted) = Secret::create_and_encrypt(rng, storage_key, user_id, <span class="kw-2">&amp;</span>key_id)<span class="question-mark">?</span>;
+        <span class="kw">let </span>key_id = KeyId::generate(rng, <span class="kw-2">&amp;</span>account.user_id)<span class="question-mark">?</span>;
+        <span class="kw">let </span>(<span class="kw">_</span>, encrypted) =
+            Secret::create_and_encrypt(rng, storage_key, <span class="kw-2">&amp;</span>account.user_id, <span class="kw-2">&amp;</span>key_id)<span class="question-mark">?</span>;
 
-        <span class="kw">let </span>secret =
-            StoredSecret::from_arbitrary_secret(key_id.clone(), user_id.clone(), encrypted)<span class="question-mark">?</span>;
+        <span class="kw">let </span>secret = StoredSecret::from_arbitrary_secret(key_id.clone(), account.id(), encrypted)<span class="question-mark">?</span>;
         <span class="self">self</span>.db.add_secret(secret).<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(key_id)
     }
 
-    <span class="kw">async fn </span>import_signing_key(<span class="kw-2">&amp;</span><span class="self">self</span>, rng: <span class="kw-2">&amp;mut </span>StdRng, user_id: <span class="kw-2">&amp;</span>UserId) -&gt; <span class="prelude-ty">Result</span>&lt;KeyId&gt; {
-        <span class="kw">let </span>key_id = KeyId::generate(rng, user_id)<span class="question-mark">?</span>;
+    <span class="kw">async fn </span>import_signing_key(<span class="kw-2">&amp;</span><span class="self">self</span>, rng: <span class="kw-2">&amp;mut </span>StdRng, account: <span class="kw-2">&amp;</span>Account) -&gt; <span class="prelude-ty">Result</span>&lt;KeyId&gt; {
+        <span class="kw">let </span>key_id = KeyId::generate(rng, <span class="kw-2">&amp;</span>account.user_id)<span class="question-mark">?</span>;
         <span class="kw">let </span>random_bytes = rand::thread_rng().gen::&lt;[u8; <span class="number">32</span>]&gt;().to_vec();
         <span class="kw">let </span>import = Import::new(random_bytes)<span class="question-mark">?</span>;
-        <span class="kw">let </span>signing_key = import.into_signing_key(user_id, <span class="kw-2">&amp;</span>key_id)<span class="question-mark">?</span>;
+        <span class="kw">let </span>signing_key = import.into_signing_key(<span class="kw-2">&amp;</span>account.user_id, <span class="kw-2">&amp;</span>key_id)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>encryption_key = RemoteStorageKey::generate(rng);
         <span class="comment">// encrypt key_pair
@@ -417,7 +399,7 @@
         <span class="kw">let </span>secret = StoredSecret::from_remote_signing_key_pair(
             key_id.clone(),
             encrypted_key_pair,
-            user_id.clone(),
+            account.id(),
         )<span class="question-mark">?</span>;
         <span class="self">self</span>.add_secret(secret).<span class="kw">await</span><span class="question-mark">?</span>;
 
@@ -427,10 +409,10 @@
     <span class="kw">async fn </span>remote_generate_signing_key(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         rng: <span class="kw-2">&amp;mut </span>StdRng,
-        user_id: <span class="kw-2">&amp;</span>UserId,
+        account: <span class="kw-2">&amp;</span>Account,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;KeyId&gt; {
-        <span class="kw">let </span>key_id = KeyId::generate(rng, user_id)<span class="question-mark">?</span>;
-        <span class="kw">let </span>signing_key = SigningKeyPair::remote_generate(rng, user_id, <span class="kw-2">&amp;</span>key_id);
+        <span class="kw">let </span>key_id = KeyId::generate(rng, <span class="kw-2">&amp;</span>account.user_id)<span class="question-mark">?</span>;
+        <span class="kw">let </span>signing_key = SigningKeyPair::remote_generate(rng, <span class="kw-2">&amp;</span>account.user_id, <span class="kw-2">&amp;</span>key_id);
 
         <span class="kw">let </span>encryption_key = RemoteStorageKey::generate(rng);
 
@@ -440,7 +422,7 @@
         <span class="kw">let </span>secret = StoredSecret::from_remote_signing_key_pair(
             key_id.clone(),
             encrypted_key_pair,
-            user_id.clone(),
+            account.id(),
         )<span class="question-mark">?</span>;
         <span class="self">self</span>.add_secret(secret).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(key_id)

@@ -35,9 +35,8 @@
 <span id="35">35</span>
 <span id="36">36</span>
 <span id="37">37</span>
-<span id="38">38</span>
 </pre><pre class="rust"><code><span class="kw">pub mod </span>client {
-    <span class="kw">use crate</span>::{config::opaque::OpaqueCipherSuite, types::database::user::AccountName};
+    <span class="kw">use crate</span>::{config::opaque::OpaqueCipherSuite, types::database::account::AccountName};
     <span class="kw">use </span>opaque_ke::{CredentialFinalization, CredentialRequest};
     <span class="kw">use </span>serde::{Deserialize, Serialize};
 
@@ -52,7 +51,6 @@
     </span><span class="doccomment">/// Pass account name and registration-finish message from OPAQUE.
     </span><span class="kw">pub struct </span>AuthenticateFinish {
         <span class="kw">pub </span>credential_finalization: CredentialFinalization&lt;OpaqueCipherSuite&gt;,
-        <span class="kw">pub </span>account_name: AccountName,
     }
 }
 

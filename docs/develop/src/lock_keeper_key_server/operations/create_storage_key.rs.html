@@ -76,23 +76,19 @@
 <span id="76">76</span>
 <span id="77">77</span>
 <span id="78">78</span>
-<span id="79">79</span>
-<span id="80">80</span>
-<span id="81">81</span>
-<span id="82">82</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{
     error::LockKeeperServerError,
-    server::{Context, Operation},
+    server::{
+        channel::{Authenticated, Channel},
+        Context, Operation,
+    },
 };
 
-<span class="kw">use </span><span class="kw">crate</span>::database::DataStore;
+<span class="kw">use </span><span class="kw">crate</span>::server::database::DataStore;
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>lock_keeper::{
-    infrastructure::channel::{Authenticated, ServerChannel},
-    types::{
-        database::user::UserId,
-        operations::create_storage_key::{client, server},
-    },
+    infrastructure::logging,
+    types::operations::create_storage_key::{client, server},
 };
 <span class="kw">use </span>rand::rngs::StdRng;
 <span class="kw">use </span>tracing::{error, info, instrument};
@@ -105,17 +101,14 @@
     <span class="attribute">#[instrument(skip_all, err(Debug))]
     </span><span class="kw">async fn </span>operation(
         <span class="self">self</span>,
-        channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;Authenticated&lt;StdRng&gt;&gt;,
+        channel: <span class="kw-2">&amp;mut </span>Channel&lt;Authenticated&lt;StdRng&gt;&gt;,
         context: <span class="kw-2">&amp;mut </span>Context&lt;DB&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
         <span class="macro">info!</span>(<span class="string">&quot;Starting create storage key operation.&quot;</span>);
 
-        <span class="kw">let </span>user_id = channel
-            .metadata()
-            .user_id()
-            .ok_or(LockKeeperServerError::InvalidAccount)<span class="question-mark">?</span>;
-        store_storage_key(user_id.clone(), channel, context).<span class="kw">await</span><span class="question-mark">?</span>;
+        store_storage_key(channel, context).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="macro">info!</span>(<span class="string">&quot;Successfully finished set storage key protocol.&quot;</span>);
+
         <span class="prelude-val">Ok</span>(())
     }
 }
@@ -125,40 +118,39 @@
 /// 2) Look up user in database.
 /// 3) Ensure this user doesn&#39;t already have a storage key.
 /// 4) Reply to client via channel.
-</span><span class="attribute">#[instrument(skip_all, err(Debug), fields(user_id))]
+</span><span class="attribute">#[instrument(skip_all, err(Debug), fields(account_id))]
 </span><span class="kw">async fn </span>store_storage_key&lt;DB: DataStore&gt;(
-    user_id: UserId,
-    channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;Authenticated&lt;StdRng&gt;&gt;,
+    channel: <span class="kw-2">&amp;mut </span>Channel&lt;Authenticated&lt;StdRng&gt;&gt;,
     context: <span class="kw-2">&amp;</span>Context&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
     <span class="macro">info!</span>(<span class="string">&quot;Storing storage key.&quot;</span>);
     <span class="kw">let </span>client_message: client::SendStorageKey = channel.receive().<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let </span>user = context
-        .db
-        .find_account_by_id(<span class="kw-2">&amp;</span>user_id)
-        .<span class="kw">await</span><span class="question-mark">?
-        </span>.ok_or(LockKeeperServerError::InvalidAccount)<span class="question-mark">?</span>;
+    <span class="kw">let </span>account_id = channel.account_id();
+    logging::record_field(<span class="string">&quot;account_id&quot;</span>, <span class="kw-2">&amp;</span>account_id);
 
-    <span class="kw">if </span>user.storage_key.is_some() {
+    <span class="kw">if </span>channel.account().storage_key.is_some() {
         <span class="kw">return </span><span class="prelude-val">Err</span>(LockKeeperServerError::StorageKeyAlreadySet);
     }
 
     <span class="kw">let </span>store_key_result = context
         .db
-        .set_storage_key(<span class="kw-2">&amp;</span>user_id, client_message.storage_key)
+        .set_storage_key(account_id, client_message.storage_key.clone())
         .<span class="kw">await</span>;
 
     <span class="comment">// Delete user if we fail to set the storage key.
     </span><span class="kw">if let </span><span class="prelude-val">Err</span>(e) = store_key_result {
         <span class="macro">error!</span>(<span class="string">&quot;Failed to set storage key for user.&quot;</span>);
-        context.db.delete_account(<span class="kw-2">&amp;</span>user_id).<span class="kw">await</span><span class="question-mark">?</span>;
+        context.db.delete_account(account_id).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="macro">info!</span>(<span class="string">&quot;Deleted user due to failure to set storage key.&quot;</span>);
         <span class="kw">return </span><span class="prelude-val">Err</span>(e.into());
     }
 
     <span class="kw">let </span>reply = server::CreateStorageKeyResult { success: <span class="bool-val">true </span>};
     channel.send(reply).<span class="kw">await</span><span class="question-mark">?</span>;
+
+    <span class="comment">// Set the storage key in the cached account data stored in the channel.
+    </span>channel.set_storage_key(client_message.storage_key);
 
     <span class="prelude-val">Ok</span>(())
 }

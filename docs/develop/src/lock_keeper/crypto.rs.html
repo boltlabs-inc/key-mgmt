@@ -539,7 +539,7 @@
 <span class="kw">use </span>tracing::error;
 <span class="kw">use </span>zeroize::{Zeroize, ZeroizeOnDrop};
 
-<span class="kw">use </span><span class="kw">crate</span>::types::database::user::UserId;
+<span class="kw">use </span><span class="kw">crate</span>::types::database::account::UserId;
 
 <span class="kw">mod </span>arbitrary_secret;
 <span class="kw">mod </span>generic;
@@ -583,7 +583,7 @@
 <span class="kw">impl </span>OpaqueSessionKey {
     <span class="doccomment">/// Encrypt the given [`Message`] under the [`OpaqueSessionKey`] using an
     /// AEAD scheme.
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>encrypt(
+    </span><span class="kw">pub fn </span>encrypt(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         rng: <span class="kw-2">&amp;mut </span>(<span class="kw">impl </span>CryptoRng + RngCore),
         message: Message,
@@ -756,7 +756,7 @@
 
     <span class="doccomment">/// Translates an [`Encrypted&lt;Message&gt;`] to a [`Message`] in order to be
     /// sent through an authenticated channel.
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>try_into_message(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Message, LockKeeperError&gt; {
+    </span><span class="kw">pub fn </span>try_into_message(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Message, LockKeeperError&gt; {
         <span class="kw">let </span>content = serde_json::to_vec(<span class="kw-2">&amp;</span><span class="self">self</span>)<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(Message { content })
@@ -764,7 +764,7 @@
 
     <span class="doccomment">/// Translates a [`Message`] received through an authenticated channel to an
     /// [`Encrypted&lt;Message&gt;`].
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>try_from_message(message: Message) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, LockKeeperError&gt; {
+    </span><span class="kw">pub fn </span>try_from_message(message: Message) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, LockKeeperError&gt; {
         <span class="prelude-val">Ok</span>(serde_json::from_slice(<span class="kw-2">&amp;</span>message.content)<span class="question-mark">?</span>)
     }
 }

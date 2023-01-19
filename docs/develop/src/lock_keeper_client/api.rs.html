@@ -417,9 +417,6 @@
 <span id="417">417</span>
 <span id="418">418</span>
 <span id="419">419</span>
-<span id="420">420</span>
-<span id="421">421</span>
-<span id="422">422</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Full implementation of the public API for the Lock Keeper client library.
 //!
 //! This API is designed for use with a local client application - that is, an
@@ -446,7 +443,7 @@
     crypto::{Export, Import, KeyId, Secret, Signable, Signature},
     types::{
         audit_event::{AuditEvent, AuditEventOptions, EventType},
-        database::user::AccountName,
+        database::account::AccountName,
         operations::{retrieve_secret::RetrieveContext, ClientAction, RequestMetadata},
     },
 };
@@ -539,8 +536,7 @@
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperClientError&gt; {
         <span class="kw">let </span>rng = StdRng::from_entropy();
         <span class="kw">let </span><span class="kw-2">mut </span>client = <span class="self">Self</span>::connect(config).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="kw">let </span>metadata =
-            RequestMetadata::new(account_name, ClientAction::Register, <span class="prelude-val">None</span>, <span class="prelude-val">None</span>, request_id);
+        <span class="kw">let </span>metadata = RequestMetadata::new(account_name, ClientAction::Register, <span class="prelude-val">None</span>, request_id);
         <span class="kw">let </span>rng_arc_mutex = Arc::new(Mutex::new(rng));
         <span class="kw">let </span>client_channel = <span class="self">Self</span>::create_channel(<span class="kw-2">&amp;mut </span>client, <span class="kw-2">&amp;</span>metadata).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">let </span>master_key = <span class="self">Self</span>::handle_registration(
@@ -804,10 +800,8 @@
     /// and each asset fiduciary (if relevant), and any other relevant
     /// details.
     ///
-    /// The [`lock_keeper::types::database::user::UserId`] must match the asset
-    /// owner authenticated in the [`crate::LockKeeperClient`], and if
-    /// specified, the [`KeyId`] must correspond to a key owned by the
-    /// [`lock_keeper::types::database::user::UserId`].
+    /// If specified, the [`KeyId`] must correspond to a key owned by the
+    /// authenticated account.
     ///
     /// Output: if successful, returns a [`String`] representation of the logs.
     </span><span class="kw">pub async fn </span>retrieve_audit_event_log(

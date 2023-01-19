@@ -42,17 +42,18 @@
 <span id="42">42</span>
 <span id="43">43</span>
 <span id="44">44</span>
+<span id="45">45</span>
 </pre><pre class="rust"><code><span class="doccomment">//! This operation allows client to retrieve the stored audit event logs.
 </span><span class="kw">use crate</span>::{
-    database::DataStore,
-    server::{Context, Operation},
+    server::{
+        channel::{Authenticated, Channel},
+        database::DataStore,
+        Context, Operation,
+    },
     LockKeeperServerError,
 };
 <span class="kw">use </span>async_trait::async_trait;
-<span class="kw">use </span>lock_keeper::{
-    infrastructure::channel::{Authenticated, ServerChannel},
-    types::operations::retrieve_audit_events::{client, server},
-};
+<span class="kw">use </span>lock_keeper::types::operations::retrieve_audit_events::{client, server};
 <span class="kw">use </span>rand::rngs::StdRng;
 <span class="kw">use </span>tracing::{info, instrument};
 
@@ -64,17 +65,18 @@
     <span class="attribute">#[instrument(skip_all, err(Debug))]
     </span><span class="kw">async fn </span>operation(
         <span class="self">self</span>,
-        channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;Authenticated&lt;StdRng&gt;&gt;,
+        channel: <span class="kw-2">&amp;mut </span>Channel&lt;Authenticated&lt;StdRng&gt;&gt;,
         context: <span class="kw-2">&amp;mut </span>Context&lt;DB&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
         <span class="macro">info!</span>(<span class="string">&quot;Starting retrieve audit events protocol&quot;</span>);
         <span class="comment">// Receive event type and options for audit events to return
         </span><span class="kw">let </span>request: client::Request = channel.receive().<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="kw">let </span>account_name = channel.metadata().account_name();
+        <span class="kw">let </span>account_id = channel.account_id();
+
         <span class="kw">let </span>audit_events = context
             .db
-            .find_audit_events(account_name, request.event_type, request.options)
+            .find_audit_events(account_id, request.event_type, request.options)
             .<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="kw">let </span>reply = server::Response {

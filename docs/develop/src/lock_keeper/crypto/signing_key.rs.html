@@ -810,7 +810,7 @@
         signing_key::generation_types::{CLIENT_GENERATED, IMPORTED, SERVER_GENERATED},
         RemoteStorageKey,
     },
-    types::database::user::UserId,
+    types::database::account::UserId,
     LockKeeperError,
 };
 <span class="kw">use </span>k256::ecdsa::{
@@ -1209,7 +1209,7 @@
 
     <span class="kw">use crate</span>::{
         crypto::{generic::AssociatedData, CryptoError, KeyId, SigningKeyPair, StorageKey},
-        types::database::user::UserId,
+        types::database::account::UserId,
         LockKeeperError,
     };
     <span class="kw">use </span>k256::{ecdsa::SigningKey, schnorr::signature::Signature <span class="kw">as </span>EcdsaSignature};

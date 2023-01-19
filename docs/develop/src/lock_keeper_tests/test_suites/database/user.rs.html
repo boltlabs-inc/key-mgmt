@@ -132,8 +132,8 @@
 </pre><pre class="rust"><code><span class="doccomment">//! Integration tests for user objects in the database
 
 </span><span class="kw">use </span>colored::Colorize;
-<span class="kw">use </span>lock_keeper::types::database::user::{AccountName, UserId};
-<span class="kw">use </span>lock_keeper_key_server::database::DataStore;
+<span class="kw">use </span>lock_keeper::types::database::account::{AccountName, UserId};
+<span class="kw">use </span>lock_keeper_key_server::server::database::DataStore;
 <span class="kw">use </span>rand::{rngs::StdRng, SeedableRng};
 
 <span class="kw">use crate</span>::{
@@ -162,25 +162,24 @@
 }
 
 <span class="kw">async fn </span>user_findable_by_account_name(db: TestDatabase) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    <span class="kw">let </span>(<span class="kw">_</span>, account_name) = db.create_test_user().<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>account = db.create_test_user().<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let </span>user = db.find_account(<span class="kw-2">&amp;</span>account_name).<span class="kw">await</span><span class="question-mark">?</span>.unwrap();
-    <span class="macro">assert_eq!</span>(user.account_name, account_name);
+    <span class="kw">let </span>user = db.find_account(account.id()).<span class="kw">await</span><span class="question-mark">?</span>.unwrap();
+    <span class="macro">assert_eq!</span>(user.account_id, account.id());
 
     <span class="prelude-val">Ok</span>(())
 }
 
 <span class="kw">async fn </span>user_findable_by_id(db: TestDatabase) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    <span class="kw">let </span>(user_id, account_name) = db.create_test_user().<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>account = db.create_test_user().<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let </span>user = db.find_account(<span class="kw-2">&amp;</span>account_name).<span class="kw">await</span><span class="question-mark">?</span>.unwrap();
-    <span class="macro">assert_eq!</span>(user.user_id, user_id);
+    <span class="kw">let </span>user = db.find_account(account.id()).<span class="kw">await</span><span class="question-mark">?</span>.unwrap();
+    <span class="macro">assert_eq!</span>(user.account_id, account.id());
 
-    <span class="kw">let </span>user = db.find_account_by_id(<span class="kw-2">&amp;</span>user_id).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="macro">assert!</span>(user.is_some());
+    <span class="kw">let </span>user = db.find_account_by_name(<span class="kw-2">&amp;</span>account.account_name).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="kw">let </span>user = user.unwrap();
-    <span class="macro">assert_eq!</span>(user.user_id, user_id);
+    <span class="macro">assert_eq!</span>(user.account_id, account.account_id);
 
     <span class="prelude-val">Ok</span>(())
 }
@@ -221,21 +220,21 @@
 }
 
 <span class="kw">async fn </span>user_is_deleted(db: TestDatabase) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    <span class="kw">let </span>(user_id, <span class="kw">_</span>) = db.create_test_user().<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>account = db.create_test_user().<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="comment">// Ensure that the user was created
-    </span><span class="kw">let </span>user = db.find_account_by_id(<span class="kw-2">&amp;</span>user_id).<span class="kw">await</span><span class="question-mark">?</span>;
+    </span><span class="kw">let </span>user = db.find_account(account.id()).<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="macro">assert!</span>(user.is_some());
 
     <span class="comment">// Delete the user
-    </span>db.delete_account(<span class="kw-2">&amp;</span>user_id).<span class="kw">await</span><span class="question-mark">?</span>;
+    </span>db.delete_account(account.id()).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="comment">// Ensure that the user was deleted
-    </span><span class="kw">let </span>user = db.find_account_by_id(<span class="kw-2">&amp;</span>user_id).<span class="kw">await</span><span class="question-mark">?</span>;
+    </span><span class="kw">let </span>user = db.find_account(account.id()).<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="macro">assert!</span>(user.is_none());
 
     <span class="comment">// Ensure that an error is returned if the user is deleted again
-    </span><span class="kw">let </span>result = db.delete_account(<span class="kw-2">&amp;</span>user_id).<span class="kw">await</span>;
+    </span><span class="kw">let </span>result = db.delete_account(account.id()).<span class="kw">await</span>;
     <span class="macro">assert!</span>(result.is_err());
 
     <span class="prelude-val">Ok</span>(())
@@ -243,19 +242,20 @@
 
 <span class="doccomment">/// Test that `set_storage_key` works correctly
 </span><span class="kw">async fn </span>storage_key_is_set(db: TestDatabase) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    <span class="kw">let </span>(user_id, account_name) = db.create_test_user().<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>account = db.create_test_user().<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="comment">// Ensure that the user was created an no storage key is set
-    </span><span class="kw">let </span>user = db.find_account(<span class="kw-2">&amp;</span>account_name).<span class="kw">await</span><span class="question-mark">?</span>.unwrap();
+    </span><span class="kw">let </span>user = db.find_account(account.id()).<span class="kw">await</span><span class="question-mark">?</span>.unwrap();
     <span class="macro">assert!</span>(user.storage_key.is_none());
 
     <span class="comment">// Create a storage key
-    </span><span class="kw">let </span>(storage_key, <span class="kw">_</span>) = db.create_test_storage_key(<span class="kw-2">&amp;</span>user_id)<span class="question-mark">?</span>;
+    </span><span class="kw">let </span>(storage_key, <span class="kw">_</span>) = db.create_test_storage_key(<span class="kw-2">&amp;</span>account.user_id)<span class="question-mark">?</span>;
 
     <span class="comment">// Set storage key and check that it is correct in the database
-    </span>db.set_storage_key(<span class="kw-2">&amp;</span>user_id, storage_key.clone()).<span class="kw">await</span><span class="question-mark">?</span>;
+    </span>db.set_storage_key(account.id(), storage_key.clone())
+        .<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let </span>user = db.find_account(<span class="kw-2">&amp;</span>account_name).<span class="kw">await</span><span class="question-mark">?</span>.unwrap();
+    <span class="kw">let </span>user = db.find_account(account.id()).<span class="kw">await</span><span class="question-mark">?</span>.unwrap();
     <span class="macro">assert_eq!</span>(user.storage_key, <span class="prelude-val">Some</span>(storage_key.clone()));
 
     <span class="prelude-val">Ok</span>(())

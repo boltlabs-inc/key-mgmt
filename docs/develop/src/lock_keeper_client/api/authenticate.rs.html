@@ -90,17 +90,18 @@
 <span id="90">90</span>
 <span id="91">91</span>
 <span id="92">92</span>
-<span id="93">93</span>
-</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::client::{AuthenticateResult, LockKeeperClient, Password};
+</pre><pre class="rust"><code><span class="kw">use crate</span>::{
+    channel::{Channel, Unauthenticated},
+    client::{AuthenticateResult, LockKeeperClient, Password},
+};
 <span class="kw">use </span>std::sync::Arc;
 
 <span class="kw">use </span><span class="kw">crate</span>::LockKeeperClientError;
 <span class="kw">use </span>lock_keeper::{
     config::opaque::OpaqueCipherSuite,
     crypto::{MasterKey, OpaqueSessionKey},
-    infrastructure::channel::{ClientChannel, Unauthenticated},
     types::{
-        database::user::AccountName,
+        database::account::AccountName,
         operations::authenticate::{client, server},
     },
 };
@@ -110,7 +111,7 @@
 
 <span class="kw">impl </span>LockKeeperClient {
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>handle_authentication(
-        <span class="kw-2">mut </span>channel: ClientChannel&lt;Unauthenticated&gt;,
+        <span class="kw-2">mut </span>channel: Channel&lt;Unauthenticated&gt;,
         rng: Arc&lt;Mutex&lt;StdRng&gt;&gt;,
         account_name: <span class="kw-2">&amp;</span>AccountName,
         password: <span class="kw-2">&amp;</span>Password,
@@ -127,7 +128,6 @@
         <span class="comment">// Handle finish step
         </span><span class="kw">let </span>auth_result = authenticate_finish(
             <span class="kw-2">&amp;mut </span>channel,
-            account_name,
             password,
             client_login_start_result,
             server_start_result,
@@ -139,7 +139,7 @@
 }
 
 <span class="kw">async fn </span>authenticate_start(
-    channel: <span class="kw-2">&amp;mut </span>ClientChannel&lt;Unauthenticated&gt;,
+    channel: <span class="kw-2">&amp;mut </span>Channel&lt;Unauthenticated&gt;,
     client_login_start_result: <span class="kw-2">&amp;</span>ClientLoginStartResult&lt;OpaqueCipherSuite&gt;,
     account_name: <span class="kw-2">&amp;</span>AccountName,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;server::AuthenticateStart, LockKeeperClientError&gt; {
@@ -154,8 +154,7 @@
 }
 
 <span class="kw">async fn </span>authenticate_finish(
-    channel: <span class="kw-2">&amp;mut </span>ClientChannel&lt;Unauthenticated&gt;,
-    account_name: <span class="kw-2">&amp;</span>AccountName,
+    channel: <span class="kw-2">&amp;mut </span>Channel&lt;Unauthenticated&gt;,
     password: <span class="kw-2">&amp;</span>Password,
     client_start_result: ClientLoginStartResult&lt;OpaqueCipherSuite&gt;,
     server_start_result: server::AuthenticateStart,
@@ -168,7 +167,6 @@
 
     <span class="kw">let </span>reply = client::AuthenticateFinish {
         credential_finalization: client_login_finish_result.message.clone(),
-        account_name: account_name.clone(),
     };
 
     channel.send(reply).<span class="kw">await</span><span class="question-mark">?</span>;

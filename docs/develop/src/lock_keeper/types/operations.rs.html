@@ -170,20 +170,6 @@
 <span id="170">170</span>
 <span id="171">171</span>
 <span id="172">172</span>
-<span id="173">173</span>
-<span id="174">174</span>
-<span id="175">175</span>
-<span id="176">176</span>
-<span id="177">177</span>
-<span id="178">178</span>
-<span id="179">179</span>
-<span id="180">180</span>
-<span id="181">181</span>
-<span id="182">182</span>
-<span id="183">183</span>
-<span id="184">184</span>
-<span id="185">185</span>
-<span id="186">186</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Types related to server operations and the protocols they execute.
 
 </span><span class="kw">pub mod </span>authenticate;
@@ -199,10 +185,7 @@
 <span class="kw">pub mod </span>retrieve_secret;
 <span class="kw">pub mod </span>retrieve_storage_key;
 
-<span class="kw">use crate</span>::{
-    types::database::user::{AccountName, UserId},
-    LockKeeperError,
-};
+<span class="kw">use crate</span>::{types::database::account::AccountName, LockKeeperError};
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>strum::{Display, EnumIter, EnumString};
 <span class="kw">use </span>tonic::metadata::{Ascii, MetadataValue};
@@ -291,7 +274,6 @@
 </span><span class="kw">pub struct </span>RequestMetadata {
     account_name: AccountName,
     action: ClientAction,
-    user_id: <span class="prelude-ty">Option</span>&lt;UserId&gt;,
     session_id: <span class="prelude-ty">Option</span>&lt;Uuid&gt;,
     request_id: Uuid,
 }
@@ -300,14 +282,12 @@
     <span class="kw">pub fn </span>new(
         account_name: <span class="kw-2">&amp;</span>AccountName,
         action: ClientAction,
-        user_id: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>UserId&gt;,
         session_id: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>Uuid&gt;,
         request_id: Uuid,
     ) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
             account_name: account_name.clone(),
             action,
-            user_id: user_id.cloned(),
             session_id: session_id.cloned(),
             request_id,
         }
@@ -325,16 +305,8 @@
         <span class="self">self</span>.request_id
     }
 
-    <span class="kw">pub fn </span>user_id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>UserId&gt; {
-        <span class="self">self</span>.user_id.as_ref()
-    }
-
     <span class="kw">pub fn </span>session_id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>Uuid&gt; {
         <span class="self">self</span>.session_id.as_ref()
-    }
-
-    <span class="kw">pub fn </span>set_user_id(<span class="kw-2">&amp;mut </span><span class="self">self</span>, user_id: UserId) {
-        <span class="self">self</span>.user_id = <span class="prelude-val">Some</span>(user_id);
     }
 }
 

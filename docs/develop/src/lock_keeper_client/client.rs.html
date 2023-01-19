@@ -355,23 +355,22 @@
 <span id="355">355</span>
 <span id="356">356</span>
 <span id="357">357</span>
-<span id="358">358</span>
-<span id="359">359</span>
-<span id="360">360</span>
-<span id="361">361</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Client object to interact with the key server.
 
-</span><span class="kw">use crate</span>::{config::Config, LockKeeperClientError, <span class="prelude-ty">Result</span>};
+</span><span class="kw">use crate</span>::{
+    channel::{Authenticated, Channel, Unauthenticated},
+    config::Config,
+    LockKeeperClientError, <span class="prelude-ty">Result</span>,
+};
 <span class="kw">use </span>http_body::combinators::UnsyncBoxBody;
 <span class="kw">use </span>hyper::client::HttpConnector;
 <span class="kw">use </span>hyper_rustls::HttpsConnector;
 <span class="kw">use </span>lock_keeper::{
     constants::METADATA,
     crypto::{MasterKey, OpaqueSessionKey, StorageKey},
-    infrastructure::channel::{Authenticated, ClientChannel, Unauthenticated},
     rpc::lock_keeper_rpc_client::LockKeeperRpcClient,
     types::{
-        database::user::{AccountName, UserId},
+        database::account::{AccountName, UserId},
         operations::{
             logout::server <span class="kw">as </span>logout_server, retrieve_storage_key::server, ClientAction,
             RequestMetadata,
@@ -498,13 +497,8 @@
             <span class="prelude-val">None </span>=&gt; <span class="self">Self</span>::connect(config).<span class="kw">await</span><span class="question-mark">?</span>,
         };
 
-        <span class="kw">let </span>metadata = RequestMetadata::new(
-            account_name,
-            ClientAction::Authenticate,
-            <span class="prelude-val">None</span>,
-            <span class="prelude-val">None</span>,
-            request_id,
-        );
+        <span class="kw">let </span>metadata =
+            RequestMetadata::new(account_name, ClientAction::Authenticate, <span class="prelude-val">None</span>, request_id);
         <span class="kw">let </span><span class="kw-2">mut </span>rng = StdRng::from_entropy();
         <span class="kw">let </span>rng_arc_mutex = Arc::new(Mutex::new(rng));
         <span class="kw">let </span><span class="kw-2">mut </span>client_channel = <span class="self">Self</span>::create_channel(<span class="kw-2">&amp;mut </span>client, <span class="kw-2">&amp;</span>metadata).<span class="kw">await</span><span class="question-mark">?</span>;
@@ -520,7 +514,6 @@
         </span><span class="kw">let </span>metadata = RequestMetadata::new(
             account_name,
             ClientAction::GetUserId,
-            <span class="prelude-val">None</span>,
             <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>auth_result.session_id),
             request_id,
         );
@@ -558,13 +551,12 @@
         RequestMetadata::new(
             <span class="self">self</span>.account_name(),
             action,
-            <span class="prelude-val">Some</span>(<span class="self">self</span>.user_id()),
             <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.session.session_id),
             request_id,
         )
     }
 
-    <span class="doccomment">/// Helper to create the appropriate [`ClientChannel`] to send to tonic
+    <span class="doccomment">/// Helper to create the appropriate [`Channel`] to send to tonic
     /// handler functions based on the client&#39;s action. This function creates
     /// unauthenticated channels. Use `create_authenticated_channel` to create
     /// an authenticated channel.
@@ -574,7 +566,7 @@
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>create_channel(
         client: <span class="kw-2">&amp;mut </span>LockKeeperRpcClient&lt;LockKeeperRpcClientInner&gt;,
         metadata: <span class="kw-2">&amp;</span>RequestMetadata,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;ClientChannel&lt;Unauthenticated&gt;&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Channel&lt;Unauthenticated&gt;&gt; {
         <span class="comment">// Create channel to send messages to server after connection is established via
         // RPC
         </span><span class="kw">let </span>(tx, rx) = mpsc::channel(<span class="number">2</span>);
@@ -606,11 +598,11 @@
             }
         }<span class="question-mark">?</span>;
 
-        <span class="kw">let </span><span class="kw-2">mut </span>channel = ClientChannel::new(tx, server_response)<span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>channel = Channel::new(tx, server_response)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(channel)
     }
 
-    <span class="doccomment">/// Helper to create the appropriate [`ClientChannel`] to send to tonic
+    <span class="doccomment">/// Helper to create the appropriate [`Channel`] to send to tonic
     /// handler functions based on the client&#39;s action. This function creates
     /// authenticated channels. Use `create_channel` to create
     /// an unauthenticated channel.
@@ -622,7 +614,7 @@
         metadata: <span class="kw-2">&amp;</span>RequestMetadata,
         session_key: OpaqueSessionKey,
         rng: Arc&lt;Mutex&lt;StdRng&gt;&gt;,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;ClientChannel&lt;Authenticated&lt;StdRng&gt;&gt;&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Channel&lt;Authenticated&lt;StdRng&gt;&gt;&gt; {
         <span class="comment">// Create channel to send messages to server after connection is established via
         // RPC
         </span><span class="kw">let </span>(tx, rx) = mpsc::channel(<span class="number">2</span>);
@@ -655,7 +647,7 @@
         }<span class="question-mark">?</span>;
 
         <span class="kw">let </span><span class="kw-2">mut </span>channel =
-            ClientChannel::new(tx, server_response)<span class="question-mark">?</span>.into_authenticated(session_key, rng.clone());
+            Channel::new(tx, server_response)<span class="question-mark">?</span>.into_authenticated(session_key, rng.clone());
         <span class="prelude-val">Ok</span>(channel)
     }
 

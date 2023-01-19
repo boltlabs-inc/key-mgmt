@@ -85,68 +85,150 @@
 <span id="85">85</span>
 <span id="86">86</span>
 <span id="87">87</span>
+<span id="88">88</span>
+<span id="89">89</span>
+<span id="90">90</span>
+<span id="91">91</span>
+<span id="92">92</span>
+<span id="93">93</span>
+<span id="94">94</span>
+<span id="95">95</span>
+<span id="96">96</span>
+<span id="97">97</span>
+<span id="98">98</span>
+<span id="99">99</span>
+<span id="100">100</span>
+<span id="101">101</span>
+<span id="102">102</span>
+<span id="103">103</span>
+<span id="104">104</span>
+<span id="105">105</span>
+<span id="106">106</span>
+<span id="107">107</span>
+<span id="108">108</span>
+<span id="109">109</span>
+<span id="110">110</span>
+<span id="111">111</span>
+<span id="112">112</span>
+<span id="113">113</span>
+<span id="114">114</span>
+<span id="115">115</span>
+<span id="116">116</span>
+<span id="117">117</span>
+<span id="118">118</span>
+<span id="119">119</span>
+<span id="120">120</span>
+<span id="121">121</span>
+<span id="122">122</span>
+<span id="123">123</span>
+<span id="124">124</span>
+<span id="125">125</span>
+<span id="126">126</span>
+<span id="127">127</span>
+<span id="128">128</span>
 </pre><pre class="rust"><code><span class="kw">use </span>async_trait::async_trait;
 
-<span class="kw">use </span>lock_keeper::{
-    infrastructure::{channel::ServerChannel, logging},
-    types::audit_event::EventStatus,
-};
+<span class="kw">use </span>lock_keeper::{infrastructure::logging, types::audit_event::EventStatus};
+<span class="kw">use </span>rand::rngs::StdRng;
 <span class="kw">use </span>tracing::{error, info, instrument, Instrument};
 
-<span class="kw">use crate</span>::{database::DataStore, server::Context, LockKeeperServerError};
+<span class="kw">use crate</span>::{
+    server::{database::DataStore, Context},
+    LockKeeperServerError,
+};
+
+<span class="kw">use </span><span class="kw">super</span>::channel::{Authenticated, Channel, Unauthenticated};
 
 <span class="attribute">#[async_trait]
 </span><span class="doccomment">/// A type implementing [`Operation`] can process `tonic` requests using a
-/// message-passing protocol facilitated by a [`ServerChannel`].
+/// message-passing protocol facilitated by a [`Channel`].
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">trait </span>Operation&lt;AUTH: Send + <span class="lifetime">&#39;static</span>, DB: DataStore&gt;:
     Sized + Send + <span class="lifetime">&#39;static
 </span>{
     <span class="doccomment">/// Core logic for a given operation.
     </span><span class="kw">async fn </span>operation(
         <span class="self">self</span>,
-        channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;AUTH&gt;,
+        channel: <span class="kw-2">&amp;mut </span>Channel&lt;AUTH&gt;,
         context: <span class="kw-2">&amp;mut </span>Context&lt;DB&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt;;
+}
 
-    <span class="doccomment">/// Takes a request from `tonic` and spawns a new thread to process that
-    /// request through the logic defined by the `Operation::operation` method.
-    /// Any errors returned by the operation are logged and an appropriate error
-    /// message is sent to the client.
-    </span><span class="attribute">#[instrument(skip_all, err(Debug), fields(metadata, request_id))]
-    </span><span class="kw">async fn </span>handle_request(
-        <span class="self">self</span>,
-        <span class="kw-2">mut </span>context: Context&lt;DB&gt;,
-        <span class="kw-2">mut </span>channel: ServerChannel&lt;AUTH&gt;,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
-        logging::record_field(<span class="string">&quot;metadata&quot;</span>, <span class="kw-2">&amp;</span>channel.metadata());
-        logging::record_field(<span class="string">&quot;request_id&quot;</span>, <span class="kw-2">&amp;</span>channel.metadata().request_id());
-        <span class="macro">info!</span>(<span class="string">&quot;Handling new client request.&quot;</span>);
+<span class="doccomment">/// Takes a request from `tonic` and spawns a new thread to process that
+/// request through the logic defined by the `Operation::operation` method.
+/// Any errors returned by the operation are logged and an appropriate error
+/// message is sent to the client.
+</span><span class="attribute">#[instrument(skip_all, err(Debug), fields(metadata, request_id))]
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>handle_authenticated_request&lt;
+    DB: DataStore,
+    O: Operation&lt;Authenticated&lt;StdRng&gt;, DB&gt;,
+&gt;(
+    operation: O,
+    <span class="kw-2">mut </span>context: Context&lt;DB&gt;,
+    <span class="kw-2">mut </span>channel: Channel&lt;Authenticated&lt;StdRng&gt;&gt;,
+) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
+    logging::record_field(<span class="string">&quot;metadata&quot;</span>, <span class="kw-2">&amp;</span>channel.metadata());
+    logging::record_field(<span class="string">&quot;request_id&quot;</span>, <span class="kw-2">&amp;</span>channel.metadata().request_id());
+    <span class="macro">info!</span>(<span class="string">&quot;Handling new client request.&quot;</span>);
 
-        <span class="kw">let _ </span>= tokio::spawn(
-            <span class="kw">async move </span>{
-                audit_event(<span class="kw-2">&amp;mut </span>channel, <span class="kw-2">&amp;</span>context, EventStatus::Started).<span class="kw">await</span>;
+    <span class="kw">let _ </span>= tokio::spawn(
+        <span class="kw">async move </span>{
+            audit_event(<span class="kw-2">&amp;mut </span>channel, <span class="kw-2">&amp;</span>context, EventStatus::Started).<span class="kw">await</span>;
 
-                <span class="kw">match </span><span class="self">self</span>.operation(<span class="kw-2">&amp;mut </span>channel, <span class="kw-2">&amp;mut </span>context).<span class="kw">await </span>{
-                    <span class="prelude-val">Ok</span>(()) =&gt; {
-                        <span class="macro">info!</span>(<span class="string">&quot;This operation completed successfully!&quot;</span>);
-                        audit_event(<span class="kw-2">&amp;mut </span>channel, <span class="kw-2">&amp;</span>context, EventStatus::Successful).<span class="kw">await</span>;
-                    }
-                    <span class="prelude-val">Err</span>(e) =&gt; {
-                        <span class="macro">info!</span>(<span class="string">&quot;This operation completed with an error!&quot;</span>);
-                        handle_error(<span class="kw-2">&amp;mut </span>channel, e).<span class="kw">await</span>;
-                        audit_event(<span class="kw-2">&amp;mut </span>channel, <span class="kw-2">&amp;</span>context, EventStatus::Failed).<span class="kw">await</span>;
-                    }
+            <span class="kw">match </span>operation.operation(<span class="kw-2">&amp;mut </span>channel, <span class="kw-2">&amp;mut </span>context).<span class="kw">await </span>{
+                <span class="prelude-val">Ok</span>(()) =&gt; {
+                    <span class="macro">info!</span>(<span class="string">&quot;This operation completed successfully!&quot;</span>);
+                    audit_event(<span class="kw-2">&amp;mut </span>channel, <span class="kw-2">&amp;</span>context, EventStatus::Successful).<span class="kw">await</span>;
                 }
-                channel.closed().<span class="kw">await</span>;
+                <span class="prelude-val">Err</span>(e) =&gt; {
+                    <span class="macro">info!</span>(<span class="string">&quot;This operation completed with an error!&quot;</span>);
+                    handle_error(<span class="kw-2">&amp;mut </span>channel, e).<span class="kw">await</span>;
+                    audit_event(<span class="kw-2">&amp;mut </span>channel, <span class="kw-2">&amp;</span>context, EventStatus::Failed).<span class="kw">await</span>;
+                }
             }
-            .in_current_span(),
-        );
-        <span class="prelude-val">Ok</span>(())
-    }
+            channel.closed().<span class="kw">await</span>;
+        }
+        .in_current_span(),
+    );
+    <span class="prelude-val">Ok</span>(())
+}
+
+<span class="doccomment">/// Takes a request from `tonic` and spawns a new thread to process that
+/// request through the logic defined by the `Operation::operation` method.
+/// Any errors returned by the operation are logged and an appropriate error
+/// message is sent to the client.
+</span><span class="attribute">#[instrument(skip_all, err(Debug), fields(metadata, request_id))]
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>handle_unauthenticated_request&lt;
+    DB: DataStore,
+    O: Operation&lt;Unauthenticated, DB&gt;,
+&gt;(
+    operation: O,
+    <span class="kw-2">mut </span>context: Context&lt;DB&gt;,
+    <span class="kw-2">mut </span>channel: Channel&lt;Unauthenticated&gt;,
+) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
+    logging::record_field(<span class="string">&quot;metadata&quot;</span>, <span class="kw-2">&amp;</span>channel.metadata());
+    logging::record_field(<span class="string">&quot;request_id&quot;</span>, <span class="kw-2">&amp;</span>channel.metadata().request_id());
+    <span class="macro">info!</span>(<span class="string">&quot;Handling new client request.&quot;</span>);
+
+    <span class="kw">let _ </span>= tokio::spawn(
+        <span class="kw">async move </span>{
+            <span class="kw">match </span>operation.operation(<span class="kw-2">&amp;mut </span>channel, <span class="kw-2">&amp;mut </span>context).<span class="kw">await </span>{
+                <span class="prelude-val">Ok</span>(()) =&gt; {
+                    <span class="macro">info!</span>(<span class="string">&quot;This operation completed successfully!&quot;</span>);
+                }
+                <span class="prelude-val">Err</span>(e) =&gt; {
+                    <span class="macro">info!</span>(<span class="string">&quot;This operation completed with an error!&quot;</span>);
+                    handle_error(<span class="kw-2">&amp;mut </span>channel, e).<span class="kw">await</span>;
+                }
+            }
+            channel.closed().<span class="kw">await</span>;
+        }
+        .in_current_span(),
+    );
+    <span class="prelude-val">Ok</span>(())
 }
 
 <span class="attribute">#[instrument(skip(channel))]
-</span><span class="kw">async fn </span>handle_error&lt;AUTH&gt;(channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;AUTH&gt;, e: LockKeeperServerError) {
+</span><span class="kw">async fn </span>handle_error&lt;AUTH&gt;(channel: <span class="kw-2">&amp;mut </span>Channel&lt;AUTH&gt;, e: LockKeeperServerError) {
     <span class="macro">error!</span>(<span class="string">&quot;{}&quot;</span>, e);
     <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = channel.send_error(e).<span class="kw">await </span>{
         <span class="macro">error!</span>(<span class="string">&quot;Problem while sending error over channel: {}&quot;</span>, e);
@@ -155,21 +237,21 @@
 
 <span class="doccomment">/// Log the given action as an audit event.
 </span><span class="attribute">#[instrument(skip(channel, context))]
-</span><span class="kw">async fn </span>audit_event&lt;AUTH, DB: DataStore&gt;(
-    channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;AUTH&gt;,
+</span><span class="kw">async fn </span>audit_event&lt;DB: DataStore&gt;(
+    channel: <span class="kw-2">&amp;mut </span>Channel&lt;Authenticated&lt;StdRng&gt;&gt;,
     context: <span class="kw-2">&amp;</span>Context&lt;DB&gt;,
     status: EventStatus,
 ) {
-    <span class="kw">let </span>account_name = channel.metadata().account_name();
-    <span class="kw">let </span>action = channel.metadata().action();
+    <span class="kw">let </span>account_id = channel.account_id();
+    <span class="kw">let </span>client_action = channel.metadata().action();
     <span class="kw">let </span>request_id = channel.metadata().request_id();
 
-    <span class="kw">let </span>audit_event = context
-        .db
-        .create_audit_event(request_id, account_name, <span class="kw-2">&amp;</span>context.key_id, action, status)
+    <span class="kw">let </span>result = context
+        .create_audit_event(account_id, request_id, client_action, status)
         .<span class="kw">await</span>;
-    <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = audit_event {
-        handle_error(channel, e.into()).<span class="kw">await</span>;
+
+    <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = result {
+        handle_error(channel, e).<span class="kw">await</span>;
     };
 }
 </code></pre></div>

@@ -329,7 +329,6 @@
 <span id="329">329</span>
 <span id="330">330</span>
 <span id="331">331</span>
-<span id="332">332</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Integration tests for audit event objects in the database
 
 </span><span class="kw">use </span>colored::Colorize;
@@ -337,11 +336,11 @@
     crypto::KeyId,
     types::{
         audit_event::{AuditEvent, AuditEventOptions, EventStatus, EventType},
-        database::user::AccountName,
+        database::account::Account,
         operations::ClientAction,
     },
 };
-<span class="kw">use </span>lock_keeper_key_server::database::DataStore;
+<span class="kw">use </span>lock_keeper_key_server::server::database::DataStore;
 
 <span class="kw">use </span>rand::{
     rngs::StdRng,
@@ -382,16 +381,16 @@
     <span class="comment">// Create and store a single audit event.
 
     </span><span class="kw">let </span>action_list = ClientAction::iter().collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
-    <span class="kw">let </span>(user_id, account_name) = db.create_test_user().<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>account = db.create_test_user().<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="kw">let </span>key_ids = db
-        .create_random_arbitrary_secrets(HOW_MANY_SECRETS, <span class="kw-2">&amp;</span>user_id)
+        .create_random_arbitrary_secrets(HOW_MANY_SECRETS, <span class="kw-2">&amp;</span>account)
         .<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="kw">let </span>(key_id, request_id, action) = create_random_audit_event(
         <span class="kw-2">&amp;mut </span>StdRng::from_entropy(),
         <span class="kw-2">&amp;</span>action_list,
         <span class="kw-2">&amp;</span>key_ids,
-        account_name.clone(),
+        <span class="kw-2">&amp;</span>account,
         <span class="kw-2">&amp;</span>db,
     )
     .<span class="kw">await</span><span class="question-mark">?</span>;
@@ -401,13 +400,13 @@
         ..Default::default()
     };
     <span class="kw">let </span><span class="kw-2">mut </span>events = db
-        .find_audit_events(<span class="kw-2">&amp;</span>account_name, EventType::All, options)
+        .find_audit_events(account.id(), EventType::All, options)
         .<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="macro">assert_eq!</span>(events.len(), <span class="number">1</span>, <span class="string">&quot;Multiple events found.&quot;</span>);
     <span class="kw">let </span>stored_event = events.pop().unwrap();
     <span class="macro">assert_eq!</span>(action, stored_event.client_action);
-    <span class="macro">assert_eq!</span>(account_name, stored_event.account_name);
+    <span class="macro">assert_eq!</span>(account.account_id, stored_event.account_id);
     <span class="comment">// Our create_random_event function always uses EventStatus::Started.
     </span><span class="macro">assert_eq!</span>(EventStatus::Started, stored_event.status);
     <span class="macro">assert_eq!</span>(key_id, stored_event.key_id.unwrap());
@@ -421,17 +420,17 @@
 /// specific [`EventType`]s return only the specified types of audit event log
 /// events.
 </span><span class="kw">async fn </span>event_type_filter_works(db: TestDatabase) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    <span class="kw">let </span>(user_id, account_name) = db.create_test_user().<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>account = db.create_test_user().<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="kw">let </span>key_ids = db
-        .create_random_arbitrary_secrets(HOW_MANY_SECRETS, <span class="kw-2">&amp;</span>user_id)
+        .create_random_arbitrary_secrets(HOW_MANY_SECRETS, <span class="kw-2">&amp;</span>account)
         .<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="comment">// Create random audit events
-    </span><span class="kw">let _ </span>= create_random_audit_events(<span class="kw-2">&amp;</span>account_name, <span class="kw-2">&amp;</span>key_ids, <span class="kw-2">&amp;</span>db).<span class="kw">await</span><span class="question-mark">?</span>;
+    </span><span class="kw">let _ </span>= create_random_audit_events(<span class="kw-2">&amp;</span>account, <span class="kw-2">&amp;</span>key_ids, <span class="kw-2">&amp;</span>db).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="comment">// Retrieve all 3 types of audit events
     </span><span class="kw">let </span>key_only_audit = db
         .find_audit_events(
-            <span class="kw-2">&amp;</span>account_name,
+            account.id(),
             EventType::KeyOnly,
             AuditEventOptions::default(),
         )
@@ -439,14 +438,14 @@
 
     <span class="kw">let </span>system_only_audit = db
         .find_audit_events(
-            <span class="kw-2">&amp;</span>account_name,
+            account.id(),
             EventType::SystemOnly,
             AuditEventOptions::default(),
         )
         .<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="kw">let </span>all_audit = db
-        .find_audit_events(<span class="kw-2">&amp;</span>account_name, EventType::All, AuditEventOptions::default())
+        .find_audit_events(account.id(), EventType::All, AuditEventOptions::default())
         .<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="comment">// Make sure our audit events have the correct actions.
@@ -458,11 +457,11 @@
 }
 
 <span class="kw">async fn </span>key_id_filter_works(db: TestDatabase) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    <span class="kw">let </span>(user_id, account_name) = db.create_test_user().<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>account = db.create_test_user().<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="kw">let </span>key_ids = db
-        .create_random_arbitrary_secrets(HOW_MANY_SECRETS, <span class="kw-2">&amp;</span>user_id)
+        .create_random_arbitrary_secrets(HOW_MANY_SECRETS, <span class="kw-2">&amp;</span>account)
         .<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let </span>(key_ids, <span class="kw">_</span>) = create_random_audit_events(<span class="kw-2">&amp;</span>account_name, <span class="kw-2">&amp;</span>key_ids, <span class="kw-2">&amp;</span>db).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>(key_ids, <span class="kw">_</span>) = create_random_audit_events(<span class="kw-2">&amp;</span>account, <span class="kw-2">&amp;</span>key_ids, <span class="kw-2">&amp;</span>db).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="kw">let </span>sample = {
         <span class="kw">let </span><span class="kw-2">mut </span>rng = rand::thread_rng();
@@ -474,7 +473,7 @@
         ..Default::default()
     };
     <span class="kw">let </span>key_audit = db
-        .find_audit_events(<span class="kw-2">&amp;</span>account_name, EventType::All, options)
+        .find_audit_events(account.id(), EventType::All, options)
         .<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="comment">// Make sure only the sampled key IDs are included
@@ -485,15 +484,15 @@
 
 <span class="kw">async fn </span>after_date_filter_works(db: TestDatabase) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="comment">// Add a user
-    </span><span class="kw">let </span>(user_id, account_name) = db.create_test_user().<span class="kw">await</span><span class="question-mark">?</span>;
+    </span><span class="kw">let </span>account = db.create_test_user().<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="comment">// Use timestamp as comparison date
     </span><span class="kw">let </span>after_date = OffsetDateTime::now_utc();
 
     <span class="kw">let </span>key_ids = db
-        .create_random_arbitrary_secrets(HOW_MANY_SECRETS, <span class="kw-2">&amp;</span>user_id)
+        .create_random_arbitrary_secrets(HOW_MANY_SECRETS, <span class="kw-2">&amp;</span>account)
         .<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let _ </span>= create_random_audit_events(<span class="kw-2">&amp;</span>account_name, <span class="kw-2">&amp;</span>key_ids, <span class="kw-2">&amp;</span>db).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let _ </span>= create_random_audit_events(<span class="kw-2">&amp;</span>account, <span class="kw-2">&amp;</span>key_ids, <span class="kw-2">&amp;</span>db).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="comment">// Retrieve after the comparison date
     </span><span class="kw">let </span>options = AuditEventOptions {
@@ -501,7 +500,7 @@
         ..Default::default()
     };
     <span class="kw">let </span>after_date_audit = db
-        .find_audit_events(<span class="kw-2">&amp;</span>account_name, EventType::All, options)
+        .find_audit_events(account.id(), EventType::All, options)
         .<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="comment">// Check that there are only audit events that happened after &quot;after_date&quot;
@@ -512,15 +511,15 @@
 
 <span class="kw">async fn </span>before_date_filter_works(db: TestDatabase) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="comment">// Add a user
-    </span><span class="kw">let </span>(user_id, account_name) = db.create_test_user().<span class="kw">await</span><span class="question-mark">?</span>;
+    </span><span class="kw">let </span>account = db.create_test_user().<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="comment">// Use timestamp as comparison date
     </span><span class="kw">let </span>before_date = OffsetDateTime::now_utc();
 
     <span class="kw">let </span>key_ids = db
-        .create_random_arbitrary_secrets(HOW_MANY_SECRETS, <span class="kw-2">&amp;</span>user_id)
+        .create_random_arbitrary_secrets(HOW_MANY_SECRETS, <span class="kw-2">&amp;</span>account)
         .<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let _ </span>= create_random_audit_events(<span class="kw-2">&amp;</span>account_name, <span class="kw-2">&amp;</span>key_ids, <span class="kw-2">&amp;</span>db).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let _ </span>= create_random_audit_events(<span class="kw-2">&amp;</span>account, <span class="kw-2">&amp;</span>key_ids, <span class="kw-2">&amp;</span>db).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="comment">// Retrieve before the comparison date
     </span><span class="kw">let </span>options = AuditEventOptions {
@@ -528,7 +527,7 @@
         ..Default::default()
     };
     <span class="kw">let </span>before_date_audit = db
-        .find_audit_events(<span class="kw-2">&amp;</span>account_name, EventType::All, options)
+        .find_audit_events(account.id(), EventType::All, options)
         .<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="comment">// Check that there are only audit events that happened before &quot;before_date&quot;
@@ -538,11 +537,11 @@
 }
 
 <span class="kw">async fn </span>request_id_filter_works(db: TestDatabase) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    <span class="kw">let </span>(user_id, account_name) = db.create_test_user().<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>account = db.create_test_user().<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="kw">let </span>key_ids = db
-        .create_random_arbitrary_secrets(HOW_MANY_SECRETS, <span class="kw-2">&amp;</span>user_id)
+        .create_random_arbitrary_secrets(HOW_MANY_SECRETS, <span class="kw-2">&amp;</span>account)
         .<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let </span>(<span class="kw">_</span>, uudis) = create_random_audit_events(<span class="kw-2">&amp;</span>account_name, <span class="kw-2">&amp;</span>key_ids, <span class="kw-2">&amp;</span>db).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>(<span class="kw">_</span>, uudis) = create_random_audit_events(<span class="kw-2">&amp;</span>account, <span class="kw-2">&amp;</span>key_ids, <span class="kw-2">&amp;</span>db).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="kw">let </span>sample: Uuid = {
         <span class="kw">let </span><span class="kw-2">mut </span>rng = rand::thread_rng();
@@ -555,7 +554,7 @@
         ..Default::default()
     };
     <span class="kw">let </span>request_audit = db
-        .find_audit_events(<span class="kw-2">&amp;</span>account_name, EventType::All, options)
+        .find_audit_events(account.id(), EventType::All, options)
         .<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="comment">// Make sure only the sampled request ID is included
@@ -567,7 +566,7 @@
 <span class="doccomment">/// Create [NUM_LOGS] random audit events and store them in our database. Return
 /// the [KeyId]s and [Uuid]s (request IDs) assigned to these audit events.
 </span><span class="kw">async fn </span>create_random_audit_events(
-    account_name: <span class="kw-2">&amp;</span>AccountName,
+    account: <span class="kw-2">&amp;</span>Account,
     key_ids: <span class="kw-2">&amp;</span>Vec&lt;KeyId&gt;,
     db: <span class="kw-2">&amp;</span>TestDatabase,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(Vec&lt;KeyId&gt;, Vec&lt;Uuid&gt;)&gt; {
@@ -579,8 +578,7 @@
 
     <span class="kw">for _ in </span><span class="number">0</span>..NUM_LOGS {
         <span class="kw">let </span>(key_id, request_id, <span class="kw">_</span>) =
-            create_random_audit_event(<span class="kw-2">&amp;mut </span>rng, <span class="kw-2">&amp;</span>action_list, key_ids, account_name.clone(), db)
-                .<span class="kw">await</span><span class="question-mark">?</span>;
+            create_random_audit_event(<span class="kw-2">&amp;mut </span>rng, <span class="kw-2">&amp;</span>action_list, key_ids, account, db).<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="comment">// Key IDs should always exist for these randomly generated audit events.
         </span>keys.push(key_id);
@@ -598,7 +596,7 @@
     rng: <span class="kw-2">&amp;mut </span>StdRng,
     action_list: <span class="kw-2">&amp;</span>Vec&lt;ClientAction&gt;,
     key_ids: <span class="kw-2">&amp;</span>Vec&lt;KeyId&gt;,
-    account_name: AccountName,
+    account: <span class="kw-2">&amp;</span>Account,
     db: <span class="kw-2">&amp;</span>TestDatabase,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(KeyId, Uuid, ClientAction)&gt; {
     <span class="kw">let </span>key_id = key_ids.choose(rng).unwrap();
@@ -607,7 +605,7 @@
 
     db.create_audit_event(
         request_id,
-        <span class="kw-2">&amp;</span>account_name,
+        account.id(),
         <span class="kw-2">&amp;</span><span class="prelude-val">Some</span>(key_id.clone()),
         <span class="kw-2">*</span>action,
         EventStatus::Started,

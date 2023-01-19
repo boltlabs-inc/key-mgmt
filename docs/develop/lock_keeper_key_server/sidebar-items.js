@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":[["config",""],["database","Database for key-servers."],["error",""],["operations",""],["server",""]]};
+window.SIDEBAR_ITEMS = {"mod":[["config",""],["error",""],["operations",""],["server",""]]};

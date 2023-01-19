@@ -14,17 +14,17 @@
 <span id="14">14</span>
 <span id="15">15</span>
 <span id="16">16</span>
-</pre><pre class="rust"><code><span class="kw">use crate</span>::{LockKeeperClient, LockKeeperClientError};
-<span class="kw">use </span>lock_keeper::{
-    infrastructure::channel::{Authenticated, ClientChannel},
-    types::{database::user::UserId, operations::get_user_id::server},
+</pre><pre class="rust"><code><span class="kw">use crate</span>::{
+    channel::{Authenticated, Channel},
+    LockKeeperClient, LockKeeperClientError,
 };
+<span class="kw">use </span>lock_keeper::types::{database::account::UserId, operations::get_user_id::server};
 
 <span class="kw">use </span>rand::rngs::StdRng;
 
 <span class="kw">impl </span>LockKeeperClient {
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>handle_get_user_id(
-        <span class="kw-2">mut </span>channel: ClientChannel&lt;Authenticated&lt;StdRng&gt;&gt;,
+        <span class="kw-2">mut </span>channel: Channel&lt;Authenticated&lt;StdRng&gt;&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;UserId, LockKeeperClientError&gt; {
         <span class="kw">let </span>response: server::Response = channel.receive().<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(response.user_id)

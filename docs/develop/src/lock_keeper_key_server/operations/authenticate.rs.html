@@ -134,30 +134,84 @@
 <span id="134">134</span>
 <span id="135">135</span>
 <span id="136">136</span>
+<span id="137">137</span>
+<span id="138">138</span>
+<span id="139">139</span>
+<span id="140">140</span>
+<span id="141">141</span>
+<span id="142">142</span>
+<span id="143">143</span>
+<span id="144">144</span>
+<span id="145">145</span>
+<span id="146">146</span>
+<span id="147">147</span>
+<span id="148">148</span>
+<span id="149">149</span>
+<span id="150">150</span>
+<span id="151">151</span>
+<span id="152">152</span>
+<span id="153">153</span>
+<span id="154">154</span>
+<span id="155">155</span>
+<span id="156">156</span>
+<span id="157">157</span>
+<span id="158">158</span>
+<span id="159">159</span>
+<span id="160">160</span>
+<span id="161">161</span>
+<span id="162">162</span>
+<span id="163">163</span>
+<span id="164">164</span>
+<span id="165">165</span>
+<span id="166">166</span>
+<span id="167">167</span>
+<span id="168">168</span>
+<span id="169">169</span>
+<span id="170">170</span>
+<span id="171">171</span>
+<span id="172">172</span>
+<span id="173">173</span>
+<span id="174">174</span>
+<span id="175">175</span>
+<span id="176">176</span>
+<span id="177">177</span>
+<span id="178">178</span>
+<span id="179">179</span>
+<span id="180">180</span>
+<span id="181">181</span>
+<span id="182">182</span>
+<span id="183">183</span>
+<span id="184">184</span>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{
     error::LockKeeperServerError,
-    server::{Context, Operation},
+    server::{
+        channel::{Channel, Unauthenticated},
+        Context, Operation,
+    },
 };
 
-<span class="kw">use </span><span class="kw">crate</span>::database::DataStore;
+<span class="kw">use </span><span class="kw">crate</span>::server::database::DataStore;
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>lock_keeper::{
     config::opaque::OpaqueCipherSuite,
-    infrastructure::{
-        channel::{ServerChannel, Unauthenticated},
-        logging,
-    },
+    infrastructure::logging,
     types::{
-        database::user::UserId,
-        operations::authenticate::{client, server},
+        audit_event::EventStatus,
+        database::account::AccountId,
+        operations::{
+            authenticate::{client, server},
+            ClientAction,
+        },
     },
 };
 <span class="kw">use </span>opaque_ke::{ServerLogin, ServerLoginStartParameters, ServerLoginStartResult};
 <span class="kw">use </span>tracing::{debug, info, instrument};
+<span class="kw">use </span>uuid::Uuid;
 
 <span class="kw">struct </span>AuthenticateStartResult {
     login_start_result: ServerLoginStartResult&lt;OpaqueCipherSuite&gt;,
-    user_id: UserId,
+    account_id: AccountId,
+    request_id: Uuid,
 }
 
 <span class="attribute">#[derive(Debug)]
@@ -170,13 +224,30 @@
     </span><span class="attribute">#[instrument(skip_all, err(Debug), fields(account_name))]
     </span><span class="kw">async fn </span>operation(
         <span class="self">self</span>,
-        channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;Unauthenticated&gt;,
+        channel: <span class="kw-2">&amp;mut </span>Channel&lt;Unauthenticated&gt;,
         context: <span class="kw-2">&amp;mut </span>Context&lt;DB&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
         <span class="macro">info!</span>(<span class="string">&quot;Starting authentication protocol.&quot;</span>);
 
         <span class="kw">let </span>start_result = authenticate_start(channel, context).<span class="kw">await</span><span class="question-mark">?</span>;
-        authenticate_finish(channel, start_result, context).<span class="kw">await</span><span class="question-mark">?</span>;
+
+        <span class="comment">// We do a bit of extra work here so that we can log audit events in case of
+        // failure. This allows us to log failed login attempts.
+
+        </span><span class="kw">let </span>account_id = start_result.account_id;
+        <span class="kw">let </span>request_id = start_result.request_id;
+
+        <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = authenticate_finish(channel, context, start_result).<span class="kw">await </span>{
+            context
+                .create_audit_event(
+                    account_id,
+                    request_id,
+                    ClientAction::Authenticate,
+                    EventStatus::Failed,
+                )
+                .<span class="kw">await</span><span class="question-mark">?</span>;
+            <span class="kw">return </span><span class="prelude-val">Err</span>(e);
+        }
 
         <span class="macro">info!</span>(<span class="string">&quot;Successfully completed authentication protocol.&quot;</span>);
         <span class="prelude-val">Ok</span>(())
@@ -185,9 +256,9 @@
 
 <span class="doccomment">/// Returns the server-side start message along with a login result that will be
 /// used in the finish step.
-</span><span class="attribute">#[instrument(skip_all, err(Debug), fields(user_id))]
+</span><span class="attribute">#[instrument(skip_all, err(Debug), fields(account_id))]
 </span><span class="kw">async fn </span>authenticate_start&lt;DB: DataStore&gt;(
-    channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;Unauthenticated&gt;,
+    channel: <span class="kw-2">&amp;mut </span>Channel&lt;Unauthenticated&gt;,
     context: <span class="kw-2">&amp;</span>Context&lt;DB&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;AuthenticateStartResult, LockKeeperServerError&gt; {
     <span class="comment">// Receive start message from client
@@ -195,14 +266,27 @@
 
     <span class="comment">// Check that user with corresponding UserId exists and get their
     // server_registration
-    </span><span class="kw">let </span>(server_registration, user_id) =
-        <span class="kw">match </span>context.db.find_account(<span class="kw-2">&amp;</span>start_message.account_name).<span class="kw">await</span><span class="question-mark">? </span>{
-            <span class="prelude-val">Some</span>(user) =&gt; user.into_parts(),
-            <span class="prelude-val">None </span>=&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(LockKeeperServerError::InvalidAccount),
-        };
+    </span><span class="kw">let </span>account = context
+        .db
+        .find_account_by_name(<span class="kw-2">&amp;</span>start_message.account_name)
+        .<span class="kw">await</span><span class="question-mark">?
+        </span>.ok_or(LockKeeperServerError::InvalidAccount)<span class="question-mark">?</span>;
 
-    logging::record_field(<span class="string">&quot;user_id&quot;</span>, <span class="kw-2">&amp;</span>user_id);
-    <span class="macro">debug!</span>(<span class="string">&quot;User ID found.&quot;</span>);
+    logging::record_field(<span class="string">&quot;account_id&quot;</span>, <span class="kw-2">&amp;</span>account.account_id);
+    <span class="macro">debug!</span>(<span class="string">&quot;Account found.&quot;</span>);
+
+    <span class="kw">let </span>account_id = account.id();
+    <span class="kw">let </span>request_id = channel.metadata().request_id();
+
+    <span class="comment">// Manually log audit event for user whose account we found
+    </span>context
+        .create_audit_event(
+            account_id,
+            request_id,
+            ClientAction::Authenticate,
+            EventStatus::Started,
+        )
+        .<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="kw">let </span>server_login_start_result = {
         <span class="kw">let </span><span class="kw-2">mut </span>local_rng = context.rng.lock().<span class="kw">await</span>;
@@ -210,7 +294,7 @@
         ServerLogin::start(
             <span class="kw-2">&amp;mut *</span>local_rng,
             <span class="kw-2">&amp;</span>context.config.opaque_server_setup,
-            <span class="prelude-val">Some</span>(server_registration),
+            <span class="prelude-val">Some</span>(account.server_registration),
             start_message.credential_request,
             start_message.account_name.as_bytes(),
             ServerLoginStartParameters::default(),
@@ -226,7 +310,8 @@
 
     <span class="prelude-val">Ok</span>(AuthenticateStartResult {
         login_start_result: server_login_start_result,
-        user_id,
+        account_id,
+        request_id,
     })
 }
 
@@ -235,9 +320,9 @@
 /// this key.
 </span><span class="attribute">#[instrument(skip_all, err(Debug))]
 </span><span class="kw">async fn </span>authenticate_finish&lt;DB: DataStore&gt;(
-    channel: <span class="kw-2">&amp;mut </span>ServerChannel&lt;Unauthenticated&gt;,
-    start_result: AuthenticateStartResult,
+    channel: <span class="kw-2">&amp;mut </span>Channel&lt;Unauthenticated&gt;,
     context: <span class="kw-2">&amp;mut </span>Context&lt;DB&gt;,
+    start_result: AuthenticateStartResult,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt; {
     <span class="comment">// Receive finish message from client
     </span><span class="kw">let </span>finish_message: client::AuthenticateFinish = channel.receive().<span class="kw">await</span><span class="question-mark">?</span>;
@@ -260,7 +345,7 @@
     </span>};
 
     <span class="kw">let </span>session_id = session_cache
-        .create_session(start_result.user_id.clone(), encrypted_session_key)
+        .create_session(start_result.account_id, encrypted_session_key)
         .<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="macro">info!</span>(<span class="string">&quot;Session key established and saved.&quot;</span>);
 
@@ -268,6 +353,17 @@
 
     <span class="comment">// Send response to client
     </span>channel.send(reply).<span class="kw">await</span><span class="question-mark">?</span>;
+
+    <span class="comment">// Manually log audit event for user who is now logged in
+    </span>context
+        .create_audit_event(
+            start_result.account_id,
+            start_result.request_id,
+            ClientAction::Authenticate,
+            EventStatus::Successful,
+        )
+        .<span class="kw">await</span><span class="question-mark">?</span>;
+
     <span class="prelude-val">Ok</span>(())
 }
 </code></pre></div>

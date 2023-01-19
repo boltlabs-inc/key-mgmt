@@ -155,21 +155,19 @@
 <span id="155">155</span>
 <span id="156">156</span>
 <span id="157">157</span>
-<span id="158">158</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Audit events, and associated fields and types
 //!
 //! Includes possible events to log and statuses of those events
 
-</span><span class="kw">use crate</span>::{
-    crypto::KeyId,
-    types::{database::user::AccountName, operations::ClientAction},
-};
+</span><span class="kw">use crate</span>::{crypto::KeyId, types::operations::ClientAction};
 
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>std::fmt::{Debug, Display, Formatter};
 <span class="kw">use </span>strum::{Display, EnumString};
 <span class="kw">use </span>time::OffsetDateTime;
 <span class="kw">use </span>uuid::Uuid;
+
+<span class="kw">use </span><span class="kw">super</span>::database::account::AccountId;
 
 <span class="doccomment">/// Options for the outcome of a given action in a [`AuditEvent`]
 
@@ -187,7 +185,7 @@
 </span><span class="attribute">#[derive(Debug, Serialize, Deserialize)]
 </span><span class="kw">pub struct </span>AuditEvent {
     <span class="kw">pub </span>audit_event_id: i64,
-    <span class="kw">pub </span>account_name: AccountName,
+    <span class="kw">pub </span>account_id: AccountId,
     <span class="kw">pub </span>request_id: Uuid,
     <span class="kw">pub </span>key_id: <span class="prelude-ty">Option</span>&lt;KeyId&gt;,
     <span class="doccomment">/// We use [OffsetDateTime] as this is compatible with SQLx. Easily

@@ -74,12 +74,14 @@
 <span id="74">74</span>
 <span id="75">75</span>
 <span id="76">76</span>
-<span id="77">77</span>
-</pre><pre class="rust"><code><span class="kw">use crate</span>::{database::DataStore, server::Context, LockKeeperServerError};
+</pre><pre class="rust"><code><span class="kw">use crate</span>::{
+    server::{database::DataStore, Context},
+    LockKeeperServerError,
+};
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>lock_keeper::{
     crypto::{Encrypted, OpaqueSessionKey},
-    types::database::user::UserId,
+    types::database::account::AccountId,
 };
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>thiserror::Error;
@@ -91,7 +93,7 @@
 </span><span class="attribute">#[derive(Debug, Deserialize, Serialize)]
 </span><span class="kw">pub struct </span>Session {
     <span class="kw">pub </span>session_id: Uuid,
-    <span class="kw">pub </span>user_id: UserId,
+    <span class="kw">pub </span>account_id: AccountId,
     <span class="kw">pub </span>timestamp: OffsetDateTime,
     <span class="kw">pub </span>session_key: Encrypted&lt;OpaqueSessionKey&gt;,
 }
@@ -125,7 +127,7 @@
 }
 
 <span class="doccomment">/// Cache holding our sessions, per user, after authentication. Maps
-/// [`UserId`]s to [`Session`]s. Sessions should be tagged with a
+/// [`AccountId`]s to [`Session`]s. Sessions should be tagged with a
 /// timestamp. A session is considered invalid after the expiration time has
 /// elapsed.
 </span><span class="attribute">#[async_trait]
@@ -134,18 +136,14 @@
     /// session for that user should be overwritten.
     </span><span class="kw">async fn </span>create_session(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        user_id: UserId,
+        account_id: AccountId,
         session_key: Encrypted&lt;OpaqueSessionKey&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Uuid, SessionCacheError&gt;;
 
     <span class="doccomment">/// Get the session for the specified user, if one exists.
     /// This function should check if the session has expired and return an
     /// error if so.
-    </span><span class="kw">async fn </span>find_session(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
-        session_id: Uuid,
-        user_id: UserId,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;Session, SessionCacheError&gt;;
+    </span><span class="kw">async fn </span>find_session(<span class="kw-2">&amp;</span><span class="self">self</span>, session_id: Uuid) -&gt; <span class="prelude-ty">Result</span>&lt;Session, SessionCacheError&gt;;
 
     <span class="doccomment">/// Indicate that the session for this user has expired. If the same
     /// user attempts to make a server call after expiring their session,
