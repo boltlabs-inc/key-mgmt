@@ -157,7 +157,7 @@ impl AsRef<str> for AccountName {
 }
 
 impl FromStr for AccountName {
-    type Err = ();
+    type Err = LockKeeperError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(AccountName(s.to_string()))
