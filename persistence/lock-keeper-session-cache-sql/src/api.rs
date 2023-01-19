@@ -77,7 +77,6 @@ impl SessionCache for PostgresSessionCache {
         session_key: Encrypted<OpaqueSessionKey>,
     ) -> Result<Uuid, SessionCacheError> {
         let session_id = self.create_session(account_id, session_key).await?;
-        logging::record_field("session_id", &session_id);
         Ok(session_id)
     }
 

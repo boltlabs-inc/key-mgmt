@@ -2,7 +2,7 @@ use async_trait::async_trait;
 
 use lock_keeper::{infrastructure::logging, types::audit_event::EventStatus};
 use rand::rngs::StdRng;
-use tracing::{error, info, instrument, Instrument};
+use tracing::{debug, error, info, instrument, Instrument};
 
 use crate::{
     server::{database::DataStore, Context},
@@ -25,10 +25,16 @@ pub(crate) trait Operation<AUTH: Send + 'static, DB: DataStore>:
     ) -> Result<(), LockKeeperServerError>;
 }
 
-/// Takes a request from `tonic` and spawns a new thread to process that
-/// request through the logic defined by the `Operation::operation` method.
-/// Any errors returned by the operation are logged and an appropriate error
-/// message is sent to the client.
+/// This function is only called by the client via our gRPC endpoints.
+///
+/// This function spawns a task to do the actual work and returns immediately.
+/// We must return immediately as we are in the middle of a gRPC call which
+/// returns the receiving end of a channel for the client to continue receiving
+/// messages from us for the lifetime of the protocol.
+///
+/// The spawned task processes the request through the logic defined by the
+/// `Operation::operation` method. Any errors returned are both logged and saved
+/// as an audit event.
 #[instrument(skip_all, err(Debug), fields(metadata, request_id))]
 pub(crate) async fn handle_authenticated_request<
     DB: DataStore,
@@ -42,17 +48,21 @@ pub(crate) async fn handle_authenticated_request<
     logging::record_field("request_id", &channel.metadata().request_id());
     info!("Handling new client request.");
 
+    // Spawn a task to do the actual work. This way the gRPC call can return with
+    // the receiving end of the channel. This task will use the writing end of
+    // this same channel to send messages back to the client. The client and
+    // server can go back and forth until the protocol is complete.
     let _ = tokio::spawn(
         async move {
             audit_event(&mut channel, &context, EventStatus::Started).await;
 
             match operation.operation(&mut channel, &mut context).await {
                 Ok(()) => {
-                    info!("This operation completed successfully!");
+                    info!("Client request completed successfully!");
                     audit_event(&mut channel, &context, EventStatus::Successful).await;
                 }
                 Err(e) => {
-                    info!("This operation completed with an error!");
+                    info!("Client request completed with an error!");
                     handle_error(&mut channel, e).await;
                     audit_event(&mut channel, &context, EventStatus::Failed).await;
                 }
@@ -64,10 +74,15 @@ pub(crate) async fn handle_authenticated_request<
     Ok(())
 }
 
-/// Takes a request from `tonic` and spawns a new thread to process that
-/// request through the logic defined by the `Operation::operation` method.
-/// Any errors returned by the operation are logged and an appropriate error
-/// message is sent to the client.
+/// This function is only called by the client via our gRPC endpoints.
+///
+/// This function spawns a task to do the actual work and returns immediately.
+/// We must return immediately as we are in the middle of a gRPC call which
+/// returns the receiving end of a channel for the client to continue receiving
+/// messages from us for the lifetime of the protocol.
+///
+/// The spawned task processes the request through the logic defined by the
+/// `Operation::operation` method. Any errors returned are logged.
 #[instrument(skip_all, err(Debug), fields(metadata, request_id))]
 pub(crate) async fn handle_unauthenticated_request<
     DB: DataStore,
@@ -81,6 +96,10 @@ pub(crate) async fn handle_unauthenticated_request<
     logging::record_field("request_id", &channel.metadata().request_id());
     info!("Handling new client request.");
 
+    // Spawn a task to do the actual work. This way the gRPC call can return with
+    // the receiving end of the channel. This task will use the writing end of
+    // this same channel to send messages back to the client. The client and
+    // server can go back and forth until the protocol is complete.
     let _ = tokio::spawn(
         async move {
             match operation.operation(&mut channel, &mut context).await {
@@ -101,7 +120,6 @@ pub(crate) async fn handle_unauthenticated_request<
 
 #[instrument(skip(channel))]
 async fn handle_error<AUTH>(channel: &mut Channel<AUTH>, e: LockKeeperServerError) {
-    error!("{}", e);
     if let Err(e) = channel.send_error(e).await {
         error!("Problem while sending error over channel: {}", e);
     }
@@ -114,6 +132,7 @@ async fn audit_event<DB: DataStore>(
     context: &Context<DB>,
     status: EventStatus,
 ) {
+    debug!("Creating audit event...");
     let account_id = channel.account_id();
     let client_action = channel.metadata().action();
     let request_id = channel.metadata().request_id();

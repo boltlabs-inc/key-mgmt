@@ -134,7 +134,7 @@ async fn authenticate_start<DB: DataStore>(
 /// Second part of our sever-side authentication protocol. After this step, a
 /// session key is established between server and client. This function returns
 /// this key.
-#[instrument(skip_all, err(Debug))]
+#[instrument(skip_all, err(Debug), fields(session_id))]
 async fn authenticate_finish<DB: DataStore>(
     channel: &mut Channel<Unauthenticated>,
     context: &mut Context<DB>,
@@ -163,6 +163,7 @@ async fn authenticate_finish<DB: DataStore>(
     let session_id = session_cache
         .create_session(start_result.account_id, encrypted_session_key)
         .await?;
+    logging::record_field("session_id", &session_id);
     info!("Session key established and saved.");
 
     let reply = server::AuthenticateFinish { session_id };
