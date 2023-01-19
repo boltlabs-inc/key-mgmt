@@ -10,8 +10,8 @@ use lock_keeper::{
     types::{
         audit_event::{AuditEvent, AuditEventOptions, EventStatus, EventType},
         database::{
+            account::{Account, AccountId, AccountName, UserId},
             secrets::StoredSecret,
-            user::{Account, AccountName, UserId},
         },
         operations::ClientAction,
     },
@@ -51,7 +51,7 @@ pub trait DataStore: Send + Sync + 'static {
     async fn create_audit_event(
         &self,
         request_id: Uuid,
-        account_name: &AccountName,
+        account_id: AccountId,
         key_id: &Option<KeyId>,
         action: ClientAction,
         status: EventStatus,
@@ -61,7 +61,7 @@ pub trait DataStore: Send + Sync + 'static {
     /// filters
     async fn find_audit_events(
         &self,
-        account_name: &AccountName,
+        account_id: AccountId,
         event_type: EventType,
         options: AuditEventOptions,
     ) -> Result<Vec<AuditEvent>, DatabaseError>;
@@ -76,7 +76,7 @@ pub trait DataStore: Send + Sync + 'static {
     /// [`SecretFilter`].
     async fn get_secret(
         &self,
-        user_id: &UserId,
+        account_id: AccountId,
         key_id: &KeyId,
         filter: SecretFilter,
     ) -> Result<StoredSecret, DatabaseError>;
@@ -92,26 +92,29 @@ pub trait DataStore: Send + Sync + 'static {
     ) -> Result<Account, DatabaseError>;
 
     /// Find a [`Account`] by their human-readable [`AccountName`].
-    async fn find_account(
+    async fn find_account_by_name(
         &self,
         account_name: &AccountName,
     ) -> Result<Option<Account>, DatabaseError>;
 
-    /// Find a [`Account`] by their machine-readable [`UserId`].
-    async fn find_account_by_id(&self, user_id: &UserId) -> Result<Option<Account>, DatabaseError>;
+    /// Find a [`Account`] by their [`AccountId`].
+    async fn find_account(&self, account_id: AccountId) -> Result<Option<Account>, DatabaseError>;
 
-    /// Delete a [`Account`] by their [`UserId`]
-    async fn delete_account(&self, user_id: &UserId) -> Result<(), DatabaseError>;
+    /// Delete a [`Account`] by their [`AccountId`]
+    async fn delete_account(&self, account_id: AccountId) -> Result<(), DatabaseError>;
 
     /// Set the `storage_key` field for the [`Account`] associated with a given
-    /// [`UserId`]
+    /// [`AccountId`]
     /// Returns a `LockKeeperServerError::InvalidAccount` if the given
-    /// `user_id` does not exist.
+    /// `account_id` does not exist.
     async fn set_storage_key(
         &self,
-        user_id: &UserId,
+        account_id: AccountId,
         storage_key: Encrypted<StorageKey>,
     ) -> Result<(), DatabaseError>;
+
+    /// Returns `true` if the [`UserId`] already exists in the database.
+    async fn user_id_exists(&self, user_id: &UserId) -> Result<bool, DatabaseError>;
 }
 
 /// Filters that can be used to influence database queries.
@@ -124,7 +127,7 @@ pub trait DataStore: Send + Sync + 'static {
 ///
 /// ## Example:
 /// ```
-/// # use lock_keeper_key_server::database::SecretFilter;
+/// # use lock_keeper_key_server::server::database::SecretFilter;
 /// SecretFilter {
 ///     secret_type: None,
 ///     ..Default::default()

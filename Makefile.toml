@@ -59,7 +59,7 @@ args = ["compose", "down", "--rmi", "local", "--volumes", "--remove-orphans"]
 # Servers running in Docker satisfy this requirement.
 [tasks.e2e]
 command = "cargo"
-args = ["run", "--bin", "lock-keeper-tests", "--", "--test-type", "e2e"]
+args = ["run", "--bin", "lock-keeper-tests", "--", "--standard-only", "--test-type", "e2e"]
 
 # Run integration tests against a server that can be accessed via localhost.
 # Servers running in Docker satisfy this requirement.

@@ -2,16 +2,15 @@
 //!
 //! Includes possible events to log and statuses of those events
 
-use crate::{
-    crypto::KeyId,
-    types::{database::user::AccountName, operations::ClientAction},
-};
+use crate::{crypto::KeyId, types::operations::ClientAction};
 
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display, Formatter};
 use strum::{Display, EnumString};
 use time::OffsetDateTime;
 use uuid::Uuid;
+
+use super::database::account::AccountId;
 
 /// Options for the outcome of a given action in a [`AuditEvent`]
 
@@ -29,7 +28,7 @@ pub enum EventStatus {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AuditEvent {
     pub audit_event_id: i64,
-    pub account_name: AccountName,
+    pub account_id: AccountId,
     pub request_id: Uuid,
     pub key_id: Option<KeyId>,
     /// We use [OffsetDateTime] as this is compatible with SQLx. Easily

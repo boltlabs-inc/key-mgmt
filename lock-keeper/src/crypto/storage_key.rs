@@ -6,7 +6,7 @@ use super::{
     generic::{AssociatedData, EncryptionKey},
     CryptoError, Encrypted, MasterKey, SigningKeyPair,
 };
-use crate::{crypto::OpaqueSessionKey, types::database::user::UserId, LockKeeperError};
+use crate::{crypto::OpaqueSessionKey, types::database::account::UserId, LockKeeperError};
 use rand::{CryptoRng, RngCore};
 use std::path::Path;
 use zeroize::{Zeroize, ZeroizeOnDrop};

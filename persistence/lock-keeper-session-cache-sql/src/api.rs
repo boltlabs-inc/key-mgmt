@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use lock_keeper::{
     crypto::{Encrypted, OpaqueSessionKey},
     infrastructure::logging,
-    types::database::user::UserId,
+    types::database::account::AccountId,
 };
 use lock_keeper_key_server::server::session_cache::{Session, SessionCache, SessionCacheError};
 use sqlx::{postgres::PgPoolOptions, types::time::OffsetDateTime, PgPool};
@@ -13,8 +13,8 @@ use crate::{config::Config, types::SessionDB, Error};
 use tracing::{error, info, instrument};
 
 /// Cache holding sessions, per user, after authentication. Maps
-/// [`UserId`]s to their [`Session`]s. Sessions are tagged with a timestamp. A
-/// session is considered invalid after the `expiration` time has elapsed.
+/// [`AccountId`]s to their [`Session`]s. Sessions are tagged with a timestamp.
+/// A session is considered invalid after the `expiration` time has elapsed.
 pub struct PostgresSessionCache {
     config: Arc<Config>,
     /// PgPool is already implemented in terms of an Arc. No need to wrap it.
@@ -73,10 +73,10 @@ impl SessionCache for PostgresSessionCache {
     /// user will be overwritten.
     async fn create_session(
         &self,
-        user_id: UserId,
+        account_id: AccountId,
         session_key: Encrypted<OpaqueSessionKey>,
     ) -> Result<Uuid, SessionCacheError> {
-        let session_id = self.create_session(user_id, session_key).await?;
+        let session_id = self.create_session(account_id, session_key).await?;
         logging::record_field("session_id", &session_id);
         Ok(session_id)
     }
@@ -84,12 +84,8 @@ impl SessionCache for PostgresSessionCache {
     /// Get the session for the specified user, if one exists.
     /// This function checks if the session has expired and returns an error
     /// instead.
-    async fn find_session(
-        &self,
-        session_id: Uuid,
-        user_id: UserId,
-    ) -> Result<Session, SessionCacheError> {
-        Ok(self.find_session(session_id, user_id).await?)
+    async fn find_session(&self, session_id: Uuid) -> Result<Session, SessionCacheError> {
+        Ok(self.find_session(session_id).await?)
     }
 
     /// Remove the session key for this user from the hashmap.
@@ -101,10 +97,10 @@ impl SessionCache for PostgresSessionCache {
 impl PostgresSessionCache {
     /// Add a new session for the specified user. The previous session for that
     /// user will be overwritten.
-    #[instrument(skip_all, err(Debug), fields(session_id))]
+    #[instrument(skip_all, err(Debug), fields(account_id=?account_id, session_id))]
     async fn create_session(
         &self,
-        user_id: UserId,
+        account_id: AccountId,
         session_key: Encrypted<OpaqueSessionKey>,
     ) -> Result<Uuid, Error> {
         info!("Creating session.");
@@ -112,10 +108,10 @@ impl PostgresSessionCache {
         let session_key = bincode::serialize(&session_key)?;
 
         let session_id = sqlx::query!(
-            "INSERT INTO Session (user_id, session_key) \
+            "INSERT INTO Session (account_id, session_key) \
              VALUES ($1, $2) \
              RETURNING session_id",
-            user_id.as_ref(),
+            account_id.0,
             session_key,
         )
         .fetch_one(&self.connection_pool)
@@ -131,16 +127,13 @@ impl PostgresSessionCache {
     /// This function checks if the session has expired and returns an error
     /// instead.
     #[instrument(skip(self), err(Debug))]
-    async fn find_session(&self, session_id: Uuid, user_id: UserId) -> Result<Session, Error> {
-        info!("Finding session.");
-
+    async fn find_session(&self, session_id: Uuid) -> Result<Session, Error> {
         let session_db = sqlx::query_as!(
             SessionDB,
-            "SELECT session_id, user_id, timestamp, session_key \
+            "SELECT session_id, account_id, timestamp, session_key \
             FROM Session \
-            WHERE session_id=$1 AND user_id=$2",
+            WHERE session_id=$1",
             session_id,
-            user_id.as_ref(),
         )
         .fetch_optional(&self.connection_pool)
         .await?;

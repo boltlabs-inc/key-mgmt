@@ -1,4 +1,4 @@
-use lock_keeper_key_server::database::DatabaseError;
+use lock_keeper_key_server::server::database::DatabaseError;
 use std::{array::TryFromSliceError, path::PathBuf};
 use thiserror::Error;
 

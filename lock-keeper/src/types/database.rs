@@ -1,7 +1,7 @@
 //! Models for data stored in the database
 
+pub mod account;
 pub mod secrets;
-pub mod user;
 
 use std::fmt::Display;
 

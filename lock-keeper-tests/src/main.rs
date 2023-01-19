@@ -20,6 +20,8 @@ pub struct Cli {
     pub filters: Option<Vec<String>>,
     #[clap(long, default_value = "all")]
     pub test_type: TestType,
+    #[clap(long, short = 's')]
+    pub standard_only: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -53,6 +55,10 @@ pub async fn main() {
 
 async fn run() -> Result<(), LockKeeperTestError> {
     let cli = Cli::try_parse()?;
+    if cli.standard_only && cli.test_type != TestType::E2E {
+        return Err(LockKeeperTestError::StandardOnlyFlag);
+    }
+
     let test_type = cli.test_type;
     let environments = Environments::try_from(cli)?;
 

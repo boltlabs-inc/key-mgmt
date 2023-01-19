@@ -30,11 +30,23 @@ impl TryFrom<Cli> for Environments {
 
         let mut configs = HashMap::new();
         for (name, path) in environment_paths {
+            // The `standard_only` flag lets you run e2e tests locally against a single
+            // environment
+            if cli.standard_only && name != STANDARD_CONFIG_NAME {
+                continue;
+            }
             let client_config = Config::from_file(path, None)?;
             configs.insert(name, client_config);
         }
 
-        for required_config in REQUIRED_CONFIGS {
+        // Set required configs based on simple flag
+        let required_configs = if cli.standard_only {
+            &[STANDARD_CONFIG_NAME]
+        } else {
+            REQUIRED_CONFIGS
+        };
+
+        for required_config in required_configs {
             if !configs.contains_key(*required_config) {
                 return Err(LockKeeperTestError::MissingRequiredConfig(
                     required_config.to_string(),

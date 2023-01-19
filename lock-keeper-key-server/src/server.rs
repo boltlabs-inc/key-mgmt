@@ -1,8 +1,12 @@
+pub(crate) mod channel;
+pub(crate) mod context;
+pub mod database;
 pub(crate) mod opaque_storage;
 mod operation;
 mod service;
 pub mod session_cache;
 
+pub(crate) use context::Context;
 pub(crate) use operation::Operation;
 pub use service::start_lock_keeper_server;
 use tokio_stream::wrappers::ReceiverStream;
@@ -11,18 +15,20 @@ use tracing::{debug, instrument};
 use crate::{config::Config, error::LockKeeperServerError, operations};
 
 use lock_keeper::{
-    constants::METADATA,
-    crypto::KeyId,
-    infrastructure::channel::{Authenticated, ServerChannel, Unauthenticated},
     rpc::{lock_keeper_rpc_server::LockKeeperRpc, HealthCheck},
-    types::{operations::RequestMetadata, Message, MessageStream},
+    types::{Message, MessageStream},
 };
 
-use crate::{database::DataStore, server::session_cache::SessionCache};
+use crate::server::{database::DataStore, session_cache::SessionCache};
 use rand::{rngs::StdRng, SeedableRng};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tonic::{Request, Response, Status, Streaming};
+
+use self::{
+    channel::{Authenticated, Channel, Unauthenticated},
+    operation::{handle_authenticated_request, handle_unauthenticated_request},
+};
 
 pub struct LockKeeperKeyServer<DB: DataStore> {
     config: Arc<Config>,
@@ -58,15 +64,6 @@ impl<DB: DataStore> LockKeeperKeyServer<DB> {
     }
 }
 
-pub(crate) struct Context<DB: DataStore> {
-    pub db: Arc<DB>,
-    pub config: Arc<Config>,
-    pub rng: Arc<Mutex<StdRng>>,
-    pub key_id: Option<KeyId>,
-    /// Our user session keys are held in this cache after authentication.
-    pub session_cache: Arc<Mutex<dyn SessionCache>>,
-}
-
 #[tonic::async_trait]
 impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
     type AuthenticateStream = MessageStream;
@@ -91,9 +88,7 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::RegisterStream>, Status> {
         let (channel, response) = self.create_unauthenticated_channel(request).await?;
-        operations::Register
-            .handle_request(self.context(), channel)
-            .await?;
+        handle_unauthenticated_request(operations::Register, self.context(), channel).await?;
         Ok(response)
     }
 
@@ -102,9 +97,7 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::AuthenticateStream>, Status> {
         let (channel, response) = self.create_unauthenticated_channel(request).await?;
-        operations::Authenticate
-            .handle_request(self.context(), channel)
-            .await?;
+        handle_unauthenticated_request(operations::Authenticate, self.context(), channel).await?;
         Ok(response)
     }
 
@@ -113,9 +106,7 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::LogoutStream>, Status> {
         let (channel, response) = self.create_authenticated_channel(request).await?;
-        operations::Logout
-            .handle_request(self.context(), channel)
-            .await?;
+        handle_authenticated_request(operations::Logout, self.context(), channel).await?;
         Ok(response)
     }
 
@@ -124,9 +115,7 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::CreateStorageKeyStream>, Status> {
         let (channel, response) = self.create_authenticated_channel(request).await?;
-        operations::CreateStorageKey
-            .handle_request(self.context(), channel)
-            .await?;
+        handle_authenticated_request(operations::CreateStorageKey, self.context(), channel).await?;
         Ok(response)
     }
 
@@ -135,9 +124,7 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::GenerateSecretStream>, Status> {
         let (channel, response) = self.create_authenticated_channel(request).await?;
-        operations::GenerateSecret
-            .handle_request(self.context(), channel)
-            .await?;
+        handle_authenticated_request(operations::GenerateSecret, self.context(), channel).await?;
         Ok(response)
     }
 
@@ -145,53 +132,8 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         &self,
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::GetUserIdStream>, Status> {
-        // `create_authenticated_channel` gets the `user_id` out of the request metadata
-        // in order to retrieve the session key. Since the client doesn't know
-        // its `user_id` before the `GetUserId` operation is called, we can't call the
-        // normal `create_authenticated_channel` method. Instead, we'll look up
-        // the user ID ourselves and upgrade an unauthenticated channel manually.
-        let context = self.context();
-
-        // Get the user ID before `create_unauthenticated_channel` consumes the request
-        let metadata: RequestMetadata = request
-            .metadata()
-            .get(METADATA)
-            // We'll just use the existing error in the `lock_keeper` crate since this is a weird
-            // case.
-            .ok_or(lock_keeper::LockKeeperError::MetadataNotFound)?
-            .try_into()?;
-
-        let session_id = metadata
-            .session_id()
-            .ok_or(LockKeeperServerError::SessionIdNotFound)?;
-
-        let user_id = context
-            .db
-            .find_account(metadata.account_name())
-            .await?
-            .ok_or(LockKeeperServerError::InvalidAccount)?
-            .user_id;
-
-        // Now work through the normal process to create an authenticated channel
-        let (channel, response) = self.create_unauthenticated_channel(request).await?;
-
-        let session_key = {
-            let session_cache = context.session_cache.lock().await;
-            let session = session_cache
-                .find_session(*session_id, user_id.clone())
-                .await
-                .map_err(|e| Status::internal(e.to_string()))?;
-            session.session_key(&context)?
-        };
-
-        let mut channel = channel.into_authenticated(session_key, context.rng.clone());
-        // Manually set the user_id in the channel since it's not in the metadata
-        channel.set_user_id(user_id);
-
-        operations::GetUserId
-            .handle_request(self.context(), channel)
-            .await?;
-
+        let (channel, response) = self.create_authenticated_channel(request).await?;
+        handle_authenticated_request(operations::GetUserId, self.context(), channel).await?;
         Ok(response)
     }
 
@@ -200,9 +142,7 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::ImportSigningKeyStream>, Status> {
         let (channel, response) = self.create_authenticated_channel(request).await?;
-        operations::ImportSigningKey
-            .handle_request(self.context(), channel)
-            .await?;
+        handle_authenticated_request(operations::ImportSigningKey, self.context(), channel).await?;
         Ok(response)
     }
 
@@ -211,9 +151,12 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::RemoteGenerateStream>, Status> {
         let (channel, response) = self.create_authenticated_channel(request).await?;
-        operations::RemoteGenerateSigningKey
-            .handle_request(self.context(), channel)
-            .await?;
+        handle_authenticated_request(
+            operations::RemoteGenerateSigningKey,
+            self.context(),
+            channel,
+        )
+        .await?;
         Ok(response)
     }
 
@@ -222,9 +165,7 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::RemoteSignBytesStream>, Status> {
         let (channel, response) = self.create_authenticated_channel(request).await?;
-        operations::RemoteSignBytes
-            .handle_request(self.context(), channel)
-            .await?;
+        handle_authenticated_request(operations::RemoteSignBytes, self.context(), channel).await?;
         Ok(response)
     }
 
@@ -233,9 +174,7 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::RetrieveSecretStream>, Status> {
         let (channel, response) = self.create_authenticated_channel(request).await?;
-        operations::RetrieveSecret
-            .handle_request(self.context(), channel)
-            .await?;
+        handle_authenticated_request(operations::RetrieveSecret, self.context(), channel).await?;
         Ok(response)
     }
 
@@ -244,8 +183,7 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::RetrieveAuditEventsStream>, Status> {
         let (channel, response) = self.create_authenticated_channel(request).await?;
-        operations::RetrieveAuditEvents
-            .handle_request(self.context(), channel)
+        handle_authenticated_request(operations::RetrieveAuditEvents, self.context(), channel)
             .await?;
         Ok(response)
     }
@@ -255,8 +193,7 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         request: Request<tonic::Streaming<Message>>,
     ) -> Result<Response<Self::RetrieveStorageKeyStream>, Status> {
         let (channel, response) = self.create_authenticated_channel(request).await?;
-        operations::RetrieveStorageKey
-            .handle_request(self.context(), channel)
+        handle_authenticated_request(operations::RetrieveStorageKey, self.context(), channel)
             .await?;
         Ok(response)
     }
@@ -267,10 +204,9 @@ impl<DB: DataStore> LockKeeperKeyServer<DB> {
     async fn create_unauthenticated_channel(
         &self,
         request: Request<Streaming<Message>>,
-    ) -> Result<(ServerChannel<Unauthenticated>, Response<MessageStream>), LockKeeperServerError>
-    {
+    ) -> Result<(Channel<Unauthenticated>, Response<MessageStream>), LockKeeperServerError> {
         debug!("Creating new unauthenticated channel.");
-        let (channel, rx) = ServerChannel::new(request)?;
+        let (channel, rx) = Channel::new(request)?;
         let response = Response::new(ReceiverStream::new(rx));
 
         Ok((channel, response))
@@ -280,35 +216,34 @@ impl<DB: DataStore> LockKeeperKeyServer<DB> {
     async fn create_authenticated_channel(
         &self,
         request: Request<Streaming<Message>>,
-    ) -> Result<
-        (
-            ServerChannel<Authenticated<StdRng>>,
-            Response<MessageStream>,
-        ),
-        LockKeeperServerError,
-    > {
+    ) -> Result<(Channel<Authenticated<StdRng>>, Response<MessageStream>), LockKeeperServerError>
+    {
         debug!("Creating new authenticated channel.");
         let (channel, response) = self.create_unauthenticated_channel(request).await?;
 
         // Upgrade channel to be authenticated
-        let user_id = channel
-            .metadata()
-            .user_id()
-            .ok_or(LockKeeperServerError::InvalidAccount)?
-            .clone();
         let session_id = channel
             .metadata()
             .session_id()
             .ok_or(LockKeeperServerError::SessionIdNotFound)?;
         let context = self.context();
 
-        let session_key = {
+        let session = {
             let session_cache = context.session_cache.lock().await;
-            let session = session_cache.find_session(*session_id, user_id).await?;
-            session.session_key(&context)?
+            session_cache.find_session(*session_id).await?
         };
 
-        let channel = channel.into_authenticated(session_key, context.rng.clone());
+        let session_key = session.session_key(&context)?;
+
+        // Validate that there is an account for the given session ID and store it in
+        // the channel so that operations can use it.
+        let account = context
+            .db
+            .find_account(session.account_id)
+            .await?
+            .ok_or(LockKeeperServerError::InvalidAccount)?;
+
+        let channel = channel.into_authenticated(account, session_key, context.rng.clone());
 
         Ok((channel, response))
     }

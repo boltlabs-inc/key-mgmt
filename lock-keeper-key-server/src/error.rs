@@ -1,4 +1,4 @@
-use crate::{database::DatabaseError, server::session_cache::SessionCacheError};
+use crate::server::{database::DatabaseError, session_cache::SessionCacheError};
 use std::path::PathBuf;
 use thiserror::Error;
 use tonic::Status;

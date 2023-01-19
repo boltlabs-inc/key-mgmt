@@ -19,7 +19,7 @@ use std::{
 use tracing::error;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
-use crate::types::database::user::UserId;
+use crate::types::database::account::UserId;
 
 mod arbitrary_secret;
 mod generic;
@@ -63,7 +63,7 @@ impl TryFrom<GenericArray<u8, U64>> for OpaqueSessionKey {
 impl OpaqueSessionKey {
     /// Encrypt the given [`Message`] under the [`OpaqueSessionKey`] using an
     /// AEAD scheme.
-    pub(crate) fn encrypt(
+    pub fn encrypt(
         &self,
         rng: &mut (impl CryptoRng + RngCore),
         message: Message,
@@ -236,7 +236,7 @@ impl Encrypted<Message> {
 
     /// Translates an [`Encrypted<Message>`] to a [`Message`] in order to be
     /// sent through an authenticated channel.
-    pub(crate) fn try_into_message(self) -> Result<Message, LockKeeperError> {
+    pub fn try_into_message(self) -> Result<Message, LockKeeperError> {
         let content = serde_json::to_vec(&self)?;
 
         Ok(Message { content })
@@ -244,7 +244,7 @@ impl Encrypted<Message> {
 
     /// Translates a [`Message`] received through an authenticated channel to an
     /// [`Encrypted<Message>`].
-    pub(crate) fn try_from_message(message: Message) -> Result<Self, LockKeeperError> {
+    pub fn try_from_message(message: Message) -> Result<Self, LockKeeperError> {
         Ok(serde_json::from_slice(&message.content)?)
     }
 }

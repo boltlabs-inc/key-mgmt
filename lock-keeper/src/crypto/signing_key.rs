@@ -4,7 +4,7 @@ use crate::{
         signing_key::generation_types::{CLIENT_GENERATED, IMPORTED, SERVER_GENERATED},
         RemoteStorageKey,
     },
-    types::database::user::UserId,
+    types::database::account::UserId,
     LockKeeperError,
 };
 use k256::ecdsa::{
@@ -403,7 +403,7 @@ mod test {
 
     use crate::{
         crypto::{generic::AssociatedData, CryptoError, KeyId, SigningKeyPair, StorageKey},
-        types::database::user::UserId,
+        types::database::account::UserId,
         LockKeeperError,
     };
     use k256::{ecdsa::SigningKey, schnorr::signature::Signature as EcdsaSignature};
