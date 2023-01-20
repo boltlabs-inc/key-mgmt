@@ -225,6 +225,7 @@
 <span id="225">225</span>
 <span id="226">226</span>
 <span id="227">227</span>
+<span id="228">228</span>
 </pre><pre class="rust"><code><span class="kw">use </span>lock_keeper::{
     config::opaque::OpaqueCipherSuite, crypto::RemoteStorageKey, infrastructure::pem_utils,
 };
@@ -260,7 +261,8 @@
         private_key_bytes: <span class="prelude-ty">Option</span>&lt;Vec&lt;u8&gt;&gt;,
         remote_storage_key_bytes: <span class="prelude-ty">Option</span>&lt;Vec&lt;u8&gt;&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, LockKeeperServerError&gt; {
-        <span class="kw">let </span>config_string = std::fs::read_to_string(<span class="kw-2">&amp;</span>config_path)<span class="question-mark">?</span>;
+        <span class="kw">let </span>config_string = std::fs::read_to_string(<span class="kw-2">&amp;</span>config_path)
+            .map_err(|e| LockKeeperServerError::FileIo(e, config_path.as_ref().to_path_buf()))<span class="question-mark">?</span>;
         <span class="kw">let </span>config_file = ConfigFile::from_str(<span class="kw-2">&amp;</span>config_string)<span class="question-mark">?</span>;
         <span class="self">Self</span>::from_config_file(config_file, private_key_bytes, remote_storage_key_bytes)
     }

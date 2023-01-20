@@ -113,6 +113,13 @@
 <span id="113">113</span>
 <span id="114">114</span>
 <span id="115">115</span>
+<span id="116">116</span>
+<span id="117">117</span>
+<span id="118">118</span>
+<span id="119">119</span>
+<span id="120">120</span>
+<span id="121">121</span>
+<span id="122">122</span>
 </pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::server::{database::DatabaseError, session_cache::SessionCacheError};
 <span class="kw">use </span>std::path::PathBuf;
 <span class="kw">use </span>thiserror::Error;
@@ -159,8 +166,14 @@
     </span>EnvVar(<span class="attribute">#[from] </span>std::env::VarError),
     <span class="attribute">#[error(transparent)]
     </span>Hyper(<span class="attribute">#[from] </span>hyper::Error),
-    <span class="attribute">#[error(transparent)]
+    <span class="doccomment">/// Generic kitchen sink IO error. Use [LockKeeperServerError::FileIo] if
+    /// the IO error is specifically related to working with files.
+    </span><span class="attribute">#[error(transparent)]
     </span>Io(<span class="attribute">#[from] </span>std::io::Error),
+    <span class="doccomment">/// IO error specific to file IO failing. Allows us to include the file that
+    /// failed as part of the error.
+    </span><span class="attribute">#[error(<span class="string">&quot;File IO error. Cause: {0}. On file: {1}&quot;</span>)]
+    </span>FileIo(std::io::Error, PathBuf),
     <span class="attribute">#[error(transparent)]
     </span>LockKeeper(<span class="attribute">#[from] </span>lock_keeper::LockKeeperError),
     <span class="attribute">#[error(<span class="string">&quot;OPAQUE protocol error: {}&quot;</span>, .<span class="number">0</span>)]
@@ -210,7 +223,8 @@
             </span>LockKeeperServerError::LockKeeper(err) =&gt; err.into(),
 
             <span class="comment">// Errors that the client should not see
-            </span>LockKeeperServerError::MissingService
+            </span>LockKeeperServerError::FileIo(<span class="kw">_</span>, <span class="kw">_</span>)
+            | LockKeeperServerError::MissingService
             | LockKeeperServerError::InvalidLogFilePath(<span class="kw">_</span>)
             | LockKeeperServerError::SessionCache(<span class="kw">_</span>)
             | LockKeeperServerError::Hyper(<span class="kw">_</span>)

@@ -76,6 +76,11 @@
 <span id="76">76</span>
 <span id="77">77</span>
 <span id="78">78</span>
+<span id="79">79</span>
+<span id="80">80</span>
+<span id="81">81</span>
+<span id="82">82</span>
+<span id="83">83</span>
 </pre><pre class="rust"><code><span class="kw">use </span>lock_keeper::config::opaque::OpaqueCipherSuite;
 <span class="kw">use </span>opaque_ke::{keypair::PrivateKey, Ristretto255, ServerSetup};
 <span class="kw">use </span>rand::rngs::StdRng;
@@ -100,13 +105,18 @@
         <span class="comment">// Server key file doesn&#39;t exist yet, create new
         </span><span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
             <span class="kw">let </span>server_setup = ServerSetup::&lt;OpaqueCipherSuite&gt;::new(rng);
-            std::fs::create_dir_all(
-                opaque_server_key_path
-                    .as_ref()
-                    .parent()
-                    .ok_or(LockKeeperServerError::InvalidOpaqueDirectory)<span class="question-mark">?</span>,
-            )<span class="question-mark">?</span>;
-            <span class="kw">let </span><span class="kw-2">mut </span>file = File::create(opaque_server_key_path)<span class="question-mark">?</span>;
+            <span class="kw">let </span>dir = opaque_server_key_path
+                .as_ref()
+                .parent()
+                .ok_or(LockKeeperServerError::InvalidOpaqueDirectory)<span class="question-mark">?</span>;
+
+            std::fs::create_dir_all(dir)
+                .map_err(|e| LockKeeperServerError::FileIo(e, dir.to_path_buf()))<span class="question-mark">?</span>;
+
+            <span class="kw">let </span><span class="kw-2">mut </span>file = File::create(<span class="kw-2">&amp;</span>opaque_server_key_path).map_err(|e| {
+                LockKeeperServerError::FileIo(e, opaque_server_key_path.as_ref().to_path_buf())
+            })<span class="question-mark">?</span>;
+
             file.write_all(bincode::serialize(<span class="kw-2">&amp;</span>server_setup)<span class="question-mark">?</span>.as_slice())<span class="question-mark">?</span>;
             <span class="prelude-val">Ok</span>(server_setup)
         }
