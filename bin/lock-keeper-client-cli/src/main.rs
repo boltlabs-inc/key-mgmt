@@ -15,10 +15,10 @@ use tracing_subscriber::EnvFilter;
 use crate::scripting::Script;
 
 #[tokio::main]
-pub async fn main() {
+pub async fn main() -> anyhow::Result<()> {
     let cli = cli::Cli::parse();
-    let config = Config::from_file(&cli.config, None).unwrap();
-    let script = parse_script(&cli).unwrap();
+    let config = Config::from_file(&cli.config, None)?;
+    let script = parse_script(&cli)?;
 
     tracing_subscriber::fmt::Subscriber::builder()
         .with_env_filter(EnvFilter::from_default_env())
@@ -28,10 +28,8 @@ pub async fn main() {
     info!("Starting client CLI ");
 
     match script {
-        Some(script) => app::run_script(config, cli.storage_path, script)
-            .await
-            .unwrap(),
-        None => app::run(config, cli.storage_path).await.unwrap(),
+        Some(script) => app::run_script(config, cli.storage_path, script).await,
+        None => app::run(config, cli.storage_path).await,
     }
 }
 
