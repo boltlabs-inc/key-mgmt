@@ -210,6 +210,12 @@ pub struct Cli {
 
 #[tokio::main]
 pub async fn main() {
+    if let Err(e) = run_main().await {
+        eprintln!("Server error: {e}");
+    }
+}
+
+pub async fn run_main() -> Result<(), LockKeeperServerError> {
     let cli = Cli::parse();
     let private_key_bytes = cli
         .private_key
@@ -225,19 +231,17 @@ pub async fn main() {
         .transpose()
         .unwrap();
 
-    let config = Config::from_file(&cli.config);
+    let config = Config::from_file(&cli.config)?;
 
     let server_config =
-        ServerConfig::from_file(config.server, private_key_bytes, remote_storage_key_bytes)
-            .unwrap();
+        ServerConfig::from_file(config.server, private_key_bytes, remote_storage_key_bytes)?;
 
     // We keep `_logging` around for the lifetime of the server. On drop, this value
     // will ensure that our logs are flushed.
     let _logging = init_logging(
         &server_config.logging.all_logs_file_name,
         &server_config.logging.lock_keeper_logs_file_name,
-    )
-    .unwrap();
+    )?;
 
     info!("Sever started!");
     info!("Logging config settings: {:?}", server_config.logging);
@@ -248,7 +252,9 @@ pub async fn main() {
         &config.database,
     );
     info!("Database config settings: {:?}", database_config);
-    let postgres = PostgresDB::connect(database_config).await.unwrap();
+    let postgres = PostgresDB::connect(database_config)
+        .await
+        .expect("Failed connecting to database.");
 
     let session_config = get_session_cache_config(
         cli.session_cache_username,
@@ -256,10 +262,11 @@ pub async fn main() {
         &config.session_cache,
     );
     info!("Session cache config settings: {:?}", session_config);
-    let session_cache = PostgresSessionCache::connect(session_config).await.unwrap();
-    start_lock_keeper_server(server_config, postgres, session_cache)
+    let session_cache = PostgresSessionCache::connect(session_config)
         .await
-        .unwrap();
+        .expect("Failed connecting to session cache.");
+    start_lock_keeper_server(server_config, postgres, session_cache).await?;
+    Ok(())
 }
 
 fn get_database_config(
@@ -268,7 +275,13 @@ fn get_database_config(
     path: &Path,
 ) -> PostgresConfig {
     // Read config file for database settings.
-    let mut db_config_file = DatabaseConfigFile::from_file(path).unwrap();
+    let mut db_config_file = DatabaseConfigFile::from_file(path).unwrap_or_else(|e| {
+        panic!(
+            "Failed to read database config file. File: {}. Reason {}",
+            path.display(),
+            e
+        )
+    });
 
     if db_config_file.username.is_some() {
         warn!(
@@ -298,7 +311,13 @@ fn get_session_cache_config(
     path: &Path,
 ) -> SessionConfig {
     // Read config file for database settings.
-    let mut session_config_file = SessionConfigFile::from_file(path).unwrap();
+    let mut session_config_file = SessionConfigFile::from_file(path).unwrap_or_else(|e| {
+        panic!(
+            "Failed to read session cache config. Reason {} file: {}.",
+            e,
+            path.display()
+        )
+    });
 
     if session_config_file.username.is_some() {
         warn!(
