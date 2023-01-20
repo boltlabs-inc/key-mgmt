@@ -28,7 +28,8 @@ impl RemoteStorageKey {
     /// Returns the remote storage key found in the file at the given
     /// path
     pub fn read_from_file(path: impl AsRef<Path>) -> Result<Self, LockKeeperError> {
-        let bytes = std::fs::read(path)?;
+        let bytes = std::fs::read(&path)
+            .map_err(|e| LockKeeperError::FileIo(e, path.as_ref().to_path_buf()))?;
         Self::from_bytes(&bytes)
     }
 
