@@ -22,13 +22,18 @@ pub fn create_or_retrieve_server_key_opaque(
         // Server key file doesn't exist yet, create new
         Err(_) => {
             let server_setup = ServerSetup::<OpaqueCipherSuite>::new(rng);
-            std::fs::create_dir_all(
-                opaque_server_key_path
-                    .as_ref()
-                    .parent()
-                    .ok_or(LockKeeperServerError::InvalidOpaqueDirectory)?,
-            )?;
-            let mut file = File::create(opaque_server_key_path)?;
+            let dir = opaque_server_key_path
+                .as_ref()
+                .parent()
+                .ok_or(LockKeeperServerError::InvalidOpaqueDirectory)?;
+
+            std::fs::create_dir_all(dir)
+                .map_err(|e| LockKeeperServerError::FileIo(e, dir.to_path_buf()))?;
+
+            let mut file = File::create(&opaque_server_key_path).map_err(|e| {
+                LockKeeperServerError::FileIo(e, opaque_server_key_path.as_ref().to_path_buf())
+            })?;
+
             file.write_all(bincode::serialize(&server_setup)?.as_slice())?;
             Ok(server_setup)
         }
