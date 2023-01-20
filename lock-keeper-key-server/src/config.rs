@@ -33,7 +33,8 @@ impl Config {
         private_key_bytes: Option<Vec<u8>>,
         remote_storage_key_bytes: Option<Vec<u8>>,
     ) -> Result<Self, LockKeeperServerError> {
-        let config_string = std::fs::read_to_string(&config_path)?;
+        let config_string = std::fs::read_to_string(&config_path)
+            .map_err(|e| LockKeeperServerError::FileIo(e, config_path.as_ref().to_path_buf()))?;
         let config_file = ConfigFile::from_str(&config_string)?;
         Self::from_config_file(config_file, private_key_bytes, remote_storage_key_bytes)
     }

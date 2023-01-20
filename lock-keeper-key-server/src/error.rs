@@ -44,8 +44,14 @@ pub enum LockKeeperServerError {
     EnvVar(#[from] std::env::VarError),
     #[error(transparent)]
     Hyper(#[from] hyper::Error),
+    /// Generic kitchen sink IO error. Use [LockKeeperServerError::FileIo] if
+    /// the IO error is specifically related to working with files.
     #[error(transparent)]
     Io(#[from] std::io::Error),
+    /// IO error specific to file IO failing. Allows us to include the file that
+    /// failed as part of the error.
+    #[error("File IO error. Cause: {0}. On file: {1}")]
+    FileIo(std::io::Error, PathBuf),
     #[error(transparent)]
     LockKeeper(#[from] lock_keeper::LockKeeperError),
     #[error("OPAQUE protocol error: {}", .0)]
@@ -95,7 +101,8 @@ impl From<LockKeeperServerError> for Status {
             LockKeeperServerError::LockKeeper(err) => err.into(),
 
             // Errors that the client should not see
-            LockKeeperServerError::MissingService
+            LockKeeperServerError::FileIo(_, _)
+            | LockKeeperServerError::MissingService
             | LockKeeperServerError::InvalidLogFilePath(_)
             | LockKeeperServerError::SessionCache(_)
             | LockKeeperServerError::Hyper(_)
