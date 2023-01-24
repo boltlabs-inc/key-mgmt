@@ -286,6 +286,12 @@ impl TryFrom<&[u8]> for KeyId {
     }
 }
 
+impl AsRef<[u8]> for KeyId {
+    fn as_ref(&self) -> &[u8] {
+        self.0.as_ref()
+    }
+}
+
 impl KeyId {
     /// Generate a new, random `KeyId` for the given [`UserId`].
     ///
@@ -333,12 +339,6 @@ impl Debug for KeyId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let hex = hex::encode(*self.0);
         f.debug_tuple("KeyId").field(&hex).finish()
-    }
-}
-
-impl From<KeyId> for HexBytes {
-    fn from(key_id: KeyId) -> Self {
-        (*key_id.0).into()
     }
 }
 
