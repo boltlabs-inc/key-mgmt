@@ -1,4 +1,4 @@
-use lock_keeper::infrastructure::pem_utils;
+use lock_keeper::{infrastructure::pem_utils, rpc::lock_keeper_rpc_client::LockKeeperRpcClient};
 use rustls::{ClientConfig, RootCertStore};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -7,13 +7,13 @@ use std::{
 };
 use tonic::transport::Uri;
 
-use crate::LockKeeperClientError;
+use crate::{LockKeeperClientError, client::{LockKeeperHttpsConnector, LockKeeperHttpConnector}};
 
 /// Client configuration with all fields ready to use.
 #[derive(Clone)]
 pub struct Config {
     pub server_uri: Uri,
-    pub tls_config: ClientConfig,
+    pub tls_config: Option<ClientConfig>,
 }
 
 impl Config {
@@ -35,6 +35,28 @@ impl Config {
             tls_config: config.tls_config(private_key_bytes)?,
         })
     }
+
+    pub fn https_client(&self) -> Result<LockKeeperRpcClient<LockKeeperHttpsConnector>, LockKeeperClientError> {
+        let tls_config = self.tls_config.ok_or(LockKeeperClientError::TlsConfigMissing)?;
+
+        let connector = hyper_rustls::HttpsConnectorBuilder::new()
+            .with_tls_config(tls_config)
+            .https_only()
+            .enable_http2()
+            .build();
+
+        let client = hyper::Client::builder().build(connector);
+        let rpc_client = LockKeeperRpcClient::with_origin(client, self.server_uri.clone());
+
+        Ok(rpc_client)
+    }
+
+    pub fn http_client(&self) -> LockKeeperRpcClient<LockKeeperHttpConnector> {
+        let connector = hyper::client::HttpConnector::new();
+
+        let client = hyper::Client::builder().build(connector);
+        LockKeeperRpcClient::with_origin(client, self.server_uri.clone())
+    }
 }
 
 impl std::fmt::Debug for Config {
@@ -52,7 +74,7 @@ impl std::fmt::Debug for Config {
 #[non_exhaustive]
 pub struct ConfigFile {
     pub server_uri: String,
-    pub ca_chain: PathBuf,
+    pub ca_chain: Option<PathBuf>,
     pub client_auth: Option<ClientAuth>,
 }
 
@@ -70,10 +92,15 @@ impl ConfigFile {
     pub fn tls_config(
         &self,
         private_key_bytes: Option<Vec<u8>>,
-    ) -> Result<ClientConfig, LockKeeperClientError> {
+    ) -> Result<Option<ClientConfig>, LockKeeperClientError> {
+        let ca_chain = match self.ca_chain {
+            Some(chain) => chain,
+            None => return Ok(None),
+        };
+
         let mut root_store = RootCertStore::empty();
 
-        let root_cert = pem_utils::read_certificates(&self.ca_chain)?;
+        let root_cert = pem_utils::read_certificates(&ca_chain)?;
         for cert in root_cert {
             root_store.add(&cert)?;
         }
@@ -98,7 +125,7 @@ impl ConfigFile {
             base_tls_config.with_no_client_auth()
         };
 
-        Ok(tls_config)
+        Ok(Some(tls_config))
     }
 }
 
@@ -135,7 +162,7 @@ mod tests {
         let client_auth = client_auth.unwrap();
 
         assert_eq!(server_uri, "https://localhost:1113");
-        assert_eq!(ca_chain, PathBuf::from("signing-ca.chain"));
+        assert_eq!(ca_chain, Some(PathBuf::from("signing-ca.chain")));
         assert_eq!(client_auth.private_key, Some(PathBuf::from("client.key")));
         assert_eq!(client_auth.certificate_chain, PathBuf::from("client.chain"));
     }

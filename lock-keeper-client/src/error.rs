@@ -14,6 +14,8 @@ pub enum LockKeeperClientError {
     ClientAuthMissing,
     #[error("Private key was not provided.")]
     PrivateKeyMissing,
+    #[error("HTTPS connector was requested but TLS settings were missing from config.")]
+    TlsConfigMissing,
 
     #[error("Account already registered")]
     AccountAlreadyRegistered,

@@ -73,23 +73,23 @@ pub struct LockKeeperClient<T> {
     pub(crate) rng: Arc<Mutex<StdRng>>,
 }
 
-pub(crate) type LockKeeperRpcClientInner<T>
+pub(crate) type LockKeeperRpcClientConnector<T>
 where
     T: Clone,
     T: tonic::client::GrpcService<tonic::body::BoxBody>,
     T::Error: Into<tonic::codegen::StdError>,
     T::ResponseBody: tonic::codegen::Body<Data = tonic::codegen::Bytes> + Send + 'static,
     <T::ResponseBody as tonic::codegen::Body>::Error: Into<tonic::codegen::StdError> + Send,
-= LockKeeperRpcClient<T>;
+= T;
 
-pub(crate) type LockKeeperHttpsRpcClientInner = LockKeeperRpcClientInner<
+pub(crate) type LockKeeperHttpsConnector = LockKeeperRpcClientConnector<
     hyper::Client<
         HttpsConnector<HttpConnector>,
         UnsyncBoxBody<tonic::codegen::Bytes, tonic::Status>,
     >,
 >;
 
-pub(crate) type LockKeeperHttpRpcClientInner = LockKeeperRpcClientInner<
+pub(crate) type LockKeeperHttpConnector = LockKeeperRpcClientConnector<
     hyper::Client<HttpConnector, UnsyncBoxBody<tonic::codegen::Bytes, tonic::Status>>,
 >;
 
@@ -100,39 +100,7 @@ pub(crate) struct AuthenticateResult {
 }
 
 #[allow(unused)]
-impl<T> LockKeeperClient<LockKeeperRpcClientInner<T>> {
-    /// Create a `tonic` client object that communucates over https and return it to the client app.
-    ///
-    /// The returned client should be stored as part of the [`LockKeeperClient`]
-    /// state.
-    pub(crate) async fn connect_https(config: &Config) -> Result<LockKeeperHttpsRpcClientInner> {
-        let connector = hyper_rustls::HttpsConnectorBuilder::new()
-            .with_tls_config(config.tls_config.clone())
-            .https_or_http()
-            .enable_http2()
-            .build();
-
-        let client = hyper::Client::builder().build(connector);
-        let rpc_client = LockKeeperRpcClient::with_origin(client, config.server_uri.clone());
-
-        Ok(rpc_client)
-    }
-
-    /// Create a `tonic` client object that communicates over http and return it to the client app.
-    ///
-    /// The returned client should be stored as part of the [`LockKeeperClient`]
-    /// state.
-    pub(crate) async fn connect_http(
-        config: &Config,
-    ) -> Result<LockKeeperHttpRpcClientInner> {
-        let connector = hyper::client::HttpConnector::new();
-
-        let client = hyper::Client::builder().build(connector);
-        let rpc_client = LockKeeperRpcClient::with_origin(client, config.server_uri.clone());
-
-        Ok(rpc_client)
-    }
-
+impl<T> LockKeeperClient<LockKeeperRpcClientConnector<T>> {
     /// Get [`UserId`] for the authenticated client.
     pub fn user_id(&self) -> &UserId {
         &self.user_id
@@ -146,10 +114,6 @@ impl<T> LockKeeperClient<LockKeeperRpcClientInner<T>> {
     /// Get [`OpaqueSessionKey`] for the authenticated client.
     pub fn session_key(&self) -> &OpaqueSessionKey {
         &self.session.session_key
-    }
-
-    pub(crate) fn tonic_client(&self) -> LockKeeperRpcClient<T> {
-        self.tonic_client.clone()
     }
 
     pub(crate) async fn authenticate(
