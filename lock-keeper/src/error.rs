@@ -1,5 +1,6 @@
 //! Error type for all errors returned to code outside of this crate.
 
+use std::path::PathBuf;
 use thiserror::Error;
 use tokio::sync::mpsc::error::SendError;
 use tonic::Status;
@@ -46,8 +47,14 @@ pub enum LockKeeperError {
     // Wrapped errors
     #[error(transparent)]
     Hex(#[from] hex::FromHexError),
+    /// Generic kitchen sink IO error. Use [LockKeeperError::FileIo] if
+    /// the IO error is specifically related to working with files.
     #[error(transparent)]
     Io(#[from] std::io::Error),
+    /// IO error specific to file IO failing. Allows us to include the file that
+    /// failed as part of the error.
+    #[error("File IO error. Cause: {0}. On file: {1}")]
+    FileIo(std::io::Error, PathBuf),
     #[error("OPAQUE protocol error: {}", .0)]
     OpaqueProtocol(opaque_ke::errors::ProtocolError),
     #[error(transparent)]
@@ -81,8 +88,10 @@ impl From<LockKeeperError> for Status {
             | LockKeeperError::UnknownSecretType(_)
             | LockKeeperError::InvalidSecretType => Status::invalid_argument(error.to_string()),
             LockKeeperError::NoMessageReceived => Status::deadline_exceeded(error.to_string()),
+
             // Errors that the client should not see
-            LockKeeperError::InvalidClientAction
+            LockKeeperError::FileIo(_, _)
+            | LockKeeperError::InvalidClientAction
             | LockKeeperError::AlreadyAuthenticated
             | LockKeeperError::ShouldBeAuthenticated
             | LockKeeperError::Crypto(_)
