@@ -1,7 +1,7 @@
 use crate::{
     api::LocalStorage,
     channel::{Authenticated, Channel},
-    LockKeeperClient, LockKeeperClientError,
+    LockKeeperClient, LockKeeperClientError, client::LockKeeperRpcClientInner,
 };
 use lock_keeper::{
     crypto::{Encrypted, KeyId, Secret, SigningKeyPair},
@@ -13,7 +13,7 @@ use lock_keeper::{
 use rand::rngs::StdRng;
 use uuid::Uuid;
 
-impl LockKeeperClient {
+impl<T> LockKeeperClient<LockKeeperRpcClientInner<T>> {
     /// Handles the retrieval of arbitrary secrets
     /// ([`lock_keeper::crypto::Secret`]) only.
     pub(crate) async fn handle_retrieve_secret(

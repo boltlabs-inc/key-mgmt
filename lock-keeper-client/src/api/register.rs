@@ -18,7 +18,7 @@ use rand::rngs::StdRng;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-impl LockKeeperClient {
+impl<T> LockKeeperClient<T> {
     pub(crate) async fn handle_registration(
         mut channel: Channel<Unauthenticated>,
         rng: Arc<Mutex<StdRng>>,

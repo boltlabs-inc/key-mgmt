@@ -8,7 +8,7 @@ use lock_keeper::{
 };
 use rand::rngs::StdRng;
 
-impl LockKeeperClient {
+impl<T> LockKeeperClient<T> {
     pub(crate) async fn handle_import_signing_key(
         &self,
         mut channel: Channel<Authenticated<StdRng>>,

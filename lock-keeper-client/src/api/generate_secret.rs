@@ -1,7 +1,7 @@
 use crate::{
     api::LocalStorage,
     channel::{Authenticated, Channel},
-    LockKeeperClient, LockKeeperClientError,
+    LockKeeperClient, LockKeeperClientError, client::LockKeeperRpcClientInner,
 };
 use lock_keeper::{
     crypto::{KeyId, Secret, StorageKey},
@@ -21,7 +21,7 @@ pub struct GenerateResult {
     pub local_storage: LocalStorage<Secret>,
 }
 
-impl LockKeeperClient {
+impl<T> LockKeeperClient<LockKeeperRpcClientInner<T>> {
     pub(crate) async fn handle_generate_secret(
         &self,
         mut channel: Channel<Authenticated<StdRng>>,

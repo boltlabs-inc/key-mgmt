@@ -17,7 +17,7 @@ use opaque_ke::{ClientLogin, ClientLoginFinishParameters, ClientLoginStartResult
 use rand::rngs::StdRng;
 use tokio::sync::Mutex;
 
-impl LockKeeperClient {
+impl<T> LockKeeperClient<T> {
     pub(crate) async fn handle_authentication(
         mut channel: Channel<Unauthenticated>,
         rng: Arc<Mutex<StdRng>>,

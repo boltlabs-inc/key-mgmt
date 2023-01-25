@@ -63,22 +63,34 @@ pub(crate) struct Session {
 /// TODO #30: This abstraction needs a lot of design attention.
 #[derive(Debug)]
 #[allow(unused)]
-pub struct LockKeeperClient {
+pub struct LockKeeperClient<T> {
     session: Session,
     config: Config,
     account_name: AccountName,
     user_id: UserId,
     master_key: MasterKey,
-    tonic_client: LockKeeperRpcClient<LockKeeperRpcClientInner>,
+    tonic_client: LockKeeperRpcClient<T>,
     pub(crate) rng: Arc<Mutex<StdRng>>,
 }
 
-/// Connection type used by `LockKeeperRpcClient`.
-/// This would normally be `tonic::transport:Channel` but TLS makes it more
-/// complicated.
-type LockKeeperRpcClientInner = hyper::Client<
-    HttpsConnector<HttpConnector>,
-    UnsyncBoxBody<tonic::codegen::Bytes, tonic::Status>,
+pub(crate) type LockKeeperRpcClientInner<T>
+where
+    T: Clone,
+    T: tonic::client::GrpcService<tonic::body::BoxBody>,
+    T::Error: Into<tonic::codegen::StdError>,
+    T::ResponseBody: tonic::codegen::Body<Data = tonic::codegen::Bytes> + Send + 'static,
+    <T::ResponseBody as tonic::codegen::Body>::Error: Into<tonic::codegen::StdError> + Send,
+= LockKeeperRpcClient<T>;
+
+pub(crate) type LockKeeperHttpsRpcClientInner = LockKeeperRpcClientInner<
+    hyper::Client<
+        HttpsConnector<HttpConnector>,
+        UnsyncBoxBody<tonic::codegen::Bytes, tonic::Status>,
+    >,
+>;
+
+pub(crate) type LockKeeperHttpRpcClientInner = LockKeeperRpcClientInner<
+    hyper::Client<HttpConnector, UnsyncBoxBody<tonic::codegen::Bytes, tonic::Status>>,
 >;
 
 pub(crate) struct AuthenticateResult {
@@ -88,7 +100,39 @@ pub(crate) struct AuthenticateResult {
 }
 
 #[allow(unused)]
-impl LockKeeperClient {
+impl<T> LockKeeperClient<LockKeeperRpcClientInner<T>> {
+    /// Create a `tonic` client object that communucates over https and return it to the client app.
+    ///
+    /// The returned client should be stored as part of the [`LockKeeperClient`]
+    /// state.
+    pub(crate) async fn connect_https(config: &Config) -> Result<LockKeeperHttpsRpcClientInner> {
+        let connector = hyper_rustls::HttpsConnectorBuilder::new()
+            .with_tls_config(config.tls_config.clone())
+            .https_or_http()
+            .enable_http2()
+            .build();
+
+        let client = hyper::Client::builder().build(connector);
+        let rpc_client = LockKeeperRpcClient::with_origin(client, config.server_uri.clone());
+
+        Ok(rpc_client)
+    }
+
+    /// Create a `tonic` client object that communicates over http and return it to the client app.
+    ///
+    /// The returned client should be stored as part of the [`LockKeeperClient`]
+    /// state.
+    pub(crate) async fn connect_http(
+        config: &Config,
+    ) -> Result<LockKeeperHttpRpcClientInner> {
+        let connector = hyper::client::HttpConnector::new();
+
+        let client = hyper::Client::builder().build(connector);
+        let rpc_client = LockKeeperRpcClient::with_origin(client, config.server_uri.clone());
+
+        Ok(rpc_client)
+    }
+
     /// Get [`UserId`] for the authenticated client.
     pub fn user_id(&self) -> &UserId {
         &self.user_id
@@ -104,31 +148,12 @@ impl LockKeeperClient {
         &self.session.session_key
     }
 
-    pub(crate) fn tonic_client(&self) -> LockKeeperRpcClient<LockKeeperRpcClientInner> {
+    pub(crate) fn tonic_client(&self) -> LockKeeperRpcClient<T> {
         self.tonic_client.clone()
     }
 
-    /// Create a `tonic` client object and return it to the client app.
-    ///
-    /// The returned client should be stored as part of the [`LockKeeperClient`]
-    /// state.
-    pub(crate) async fn connect(
-        config: &Config,
-    ) -> Result<LockKeeperRpcClient<LockKeeperRpcClientInner>> {
-        let connector = hyper_rustls::HttpsConnectorBuilder::new()
-            .with_tls_config(config.tls_config.clone())
-            .https_or_http()
-            .enable_http2()
-            .build();
-
-        let client = hyper::Client::builder().build(connector);
-        let rpc_client = LockKeeperRpcClient::with_origin(client, config.server_uri.clone());
-
-        Ok(rpc_client)
-    }
-
     pub(crate) async fn authenticate(
-        mut client: Option<LockKeeperRpcClient<LockKeeperRpcClientInner>>,
+        mut client: Option<LockKeeperRpcClient<T>>,
         account_name: &AccountName,
         password: &Password,
         config: &Config,
@@ -207,7 +232,7 @@ impl LockKeeperClient {
     /// This function will return an error if the [`ClientAction`] requires
     /// authentication.
     pub(crate) async fn create_channel(
-        client: &mut LockKeeperRpcClient<LockKeeperRpcClientInner>,
+        client: &mut LockKeeperRpcClient<T>,
         metadata: &RequestMetadata,
     ) -> Result<Channel<Unauthenticated>> {
         // Create channel to send messages to server after connection is established via
@@ -253,7 +278,7 @@ impl LockKeeperClient {
     /// This function will return an error if the [`ClientAction`] requires
     /// an unauthenticated channel.
     pub(crate) async fn create_authenticated_channel(
-        client: &mut LockKeeperRpcClient<LockKeeperRpcClientInner>,
+        client: &mut LockKeeperRpcClient<T>,
         metadata: &RequestMetadata,
         session_key: OpaqueSessionKey,
         rng: Arc<Mutex<StdRng>>,

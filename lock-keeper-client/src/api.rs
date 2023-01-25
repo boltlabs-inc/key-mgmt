@@ -44,7 +44,14 @@ pub struct LocalStorage<T> {
     pub material: T,
 }
 
-impl LockKeeperClient {
+impl<T> LockKeeperClient<T>
+where
+    T: Clone,
+    T: tonic::client::GrpcService<tonic::body::BoxBody>,
+    T::Error: Into<tonic::codegen::StdError>,
+    T::ResponseBody: tonic::codegen::Body<Data = tonic::codegen::Bytes> + Send + 'static,
+    <T::ResponseBody as tonic::codegen::Body>::Error: Into<tonic::codegen::StdError> + Send,
+{
     /// Ping the server to make sure it is running and reachable
     pub async fn health(config: &Config) -> Result<(), LockKeeperClientError> {
         use lock_keeper::rpc::HealthCheck;

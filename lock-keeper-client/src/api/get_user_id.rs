@@ -6,7 +6,7 @@ use lock_keeper::types::{database::account::UserId, operations::get_user_id::ser
 
 use rand::rngs::StdRng;
 
-impl LockKeeperClient {
+impl<T> LockKeeperClient<T> {
     pub(crate) async fn handle_get_user_id(
         mut channel: Channel<Authenticated<StdRng>>,
     ) -> Result<UserId, LockKeeperClientError> {

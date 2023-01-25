@@ -9,7 +9,7 @@ use lock_keeper::{
 use rand::rngs::StdRng;
 use serde::{Deserialize, Serialize};
 
-impl LockKeeperClient {
+impl<T> LockKeeperClient<T> {
     pub(crate) async fn handle_remote_generate_signing_key(
         &self,
         mut channel: Channel<Authenticated<StdRng>>,

@@ -1,6 +1,6 @@
 use crate::{
     channel::{Authenticated, Channel},
-    client::LockKeeperClient,
+    client::{LockKeeperClient, LockKeeperRpcClientInner},
     LockKeeperClientError,
 };
 use lock_keeper::{
@@ -14,12 +14,12 @@ use rand::{rngs::StdRng, CryptoRng, RngCore};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-impl LockKeeperClient {
+impl<T> LockKeeperClient<LockKeeperRpcClientInner<T>> {
     /// Creates a storage key and sends it to the key server
-    pub(crate) async fn handle_create_storage_key<T: CryptoRng + RngCore>(
+    pub(crate) async fn handle_create_storage_key<R: CryptoRng + RngCore>(
         &self,
         mut channel: Channel<Authenticated<StdRng>>,
-        rng: Arc<Mutex<T>>,
+        rng: Arc<Mutex<R>>,
         master_key: MasterKey,
     ) -> Result<(), LockKeeperClientError> {
         let user_id = self.user_id().clone();

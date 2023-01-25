@@ -8,7 +8,7 @@ use lock_keeper::types::{
 };
 use rand::rngs::StdRng;
 
-impl LockKeeperClient {
+impl<T> LockKeeperClient<T> {
     pub(crate) async fn handle_retrieve_audit_events(
         &self,
         mut channel: Channel<Authenticated<StdRng>>,
