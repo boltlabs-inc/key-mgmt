@@ -355,6 +355,16 @@
 <span id="355">355</span>
 <span id="356">356</span>
 <span id="357">357</span>
+<span id="358">358</span>
+<span id="359">359</span>
+<span id="360">360</span>
+<span id="361">361</span>
+<span id="362">362</span>
+<span id="363">363</span>
+<span id="364">364</span>
+<span id="365">365</span>
+<span id="366">366</span>
+<span id="367">367</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Client object to interact with the key server.
 
 </span><span class="kw">use crate</span>::{
@@ -501,7 +511,8 @@
             RequestMetadata::new(account_name, ClientAction::Authenticate, <span class="prelude-val">None</span>, request_id);
         <span class="kw">let </span><span class="kw-2">mut </span>rng = StdRng::from_entropy();
         <span class="kw">let </span>rng_arc_mutex = Arc::new(Mutex::new(rng));
-        <span class="kw">let </span><span class="kw-2">mut </span>client_channel = <span class="self">Self</span>::create_channel(<span class="kw-2">&amp;mut </span>client, <span class="kw-2">&amp;</span>metadata).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>client_channel =
+            <span class="self">Self</span>::create_unauthenticated_channel(<span class="kw-2">&amp;mut </span>client, <span class="kw-2">&amp;</span>metadata).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>auth_result = <span class="self">Self</span>::handle_authentication(
             client_channel,
             rng_arc_mutex.clone(),
@@ -556,14 +567,19 @@
         )
     }
 
-    <span class="doccomment">/// Helper to create the appropriate [`Channel`] to send to tonic
-    /// handler functions based on the client&#39;s action. This function creates
-    /// unauthenticated channels. Use `create_authenticated_channel` to create
-    /// an authenticated channel.
+    <span class="doccomment">/// Create a [`Channel&lt;Unauthenticated&gt;`] object for communicating with the
+    /// server.
     ///
-    /// This function will return an error if the [`ClientAction`] requires
-    /// authentication.
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>create_channel(
+    /// The client will make the proper gRPC call here based on the
+    /// [`ClientAction`]. After this gRPC call our client and server are
+    /// ready to communicate back and forth to complete our cryptographic
+    /// protocols.
+    ///
+    /// This function creates unauthenticated channels. Use
+    /// `create_authenticated_channel` to create an authenticated channel.
+    /// This function will return an error if the [`ClientAction`]
+    /// (contained in `metadata`) requires authentication.
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>create_unauthenticated_channel(
         client: <span class="kw-2">&amp;mut </span>LockKeeperRpcClient&lt;LockKeeperRpcClientInner&gt;,
         metadata: <span class="kw-2">&amp;</span>RequestMetadata,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Channel&lt;Unauthenticated&gt;&gt; {
@@ -602,13 +618,17 @@
         <span class="prelude-val">Ok</span>(channel)
     }
 
-    <span class="doccomment">/// Helper to create the appropriate [`Channel`] to send to tonic
-    /// handler functions based on the client&#39;s action. This function creates
-    /// authenticated channels. Use `create_channel` to create
-    /// an unauthenticated channel.
+    <span class="doccomment">/// Create a [`Channel&lt;Authenticated&lt;StdRng&gt;&gt;`] object for communicating
+    /// with the server.
     ///
-    /// This function will return an error if the [`ClientAction`] requires
-    /// an unauthenticated channel.
+    /// The client will make the proper gRPC call here based on the
+    /// [`ClientAction`]. After this gRPC call our client and server are
+    /// ready to communicate back and forth to complete our cryptographic
+    /// protocols.
+    ///
+    /// This function creates authenticated channels. This function will return
+    /// an error if the [`ClientAction`] (contained in `metadata`) does not
+    /// need authentication.
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>create_authenticated_channel(
         client: <span class="kw-2">&amp;mut </span>LockKeeperRpcClient&lt;LockKeeperRpcClientInner&gt;,
         metadata: <span class="kw-2">&amp;</span>RequestMetadata,

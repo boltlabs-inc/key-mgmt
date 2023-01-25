@@ -126,11 +126,30 @@
 <span id="126">126</span>
 <span id="127">127</span>
 <span id="128">128</span>
+<span id="129">129</span>
+<span id="130">130</span>
+<span id="131">131</span>
+<span id="132">132</span>
+<span id="133">133</span>
+<span id="134">134</span>
+<span id="135">135</span>
+<span id="136">136</span>
+<span id="137">137</span>
+<span id="138">138</span>
+<span id="139">139</span>
+<span id="140">140</span>
+<span id="141">141</span>
+<span id="142">142</span>
+<span id="143">143</span>
+<span id="144">144</span>
+<span id="145">145</span>
+<span id="146">146</span>
+<span id="147">147</span>
 </pre><pre class="rust"><code><span class="kw">use </span>async_trait::async_trait;
 
 <span class="kw">use </span>lock_keeper::{infrastructure::logging, types::audit_event::EventStatus};
 <span class="kw">use </span>rand::rngs::StdRng;
-<span class="kw">use </span>tracing::{error, info, instrument, Instrument};
+<span class="kw">use </span>tracing::{debug, error, info, instrument, Instrument};
 
 <span class="kw">use crate</span>::{
     server::{database::DataStore, Context},
@@ -153,10 +172,16 @@
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt;;
 }
 
-<span class="doccomment">/// Takes a request from `tonic` and spawns a new thread to process that
-/// request through the logic defined by the `Operation::operation` method.
-/// Any errors returned by the operation are logged and an appropriate error
-/// message is sent to the client.
+<span class="doccomment">/// This function is only called by the client via our gRPC endpoints.
+///
+/// This function spawns a task to do the actual work and returns immediately.
+/// We must return immediately as we are in the middle of a gRPC call which
+/// returns the receiving end of a channel for the client to continue receiving
+/// messages from us for the lifetime of the protocol.
+///
+/// The spawned task processes the request through the logic defined by the
+/// `Operation::operation` method. Any errors returned are both logged and saved
+/// as an audit event.
 </span><span class="attribute">#[instrument(skip_all, err(Debug), fields(metadata, request_id))]
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>handle_authenticated_request&lt;
     DB: DataStore,
@@ -170,17 +195,21 @@
     logging::record_field(<span class="string">&quot;request_id&quot;</span>, <span class="kw-2">&amp;</span>channel.metadata().request_id());
     <span class="macro">info!</span>(<span class="string">&quot;Handling new client request.&quot;</span>);
 
-    <span class="kw">let _ </span>= tokio::spawn(
+    <span class="comment">// Spawn a task to do the actual work. This way the gRPC call can return with
+    // the receiving end of the channel. This task will use the writing end of
+    // this same channel to send messages back to the client. The client and
+    // server can go back and forth until the protocol is complete.
+    </span><span class="kw">let _ </span>= tokio::spawn(
         <span class="kw">async move </span>{
             audit_event(<span class="kw-2">&amp;mut </span>channel, <span class="kw-2">&amp;</span>context, EventStatus::Started).<span class="kw">await</span>;
 
             <span class="kw">match </span>operation.operation(<span class="kw-2">&amp;mut </span>channel, <span class="kw-2">&amp;mut </span>context).<span class="kw">await </span>{
                 <span class="prelude-val">Ok</span>(()) =&gt; {
-                    <span class="macro">info!</span>(<span class="string">&quot;This operation completed successfully!&quot;</span>);
+                    <span class="macro">info!</span>(<span class="string">&quot;Client request completed successfully!&quot;</span>);
                     audit_event(<span class="kw-2">&amp;mut </span>channel, <span class="kw-2">&amp;</span>context, EventStatus::Successful).<span class="kw">await</span>;
                 }
                 <span class="prelude-val">Err</span>(e) =&gt; {
-                    <span class="macro">info!</span>(<span class="string">&quot;This operation completed with an error!&quot;</span>);
+                    <span class="macro">info!</span>(<span class="string">&quot;Client request completed with an error!&quot;</span>);
                     handle_error(<span class="kw-2">&amp;mut </span>channel, e).<span class="kw">await</span>;
                     audit_event(<span class="kw-2">&amp;mut </span>channel, <span class="kw-2">&amp;</span>context, EventStatus::Failed).<span class="kw">await</span>;
                 }
@@ -192,10 +221,15 @@
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="doccomment">/// Takes a request from `tonic` and spawns a new thread to process that
-/// request through the logic defined by the `Operation::operation` method.
-/// Any errors returned by the operation are logged and an appropriate error
-/// message is sent to the client.
+<span class="doccomment">/// This function is only called by the client via our gRPC endpoints.
+///
+/// This function spawns a task to do the actual work and returns immediately.
+/// We must return immediately as we are in the middle of a gRPC call which
+/// returns the receiving end of a channel for the client to continue receiving
+/// messages from us for the lifetime of the protocol.
+///
+/// The spawned task processes the request through the logic defined by the
+/// `Operation::operation` method. Any errors returned are logged.
 </span><span class="attribute">#[instrument(skip_all, err(Debug), fields(metadata, request_id))]
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>handle_unauthenticated_request&lt;
     DB: DataStore,
@@ -209,7 +243,11 @@
     logging::record_field(<span class="string">&quot;request_id&quot;</span>, <span class="kw-2">&amp;</span>channel.metadata().request_id());
     <span class="macro">info!</span>(<span class="string">&quot;Handling new client request.&quot;</span>);
 
-    <span class="kw">let _ </span>= tokio::spawn(
+    <span class="comment">// Spawn a task to do the actual work. This way the gRPC call can return with
+    // the receiving end of the channel. This task will use the writing end of
+    // this same channel to send messages back to the client. The client and
+    // server can go back and forth until the protocol is complete.
+    </span><span class="kw">let _ </span>= tokio::spawn(
         <span class="kw">async move </span>{
             <span class="kw">match </span>operation.operation(<span class="kw-2">&amp;mut </span>channel, <span class="kw-2">&amp;mut </span>context).<span class="kw">await </span>{
                 <span class="prelude-val">Ok</span>(()) =&gt; {
@@ -229,7 +267,6 @@
 
 <span class="attribute">#[instrument(skip(channel))]
 </span><span class="kw">async fn </span>handle_error&lt;AUTH&gt;(channel: <span class="kw-2">&amp;mut </span>Channel&lt;AUTH&gt;, e: LockKeeperServerError) {
-    <span class="macro">error!</span>(<span class="string">&quot;{}&quot;</span>, e);
     <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = channel.send_error(e).<span class="kw">await </span>{
         <span class="macro">error!</span>(<span class="string">&quot;Problem while sending error over channel: {}&quot;</span>, e);
     }
@@ -242,6 +279,7 @@
     context: <span class="kw-2">&amp;</span>Context&lt;DB&gt;,
     status: EventStatus,
 ) {
+    <span class="macro">debug!</span>(<span class="string">&quot;Creating audit event...&quot;</span>);
     <span class="kw">let </span>account_id = channel.account_id();
     <span class="kw">let </span>client_action = channel.metadata().action();
     <span class="kw">let </span>request_id = channel.metadata().request_id();

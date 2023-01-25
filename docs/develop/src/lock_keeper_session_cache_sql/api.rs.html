@@ -164,7 +164,6 @@
 <span id="164">164</span>
 <span id="165">165</span>
 <span id="166">166</span>
-<span id="167">167</span>
 </pre><pre class="rust"><code><span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>lock_keeper::{
     crypto::{Encrypted, OpaqueSessionKey},
@@ -244,7 +243,6 @@
         session_key: Encrypted&lt;OpaqueSessionKey&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Uuid, SessionCacheError&gt; {
         <span class="kw">let </span>session_id = <span class="self">self</span>.create_session(account_id, session_key).<span class="kw">await</span><span class="question-mark">?</span>;
-        logging::record_field(<span class="string">&quot;session_id&quot;</span>, <span class="kw-2">&amp;</span>session_id);
         <span class="prelude-val">Ok</span>(session_id)
     }
 

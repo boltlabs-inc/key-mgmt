@@ -413,10 +413,6 @@
 <span id="413">413</span>
 <span id="414">414</span>
 <span id="415">415</span>
-<span id="416">416</span>
-<span id="417">417</span>
-<span id="418">418</span>
-<span id="419">419</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Full implementation of the public API for the Lock Keeper client library.
 //!
 //! This API is designed for use with a local client application - that is, an
@@ -534,18 +530,14 @@
         config: <span class="kw-2">&amp;</span>Config,
         request_id: Uuid,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperClientError&gt; {
-        <span class="kw">let </span>rng = StdRng::from_entropy();
+        <span class="kw">let </span>rng = Arc::new(Mutex::new(StdRng::from_entropy()));
         <span class="kw">let </span><span class="kw-2">mut </span>client = <span class="self">Self</span>::connect(config).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">let </span>metadata = RequestMetadata::new(account_name, ClientAction::Register, <span class="prelude-val">None</span>, request_id);
-        <span class="kw">let </span>rng_arc_mutex = Arc::new(Mutex::new(rng));
-        <span class="kw">let </span>client_channel = <span class="self">Self</span>::create_channel(<span class="kw-2">&amp;mut </span>client, <span class="kw-2">&amp;</span>metadata).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="kw">let </span>master_key = <span class="self">Self</span>::handle_registration(
-            client_channel,
-            rng_arc_mutex.clone(),
-            account_name,
-            password,
-        )
-        .<span class="kw">await</span><span class="question-mark">?</span>;
+
+        <span class="kw">let </span>client_channel = <span class="self">Self</span>::create_unauthenticated_channel(<span class="kw-2">&amp;mut </span>client, <span class="kw-2">&amp;</span>metadata).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>master_key =
+            <span class="self">Self</span>::handle_registration(client_channel, rng.clone(), account_name, password).<span class="kw">await</span><span class="question-mark">?</span>;
+
         <span class="kw">let </span>client =
             <span class="self">Self</span>::authenticate(<span class="prelude-val">Some</span>(client), account_name, password, config, request_id).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="comment">// After authenticating we can create the storage key
@@ -554,11 +546,11 @@
             <span class="kw-2">&amp;mut </span>client.tonic_client(),
             <span class="kw-2">&amp;</span>request_metadata,
             client.session_key().clone(),
-            rng_arc_mutex.clone(),
+            rng.clone(),
         )
         .<span class="kw">await</span><span class="question-mark">?</span>;
         client
-            .handle_create_storage_key(client_channel, rng_arc_mutex, master_key)
+            .handle_create_storage_key(client_channel, rng, master_key)
             .<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(())
