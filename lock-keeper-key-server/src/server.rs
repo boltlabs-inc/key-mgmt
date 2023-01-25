@@ -185,6 +185,7 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         let (channel, response) = self.create_authenticated_channel(request).await?;
         handle_authenticated_request(operations::RetrieveAuditEvents, self.context(), channel)
             .await?;
+
         Ok(response)
     }
 
@@ -212,6 +213,13 @@ impl<DB: DataStore> LockKeeperKeyServer<DB> {
         Ok((channel, response))
     }
 
+    /// Server-side instantiation of our channels. The `request` argument
+    /// contains the receiving end of a channel which the client sent us
+    /// with its gRPC call.
+    ///
+    /// Returns our tuple containing a [`Channel`] for the server to use and a
+    /// [`Response`] to send back to the client via the return value of the
+    /// gRPC call.
     #[instrument(skip_all, err(Debug))]
     async fn create_authenticated_channel(
         &self,

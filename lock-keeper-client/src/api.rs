@@ -115,18 +115,14 @@ impl LockKeeperClient {
         config: &Config,
         request_id: Uuid,
     ) -> Result<(), LockKeeperClientError> {
-        let rng = StdRng::from_entropy();
+        let rng = Arc::new(Mutex::new(StdRng::from_entropy()));
         let mut client = Self::connect(config).await?;
         let metadata = RequestMetadata::new(account_name, ClientAction::Register, None, request_id);
-        let rng_arc_mutex = Arc::new(Mutex::new(rng));
-        let client_channel = Self::create_channel(&mut client, &metadata).await?;
-        let master_key = Self::handle_registration(
-            client_channel,
-            rng_arc_mutex.clone(),
-            account_name,
-            password,
-        )
-        .await?;
+
+        let client_channel = Self::create_unauthenticated_channel(&mut client, &metadata).await?;
+        let master_key =
+            Self::handle_registration(client_channel, rng.clone(), account_name, password).await?;
+
         let client =
             Self::authenticate(Some(client), account_name, password, config, request_id).await?;
         // After authenticating we can create the storage key
@@ -135,11 +131,11 @@ impl LockKeeperClient {
             &mut client.tonic_client(),
             &request_metadata,
             client.session_key().clone(),
-            rng_arc_mutex.clone(),
+            rng.clone(),
         )
         .await?;
         client
-            .handle_create_storage_key(client_channel, rng_arc_mutex, master_key)
+            .handle_create_storage_key(client_channel, rng, master_key)
             .await?;
 
         Ok(())

@@ -144,7 +144,8 @@ impl LockKeeperClient {
             RequestMetadata::new(account_name, ClientAction::Authenticate, None, request_id);
         let mut rng = StdRng::from_entropy();
         let rng_arc_mutex = Arc::new(Mutex::new(rng));
-        let mut client_channel = Self::create_channel(&mut client, &metadata).await?;
+        let mut client_channel =
+            Self::create_unauthenticated_channel(&mut client, &metadata).await?;
         let mut auth_result = Self::handle_authentication(
             client_channel,
             rng_arc_mutex.clone(),
@@ -199,14 +200,19 @@ impl LockKeeperClient {
         )
     }
 
-    /// Helper to create the appropriate [`Channel`] to send to tonic
-    /// handler functions based on the client's action. This function creates
-    /// unauthenticated channels. Use `create_authenticated_channel` to create
-    /// an authenticated channel.
+    /// Create a [`Channel<Unauthenticated>`] object for communicating with the
+    /// server.
     ///
-    /// This function will return an error if the [`ClientAction`] requires
-    /// authentication.
-    pub(crate) async fn create_channel(
+    /// The client will make the proper gRPC call here based on the
+    /// [`ClientAction`]. After this gRPC call our client and server are
+    /// ready to communicate back and forth to complete our cryptographic
+    /// protocols.
+    ///
+    /// This function creates unauthenticated channels. Use
+    /// `create_authenticated_channel` to create an authenticated channel.
+    /// This function will return an error if the [`ClientAction`]
+    /// (contained in `metadata`) requires authentication.
+    pub(crate) async fn create_unauthenticated_channel(
         client: &mut LockKeeperRpcClient<LockKeeperRpcClientInner>,
         metadata: &RequestMetadata,
     ) -> Result<Channel<Unauthenticated>> {
@@ -245,13 +251,17 @@ impl LockKeeperClient {
         Ok(channel)
     }
 
-    /// Helper to create the appropriate [`Channel`] to send to tonic
-    /// handler functions based on the client's action. This function creates
-    /// authenticated channels. Use `create_channel` to create
-    /// an unauthenticated channel.
+    /// Create a [`Channel<Authenticated<StdRng>>`] object for communicating
+    /// with the server.
     ///
-    /// This function will return an error if the [`ClientAction`] requires
-    /// an unauthenticated channel.
+    /// The client will make the proper gRPC call here based on the
+    /// [`ClientAction`]. After this gRPC call our client and server are
+    /// ready to communicate back and forth to complete our cryptographic
+    /// protocols.
+    ///
+    /// This function creates authenticated channels. This function will return
+    /// an error if the [`ClientAction`] (contained in `metadata`) does not
+    /// need authentication.
     pub(crate) async fn create_authenticated_channel(
         client: &mut LockKeeperRpcClient<LockKeeperRpcClientInner>,
         metadata: &RequestMetadata,
