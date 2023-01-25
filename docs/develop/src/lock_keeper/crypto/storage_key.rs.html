@@ -345,6 +345,7 @@
 <span id="345">345</span>
 <span id="346">346</span>
 <span id="347">347</span>
+<span id="348">348</span>
 </pre><pre class="rust"><code><span class="doccomment">/// This module provides the necessary encryption keys to securely encrypt
 /// secrets in storage.
 /// A [`StorageKey`] that can be used by the client to encrypt secrets and
@@ -375,7 +376,8 @@
     <span class="doccomment">/// Returns the remote storage key found in the file at the given
     /// path
     </span><span class="kw">pub fn </span>read_from_file(path: <span class="kw">impl </span>AsRef&lt;Path&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, LockKeeperError&gt; {
-        <span class="kw">let </span>bytes = std::fs::read(path)<span class="question-mark">?</span>;
+        <span class="kw">let </span>bytes = std::fs::read(<span class="kw-2">&amp;</span>path)
+            .map_err(|e| LockKeeperError::FileIo(e, path.as_ref().to_path_buf()))<span class="question-mark">?</span>;
         <span class="self">Self</span>::from_bytes(<span class="kw-2">&amp;</span>bytes)
     }
 

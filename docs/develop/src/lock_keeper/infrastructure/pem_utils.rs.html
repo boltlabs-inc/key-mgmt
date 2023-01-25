@@ -35,6 +35,8 @@
 <span id="35">35</span>
 <span id="36">36</span>
 <span id="37">37</span>
+<span id="38">38</span>
+<span id="39">39</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Convenience functions for dealing with PEM files.
 
 </span><span class="kw">use </span>std::path::Path;
@@ -45,7 +47,8 @@
 
 <span class="doccomment">/// Returns all certificates in the pemfile at the given path
 </span><span class="kw">pub fn </span>read_certificates(path: <span class="kw">impl </span>AsRef&lt;Path&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;Certificate&gt;, LockKeeperError&gt; {
-    <span class="kw">let </span>fd = std::fs::File::open(path.as_ref())<span class="question-mark">?</span>;
+    <span class="kw">let </span>fd = std::fs::File::open(path.as_ref())
+        .map_err(|e| LockKeeperError::FileIo(e, path.as_ref().to_path_buf()))<span class="question-mark">?</span>;
     <span class="kw">let </span><span class="kw-2">mut </span>buf = std::io::BufReader::new(<span class="kw-2">&amp;</span>fd);
     <span class="kw">let </span>certs = rustls_pemfile::certs(<span class="kw-2">&amp;mut </span>buf)<span class="question-mark">?
         </span>.into_iter()
@@ -57,7 +60,8 @@
 
 <span class="doccomment">/// Returns the first private key found in the pemfile at the given path
 </span><span class="kw">pub fn </span>read_private_key_from_file(path: <span class="kw">impl </span>AsRef&lt;Path&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;PrivateKey, LockKeeperError&gt; {
-    <span class="kw">let </span>bytes = std::fs::read(path)<span class="question-mark">?</span>;
+    <span class="kw">let </span>bytes = std::fs::read(<span class="kw-2">&amp;</span>path)
+        .map_err(|e| LockKeeperError::FileIo(e, path.as_ref().to_path_buf()))<span class="question-mark">?</span>;
     read_private_key_from_bytes(<span class="kw-2">&amp;</span>bytes)
 }
 

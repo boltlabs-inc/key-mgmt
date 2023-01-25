@@ -99,9 +99,19 @@
 <span id="99">99</span>
 <span id="100">100</span>
 <span id="101">101</span>
+<span id="102">102</span>
+<span id="103">103</span>
+<span id="104">104</span>
+<span id="105">105</span>
+<span id="106">106</span>
+<span id="107">107</span>
+<span id="108">108</span>
+<span id="109">109</span>
+<span id="110">110</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Error type for all errors returned to code outside of this crate.
 
-</span><span class="kw">use </span>thiserror::Error;
+</span><span class="kw">use </span>std::path::PathBuf;
+<span class="kw">use </span>thiserror::Error;
 <span class="kw">use </span>tokio::sync::mpsc::error::SendError;
 <span class="kw">use </span>tonic::Status;
 
@@ -147,8 +157,14 @@
     <span class="comment">// Wrapped errors
     </span><span class="attribute">#[error(transparent)]
     </span>Hex(<span class="attribute">#[from] </span>hex::FromHexError),
-    <span class="attribute">#[error(transparent)]
+    <span class="doccomment">/// Generic kitchen sink IO error. Use [LockKeeperError::FileIo] if
+    /// the IO error is specifically related to working with files.
+    </span><span class="attribute">#[error(transparent)]
     </span>Io(<span class="attribute">#[from] </span>std::io::Error),
+    <span class="doccomment">/// IO error specific to file IO failing. Allows us to include the file that
+    /// failed as part of the error.
+    </span><span class="attribute">#[error(<span class="string">&quot;File IO error. Cause: {0}. On file: {1}&quot;</span>)]
+    </span>FileIo(std::io::Error, PathBuf),
     <span class="attribute">#[error(<span class="string">&quot;OPAQUE protocol error: {}&quot;</span>, .<span class="number">0</span>)]
     </span>OpaqueProtocol(opaque_ke::errors::ProtocolError),
     <span class="attribute">#[error(transparent)]
@@ -182,8 +198,10 @@
             | LockKeeperError::UnknownSecretType(<span class="kw">_</span>)
             | LockKeeperError::InvalidSecretType =&gt; Status::invalid_argument(error.to_string()),
             LockKeeperError::NoMessageReceived =&gt; Status::deadline_exceeded(error.to_string()),
+
             <span class="comment">// Errors that the client should not see
-            </span>LockKeeperError::InvalidClientAction
+            </span>LockKeeperError::FileIo(<span class="kw">_</span>, <span class="kw">_</span>)
+            | LockKeeperError::InvalidClientAction
             | LockKeeperError::AlreadyAuthenticated
             | LockKeeperError::ShouldBeAuthenticated
             | LockKeeperError::Crypto(<span class="kw">_</span>)
