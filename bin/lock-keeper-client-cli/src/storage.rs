@@ -232,7 +232,7 @@ impl Display for Entry {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let key_id_hex = hex::encode(self.key_id.as_bytes());
 
-        writeln!(f, "Key_id: {}", key_id_hex)?;
+        writeln!(f, "Key_id: {key_id_hex}")?;
         writeln!(f, "Key Type: {}", self.data.type_as_string())?;
 
         match &self.data {

@@ -31,10 +31,10 @@ jobs:
           version: '3.x'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-      # Install stable toolchain
+      # Install toolchain
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
+          toolchain: 1.67
           components: clippy
           default: true
 

@@ -30,5 +30,5 @@ pub fn record_field(field_name: &str, field_value: &dyn Debug) {
     }
 
     // Ignore the resulting span.
-    let _ = Span::current().record(field_name, &format!("{:?}", field_value));
+    let _ = Span::current().record(field_name, &format!("{field_value:?}"));
 }

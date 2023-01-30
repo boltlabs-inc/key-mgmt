@@ -43,7 +43,7 @@ impl CliCommand for Export {
         let elapsed = now.elapsed()?;
 
         println!("Retrieved: {}", self.name);
-        println!("{:?}", export);
+        println!("{export:?}");
 
         let stored = state.store_entry(
             Some(self.name),

@@ -52,7 +52,7 @@ pub(crate) async fn handle_authenticated_request<
     // the receiving end of the channel. This task will use the writing end of
     // this same channel to send messages back to the client. The client and
     // server can go back and forth until the protocol is complete.
-    let _ = tokio::spawn(
+    let handle = tokio::spawn(
         async move {
             audit_event(&mut channel, &context, EventStatus::Started).await;
 
@@ -71,6 +71,11 @@ pub(crate) async fn handle_authenticated_request<
         }
         .in_current_span(),
     );
+
+    // We don't want to await this so we'll just drop the handle to make `clippy`
+    // happy.
+    std::mem::drop(handle);
+
     Ok(())
 }
 
@@ -100,7 +105,7 @@ pub(crate) async fn handle_unauthenticated_request<
     // the receiving end of the channel. This task will use the writing end of
     // this same channel to send messages back to the client. The client and
     // server can go back and forth until the protocol is complete.
-    let _ = tokio::spawn(
+    let handle = tokio::spawn(
         async move {
             match operation.operation(&mut channel, &mut context).await {
                 Ok(()) => {
@@ -115,6 +120,11 @@ pub(crate) async fn handle_unauthenticated_request<
         }
         .in_current_span(),
     );
+
+    // We don't want to await this so we'll just drop the handle to make `clippy`
+    // happy.
+    std::mem::drop(handle);
+
     Ok(())
 }
 

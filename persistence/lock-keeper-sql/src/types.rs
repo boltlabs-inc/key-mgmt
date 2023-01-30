@@ -105,8 +105,7 @@ impl TryFrom<AuditEventDB> for AuditEvent {
     fn try_from(event: AuditEventDB) -> Result<Self, Self::Error> {
         let client_action = ClientAction::try_from(event.client_action_id).map_err(|i| {
             PostgresError::AuditEventConversion(format!(
-                "ClientAction conversion failed. Unknown integer {}",
-                i
+                "ClientAction conversion failed. Unknown integer {i}"
             ))
         })?;
 
@@ -114,13 +113,13 @@ impl TryFrom<AuditEventDB> for AuditEvent {
             None => None,
             Some(key_id) => {
                 let key_id = TryFrom::try_from(key_id.as_slice()).map_err(|e| {
-                    PostgresError::AuditEventConversion(format!("KeyID conversion failed: {}", e))
+                    PostgresError::AuditEventConversion(format!("KeyID conversion failed: {e}"))
                 })?;
                 Some(key_id)
             }
         };
         let status = EventStatus::from_str(&event.event_status).map_err(|e| {
-            PostgresError::AuditEventConversion(format!("EventStatus conversion failed {}", e))
+            PostgresError::AuditEventConversion(format!("EventStatus conversion failed {e}"))
         })?;
 
         let event = AuditEvent {

@@ -369,7 +369,7 @@ mod test {
         let mut rng = rand::thread_rng();
 
         for len in 0..128 {
-            let context = AssociatedData::new().with_str(&format!("a secret of length {}", len));
+            let context = AssociatedData::new().with_str(&format!("a secret of length {len}"));
             let secret = Secret::generate(&mut rng, len, context);
 
             let secret_vec: Vec<u8> = secret.clone().into();
