@@ -296,12 +296,7 @@ fn compare_actions(audit_events: Vec<AuditEvent>, event_type: EventType) {
     let expected_actions = event_type.client_actions();
 
     for a in actual_actions {
-        assert!(
-            expected_actions.contains(&a),
-            "{:?} not in {:?}",
-            a,
-            event_type,
-        )
+        assert!(expected_actions.contains(&a), "{a:?} not in {event_type:?}",)
     }
 }
 

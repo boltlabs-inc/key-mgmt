@@ -32,10 +32,10 @@ jobs:
           profile: minimal
           components: rustfmt
 
-      # Install stable toolchain
+      # Install toolchain
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
+          toolchain: 1.67
           components: clippy
           default: true
 

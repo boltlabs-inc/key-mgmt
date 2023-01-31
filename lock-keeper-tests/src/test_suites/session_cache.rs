@@ -52,9 +52,8 @@ pub async fn new_cache(expiration: &str) -> Result<PostgresSessionCache> {
         db_name = 'test'
         max_connections = 5
         connection_timeout = "3s"
-        session_expiration = "{}"
+        session_expiration = "{expiration}"
         "#,
-        expiration,
     );
 
     let config = SessionConfig::from_str(&config_str)?;

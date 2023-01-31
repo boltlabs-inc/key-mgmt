@@ -10,5 +10,5 @@ certificate_chain = "/app/test-pki/gen/certs/server.chain"
 client_auth = true
 
 [logging]
-lock_keeper_logs_file_name = "/app/docker/logs/server.log"
-all_logs_file_name = "/app/docker/logs/all.log"
+lock_keeper_logs_file_name = "/app/logs/docker/server.log"
+all_logs_file_name = "/app/logs/docker/all.log"

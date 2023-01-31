@@ -11,5 +11,5 @@ client_auth = false
 
 # Point logging to a different directory since these log files will be created under "root" user.
 [logging]
-lock_keeper_logs_file_name = "/app/docker/logs/server.log"
-all_logs_file_name = "/app/docker/logs/all.log"
+lock_keeper_logs_file_name = "/app/logs/docker/server.log"
+all_logs_file_name = "/app/logs/docker/all.log"

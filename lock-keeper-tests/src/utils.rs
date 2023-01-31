@@ -187,7 +187,7 @@ pub async fn run_test_case(
                 let mut results = results.lock().unwrap();
                 results.push(Failed);
             }
-            test_result.push_str(&format!("failed: {:?}\n", err));
+            test_result.push_str(&format!("failed: {err:?}\n"));
         }
     }
 
@@ -240,7 +240,7 @@ pub async fn wait_for_server(config: &ClientConfig) -> Result<()> {
         match LockKeeperClient::health(config).await {
             Ok(_) => return Ok(()),
             Err(_) => {
-                println!("Server connection failed. Retrying in {:?}", RETRY_DELAY);
+                println!("Server connection failed. Retrying in {RETRY_DELAY:?}");
                 if i == 0 {
                     println!("Did you remember to run `cargo make start`?");
                 }
