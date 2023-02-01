@@ -179,7 +179,7 @@ impl PostgresDB {
         let timestamp = OffsetDateTime::now_utc();
         let key_id = key_id.as_ref().map(|k| k.as_bytes());
 
-        let _ = sqlx::query!(
+        let rows_affected = sqlx::query!(
             "INSERT INTO AuditEvents (account_id, key_id, request_id, client_action_id, event_status, timestamp) \
              VALUES ($1, $2, $3, $4, $5, $6)",
             account_id.0,
@@ -190,7 +190,14 @@ impl PostgresDB {
             timestamp,
         )
         .execute(&self.connection_pool)
-        .await?;
+        .await?.rows_affected();
+
+        // Only one row should ever be affected by our insert. Something has gone
+        // wrong...
+        if rows_affected != 1 {
+            error!("Unexpected number of rows affected: {}", rows_affected);
+            return Err(PostgresError::InvalidRowCountFound);
+        }
 
         Ok(())
     }
@@ -275,7 +282,7 @@ impl PostgresDB {
 
         let secret_db: SecretDB = SecretDB::from(secret);
 
-        let _ = sqlx::query!(
+        let rows_affected = sqlx::query!(
             "INSERT INTO Secrets (key_id, account_id, secret, secret_type_id, retrieved) \
              SELECT $1, $2, $3, SecretTypes.secret_type_id, $4 \
              FROM SecretTypes \
@@ -287,7 +294,15 @@ impl PostgresDB {
             secret_db.secret_type,
         )
         .execute(&self.connection_pool)
-        .await?;
+        .await?
+        .rows_affected();
+
+        // Only one row should ever be affected by our insert. Something has gone
+        // wrong...
+        if rows_affected != 1 {
+            error!("Unexpected number of rows affected: {}", rows_affected);
+            return Err(PostgresError::InvalidRowCountFound);
+        }
 
         Ok(())
     }

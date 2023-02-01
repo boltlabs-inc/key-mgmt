@@ -23,9 +23,16 @@ pub struct GenerateSecret;
 
 #[async_trait]
 impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for GenerateSecret {
-    /// Generate a new signing key for remotely (on the server from the client's
-    /// POV!) and return a key_id to the client. The client may use this
-    /// key_id to refer to this signing key.
+    /// Client will:
+    /// 1) Create and encrypt an arbitrary secret entirely on the client-side.
+    /// 2) Send the server the encrypted secret.
+    /// Server will:
+    /// 1) Receive this encrypted secret.
+    /// 2) Generate a new key_id and send it back to client.
+    /// 3) Store encrypted secret in our persistent storage as an arbitrary
+    /// secret.
+    ///
+    /// Client may use key_id to refer to this stored secret.
     #[instrument(skip_all, err(Debug))]
     async fn operation(
         self,
@@ -34,7 +41,7 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for GenerateSecret {
     ) -> Result<(), LockKeeperServerError> {
         info!("Starting generate protocol");
         // Generate step: receive UserId and reply with new KeyId
-        let key_id = generate_key(channel, context).await?;
+        let key_id = generate_key_id(channel, context).await?;
         context.key_id = Some(key_id.clone());
 
         // Store step: receive ciphertext from client and store in DB
@@ -45,13 +52,12 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for GenerateSecret {
 }
 
 /// First step for generation:
-/// 1) Receive generate message from client.
-/// 2) Generate a new key ID.
-/// 3) Reply to client with key_id.
+/// 1) Generate a new key ID.
+/// 2) Send generated Key ID as a response to client via channel.
 ///
-/// Returns the key_id we generated.
+/// Returns generated key_id.
 #[instrument(skip_all, err(Debug))]
-async fn generate_key<DB: DataStore>(
+async fn generate_key_id<DB: DataStore>(
     channel: &mut Channel<Authenticated<StdRng>>,
     context: &Context<DB>,
 ) -> Result<KeyId, LockKeeperServerError> {
@@ -85,13 +91,12 @@ async fn store_key<DB: DataStore>(
     // Receive Encrypted<Secret> from client
     let store_message: client::Store = channel.receive().await?;
 
+    // Transform client's secret into arbitrary_secret and store.
     let secret = StoredSecret::from_arbitrary_secret(
         key_id.clone(),
         channel.account_id(),
         store_message.ciphertext,
     )?;
-
-    // Check validity of ciphertext and store in DB
     context.db.add_secret(secret).await?;
     info!("Client's cypher text stored successfully.");
 

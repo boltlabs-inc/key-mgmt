@@ -11,6 +11,9 @@ use clap::Parser;
 use colored::Colorize;
 use config::Environments;
 use std::{path::PathBuf, str::FromStr};
+use tracing_subscriber::{
+    filter::Targets, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer,
+};
 
 #[derive(Debug, Parser)]
 pub struct Cli {
@@ -54,6 +57,23 @@ pub async fn main() {
 }
 
 async fn run() -> Result<(), LockKeeperTestError> {
+    // Allows capturing logs when tests are executed. Errors will always be printed.
+    // For higher verbosity, set RUST_LOG to a logging level, e.g: RUST_LOG=info.
+
+    // (These unwraps should never fail).
+    let logging_level = EnvFilter::from_default_env()
+        .max_level_hint()
+        .unwrap()
+        .into_level()
+        .unwrap();
+    // Only capture logging events from lock_keeper crates.
+    let targets = Targets::new().with_target("lock_keeper", logging_level);
+    let stdout_layer = tracing_subscriber::fmt::layer()
+        .pretty()
+        .with_filter(targets);
+
+    tracing_subscriber::registry().with(stdout_layer).init();
+
     let cli = Cli::try_parse()?;
     if cli.standard_only && cli.test_type != TestType::E2E {
         return Err(LockKeeperTestError::StandardOnlyFlag);

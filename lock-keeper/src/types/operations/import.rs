@@ -3,7 +3,7 @@ pub mod client {
     use serde::{Deserialize, Serialize};
 
     #[derive(Debug, Deserialize, Serialize)]
-    /// send user ID and material to import
+    /// send material to import
     pub struct Request {
         pub key_material: Import,
     }
