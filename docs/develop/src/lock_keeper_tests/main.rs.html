@@ -128,6 +128,26 @@
 <a href="#128" id="128">128</a>
 <a href="#129" id="129">129</a>
 <a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
 </pre><pre class="rust"><code><span class="kw">pub mod </span>config;
 <span class="kw">pub mod </span>error;
 <span class="kw">pub mod </span>test_suites;
@@ -141,6 +161,9 @@
 <span class="kw">use </span>colored::Colorize;
 <span class="kw">use </span>config::Environments;
 <span class="kw">use </span>std::{path::PathBuf, str::FromStr};
+<span class="kw">use </span>tracing_subscriber::{
+    filter::Targets, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer,
+};
 
 <span class="attr">#[derive(Debug, Parser)]
 </span><span class="kw">pub struct </span>Cli {
@@ -184,6 +207,23 @@
 }
 
 <span class="kw">async fn </span>run() -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperTestError&gt; {
+    <span class="comment">// Allows capturing logs when tests are executed. Errors will always be printed.
+    // For higher verbosity, set RUST_LOG to a logging level, e.g: RUST_LOG=info.
+
+    // (These unwraps should never fail).
+    </span><span class="kw">let </span>logging_level = EnvFilter::from_default_env()
+        .max_level_hint()
+        .unwrap()
+        .into_level()
+        .unwrap();
+    <span class="comment">// Only capture logging events from lock_keeper crates.
+    </span><span class="kw">let </span>targets = Targets::new().with_target(<span class="string">&quot;lock_keeper&quot;</span>, logging_level);
+    <span class="kw">let </span>stdout_layer = tracing_subscriber::fmt::layer()
+        .pretty()
+        .with_filter(targets);
+
+    tracing_subscriber::registry().with(stdout_layer).init();
+
     <span class="kw">let </span>cli = Cli::try_parse()<span class="question-mark">?</span>;
     <span class="kw">if </span>cli.standard_only &amp;&amp; cli.test_type != TestType::E2E {
         <span class="kw">return </span><span class="prelude-val">Err</span>(LockKeeperTestError::StandardOnlyFlag);
