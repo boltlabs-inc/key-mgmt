@@ -35,6 +35,7 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for RemoteGenerateSigni
     ) -> Result<(), LockKeeperServerError> {
         info!("Starting remote generate protocol.");
         let user_id = channel.user_id();
+
         // Create a scope for rng mutex
         let (key_id, key_pair) = {
             let mut rng = context.rng.lock().await;
