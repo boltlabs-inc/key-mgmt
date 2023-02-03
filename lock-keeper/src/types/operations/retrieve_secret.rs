@@ -48,7 +48,7 @@ impl RetrievedSecret {
                 Ok(Self {
                     key_id,
                     secret_type,
-                    bytes: key.into(),
+                    bytes: key.try_into()?,
                 })
             }
             &_ => Err(LockKeeperError::InvalidSecretType),

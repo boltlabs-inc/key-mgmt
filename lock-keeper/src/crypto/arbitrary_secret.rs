@@ -21,9 +21,11 @@ use super::Export;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ZeroizeOnDrop)]
 pub struct Secret(pub(super) generic::Secret);
 
-impl From<Secret> for Vec<u8> {
-    fn from(secret: Secret) -> Self {
-        secret.0.to_owned().into()
+impl TryFrom<Secret> for Vec<u8> {
+    type Error = CryptoError;
+
+    fn try_from(secret: Secret) -> Result<Self, Self::Error> {
+        secret.0.to_owned().try_into()
     }
 }
 
@@ -148,7 +150,7 @@ mod test {
                 Secret::create_and_encrypt(&mut rng, &storage_key, &user_id, &key_id)?;
 
             // Convert to Vec<u8> and back
-            let secret_vec: Vec<u8> = secret.clone().into();
+            let secret_vec: Vec<u8> = secret.clone().try_into()?;
             let output_secret: Secret = secret_vec.try_into()?;
 
             assert_eq!(secret, output_secret);
@@ -199,7 +201,7 @@ mod test {
 
         // Make sure secret matches input secret material (e.g. the secret material
         // appears somewhere within the serialization).
-        let bytes: Vec<u8> = secret.into();
+        let bytes: Vec<u8> = secret.try_into()?;
         assert!(bytes.windows(32).any(|c| c == secret_material));
 
         Ok(())
