@@ -32,13 +32,14 @@ async fn remote_generate_works(config: Config) -> Result<()> {
 
     let remote_gen_res = client.remote_generate().await;
     let request_id = remote_gen_res.metadata.clone().unwrap().request_id;
-    assert!(remote_gen_res.result.is_ok());
+    let key_id = remote_gen_res.result?.key_id;
 
     check_audit_events(
         &state,
         EventStatus::Successful,
         ClientAction::RemoteGenerateSigningKey,
         request_id,
+        Some(key_id),
     )
     .await?;
 

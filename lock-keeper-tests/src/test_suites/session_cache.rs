@@ -46,11 +46,13 @@ pub async fn run_tests(filters: &TestFilters) -> Result<Vec<TestResult>> {
 pub async fn new_cache(expiration: &str) -> Result<PostgresSessionCache> {
     let config_str = format!(
         r#"
-        username = 'test' 
+        username = 'test'
         password = 'test_password'
-        address = 'localhost'
+        address = 'localhost:5432'
         db_name = 'test'
         max_connections = 5
+        connection_retries = 5
+        connection_retry_delay = "5s"
         connection_timeout = "3s"
         session_expiration = "{expiration}"
         "#,

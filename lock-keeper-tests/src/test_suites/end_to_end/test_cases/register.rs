@@ -46,6 +46,7 @@ async fn register_works(config: Config) -> Result<()> {
         EventStatus::Successful,
         ClientAction::Register,
         metadata.request_id,
+        None,
     )
     .await?;
 

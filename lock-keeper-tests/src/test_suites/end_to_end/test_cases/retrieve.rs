@@ -56,6 +56,7 @@ async fn retrieve_local_only_works(config: Config) -> Result<()> {
         EventStatus::Successful,
         ClientAction::RetrieveSecret,
         request_id,
+        Some(key_id),
     )
     .await?;
 
@@ -80,6 +81,7 @@ async fn retrieve_null_works(config: Config) -> Result<()> {
         EventStatus::Successful,
         ClientAction::RetrieveSecret,
         request_id,
+        Some(key_id),
     )
     .await?;
 
@@ -101,6 +103,7 @@ async fn cannot_retrieve_fake_key(config: Config) -> Result<()> {
         EventStatus::Failed,
         ClientAction::RetrieveSecret,
         request_id,
+        Some(fake_key_id),
     )
     .await?;
 

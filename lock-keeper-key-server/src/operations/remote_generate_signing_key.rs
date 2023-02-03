@@ -44,6 +44,7 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for RemoteGenerateSigni
             info!("Generated key ID: {:?}", key_id);
             (key_id, key_pair)
         };
+        context.key_id = Some(key_id.clone());
 
         let public_key = key_pair.public_key();
 

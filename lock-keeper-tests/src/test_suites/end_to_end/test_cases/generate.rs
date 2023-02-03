@@ -32,11 +32,13 @@ async fn generate_works(config: Config) -> Result<()> {
 
     let generate_result = client.generate_secret().await;
     let request_id = generate_result.metadata.unwrap().request_id;
+    let key_id = generate_result.result?.key_id;
     check_audit_events(
         &state,
         EventStatus::Successful,
         ClientAction::GenerateSecret,
         request_id,
+        Some(key_id),
     )
     .await?;
 
