@@ -488,7 +488,7 @@
             .enable_http2()
             .build();
 
-        <span class="kw">let </span>client = hyper::Client::builder().build(connector);
+        <span class="kw">let </span>client = hyper::Client::builder().http2_only(<span class="bool-val">true</span>).build(connector);
         <span class="kw">let </span>rpc_client = LockKeeperRpcClient::with_origin(client, config.server_uri.clone());
 
         <span class="prelude-val">Ok</span>(rpc_client)
