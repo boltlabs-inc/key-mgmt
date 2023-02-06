@@ -55,6 +55,7 @@
 <a href="#55" id="55">55</a>
 <a href="#56" id="56">56</a>
 <a href="#57" id="57">57</a>
+<a href="#58" id="58">58</a>
 </pre><pre class="rust"><code><span class="kw">use </span>colored::Colorize;
 <span class="kw">use </span>lock_keeper::types::{audit_event::EventStatus, operations::ClientAction};
 <span class="kw">use </span>lock_keeper_client::Config;
@@ -89,12 +90,13 @@
 
     <span class="kw">let </span>import_res = import_signing_key(<span class="kw-2">&amp;</span>client).<span class="kw">await</span>;
     <span class="kw">let </span>request_id = import_res.metadata.unwrap().request_id;
-    <span class="macro">assert!</span>(import_res.result.is_ok());
+    <span class="kw">let </span>key_id = import_res.result<span class="question-mark">?</span>.<span class="number">0</span>;
     check_audit_events(
         <span class="kw-2">&amp;</span>state,
         EventStatus::Successful,
         ClientAction::ImportSigningKey,
         request_id,
+        <span class="prelude-val">Some</span>(key_id),
     )
     .<span class="kw">await</span><span class="question-mark">?</span>;
 

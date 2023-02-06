@@ -85,6 +85,8 @@
 <a href="#85" id="85">85</a>
 <a href="#86" id="86">86</a>
 <a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
+<a href="#89" id="89">89</a>
 </pre><pre class="rust"><code><span class="kw">use </span>colored::Colorize;
 <span class="kw">use </span>lock_keeper::types::{
     audit_event::EventStatus, database::account::AccountName, operations::ClientAction,
@@ -129,6 +131,7 @@
         EventStatus::Successful,
         ClientAction::Authenticate,
         request_id,
+        <span class="prelude-val">None</span>,
     )
     .<span class="kw">await</span><span class="question-mark">?</span>;
 
@@ -152,6 +155,7 @@
         EventStatus::Failed,
         ClientAction::Authenticate,
         request_id,
+        <span class="prelude-val">None</span>,
     )
     .<span class="kw">await</span><span class="question-mark">?</span>;
 

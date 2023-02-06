@@ -196,6 +196,12 @@
 <a href="#196" id="196">196</a>
 <a href="#197" id="197">197</a>
 <a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a>
+<a href="#200" id="200">200</a>
+<a href="#201" id="201">201</a>
+<a href="#202" id="202">202</a>
+<a href="#203" id="203">203</a>
+<a href="#204" id="204">204</a>
 </pre><pre class="rust"><code><span class="kw">use </span>colored::Colorize;
 <span class="kw">use </span>lock_keeper::{
     crypto::Secret,
@@ -255,6 +261,7 @@
         EventStatus::Successful,
         ClientAction::ExportSecret,
         request_id,
+        <span class="prelude-val">Some</span>(key_id),
     )
     .<span class="kw">await</span><span class="question-mark">?</span>;
 
@@ -274,6 +281,7 @@
         EventStatus::Failed,
         ClientAction::ExportSecret,
         request_id,
+        <span class="prelude-val">Some</span>(fake_key_id),
     )
     .<span class="kw">await</span><span class="question-mark">?</span>;
 
@@ -293,6 +301,7 @@
         EventStatus::Failed,
         ClientAction::ExportSecret,
         request_id,
+        <span class="prelude-val">Some</span>(key_id),
     )
     .<span class="kw">await</span><span class="question-mark">?</span>;
 
@@ -335,6 +344,7 @@
         EventStatus::Successful,
         ClientAction::ExportSigningKey,
         request_id,
+        <span class="prelude-val">Some</span>(key_id),
     )
     .<span class="kw">await</span><span class="question-mark">?</span>;
 
@@ -354,6 +364,7 @@
         EventStatus::Failed,
         ClientAction::ExportSigningKey,
         request_id,
+        <span class="prelude-val">Some</span>(fake_key_id),
     )
     .<span class="kw">await</span><span class="question-mark">?</span>;
 
@@ -376,6 +387,7 @@
         EventStatus::Failed,
         ClientAction::ExportSigningKey,
         request_id,
+        <span class="prelude-val">Some</span>(key_id),
     )
     .<span class="kw">await</span><span class="question-mark">?</span>;
 

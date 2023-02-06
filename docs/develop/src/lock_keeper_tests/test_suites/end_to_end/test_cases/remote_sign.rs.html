@@ -78,6 +78,7 @@
 <a href="#78" id="78">78</a>
 <a href="#79" id="79">79</a>
 <a href="#80" id="80">80</a>
+<a href="#81" id="81">81</a>
 </pre><pre class="rust"><code><span class="kw">use </span>colored::Colorize;
 <span class="kw">use </span>lock_keeper::{
     crypto::{Signable, SignableBytes},
@@ -137,6 +138,7 @@
         EventStatus::Successful,
         ClientAction::RemoteSignBytes,
         request_id,
+        <span class="prelude-val">Some</span>(key_id),
     )
     .<span class="kw">await</span><span class="question-mark">?</span>;
 

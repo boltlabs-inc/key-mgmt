@@ -73,6 +73,7 @@
 <a href="#73" id="73">73</a>
 <a href="#74" id="74">74</a>
 <a href="#75" id="75">75</a>
+<a href="#76" id="76">76</a>
 </pre><pre class="rust"><code><span class="doccomment">//! Client has asked server to generate a new signing key and store it in the
 //! server.
 </span><span class="kw">use crate</span>::{
@@ -119,6 +120,7 @@
             <span class="macro">info!</span>(<span class="string">&quot;Generated key ID: {:?}&quot;</span>, key_id);
             (key_id, key_pair)
         };
+        context.key_id = <span class="prelude-val">Some</span>(key_id.clone());
 
         <span class="kw">let </span>public_key = key_pair.public_key();
 

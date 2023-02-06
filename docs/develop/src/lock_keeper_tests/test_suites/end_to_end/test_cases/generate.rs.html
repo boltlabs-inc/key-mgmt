@@ -54,6 +54,8 @@
 <a href="#54" id="54">54</a>
 <a href="#55" id="55">55</a>
 <a href="#56" id="56">56</a>
+<a href="#57" id="57">57</a>
+<a href="#58" id="58">58</a>
 </pre><pre class="rust"><code><span class="kw">use </span>colored::Colorize;
 <span class="kw">use </span>lock_keeper::types::{audit_event::EventStatus, operations::ClientAction};
 <span class="kw">use </span>lock_keeper_client::Config;
@@ -88,11 +90,13 @@
 
     <span class="kw">let </span>generate_result = client.generate_secret().<span class="kw">await</span>;
     <span class="kw">let </span>request_id = generate_result.metadata.unwrap().request_id;
+    <span class="kw">let </span>key_id = generate_result.result<span class="question-mark">?</span>.key_id;
     check_audit_events(
         <span class="kw-2">&amp;</span>state,
         EventStatus::Successful,
         ClientAction::GenerateSecret,
         request_id,
+        <span class="prelude-val">Some</span>(key_id),
     )
     .<span class="kw">await</span><span class="question-mark">?</span>;
 

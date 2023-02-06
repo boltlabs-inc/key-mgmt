@@ -117,6 +117,9 @@
 <a href="#117" id="117">117</a>
 <a href="#118" id="118">118</a>
 <a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
+<a href="#121" id="121">121</a>
+<a href="#122" id="122">122</a>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{test_suites::end_to_end::test_cases::TestState, LockKeeperTestError};
 <span class="kw">use </span>lock_keeper::{
     crypto::{Import, KeyId},
@@ -183,6 +186,7 @@
     expected_status: EventStatus,
     expected_action: ClientAction,
     request_id: Uuid,
+    key_id: <span class="prelude-ty">Option</span>&lt;KeyId&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperClientError&gt; {
     <span class="comment">// Authenticate to LockKeeperClient
     </span><span class="kw">let </span>lock_keeper_client =
@@ -201,9 +205,11 @@
         </span>.result<span class="question-mark">?</span>;
 
     <span class="comment">// Get all events that match given expected values.
-    </span><span class="kw">let </span>matching_events = audit_event_log
-        .into_iter()
-        .filter(|event| event.status == expected_status &amp;&amp; event.client_action == expected_action);
+    </span><span class="kw">let </span>matching_events = audit_event_log.into_iter().filter(|event| {
+        event.key_id == key_id
+            &amp;&amp; event.status == expected_status
+            &amp;&amp; event.client_action == expected_action
+    });
 
     <span class="macro">assert_eq!</span>(
         matching_events.count(),

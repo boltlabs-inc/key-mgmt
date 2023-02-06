@@ -67,6 +67,7 @@
 <a href="#67" id="67">67</a>
 <a href="#68" id="68">68</a>
 <a href="#69" id="69">69</a>
+<a href="#70" id="70">70</a>
 </pre><pre class="rust"><code><span class="kw">use </span>colored::Colorize;
 <span class="kw">use </span>lock_keeper::types::{
     audit_event::EventStatus, database::account::AccountName, operations::ClientAction,
@@ -115,6 +116,7 @@
         EventStatus::Successful,
         ClientAction::Register,
         metadata.request_id,
+        <span class="prelude-val">None</span>,
     )
     .<span class="kw">await</span><span class="question-mark">?</span>;
 

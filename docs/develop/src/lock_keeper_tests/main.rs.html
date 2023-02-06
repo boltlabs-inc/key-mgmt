@@ -148,6 +148,12 @@
 <a href="#148" id="148">148</a>
 <a href="#149" id="149">149</a>
 <a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
 </pre><pre class="rust"><code><span class="kw">pub mod </span>config;
 <span class="kw">pub mod </span>error;
 <span class="kw">pub mod </span>test_suites;
@@ -296,7 +302,13 @@
         report_test_results(<span class="kw-2">&amp;</span>session_cache_results)
     );
 
-    <span class="prelude-val">Ok</span>([config_file_results, database_results, client_auth_results].concat())
+    <span class="prelude-val">Ok</span>([
+        config_file_results,
+        database_results,
+        client_auth_results,
+        session_cache_results,
+    ]
+    .concat())
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="lock_keeper_tests" data-themes="" data-resource-suffix="" data-rustdoc-version="1.67.0 (fc594f156 2023-01-24)" data-search-js="search-444266647c4dba98.js" data-settings-js="settings-bebeae96e00e4617.js" data-settings-css="settings-af96d9e2fc13e081.css" ></div></body></html>
