@@ -121,7 +121,7 @@ impl LockKeeperClient {
             .enable_http2()
             .build();
 
-        let client = hyper::Client::builder().build(connector);
+        let client = hyper::Client::builder().http2_only(true).build(connector);
         let rpc_client = LockKeeperRpcClient::with_origin(client, config.server_uri.clone());
 
         Ok(rpc_client)
