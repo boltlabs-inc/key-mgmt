@@ -42,6 +42,7 @@ async fn multiple_sessions_from_same_client_allowed(config: Config) -> Result<()
         EventStatus::Successful,
         ClientAction::Authenticate,
         request_id,
+        None,
     )
     .await?;
 
@@ -65,6 +66,7 @@ async fn cannot_authenticate_with_wrong_password(config: Config) -> Result<()> {
         EventStatus::Failed,
         ClientAction::Authenticate,
         request_id,
+        None,
     )
     .await?;
 

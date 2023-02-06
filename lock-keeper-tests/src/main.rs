@@ -146,5 +146,11 @@ async fn run_integration_tests(
         report_test_results(&session_cache_results)
     );
 
-    Ok([config_file_results, database_results, client_auth_results].concat())
+    Ok([
+        config_file_results,
+        database_results,
+        client_auth_results,
+        session_cache_results,
+    ]
+    .concat())
 }

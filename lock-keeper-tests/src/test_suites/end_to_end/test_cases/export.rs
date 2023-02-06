@@ -57,6 +57,7 @@ async fn export_works(config: Config) -> Result<()> {
         EventStatus::Successful,
         ClientAction::ExportSecret,
         request_id,
+        Some(key_id),
     )
     .await?;
 
@@ -76,6 +77,7 @@ async fn cannot_export_fake_key(config: Config) -> Result<()> {
         EventStatus::Failed,
         ClientAction::ExportSecret,
         request_id,
+        Some(fake_key_id),
     )
     .await?;
 
@@ -95,6 +97,7 @@ async fn cannot_export_signing_key_as_secret(config: Config) -> Result<()> {
         EventStatus::Failed,
         ClientAction::ExportSecret,
         request_id,
+        Some(key_id),
     )
     .await?;
 
@@ -137,6 +140,7 @@ async fn export_signing_key_works(config: Config) -> Result<()> {
         EventStatus::Successful,
         ClientAction::ExportSigningKey,
         request_id,
+        Some(key_id),
     )
     .await?;
 
@@ -156,6 +160,7 @@ async fn cannot_export_fake_signing_key(config: Config) -> Result<()> {
         EventStatus::Failed,
         ClientAction::ExportSigningKey,
         request_id,
+        Some(fake_key_id),
     )
     .await?;
 
@@ -178,6 +183,7 @@ async fn cannot_export_secret_as_signing_key(config: Config) -> Result<()> {
         EventStatus::Failed,
         ClientAction::ExportSigningKey,
         request_id,
+        Some(key_id),
     )
     .await?;
 

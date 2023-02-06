@@ -57,6 +57,7 @@ async fn remote_sign_works(config: Config) -> Result<()> {
         EventStatus::Successful,
         ClientAction::RemoteSignBytes,
         request_id,
+        Some(key_id),
     )
     .await?;
 

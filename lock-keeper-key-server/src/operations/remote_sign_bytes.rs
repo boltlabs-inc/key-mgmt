@@ -36,6 +36,7 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for RemoteSignBytes {
     ) -> Result<(), LockKeeperServerError> {
         info!("Starting remote sign protocol.");
         let request: client::RequestRemoteSign = channel.receive().await?;
+        context.key_id = Some(request.key_id.clone());
 
         let account_id = channel.account_id();
 

@@ -32,12 +32,13 @@ async fn import_works(config: Config) -> Result<()> {
 
     let import_res = import_signing_key(&client).await;
     let request_id = import_res.metadata.unwrap().request_id;
-    assert!(import_res.result.is_ok());
+    let key_id = import_res.result?.0;
     check_audit_events(
         &state,
         EventStatus::Successful,
         ClientAction::ImportSigningKey,
         request_id,
+        Some(key_id),
     )
     .await?;
 

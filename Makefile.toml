@@ -107,9 +107,10 @@ args = ["doc", "--all-features", "--no-deps", "--document-private-items", "--wor
 # -- Database Tasks --
 
 # Update the `sqlx-data.json` file
-[tasks.refresh-db-cache]
+[tasks.sqlx-prepare]
+env = { "DATABASE_URL" = "postgres://test:test_password@localhost:5432/test" }
 command = "cargo"
-args = ["sqlx", "prepare", "--database-url", "postgres://test:test_password@localhost:5432/test", "--merged"]
+args = ["sqlx", "prepare", "--merged"]
 
 # Connect to test database using `psql`
 [tasks.test-db]
