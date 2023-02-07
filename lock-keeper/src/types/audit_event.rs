@@ -134,7 +134,9 @@ impl EventType {
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct AuditEventOptions {
     pub key_ids: Vec<KeyId>,
+    #[serde(with = "time::serde::iso8601::option")]
     pub after_date: Option<OffsetDateTime>,
+    #[serde(with = "time::serde::iso8601::option")]
     pub before_date: Option<OffsetDateTime>,
     pub request_id: Option<Uuid>,
 }
