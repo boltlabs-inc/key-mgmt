@@ -80,14 +80,17 @@ impl OpaqueSessionKey {
     }
 }
 
-impl From<OpaqueSessionKey> for Vec<u8> {
-    fn from(key: OpaqueSessionKey) -> Self {
-        OpaqueSessionKey::domain_separator()
+impl TryFrom<OpaqueSessionKey> for Vec<u8> {
+    type Error = CryptoError;
+
+    fn try_from(key: OpaqueSessionKey) -> Result<Self, Self::Error> {
+        let bytes = Vec::<u8>::try_from(key.0.to_owned())?;
+        Ok(OpaqueSessionKey::domain_separator()
             .as_bytes()
             .iter()
             .copied()
-            .chain::<Vec<u8>>(key.0.to_owned().into())
-            .collect()
+            .chain(bytes)
+            .collect())
     }
 }
 
@@ -307,12 +310,15 @@ impl KeyId {
         let domain_separator = b"Lock Keeper key ID";
 
         let hasher = Sha3_256::new();
+        let user_id_length = u8::try_from(user_id.len()).map_err(CryptoError::TryFromIntError)?;
+        let random_len = u8::try_from(RANDOM_LEN).map_err(CryptoError::TryFromIntError)?;
+
         let bytes = hasher
             .chain_update(domain_separator.len().to_be_bytes())
             .chain_update(domain_separator)
-            .chain_update([user_id.len() as u8])
+            .chain_update([user_id_length])
             .chain_update(user_id.as_bytes())
-            .chain_update([RANDOM_LEN as u8])
+            .chain_update([random_len])
             .chain_update(randomness)
             .finalize();
 
@@ -510,7 +516,7 @@ mod test {
         for _ in 0..1000 {
             let session_key = create_test_session_key(&mut rng);
 
-            let vec: Vec<u8> = session_key.clone().into();
+            let vec: Vec<u8> = session_key.clone().try_into()?;
             let output_session_key = vec.try_into()?;
 
             assert_eq!(session_key, output_session_key);

@@ -95,14 +95,18 @@ impl StorageKey {
     }
 }
 
-impl From<StorageKey> for Vec<u8> {
-    fn from(key: StorageKey) -> Self {
-        StorageKey::domain_separator()
+impl TryFrom<StorageKey> for Vec<u8> {
+    type Error = CryptoError;
+
+    fn try_from(key: StorageKey) -> Result<Self, Self::Error> {
+        let key = Vec::<u8>::try_from(key.0.to_owned())?;
+        let bytes = StorageKey::domain_separator()
             .as_bytes()
             .iter()
             .copied()
-            .chain::<Vec<u8>>(key.0.to_owned().into())
-            .collect()
+            .chain(key)
+            .collect();
+        Ok(bytes)
     }
 }
 
@@ -179,7 +183,7 @@ pub(super) mod test {
         for _ in 0..1000 {
             let storage_key = StorageKey::generate(&mut rng);
 
-            let vec: Vec<u8> = storage_key.clone().into();
+            let vec: Vec<u8> = storage_key.clone().try_into()?;
             let output_storage_key = vec.try_into()?;
 
             assert_eq!(storage_key, output_storage_key);

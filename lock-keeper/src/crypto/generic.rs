@@ -7,12 +7,14 @@ use serde::{Deserialize, Serialize};
 use std::{iter, marker::PhantomData};
 use thiserror::Error;
 
-use std::convert::Infallible;
+use std::{convert::Infallible, num::TryFromIntError};
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
 /// Errors that arise in the cryptography module.
 #[derive(Debug, Clone, Copy, Error)]
 pub enum CryptoError {
+    #[error("Conversion error")]
+    ConversionError,
     #[error("Encryption failed")]
     EncryptionFailed,
     #[error("Decryption failed")]
@@ -21,10 +23,16 @@ pub enum CryptoError {
     KeyDerivationFailed(hkdf::InvalidLength),
     #[error("RNG failed")]
     RandomNumberGeneratorFailed,
-    #[error("Conversion error")]
-    ConversionError,
+    /// Length of data too large for our integer data type.
+    #[error("Encryption/Decryption failed due to data length.")]
+    TryFromIntError(#[from] TryFromIntError),
     #[error("Signature did not verify")]
     VerificationFailed,
+    /// The `impl<T> Encrypted<T>` has some trait bounds for converting a
+    /// `TryFrom::Error` associated type into a CryptoError.
+    /// Rust automatically implements `TryFrom<T, Error=Infallible>` when
+    /// `From<T>` is implemented. This variant ensures `impl
+    /// From<CryptoError> for Infallible` holds true in this case.
     #[error(transparent)]
     Infallible(#[from] Infallible),
 }
@@ -140,13 +148,19 @@ impl EncryptionKey {
     }
 }
 
-impl From<EncryptionKey> for Vec<u8> {
-    fn from(key: EncryptionKey) -> Self {
+impl TryFrom<EncryptionKey> for Vec<u8> {
+    type Error = CryptoError;
+
+    fn try_from(key: EncryptionKey) -> Result<Self, Self::Error> {
         // len || key || context
-        iter::once(key.key.len() as u8)
+        let key_length = u8::try_from(key.key.len())?;
+        let associated_data = Vec::<u8>::from(key.context.to_owned());
+
+        let bytes = iter::once(key_length)
             .chain(*key.key)
-            .chain::<Vec<u8>>(key.context.to_owned().into())
-            .collect()
+            .chain(associated_data)
+            .collect();
+        Ok(bytes)
     }
 }
 
@@ -180,9 +194,20 @@ impl<T> Encrypted<T>
 where
     // These bounds cover both the `encrypt` and `decrypt` methods.
     // This ensures that the user can only encrypt types than can also be decrypted.
+
+    // These two bounds state:
+    // "A Vec<u8> can be converted into our T via TryFrom...
     T: TryFrom<Vec<u8>>,
+    // ...where the associated Error type of the TryFrom can be converted into a CryptoError via
+    // From"
     CryptoError: From<<T as TryFrom<Vec<u8>>>::Error>,
-    Vec<u8>: From<T>,
+
+    // These two bounds state:
+    // "Our T can be converted into a Vec<u8> via TryFrom...
+    Vec<u8>: TryFrom<T>,
+    // ...where the associated Error type of the TryFrom can be converted into a CryptoError via
+    // From"
+    CryptoError: From<<Vec<u8> as TryFrom<T>>::Error>,
 {
     /// Encrypt the `T` and authenticate the [`AssociatedData`] under the
     /// [`EncryptionKey`].
@@ -200,7 +225,7 @@ where
 
         // Format plaintext and associated data
         let payload = Payload {
-            msg: &Vec::from(object),
+            msg: &Vec::try_from(object)?,
             aad: associated_data.into(),
         };
 
@@ -294,15 +319,21 @@ impl Secret {
     }
 }
 
-impl From<Secret> for Vec<u8> {
-    fn from(secret: Secret) -> Self {
+impl TryFrom<Secret> for Vec<u8> {
+    type Error = CryptoError;
+
+    fn try_from(secret: Secret) -> Result<Self, Self::Error> {
         // key len || key material || context len || context
         let ad: Vec<u8> = secret.context.to_owned().into();
-        iter::once(secret.material.len() as u8)
+        let secret_length = u8::try_from(secret.material.len())?;
+        let ad_length = u8::try_from(ad.len())?;
+
+        let bytes = iter::once(secret_length)
             .chain(secret.material.to_owned())
-            .chain(iter::once(ad.len() as u8))
+            .chain(iter::once(ad_length))
             .chain(ad)
-            .collect()
+            .collect();
+        Ok(bytes)
     }
 }
 
@@ -372,7 +403,7 @@ mod test {
             let context = AssociatedData::new().with_str(&format!("a secret of length {len}"));
             let secret = Secret::generate(&mut rng, len, context);
 
-            let secret_vec: Vec<u8> = secret.clone().into();
+            let secret_vec: Vec<u8> = secret.clone().try_into()?;
             let output_secret: Secret = secret_vec.try_into()?;
 
             // Make sure converting to & from Vec<u8> gives the same result
@@ -410,7 +441,7 @@ mod test {
         for _ in 0..1000 {
             let encryption_key = EncryptionKey::new(&mut rng);
 
-            let bytes: Vec<u8> = encryption_key.clone().into();
+            let bytes: Vec<u8> = encryption_key.clone().try_into()?;
             let output_key: EncryptionKey = bytes.try_into()?;
 
             assert_eq!(encryption_key, output_key);
