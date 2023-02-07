@@ -346,6 +346,10 @@
 <a href="#346" id="346">346</a>
 <a href="#347" id="347">347</a>
 <a href="#348" id="348">348</a>
+<a href="#349" id="349">349</a>
+<a href="#350" id="350">350</a>
+<a href="#351" id="351">351</a>
+<a href="#352" id="352">352</a>
 </pre><pre class="rust"><code><span class="doccomment">/// This module provides the necessary encryption keys to securely encrypt
 /// secrets in storage.
 /// A [`StorageKey`] that can be used by the client to encrypt secrets and
@@ -443,14 +447,18 @@
     }
 }
 
-<span class="kw">impl </span>From&lt;StorageKey&gt; <span class="kw">for </span>Vec&lt;u8&gt; {
-    <span class="kw">fn </span>from(key: StorageKey) -&gt; <span class="self">Self </span>{
-        StorageKey::domain_separator()
+<span class="kw">impl </span>TryFrom&lt;StorageKey&gt; <span class="kw">for </span>Vec&lt;u8&gt; {
+    <span class="kw">type </span>Error = CryptoError;
+
+    <span class="kw">fn </span>try_from(key: StorageKey) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
+        <span class="kw">let </span>key = Vec::&lt;u8&gt;::try_from(key.<span class="number">0</span>.to_owned())<span class="question-mark">?</span>;
+        <span class="kw">let </span>bytes = StorageKey::domain_separator()
             .as_bytes()
             .iter()
             .copied()
-            .chain::&lt;Vec&lt;u8&gt;&gt;(key.<span class="number">0</span>.to_owned().into())
-            .collect()
+            .chain(key)
+            .collect();
+        <span class="prelude-val">Ok</span>(bytes)
     }
 }
 
@@ -527,7 +535,7 @@
         <span class="kw">for _ in </span><span class="number">0</span>..<span class="number">1000 </span>{
             <span class="kw">let </span>storage_key = StorageKey::generate(<span class="kw-2">&amp;mut </span>rng);
 
-            <span class="kw">let </span>vec: Vec&lt;u8&gt; = storage_key.clone().into();
+            <span class="kw">let </span>vec: Vec&lt;u8&gt; = storage_key.clone().try_into()<span class="question-mark">?</span>;
             <span class="kw">let </span>output_storage_key = vec.try_into()<span class="question-mark">?</span>;
 
             <span class="macro">assert_eq!</span>(storage_key, output_storage_key);
