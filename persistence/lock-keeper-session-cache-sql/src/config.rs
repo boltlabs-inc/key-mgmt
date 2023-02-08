@@ -2,9 +2,13 @@
 
 use crate::{error::ConfigError, Error};
 use serde::{Deserialize, Serialize};
-use std::{path::Path, str::FromStr, time::Duration};
+use std::{
+    fmt::{Debug, Formatter},
+    path::Path,
+    str::FromStr,
+    time::Duration,
+};
 
-#[derive(Debug)]
 pub struct Config {
     pub username: String,
     pub password: String,
@@ -17,6 +21,22 @@ pub struct Config {
     pub connection_retry_delay: Duration,
     pub connection_timeout: Duration,
     pub session_expiration: Duration,
+}
+
+impl Debug for Config {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Config")
+            .field("username", &"REDACTED")
+            .field("password", &"REDACTED")
+            .field("address", &self.address)
+            .field("db_name", &self.db_name)
+            .field("max_connections", &self.max_connections)
+            .field("connection_retries", &self.connection_retries)
+            .field("connection_retry_delay", &self.connection_retry_delay)
+            .field("connection_timeout", &self.connection_timeout)
+            .field("session_expiration", &self.session_expiration)
+            .finish()
+    }
 }
 
 impl Config {
@@ -62,7 +82,7 @@ impl TryFrom<ConfigFile> for Config {
     }
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Clone, Deserialize, Serialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct ConfigFile {
     /// Optional, convenience field for specifying the username. Should only be
@@ -90,10 +110,69 @@ impl ConfigFile {
     }
 }
 
+impl Debug for ConfigFile {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Config")
+            .field("username", &"REDACTED")
+            .field("password", &"REDACTED")
+            .field("address", &self.address)
+            .field("db_name", &self.db_name)
+            .field("max_connections", &self.max_connections)
+            .field("connection_retries", &self.connection_retries)
+            .field("connection_retry_delay", &self.connection_retry_delay)
+            .field("connection_timeout", &self.connection_timeout)
+            .field("session_expiration", &self.session_expiration)
+            .finish()
+    }
+}
+
 impl FromStr for ConfigFile {
     type Err = Error;
 
     fn from_str(config_string: &str) -> Result<Self, Self::Err> {
         Ok(toml::from_str(config_string)?)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn config_does_not_show_password_on_debug() {
+        let config = Config {
+            username: "this_is_the_username".to_string(),
+            password: "this_is_the_password".to_string(),
+            address: "address".to_string(),
+            db_name: "db_name".to_string(),
+            max_connections: 1,
+            connection_retries: 1,
+            connection_retry_delay: Duration::from_secs(1),
+            connection_timeout: Duration::from_secs(1),
+            session_expiration: Duration::from_secs(1),
+        };
+        let debug_format_config = format!("{config:?}");
+        assert!(debug_format_config.contains("REDACTED"));
+        assert!(!debug_format_config.contains("this_is_the_username"));
+        assert!(!debug_format_config.contains("this_is_the_password"));
+    }
+
+    #[test]
+    fn config_file_does_not_show_password_on_debug() {
+        let config_file = ConfigFile {
+            username: Some("this_is_the_username".to_string()),
+            password: Some("this_is_the_password".to_string()),
+            address: "localhost".to_string(),
+            db_name: "test_db".to_string(),
+            max_connections: 5,
+            connection_retries: 5,
+            connection_retry_delay: Duration::from_secs(5),
+            connection_timeout: Duration::from_secs(3),
+            session_expiration: Duration::from_secs(3),
+        };
+        let debug_format_config = format!("{config_file:?}");
+        assert!(debug_format_config.contains("REDACTED"));
+        assert!(!debug_format_config.contains("this_is_the_username"));
+        assert!(!debug_format_config.contains("this_is_the_password"));
     }
 }
