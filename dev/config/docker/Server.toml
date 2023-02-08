@@ -3,6 +3,7 @@ port = 1113
 opaque_path = "/app/opaque"
 opaque_server_key = "/app/opaque/server_setup"
 remote_storage_key = "/app/remote-storage-key/gen/remote_storage.key"
+max_blob_size = 1024
 
 [tls_config]
 private_key = "/app/test-pki/gen/certs/server.key"

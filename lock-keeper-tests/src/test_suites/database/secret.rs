@@ -1,12 +1,17 @@
 //! Integration tests for secret objects in the database
 
 use colored::Colorize;
+use lock_keeper::{
+    crypto::{DataBlob, Encrypted},
+    LockKeeperError,
+};
 use lock_keeper_key_server::server::database::{DataStore, DatabaseError, SecretFilter};
 use rand::{rngs::StdRng, SeedableRng};
 
 use crate::{config::TestFilters, error::Result, run_parallel, utils::TestResult};
 
 use super::TestDatabase;
+use lock_keeper::types::database::secrets::secret_types::SERVER_ENCRYPTED_BLOB;
 
 pub async fn run_tests(filters: &TestFilters) -> Result<Vec<TestResult>> {
     println!("{}", "Running secret tests".cyan());
@@ -16,6 +21,7 @@ pub async fn run_tests(filters: &TestFilters) -> Result<Vec<TestResult>> {
         filters,
         cannot_get_another_users_secrets(db.clone()),
         incorrect_key_type_specified(db.clone()),
+        store_data_blob_identity(db.clone())
     )?;
 
     Ok(result)
@@ -38,6 +44,7 @@ async fn cannot_get_another_users_secrets(db: TestDatabase) -> Result<()> {
         .await?;
     let key_id2 = db.import_signing_key(&mut rng, &account).await?;
     let key_id3 = db.remote_generate_signing_key(&mut rng, &account).await?;
+    let (key_id4, _) = db.store_server_encrypted_blob(&mut rng, &account).await?;
 
     // Attempt to retrieve each secret using other user's ID. Rust does not support
     // async closures. So we do not refactor this code.
@@ -59,6 +66,58 @@ async fn cannot_get_another_users_secrets(db: TestDatabase) -> Result<()> {
             .await,
         Err(DatabaseError::IncorrectKeyMetadata)
     ));
+    assert!(matches!(
+        db.db
+            .get_secret(other_account.account_id, &key_id4, Default::default())
+            .await,
+        Err(DatabaseError::IncorrectKeyMetadata)
+    ));
+
+    Ok(())
+}
+
+/// Storing and retrieving an encrypted data blob returns the same stored
+/// secret.
+async fn store_data_blob_identity(db: TestDatabase) -> Result<()> {
+    let mut rng = StdRng::from_entropy();
+
+    // Add a user and get their storage key
+    let account = db.create_test_user().await?;
+    let (key_id, remote_storage_key) = db.store_server_encrypted_blob(&mut rng, &account).await?;
+
+    let stored_secret = db
+        .get_secret(account.account_id, &key_id, SecretFilter::default())
+        .await?;
+
+    let encrypted_blob: Encrypted<DataBlob> =
+        serde_json::from_slice(&stored_secret.bytes).map_err(LockKeeperError::SerdeJson)?;
+    let blob: DataBlob = encrypted_blob.decrypt_data_blob(&remote_storage_key)?;
+    assert_eq!(
+        blob.blob_data(),
+        TestDatabase::blob_test_data(),
+        "Blob data matches after storing and retrieving."
+    );
+    assert_eq!(
+        stored_secret.account_id, account.account_id,
+        "Account ID matches after storing and retrieving."
+    );
+    assert_eq!(
+        stored_secret.key_id, key_id,
+        "Key ID matches after storing and retrieving."
+    );
+    assert_eq!(
+        stored_secret.secret_type, SERVER_ENCRYPTED_BLOB,
+        "Secret type matches after storing and retrieving."
+    );
+    assert!(
+        !stored_secret.retrieved,
+        "Retrieved set to false the first time."
+    );
+    // Retrieve again to check `retrieved` field.
+    let stored_secret = db
+        .get_secret(account.account_id, &key_id, SecretFilter::default())
+        .await?;
+    assert!(stored_secret.retrieved, "Retrieved set to true.");
 
     Ok(())
 }

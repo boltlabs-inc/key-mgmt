@@ -26,6 +26,8 @@ pub enum LockKeeperServerError {
     AccountAlreadyRegistered,
     #[error("Invalid account")]
     InvalidAccount,
+    #[error("Attempting to store data blob larger than configured max size.")]
+    BlobSizeTooLarge,
     #[error("Storage key is already set")]
     StorageKeyAlreadySet,
     #[error("Storage key is not set for this user")]
@@ -87,6 +89,7 @@ impl From<LockKeeperServerError> for Status {
             }
             // Errors that are safe to return to the client
             LockKeeperServerError::AccountAlreadyRegistered
+            | LockKeeperServerError::BlobSizeTooLarge
             | LockKeeperServerError::InvalidAccount
             | LockKeeperServerError::SessionIdNotFound
             | LockKeeperServerError::KeyNotFound => Status::invalid_argument(error.to_string()),

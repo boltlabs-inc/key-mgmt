@@ -6,7 +6,11 @@ use super::{
     generic::{AssociatedData, EncryptionKey},
     CryptoError, Encrypted, MasterKey, SigningKeyPair,
 };
-use crate::{crypto::OpaqueSessionKey, types::database::account::UserId, LockKeeperError};
+use crate::{
+    crypto::{data_blob::DataBlob, OpaqueSessionKey},
+    types::database::account::UserId,
+    LockKeeperError,
+};
 use rand::{CryptoRng, RngCore};
 use std::path::Path;
 use zeroize::{Zeroize, ZeroizeOnDrop};
@@ -70,6 +74,21 @@ impl RemoteStorageKey {
     ) -> Result<Encrypted<OpaqueSessionKey>, LockKeeperError> {
         Encrypted::encrypt(rng, &self.0, session_key.clone(), session_key.context())
             .map_err(LockKeeperError::Crypto)
+    }
+
+    /// Encrypt the given [`DataBlob`] under the [`RemoteStorageKey`] using an
+    /// AEAD scheme.
+    pub fn encrypt_data_blob(
+        &self,
+        rng: &mut (impl CryptoRng + RngCore),
+        data_blob: DataBlob,
+    ) -> Result<Encrypted<DataBlob>, LockKeeperError> {
+        // Get the cloned context first. This is necessary as the `Encrypted::encrypt`
+        // function will take our data_blob by value. The alternative would be
+        // cloning the data_blob which would be expensive.
+        let context = data_blob.context().clone();
+
+        Encrypted::encrypt(rng, &self.0, data_blob, &context).map_err(LockKeeperError::Crypto)
     }
 }
 

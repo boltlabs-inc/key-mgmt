@@ -41,7 +41,7 @@ pub enum ConfigError {
 impl From<PostgresError> for DatabaseError {
     fn from(error: PostgresError) -> Self {
         match error {
-            PostgresError::InvalidRowCountFound => Self::InvalidCountFound,
+            PostgresError::InvalidRowCountFound => Self::InvalidRowCountFound,
             PostgresError::NoEntry => Self::NoEntry,
             PostgresError::InvalidAuditEventOptions => Self::InvalidAuditEventOptions,
             PostgresError::IncorrectKeyMetadata => Self::IncorrectKeyMetadata,

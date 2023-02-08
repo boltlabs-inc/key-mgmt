@@ -241,8 +241,10 @@ impl LockKeeperClient {
             | ClientAction::RemoteSignBytes
             | ClientAction::RetrieveSecret
             | ClientAction::RetrieveAuditEvents
+            | ClientAction::RetrieveServerEncryptedBlob
             | ClientAction::RetrieveSigningKey
-            | ClientAction::RetrieveStorageKey => {
+            | ClientAction::RetrieveStorageKey
+            | ClientAction::StoreServerEncryptedBlob => {
                 return Err(LockKeeperClientError::AuthenticatedChannelNeeded)
             }
         }?;
@@ -288,10 +290,16 @@ impl LockKeeperClient {
             ClientAction::Register => client.register(stream).await,
             ClientAction::RemoteGenerateSigningKey => client.remote_generate(stream).await,
             ClientAction::RemoteSignBytes => client.remote_sign_bytes(stream).await,
+            ClientAction::RetrieveServerEncryptedBlob => {
+                client.retrieve_server_encrypted_blob(stream).await
+            }
             ClientAction::RetrieveSecret => client.retrieve_secret(stream).await,
             ClientAction::RetrieveAuditEvents => client.retrieve_audit_events(stream).await,
             ClientAction::RetrieveSigningKey => client.retrieve_secret(stream).await,
             ClientAction::RetrieveStorageKey => client.retrieve_storage_key(stream).await,
+            ClientAction::StoreServerEncryptedBlob => {
+                client.store_server_encrypted_blob(stream).await
+            }
 
             // These actions generate an error because they should be on an unauthenticated channel
             ClientAction::Authenticate | ClientAction::Register => {

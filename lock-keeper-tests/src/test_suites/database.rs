@@ -14,7 +14,8 @@ use crate::{
 };
 use lock_keeper::{
     crypto::{
-        Encrypted, Import, KeyId, MasterKey, RemoteStorageKey, Secret, SigningKeyPair, StorageKey,
+        DataBlob, Encrypted, Import, KeyId, MasterKey, RemoteStorageKey, Secret, SigningKeyPair,
+        StorageKey,
     },
     types::database::{
         account::{Account, AccountName, UserId},
@@ -67,6 +68,10 @@ impl Deref for TestDatabase {
 }
 
 impl TestDatabase {
+    fn blob_test_data() -> Vec<u8> {
+        vec![42; 42]
+    }
+
     pub async fn connect() -> Result<Self> {
         let config_str = r#"
             username = 'test' 
@@ -152,6 +157,25 @@ impl TestDatabase {
         }
 
         Ok(key_ids)
+    }
+
+    /// Store a data blog in database. These are the steps server takes to
+    /// encrypt blob.
+    async fn store_server_encrypted_blob(
+        &self,
+        rng: &mut StdRng,
+        account: &Account,
+    ) -> Result<(KeyId, RemoteStorageKey)> {
+        let key_id = KeyId::generate(rng, &account.user_id)?;
+        let encryption_key = RemoteStorageKey::generate(rng);
+
+        let blob = DataBlob::create(TestDatabase::blob_test_data(), &account.user_id, &key_id)?;
+        let encrypted = encryption_key.encrypt_data_blob(rng, blob)?;
+
+        let secret = StoredSecret::from_data_blob(key_id.clone(), account.id(), encrypted)?;
+        self.db.add_secret(secret).await?;
+
+        Ok((key_id, encryption_key))
     }
 
     /// Store a new arbitrary secret in database.

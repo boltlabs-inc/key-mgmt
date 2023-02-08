@@ -93,10 +93,12 @@ const ALL_ACTIONS: &[ClientAction] = &[
     ClientAction::Register,
     ClientAction::RemoteGenerateSigningKey,
     ClientAction::RemoteSignBytes,
+    ClientAction::RetrieveServerEncryptedBlob,
     ClientAction::RetrieveSecret,
     ClientAction::RetrieveAuditEvents,
     ClientAction::RetrieveSigningKey,
     ClientAction::RetrieveStorageKey,
+    ClientAction::StoreServerEncryptedBlob,
 ];
 
 const SYSTEM_ONLY_ACTIONS: &[ClientAction] = &[
@@ -116,8 +118,10 @@ const KEY_ONLY_ACTIONS: &[ClientAction] = &[
     ClientAction::ImportSigningKey,
     ClientAction::RemoteGenerateSigningKey,
     ClientAction::RemoteSignBytes,
+    ClientAction::RetrieveServerEncryptedBlob,
     ClientAction::RetrieveSecret,
     ClientAction::RetrieveSigningKey,
+    ClientAction::StoreServerEncryptedBlob,
 ];
 
 impl EventType {

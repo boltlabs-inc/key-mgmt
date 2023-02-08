@@ -22,12 +22,14 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 use crate::types::database::account::UserId;
 
 mod arbitrary_secret;
+mod data_blob;
 mod generic;
 mod signing_key;
 mod storage_key;
 
 use crate::rpc::Message;
 pub use arbitrary_secret::Secret;
+pub use data_blob::DataBlob;
 use generic::{AssociatedData, EncryptionKey};
 pub use generic::{CryptoError, Encrypted};
 pub use signing_key::{
@@ -310,8 +312,10 @@ impl KeyId {
         let domain_separator = b"Lock Keeper key ID";
 
         let hasher = Sha3_256::new();
-        let user_id_length = u8::try_from(user_id.len()).map_err(CryptoError::TryFromIntError)?;
-        let random_len = u8::try_from(RANDOM_LEN).map_err(CryptoError::TryFromIntError)?;
+        let user_id_length =
+            u8::try_from(user_id.len()).map_err(|_| CryptoError::CannotEncodeDataLength)?;
+        let random_len =
+            u8::try_from(RANDOM_LEN).map_err(|_| CryptoError::CannotEncodeDataLength)?;
 
         let bytes = hasher
             .chain_update(domain_separator.len().to_be_bytes())
