@@ -8,7 +8,7 @@ use std::{
     time::Duration,
 };
 
-#[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq)]
+#[derive(Clone, Deserialize, Serialize, Eq, PartialEq)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct ConfigFile {
     /// Optional, convenience field for specifying the username. Should only be
@@ -33,6 +33,21 @@ impl ConfigFile {
             ConfigError::ConfigFileReadFailure(e, config_path.as_ref().to_path_buf())
         })?;
         Self::from_str(&config_string)
+    }
+}
+
+impl Debug for ConfigFile {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Config")
+            .field("username", &"REDACTED")
+            .field("password", &"REDACTED")
+            .field("address", &self.address)
+            .field("db_name", &self.db_name)
+            .field("max_connections", &self.max_connections)
+            .field("connection_retries", &self.connection_retries)
+            .field("connection_retry_delay", &self.connection_retry_delay)
+            .field("connection_timeout", &self.connection_timeout)
+            .finish()
     }
 }
 
@@ -147,5 +162,23 @@ mod test {
             config.uri(),
             "postgres://test_user:test_password@localhost/test_db"
         );
+    }
+
+    #[test]
+    fn config_does_not_show_password_on_debug() {
+        let config: Config = test_config_file().try_into().unwrap();
+        let debug_format_config = format!("{config:?}");
+        assert!(debug_format_config.contains("REDACTED"));
+        assert!(!debug_format_config.contains("test_user"));
+        assert!(!debug_format_config.contains("test_password"));
+    }
+
+    #[test]
+    fn config_file_does_not_show_password_on_debug() {
+        let config_file = test_config_file();
+        let debug_format_config = format!("{config_file:?}");
+        assert!(debug_format_config.contains("REDACTED"));
+        assert!(!debug_format_config.contains("test_user"));
+        assert!(!debug_format_config.contains("test_password"));
     }
 }

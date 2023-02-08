@@ -182,7 +182,7 @@ use tracing_appender::{self, non_blocking::WorkerGuard};
 
 use tracing_subscriber::{filter::Targets, prelude::*};
 
-#[derive(Debug, Parser)]
+#[derive(Parser)] //Should not derive debug, contains secrets
 pub struct Cli {
     /// Path to the server config file
     pub config: PathBuf,
