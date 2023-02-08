@@ -604,7 +604,7 @@
 
 <span class="kw">use </span>tracing_subscriber::{filter::Targets, prelude::<span class="kw-2">*</span>};
 
-<span class="attr">#[derive(Debug, Parser)]
+<span class="attr">#[derive(Parser)] </span><span class="comment">//Should not derive debug, contains secrets
 </span><span class="kw">pub struct </span>Cli {
     <span class="doccomment">/// Path to the server config file
     </span><span class="kw">pub </span>config: PathBuf,

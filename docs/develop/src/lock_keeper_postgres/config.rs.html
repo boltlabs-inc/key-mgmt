@@ -149,6 +149,39 @@
 <a href="#149" id="149">149</a>
 <a href="#150" id="150">150</a>
 <a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
+<a href="#166" id="166">166</a>
+<a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
 </pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::error::ConfigError;
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>std::{
@@ -159,7 +192,7 @@
     time::Duration,
 };
 
-<span class="attr">#[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq)]
+<span class="attr">#[derive(Clone, Deserialize, Serialize, Eq, PartialEq)]
 #[serde(deny_unknown_fields, rename_all = <span class="string">&quot;snake_case&quot;</span>)]
 </span><span class="kw">pub struct </span>ConfigFile {
     <span class="doccomment">/// Optional, convenience field for specifying the username. Should only be
@@ -184,6 +217,21 @@
             ConfigError::ConfigFileReadFailure(e, config_path.as_ref().to_path_buf())
         })<span class="question-mark">?</span>;
         <span class="self">Self</span>::from_str(<span class="kw-2">&amp;</span>config_string)
+    }
+}
+
+<span class="kw">impl </span>Debug <span class="kw">for </span>ConfigFile {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; std::fmt::Result {
+        f.debug_struct(<span class="string">&quot;Config&quot;</span>)
+            .field(<span class="string">&quot;username&quot;</span>, <span class="kw-2">&amp;</span><span class="string">&quot;REDACTED&quot;</span>)
+            .field(<span class="string">&quot;password&quot;</span>, <span class="kw-2">&amp;</span><span class="string">&quot;REDACTED&quot;</span>)
+            .field(<span class="string">&quot;address&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.address)
+            .field(<span class="string">&quot;db_name&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.db_name)
+            .field(<span class="string">&quot;max_connections&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.max_connections)
+            .field(<span class="string">&quot;connection_retries&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.connection_retries)
+            .field(<span class="string">&quot;connection_retry_delay&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.connection_retry_delay)
+            .field(<span class="string">&quot;connection_timeout&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.connection_timeout)
+            .finish()
     }
 }
 
@@ -298,6 +346,24 @@
             config.uri(),
             <span class="string">&quot;postgres://test_user:test_password@localhost/test_db&quot;
         </span>);
+    }
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>config_does_not_show_password_on_debug() {
+        <span class="kw">let </span>config: Config = test_config_file().try_into().unwrap();
+        <span class="kw">let </span>debug_format_config = <span class="macro">format!</span>(<span class="string">&quot;{config:?}&quot;</span>);
+        <span class="macro">assert!</span>(debug_format_config.contains(<span class="string">&quot;REDACTED&quot;</span>));
+        <span class="macro">assert!</span>(!debug_format_config.contains(<span class="string">&quot;test_user&quot;</span>));
+        <span class="macro">assert!</span>(!debug_format_config.contains(<span class="string">&quot;test_password&quot;</span>));
+    }
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>config_file_does_not_show_password_on_debug() {
+        <span class="kw">let </span>config_file = test_config_file();
+        <span class="kw">let </span>debug_format_config = <span class="macro">format!</span>(<span class="string">&quot;{config_file:?}&quot;</span>);
+        <span class="macro">assert!</span>(debug_format_config.contains(<span class="string">&quot;REDACTED&quot;</span>));
+        <span class="macro">assert!</span>(!debug_format_config.contains(<span class="string">&quot;test_user&quot;</span>));
+        <span class="macro">assert!</span>(!debug_format_config.contains(<span class="string">&quot;test_password&quot;</span>));
     }
 }
 </code></pre></div>
