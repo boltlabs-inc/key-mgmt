@@ -213,6 +213,30 @@
 <a href="#213" id="213">213</a>
 <a href="#214" id="214">214</a>
 <a href="#215" id="215">215</a>
+<a href="#216" id="216">216</a>
+<a href="#217" id="217">217</a>
+<a href="#218" id="218">218</a>
+<a href="#219" id="219">219</a>
+<a href="#220" id="220">220</a>
+<a href="#221" id="221">221</a>
+<a href="#222" id="222">222</a>
+<a href="#223" id="223">223</a>
+<a href="#224" id="224">224</a>
+<a href="#225" id="225">225</a>
+<a href="#226" id="226">226</a>
+<a href="#227" id="227">227</a>
+<a href="#228" id="228">228</a>
+<a href="#229" id="229">229</a>
+<a href="#230" id="230">230</a>
+<a href="#231" id="231">231</a>
+<a href="#232" id="232">232</a>
+<a href="#233" id="233">233</a>
+<a href="#234" id="234">234</a>
+<a href="#235" id="235">235</a>
+<a href="#236" id="236">236</a>
+<a href="#237" id="237">237</a>
+<a href="#238" id="238">238</a>
+<a href="#239" id="239">239</a>
 </pre><pre class="rust"><code><span class="doccomment">//! Database integration tests
 
 </span><span class="kw">pub mod </span>audit_event;
@@ -229,7 +253,8 @@
 };
 <span class="kw">use </span>lock_keeper::{
     crypto::{
-        Encrypted, Import, KeyId, MasterKey, RemoteStorageKey, Secret, SigningKeyPair, StorageKey,
+        DataBlob, Encrypted, Import, KeyId, MasterKey, RemoteStorageKey, Secret, SigningKeyPair,
+        StorageKey,
     },
     types::database::{
         account::{Account, AccountName, UserId},
@@ -282,6 +307,10 @@
 }
 
 <span class="kw">impl </span>TestDatabase {
+    <span class="kw">fn </span>blob_test_data() -&gt; Vec&lt;u8&gt; {
+        <span class="macro">vec!</span>[<span class="number">42</span>; <span class="number">42</span>]
+    }
+
     <span class="kw">pub async fn </span>connect() -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         <span class="kw">let </span>config_str = <span class="string">r#&quot;
             username = &#39;test&#39; 
@@ -369,6 +398,25 @@
         <span class="prelude-val">Ok</span>(key_ids)
     }
 
+    <span class="doccomment">/// Store a data blog in database. These are the steps server takes to
+    /// encrypt blob.
+    </span><span class="kw">async fn </span>store_server_encrypted_blob(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        rng: <span class="kw-2">&amp;mut </span>StdRng,
+        account: <span class="kw-2">&amp;</span>Account,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(KeyId, RemoteStorageKey)&gt; {
+        <span class="kw">let </span>key_id = KeyId::generate(rng, <span class="kw-2">&amp;</span>account.user_id)<span class="question-mark">?</span>;
+        <span class="kw">let </span>encryption_key = RemoteStorageKey::generate(rng);
+
+        <span class="kw">let </span>blob = DataBlob::create(TestDatabase::blob_test_data(), <span class="kw-2">&amp;</span>account.user_id, <span class="kw-2">&amp;</span>key_id)<span class="question-mark">?</span>;
+        <span class="kw">let </span>encrypted = encryption_key.encrypt_data_blob(rng, blob)<span class="question-mark">?</span>;
+
+        <span class="kw">let </span>secret = StoredSecret::from_data_blob(key_id.clone(), account.id(), encrypted)<span class="question-mark">?</span>;
+        <span class="self">self</span>.db.add_secret(secret).<span class="kw">await</span><span class="question-mark">?</span>;
+
+        <span class="prelude-val">Ok</span>((key_id, encryption_key))
+    }
+
     <span class="doccomment">/// Store a new arbitrary secret in database.
     </span><span class="kw">async fn </span>add_arbitrary_secret(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
@@ -429,4 +477,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="lock_keeper_tests" data-themes="" data-resource-suffix="" data-rustdoc-version="1.67.0 (fc594f156 2023-01-24)" data-search-js="search-444266647c4dba98.js" data-settings-js="settings-bebeae96e00e4617.js" data-settings-css="settings-af96d9e2fc13e081.css" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="lock_keeper_tests" data-themes="" data-resource-suffix="" data-rustdoc-version="1.67.1 (d5a82bbd2 2023-02-07)" data-search-js="search-444266647c4dba98.js" data-settings-js="settings-bebeae96e00e4617.js" data-settings-css="settings-af96d9e2fc13e081.css" ></div></body></html>

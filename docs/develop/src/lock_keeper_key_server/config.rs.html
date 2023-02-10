@@ -226,6 +226,14 @@
 <a href="#226" id="226">226</a>
 <a href="#227" id="227">227</a>
 <a href="#228" id="228">228</a>
+<a href="#229" id="229">229</a>
+<a href="#230" id="230">230</a>
+<a href="#231" id="231">231</a>
+<a href="#232" id="232">232</a>
+<a href="#233" id="233">233</a>
+<a href="#234" id="234">234</a>
+<a href="#235" id="235">235</a>
+<a href="#236" id="236">236</a>
 </pre><pre class="rust"><code><span class="kw">use </span>lock_keeper::{
     config::opaque::OpaqueCipherSuite, crypto::RemoteStorageKey, infrastructure::pem_utils,
 };
@@ -253,6 +261,9 @@
     <span class="kw">pub </span>opaque_server_setup: ServerSetup&lt;OpaqueCipherSuite, PrivateKey&lt;Ristretto255&gt;&gt;,
     <span class="kw">pub </span>remote_storage_key: RemoteStorageKey,
     <span class="kw">pub </span>logging: LoggingConfig,
+    <span class="doccomment">/// Maximum size allowed for the store sever-encrypted blob endpoint.
+    /// This size  bounded by types lengths that can be represented as a u16.
+    </span><span class="kw">pub </span>max_blob_size: u16,
 }
 
 <span class="kw">impl </span>Config {
@@ -290,6 +301,7 @@
                 config.opaque_server_key,
             )<span class="question-mark">?</span>,
             logging: config.logging,
+            max_blob_size: config.max_blob_size,
         })
     }
 }
@@ -319,6 +331,7 @@
     <span class="kw">pub </span>opaque_server_key: PathBuf,
     <span class="kw">pub </span>logging: LoggingConfig,
     <span class="kw">pub </span>tls_config: <span class="prelude-ty">Option</span>&lt;TlsConfig&gt;,
+    <span class="kw">pub </span>max_blob_size: u16,
 }
 
 <span class="kw">impl </span>FromStr <span class="kw">for </span>ConfigFile {
@@ -412,6 +425,7 @@
             opaque_path = &quot;tests/gen/opaque&quot;
             opaque_server_key = &quot;tests/gen/opaque/server_setup&quot;
             remote_storage_key = &quot;test_sse.key&quot;
+            max_blob_size = 1024
 
             [tls_config]
             private_key = &quot;test.key&quot;
@@ -432,6 +446,7 @@
             opaque_path,
             opaque_server_key,
             logging,
+            max_blob_size,
         } = ConfigFile::from_str(config_str).unwrap();
 
         <span class="kw">let </span>tls_config = tls_config.unwrap();
@@ -447,6 +462,7 @@
             opaque_server_key,
             PathBuf::from(<span class="string">&quot;tests/gen/opaque/server_setup&quot;</span>)
         );
+        <span class="macro">assert_eq!</span>(max_blob_size, <span class="number">1024</span>);
         <span class="kw">let </span>expected_log = LoggingConfig {
             lock_keeper_logs_file_name: <span class="string">&quot;./dev/logs/server.log&quot;</span>.parse().unwrap(),
             all_logs_file_name: <span class="string">&quot;./dev/logs/all.log&quot;</span>.parse().unwrap(),
@@ -455,4 +471,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="lock_keeper_key_server" data-themes="" data-resource-suffix="" data-rustdoc-version="1.67.0 (fc594f156 2023-01-24)" data-search-js="search-444266647c4dba98.js" data-settings-js="settings-bebeae96e00e4617.js" data-settings-css="settings-af96d9e2fc13e081.css" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="lock_keeper_key_server" data-themes="" data-resource-suffix="" data-rustdoc-version="1.67.1 (d5a82bbd2 2023-02-07)" data-search-js="search-444266647c4dba98.js" data-settings-js="settings-bebeae96e00e4617.js" data-settings-css="settings-af96d9e2fc13e081.css" ></div></body></html>

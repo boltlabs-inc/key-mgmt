@@ -157,6 +157,10 @@
 <a href="#157" id="157">157</a>
 <a href="#158" id="158">158</a>
 <a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
 </pre><pre class="rust"><code><span class="doccomment">//! Audit events, and associated fields and types
 //!
 //! Includes possible events to log and statuses of those events
@@ -252,10 +256,12 @@
     ClientAction::Register,
     ClientAction::RemoteGenerateSigningKey,
     ClientAction::RemoteSignBytes,
+    ClientAction::RetrieveServerEncryptedBlob,
     ClientAction::RetrieveSecret,
     ClientAction::RetrieveAuditEvents,
     ClientAction::RetrieveSigningKey,
     ClientAction::RetrieveStorageKey,
+    ClientAction::StoreServerEncryptedBlob,
 ];
 
 <span class="kw">const </span>SYSTEM_ONLY_ACTIONS: <span class="kw-2">&amp;</span>[ClientAction] = <span class="kw-2">&amp;</span>[
@@ -275,8 +281,10 @@
     ClientAction::ImportSigningKey,
     ClientAction::RemoteGenerateSigningKey,
     ClientAction::RemoteSignBytes,
+    ClientAction::RetrieveServerEncryptedBlob,
     ClientAction::RetrieveSecret,
     ClientAction::RetrieveSigningKey,
+    ClientAction::StoreServerEncryptedBlob,
 ];
 
 <span class="kw">impl </span>EventType {
@@ -317,4 +325,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="lock_keeper" data-themes="" data-resource-suffix="" data-rustdoc-version="1.67.0 (fc594f156 2023-01-24)" data-search-js="search-444266647c4dba98.js" data-settings-js="settings-bebeae96e00e4617.js" data-settings-css="settings-af96d9e2fc13e081.css" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="lock_keeper" data-themes="" data-resource-suffix="" data-rustdoc-version="1.67.1 (d5a82bbd2 2023-02-07)" data-search-js="search-444266647c4dba98.js" data-settings-js="settings-bebeae96e00e4617.js" data-settings-css="settings-af96d9e2fc13e081.css" ></div></body></html>

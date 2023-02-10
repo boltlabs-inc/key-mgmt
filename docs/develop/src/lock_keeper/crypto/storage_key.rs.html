@@ -350,6 +350,25 @@
 <a href="#350" id="350">350</a>
 <a href="#351" id="351">351</a>
 <a href="#352" id="352">352</a>
+<a href="#353" id="353">353</a>
+<a href="#354" id="354">354</a>
+<a href="#355" id="355">355</a>
+<a href="#356" id="356">356</a>
+<a href="#357" id="357">357</a>
+<a href="#358" id="358">358</a>
+<a href="#359" id="359">359</a>
+<a href="#360" id="360">360</a>
+<a href="#361" id="361">361</a>
+<a href="#362" id="362">362</a>
+<a href="#363" id="363">363</a>
+<a href="#364" id="364">364</a>
+<a href="#365" id="365">365</a>
+<a href="#366" id="366">366</a>
+<a href="#367" id="367">367</a>
+<a href="#368" id="368">368</a>
+<a href="#369" id="369">369</a>
+<a href="#370" id="370">370</a>
+<a href="#371" id="371">371</a>
 </pre><pre class="rust"><code><span class="doccomment">/// This module provides the necessary encryption keys to securely encrypt
 /// secrets in storage.
 /// A [`StorageKey`] that can be used by the client to encrypt secrets and
@@ -358,7 +377,11 @@
     generic::{AssociatedData, EncryptionKey},
     CryptoError, Encrypted, MasterKey, SigningKeyPair,
 };
-<span class="kw">use crate</span>::{crypto::OpaqueSessionKey, types::database::account::UserId, LockKeeperError};
+<span class="kw">use crate</span>::{
+    crypto::{data_blob::DataBlob, OpaqueSessionKey},
+    types::database::account::UserId,
+    LockKeeperError,
+};
 <span class="kw">use </span>rand::{CryptoRng, RngCore};
 <span class="kw">use </span>std::path::Path;
 <span class="kw">use </span>zeroize::{Zeroize, ZeroizeOnDrop};
@@ -422,6 +445,21 @@
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Encrypted&lt;OpaqueSessionKey&gt;, LockKeeperError&gt; {
         Encrypted::encrypt(rng, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, session_key.clone(), session_key.context())
             .map_err(LockKeeperError::Crypto)
+    }
+
+    <span class="doccomment">/// Encrypt the given [`DataBlob`] under the [`RemoteStorageKey`] using an
+    /// AEAD scheme.
+    </span><span class="kw">pub fn </span>encrypt_data_blob(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        rng: <span class="kw-2">&amp;mut </span>(<span class="kw">impl </span>CryptoRng + RngCore),
+        data_blob: DataBlob,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Encrypted&lt;DataBlob&gt;, LockKeeperError&gt; {
+        <span class="comment">// Get the cloned context first. This is necessary as the `Encrypted::encrypt`
+        // function will take our data_blob by value. The alternative would be
+        // cloning the data_blob which would be expensive.
+        </span><span class="kw">let </span>context = data_blob.context().clone();
+
+        Encrypted::encrypt(rng, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, data_blob, <span class="kw-2">&amp;</span>context).map_err(LockKeeperError::Crypto)
     }
 }
 
@@ -703,4 +741,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="lock_keeper" data-themes="" data-resource-suffix="" data-rustdoc-version="1.67.0 (fc594f156 2023-01-24)" data-search-js="search-444266647c4dba98.js" data-settings-js="settings-bebeae96e00e4617.js" data-settings-css="settings-af96d9e2fc13e081.css" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="lock_keeper" data-themes="" data-resource-suffix="" data-rustdoc-version="1.67.1 (d5a82bbd2 2023-02-07)" data-search-js="search-444266647c4dba98.js" data-settings-js="settings-bebeae96e00e4617.js" data-settings-css="settings-af96d9e2fc13e081.css" ></div></body></html>

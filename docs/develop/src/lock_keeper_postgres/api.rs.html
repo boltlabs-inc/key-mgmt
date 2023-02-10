@@ -517,10 +517,6 @@
 <a href="#517" id="517">517</a>
 <a href="#518" id="518">518</a>
 <a href="#519" id="519">519</a>
-<a href="#520" id="520">520</a>
-<a href="#521" id="521">521</a>
-<a href="#522" id="522">522</a>
-<a href="#523" id="523">523</a>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{
     types::{AccountDB, AuditEventDB, SecretDB},
     Config, PostgresError,
@@ -741,48 +737,43 @@
              WHERE &quot;</span>,
         );
 
+        <span class="comment">// Ensure account name matches, otherwise a client could fetch anyone&#39;s audit
+        // events if they guess the request_id.
+        </span><span class="kw">let _ </span>= query.push(<span class="string">&quot; account_id=&quot;</span>).push_bind(account_id.<span class="number">0</span>);
+
         <span class="comment">// Add filtering based on after_date if present.
         </span><span class="kw">if let </span><span class="prelude-val">Some</span>(after_date) = options.after_date {
-            <span class="kw">let _ </span>= query
-                .push(<span class="string">&quot;timestamp &gt;= &quot;</span>)
-                .push_bind(after_date)
-                .push(<span class="string">&quot; AND &quot;</span>);
+            <span class="kw">let _ </span>= query.push(<span class="string">&quot; AND timestamp &gt;= &quot;</span>).push_bind(after_date);
         }
+
         <span class="comment">// Add filtering based on before_date if present.
         </span><span class="kw">if let </span><span class="prelude-val">Some</span>(before_date) = options.before_date {
-            <span class="kw">let _ </span>= query
-                .push(<span class="string">&quot;timestamp &lt;= &quot;</span>)
-                .push_bind(before_date)
-                .push(<span class="string">&quot; AND &quot;</span>);
+            <span class="kw">let _ </span>= query.push(<span class="string">&quot; AND timestamp &lt;= &quot;</span>).push_bind(before_date);
         }
 
         <span class="comment">// Add filtering based on key_ids if present.
         </span><span class="kw">if </span>!options.key_ids.is_empty() {
-            <span class="kw">let _ </span>= query.push(<span class="string">&quot;key_id IN &quot;</span>);
+            <span class="kw">let _ </span>= query.push(<span class="string">&quot; AND key_id IN &quot;</span>);
             <span class="comment">// Turn the key ids into bytes that postgres understands.
             </span><span class="kw">let </span>key_id_bytes = options.key_ids.iter().map(KeyId::as_bytes);
             append_value_list(<span class="kw-2">&amp;mut </span>query, key_id_bytes)<span class="question-mark">?</span>;
-            <span class="kw">let _ </span>= query.push(<span class="string">&quot; AND &quot;</span>);
         }
 
         <span class="kw">if let </span><span class="prelude-val">Some</span>(request_id) = options.request_id {
-            <span class="kw">let _ </span>= query
-                .push(<span class="string">&quot;request_id=&quot;</span>)
-                .push_bind(request_id)
-                .push(<span class="string">&quot; AND &quot;</span>);
+            <span class="kw">let _ </span>= query.push(<span class="string">&quot; AND request_id=&quot;</span>).push_bind(request_id);
         }
 
-        <span class="comment">// Add filtering based on actions.
-        </span><span class="kw">let _ </span>= query.push(<span class="string">&quot;client_action_id IN &quot;</span>);
-        <span class="comment">// Turn the actions into their integer value for faster searching.
-        </span><span class="kw">let </span>actions = event_type.client_actions();
-        <span class="kw">let </span>actions = actions.iter().map(|a| <span class="kw-2">*</span>a <span class="kw">as </span>i64);
+        <span class="comment">// Add filtering based on actions if the user specific event types.
+        </span><span class="kw">if </span>!<span class="macro">matches!</span>(event_type, EventType::All) {
+            <span class="comment">// We use an IN operator to match multiple values based on the value of
+            // `event_type`.
+            </span><span class="kw">let _ </span>= query.push(<span class="string">&quot; AND client_action_id IN &quot;</span>);
+            <span class="comment">// Turn the actions into their integer value for faster searching.
+            </span><span class="kw">let </span>actions = event_type.client_actions();
+            <span class="kw">let </span>actions = actions.iter().map(|a| <span class="kw-2">*</span>a <span class="kw">as </span>i64);
 
-        append_value_list(<span class="kw-2">&amp;mut </span>query, actions)<span class="question-mark">?</span>;
-
-        <span class="comment">// Ensure account name matches, otherwise a client could fetch anyone&#39;s audit
-        // events if they guess the request_id.
-        </span><span class="kw">let _ </span>= query.push(<span class="string">&quot;AND account_id=&quot;</span>).push_bind(account_id.<span class="number">0</span>);
+            append_value_list(<span class="kw-2">&amp;mut </span>query, actions)<span class="question-mark">?</span>;
+        }
 
         <span class="macro">debug!</span>(<span class="string">&quot;Dynamically generated query: {}&quot;</span>, query.sql());
 
@@ -790,6 +781,7 @@
             .build_query_as::&lt;AuditEventDB&gt;()
             .fetch_all(<span class="kw-2">&amp;</span><span class="self">self</span>.connection_pool)
             .<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="macro">debug!</span>(<span class="string">&quot;Matching entries from query: {}&quot;</span>, matches.len());
 
         <span class="comment">// Iterator will stop and the first error is returned if our conversion fails.
         </span><span class="kw">let </span>results: <span class="prelude-ty">Result</span>&lt;Vec&lt;<span class="kw">_</span>&gt;, <span class="kw">_</span>&gt; = matches.into_iter().map(TryFrom::try_from).collect();
@@ -1045,4 +1037,4 @@
     <span class="prelude-val">Ok</span>(())
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="lock_keeper_postgres" data-themes="" data-resource-suffix="" data-rustdoc-version="1.67.0 (fc594f156 2023-01-24)" data-search-js="search-444266647c4dba98.js" data-settings-js="settings-bebeae96e00e4617.js" data-settings-css="settings-af96d9e2fc13e081.css" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="lock_keeper_postgres" data-themes="" data-resource-suffix="" data-rustdoc-version="1.67.1 (d5a82bbd2 2023-02-07)" data-search-js="search-444266647c4dba98.js" data-settings-js="settings-bebeae96e00e4617.js" data-settings-css="settings-af96d9e2fc13e081.css" ></div></body></html>

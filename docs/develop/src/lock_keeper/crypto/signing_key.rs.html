@@ -809,6 +809,7 @@
 <a href="#809" id="809">809</a>
 <a href="#810" id="810">810</a>
 <a href="#811" id="811">811</a>
+<a href="#812" id="812">812</a>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{
     crypto::{
         generic::EncryptionKey,
@@ -1146,7 +1147,8 @@
     <span class="kw">fn </span>try_from(key_pair: SigningKeyPair) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
         <span class="kw">let </span>domain_separator_bytes: Vec&lt;u8&gt; = SigningKeyPair::domain_separator().into();
         <span class="kw">let </span>signing_key = key_pair.signing_key.to_bytes();
-        <span class="kw">let </span>sk_length = u8::try_from(signing_key.len())<span class="question-mark">?</span>;
+        <span class="kw">let </span>sk_length =
+            u8::try_from(signing_key.len()).map_err(|<span class="kw">_</span>| CryptoError::CannotEncodeDataLength)<span class="question-mark">?</span>;
         <span class="kw">let </span>context = Vec::&lt;u8&gt;::from(key_pair.context.to_owned());
 
         <span class="kw">let </span>bytes = domain_separator_bytes
@@ -1621,4 +1623,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="lock_keeper" data-themes="" data-resource-suffix="" data-rustdoc-version="1.67.0 (fc594f156 2023-01-24)" data-search-js="search-444266647c4dba98.js" data-settings-js="settings-bebeae96e00e4617.js" data-settings-css="settings-af96d9e2fc13e081.css" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="lock_keeper" data-themes="" data-resource-suffix="" data-rustdoc-version="1.67.1 (d5a82bbd2 2023-02-07)" data-search-js="search-444266647c4dba98.js" data-settings-js="settings-bebeae96e00e4617.js" data-settings-css="settings-af96d9e2fc13e081.css" ></div></body></html>

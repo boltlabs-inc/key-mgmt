@@ -524,6 +524,10 @@
 <a href="#524" id="524">524</a>
 <a href="#525" id="525">525</a>
 <a href="#526" id="526">526</a>
+<a href="#527" id="527">527</a>
+<a href="#528" id="528">528</a>
+<a href="#529" id="529">529</a>
+<a href="#530" id="530">530</a>
 </pre><pre class="rust"><code><span class="doccomment">//! Application-specific cryptographic types and operations.
 //!
 //! Defines and implements keys and secret types, and the appropriate
@@ -548,12 +552,14 @@
 <span class="kw">use </span><span class="kw">crate</span>::types::database::account::UserId;
 
 <span class="kw">mod </span>arbitrary_secret;
+<span class="kw">mod </span>data_blob;
 <span class="kw">mod </span>generic;
 <span class="kw">mod </span>signing_key;
 <span class="kw">mod </span>storage_key;
 
 <span class="kw">use </span><span class="kw">crate</span>::rpc::Message;
 <span class="kw">pub use </span>arbitrary_secret::Secret;
+<span class="kw">pub use </span>data_blob::DataBlob;
 <span class="kw">use </span>generic::{AssociatedData, EncryptionKey};
 <span class="kw">pub use </span>generic::{CryptoError, Encrypted};
 <span class="kw">pub use </span>signing_key::{
@@ -836,8 +842,10 @@
         <span class="kw">let </span>domain_separator = <span class="string">b&quot;Lock Keeper key ID&quot;</span>;
 
         <span class="kw">let </span>hasher = Sha3_256::new();
-        <span class="kw">let </span>user_id_length = u8::try_from(user_id.len()).map_err(CryptoError::TryFromIntError)<span class="question-mark">?</span>;
-        <span class="kw">let </span>random_len = u8::try_from(RANDOM_LEN).map_err(CryptoError::TryFromIntError)<span class="question-mark">?</span>;
+        <span class="kw">let </span>user_id_length =
+            u8::try_from(user_id.len()).map_err(|<span class="kw">_</span>| CryptoError::CannotEncodeDataLength)<span class="question-mark">?</span>;
+        <span class="kw">let </span>random_len =
+            u8::try_from(RANDOM_LEN).map_err(|<span class="kw">_</span>| CryptoError::CannotEncodeDataLength)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>bytes = hasher
             .chain_update(domain_separator.len().to_be_bytes())
@@ -1051,4 +1059,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="lock_keeper" data-themes="" data-resource-suffix="" data-rustdoc-version="1.67.0 (fc594f156 2023-01-24)" data-search-js="search-444266647c4dba98.js" data-settings-js="settings-bebeae96e00e4617.js" data-settings-css="settings-af96d9e2fc13e081.css" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="lock_keeper" data-themes="" data-resource-suffix="" data-rustdoc-version="1.67.1 (d5a82bbd2 2023-02-07)" data-search-js="search-444266647c4dba98.js" data-settings-js="settings-bebeae96e00e4617.js" data-settings-css="settings-af96d9e2fc13e081.css" ></div></body></html>

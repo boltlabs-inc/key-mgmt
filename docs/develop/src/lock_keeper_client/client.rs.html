@@ -365,6 +365,14 @@
 <a href="#365" id="365">365</a>
 <a href="#366" id="366">366</a>
 <a href="#367" id="367">367</a>
+<a href="#368" id="368">368</a>
+<a href="#369" id="369">369</a>
+<a href="#370" id="370">370</a>
+<a href="#371" id="371">371</a>
+<a href="#372" id="372">372</a>
+<a href="#373" id="373">373</a>
+<a href="#374" id="374">374</a>
+<a href="#375" id="375">375</a>
 </pre><pre class="rust"><code><span class="doccomment">//! Client object to interact with the key server.
 
 </span><span class="kw">use crate</span>::{
@@ -608,8 +616,10 @@
             | ClientAction::RemoteSignBytes
             | ClientAction::RetrieveSecret
             | ClientAction::RetrieveAuditEvents
+            | ClientAction::RetrieveServerEncryptedBlob
             | ClientAction::RetrieveSigningKey
-            | ClientAction::RetrieveStorageKey =&gt; {
+            | ClientAction::RetrieveStorageKey
+            | ClientAction::StoreServerEncryptedBlob =&gt; {
                 <span class="kw">return </span><span class="prelude-val">Err</span>(LockKeeperClientError::AuthenticatedChannelNeeded)
             }
         }<span class="question-mark">?</span>;
@@ -655,10 +665,16 @@
             ClientAction::Register =&gt; client.register(stream).<span class="kw">await</span>,
             ClientAction::RemoteGenerateSigningKey =&gt; client.remote_generate(stream).<span class="kw">await</span>,
             ClientAction::RemoteSignBytes =&gt; client.remote_sign_bytes(stream).<span class="kw">await</span>,
+            ClientAction::RetrieveServerEncryptedBlob =&gt; {
+                client.retrieve_server_encrypted_blob(stream).<span class="kw">await
+            </span>}
             ClientAction::RetrieveSecret =&gt; client.retrieve_secret(stream).<span class="kw">await</span>,
             ClientAction::RetrieveAuditEvents =&gt; client.retrieve_audit_events(stream).<span class="kw">await</span>,
             ClientAction::RetrieveSigningKey =&gt; client.retrieve_secret(stream).<span class="kw">await</span>,
             ClientAction::RetrieveStorageKey =&gt; client.retrieve_storage_key(stream).<span class="kw">await</span>,
+            ClientAction::StoreServerEncryptedBlob =&gt; {
+                client.store_server_encrypted_blob(stream).<span class="kw">await
+            </span>}
 
             <span class="comment">// These actions generate an error because they should be on an unauthenticated channel
             </span>ClientAction::Authenticate | ClientAction::Register =&gt; {
@@ -733,4 +749,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="lock_keeper_client" data-themes="" data-resource-suffix="" data-rustdoc-version="1.67.0 (fc594f156 2023-01-24)" data-search-js="search-444266647c4dba98.js" data-settings-js="settings-bebeae96e00e4617.js" data-settings-css="settings-af96d9e2fc13e081.css" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="lock_keeper_client" data-themes="" data-resource-suffix="" data-rustdoc-version="1.67.1 (d5a82bbd2 2023-02-07)" data-search-js="search-444266647c4dba98.js" data-settings-js="settings-bebeae96e00e4617.js" data-settings-css="settings-af96d9e2fc13e081.css" ></div></body></html>

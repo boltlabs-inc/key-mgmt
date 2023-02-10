@@ -170,6 +170,16 @@
 <a href="#170" id="170">170</a>
 <a href="#171" id="171">171</a>
 <a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
 </pre><pre class="rust"><code><span class="doccomment">//! Types related to server operations and the protocols they execute.
 
 </span><span class="kw">pub mod </span>authenticate;
@@ -183,7 +193,9 @@
 <span class="kw">pub mod </span>remote_sign_bytes;
 <span class="kw">pub mod </span>retrieve_audit_events;
 <span class="kw">pub mod </span>retrieve_secret;
+<span class="kw">pub mod </span>retrieve_server_encrypted_blob;
 <span class="kw">pub mod </span>retrieve_storage_key;
+<span class="kw">pub mod </span>store_server_encrypted_blob;
 
 <span class="kw">use crate</span>::{types::database::account::AccountName, LockKeeperError};
 <span class="kw">use </span>serde::{Deserialize, Serialize};
@@ -215,6 +227,8 @@
     RetrieveAuditEvents = <span class="number">12</span>,
     RetrieveSigningKey = <span class="number">13</span>,
     RetrieveStorageKey = <span class="number">14</span>,
+    RetrieveServerEncryptedBlob = <span class="number">15</span>,
+    StoreServerEncryptedBlob = <span class="number">16</span>,
 }
 
 <span class="kw">impl </span>TryFrom&lt;i64&gt; <span class="kw">for </span>ClientAction {
@@ -235,6 +249,9 @@
                 <span class="prelude-val">Ok</span>(ClientAction::RemoteGenerateSigningKey)
             }
             x <span class="kw">if </span>x == ClientAction::RemoteSignBytes <span class="kw">as </span>i64 =&gt; <span class="prelude-val">Ok</span>(ClientAction::RemoteSignBytes),
+            x <span class="kw">if </span>x == ClientAction::RetrieveServerEncryptedBlob <span class="kw">as </span>i64 =&gt; {
+                <span class="prelude-val">Ok</span>(ClientAction::RetrieveServerEncryptedBlob)
+            }
             x <span class="kw">if </span>x == ClientAction::RetrieveSecret <span class="kw">as </span>i64 =&gt; <span class="prelude-val">Ok</span>(ClientAction::RetrieveSecret),
             x <span class="kw">if </span>x == ClientAction::RetrieveAuditEvents <span class="kw">as </span>i64 =&gt; {
                 <span class="prelude-val">Ok</span>(ClientAction::RetrieveAuditEvents)
@@ -244,6 +261,9 @@
             }
             x <span class="kw">if </span>x == ClientAction::RetrieveStorageKey <span class="kw">as </span>i64 =&gt; {
                 <span class="prelude-val">Ok</span>(ClientAction::RetrieveStorageKey)
+            }
+            x <span class="kw">if </span>x == ClientAction::StoreServerEncryptedBlob <span class="kw">as </span>i64 =&gt; {
+                <span class="prelude-val">Ok</span>(ClientAction::StoreServerEncryptedBlob)
             }
             <span class="comment">// Return value of offending integer.
             </span><span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(v),
@@ -343,4 +363,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="lock_keeper" data-themes="" data-resource-suffix="" data-rustdoc-version="1.67.0 (fc594f156 2023-01-24)" data-search-js="search-444266647c4dba98.js" data-settings-js="settings-bebeae96e00e4617.js" data-settings-css="settings-af96d9e2fc13e081.css" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="lock_keeper" data-themes="" data-resource-suffix="" data-rustdoc-version="1.67.1 (d5a82bbd2 2023-02-07)" data-search-js="search-444266647c4dba98.js" data-settings-js="settings-bebeae96e00e4617.js" data-settings-css="settings-af96d9e2fc13e081.css" ></div></body></html>

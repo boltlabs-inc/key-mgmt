@@ -224,6 +224,9 @@
 <a href="#224" id="224">224</a>
 <a href="#225" id="225">225</a>
 <a href="#226" id="226">226</a>
+<a href="#227" id="227">227</a>
+<a href="#228" id="228">228</a>
+<a href="#229" id="229">229</a>
 </pre><pre class="rust"><code><span class="doccomment">//! Config file tests that depend on files to exist at specific paths.
 //! If the paths listed in these tests change, the tests will fail.
 
@@ -375,6 +378,7 @@ port = 1114
 opaque_path = &quot;dev/opaque&quot;
 opaque_server_key = &quot;dev/opaque/server_setup&quot;
 remote_storage_key = &quot;dev/remote-storage-key/gen/remote_storage.key&quot;
+max_blob_size = 1024
 
 [tls_config]
 certificate_chain = &quot;dev/test-pki/gen/certs/server.chain&quot;
@@ -390,6 +394,7 @@ address = &quot;127.0.0.1&quot;
 port = 1114
 opaque_path = &quot;dev/opaque&quot;
 opaque_server_key = &quot;dev/opaque/server_setup&quot;
+max_blob_size = 1024
 
 [tls_config]
 private_key = &quot;dev/test-pki/gen/certs/server.key&quot;
@@ -407,6 +412,7 @@ port = 1114
 opaque_path = &quot;dev/opaque&quot;
 opaque_server_key = &quot;dev/opaque/server_setup&quot;
 remote_storage_key = &quot;dev/remote-storage-key/gen/remote_storage.key&quot;
+max_blob_size = 1024
 
 [tls_config]
 private_key = &quot;dev/test-pki/gen/certs/server.key&quot;
@@ -451,4 +457,4 @@ XrqXH4XVk0PdxqQL0Ntny3OZT0QCnAFMIzs5Tb1hZy6mwOgXcOSOo+qs0l0ckvX3
 
 <span class="kw">const </span>SAMPLE_SSE_KEY: <span class="kw-2">&amp;</span>str = <span class="string">&quot;32randombytes-As test!#$%^-\\_^^/&quot;</span>;
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="lock_keeper_tests" data-themes="" data-resource-suffix="" data-rustdoc-version="1.67.0 (fc594f156 2023-01-24)" data-search-js="search-444266647c4dba98.js" data-settings-js="settings-bebeae96e00e4617.js" data-settings-css="settings-af96d9e2fc13e081.css" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="lock_keeper_tests" data-themes="" data-resource-suffix="" data-rustdoc-version="1.67.1 (d5a82bbd2 2023-02-07)" data-search-js="search-444266647c4dba98.js" data-settings-js="settings-bebeae96e00e4617.js" data-settings-css="settings-af96d9e2fc13e081.css" ></div></body></html>

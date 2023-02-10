@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":[["cannot_get_another_users_secrets",""],["incorrect_key_type_specified","An error is returned if a wrong key type is specified."],["run_tests",""]]};
+window.SIDEBAR_ITEMS = {"fn":[["cannot_get_another_users_secrets",""],["incorrect_key_type_specified","An error is returned if a wrong key type is specified."],["run_tests",""],["store_data_blob_identity","Storing and retrieving an encrypted data blob returns the same stored secret."]]};

@@ -120,6 +120,9 @@
 <a href="#120" id="120">120</a>
 <a href="#121" id="121">121</a>
 <a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
+<a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
 </pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::server::{database::DatabaseError, session_cache::SessionCacheError};
 <span class="kw">use </span>std::path::PathBuf;
 <span class="kw">use </span>thiserror::Error;
@@ -148,6 +151,8 @@
     </span>AccountAlreadyRegistered,
     <span class="attr">#[error(<span class="string">&quot;Invalid account&quot;</span>)]
     </span>InvalidAccount,
+    <span class="attr">#[error(<span class="string">&quot;Attempting to store data blob larger than configured max size.&quot;</span>)]
+    </span>BlobSizeTooLarge,
     <span class="attr">#[error(<span class="string">&quot;Storage key is already set&quot;</span>)]
     </span>StorageKeyAlreadySet,
     <span class="attr">#[error(<span class="string">&quot;Storage key is not set for this user&quot;</span>)]
@@ -209,6 +214,7 @@
             }
             <span class="comment">// Errors that are safe to return to the client
             </span>LockKeeperServerError::AccountAlreadyRegistered
+            | LockKeeperServerError::BlobSizeTooLarge
             | LockKeeperServerError::InvalidAccount
             | LockKeeperServerError::SessionIdNotFound
             | LockKeeperServerError::KeyNotFound =&gt; Status::invalid_argument(error.to_string()),
@@ -243,4 +249,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="lock_keeper_key_server" data-themes="" data-resource-suffix="" data-rustdoc-version="1.67.0 (fc594f156 2023-01-24)" data-search-js="search-444266647c4dba98.js" data-settings-js="settings-bebeae96e00e4617.js" data-settings-css="settings-af96d9e2fc13e081.css" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="lock_keeper_key_server" data-themes="" data-resource-suffix="" data-rustdoc-version="1.67.1 (d5a82bbd2 2023-02-07)" data-search-js="search-444266647c4dba98.js" data-settings-js="settings-bebeae96e00e4617.js" data-settings-css="settings-af96d9e2fc13e081.css" ></div></body></html>
