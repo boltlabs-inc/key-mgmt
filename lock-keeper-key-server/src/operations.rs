@@ -9,7 +9,9 @@ mod remote_generate_signing_key;
 mod remote_sign_bytes;
 mod retrieve_audit_events;
 mod retrieve_secret;
+mod retrieve_server_encrypted_blob;
 mod retrieve_storage_key;
+mod store_server_encrypted_blob;
 
 pub use authenticate::Authenticate;
 pub use create_storage_key::CreateStorageKey;
@@ -22,4 +24,6 @@ pub use remote_generate_signing_key::RemoteGenerateSigningKey;
 pub use remote_sign_bytes::RemoteSignBytes;
 pub use retrieve_audit_events::RetrieveAuditEvents;
 pub use retrieve_secret::RetrieveSecret;
+pub use retrieve_server_encrypted_blob::RetrieveServerEncryptedBlob;
 pub use retrieve_storage_key::RetrieveStorageKey;
+pub use store_server_encrypted_blob::StoreServerEncryptedBlob;

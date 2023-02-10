@@ -72,9 +72,11 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
     type GetUserIdStream = MessageStream;
     type ImportSigningKeyStream = MessageStream;
     type LogoutStream = MessageStream;
+    type StoreServerEncryptedBlobStream = MessageStream;
     type RegisterStream = MessageStream;
     type RemoteGenerateStream = MessageStream;
     type RemoteSignBytesStream = MessageStream;
+    type RetrieveServerEncryptedBlobStream = MessageStream;
     type RetrieveSecretStream = MessageStream;
     type RetrieveAuditEventsStream = MessageStream;
     type RetrieveStorageKeyStream = MessageStream;
@@ -146,6 +148,20 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         Ok(response)
     }
 
+    async fn store_server_encrypted_blob(
+        &self,
+        request: Request<Streaming<Message>>,
+    ) -> Result<Response<Self::StoreServerEncryptedBlobStream>, Status> {
+        let (channel, response) = self.create_authenticated_channel(request).await?;
+        handle_authenticated_request(
+            operations::StoreServerEncryptedBlob,
+            self.context(),
+            channel,
+        )
+        .await?;
+        Ok(response)
+    }
+
     async fn remote_generate(
         &self,
         request: Request<tonic::Streaming<Message>>,
@@ -166,6 +182,20 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
     ) -> Result<Response<Self::RemoteSignBytesStream>, Status> {
         let (channel, response) = self.create_authenticated_channel(request).await?;
         handle_authenticated_request(operations::RemoteSignBytes, self.context(), channel).await?;
+        Ok(response)
+    }
+
+    async fn retrieve_server_encrypted_blob(
+        &self,
+        request: Request<Streaming<Message>>,
+    ) -> Result<Response<Self::RetrieveServerEncryptedBlobStream>, Status> {
+        let (channel, response) = self.create_authenticated_channel(request).await?;
+        handle_authenticated_request(
+            operations::RetrieveServerEncryptedBlob,
+            self.context(),
+            channel,
+        )
+        .await?;
         Ok(response)
     }
 

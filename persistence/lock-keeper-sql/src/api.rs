@@ -218,48 +218,43 @@ impl PostgresDB {
              WHERE ",
         );
 
+        // Ensure account name matches, otherwise a client could fetch anyone's audit
+        // events if they guess the request_id.
+        let _ = query.push(" account_id=").push_bind(account_id.0);
+
         // Add filtering based on after_date if present.
         if let Some(after_date) = options.after_date {
-            let _ = query
-                .push("timestamp >= ")
-                .push_bind(after_date)
-                .push(" AND ");
+            let _ = query.push(" AND timestamp >= ").push_bind(after_date);
         }
+
         // Add filtering based on before_date if present.
         if let Some(before_date) = options.before_date {
-            let _ = query
-                .push("timestamp <= ")
-                .push_bind(before_date)
-                .push(" AND ");
+            let _ = query.push(" AND timestamp <= ").push_bind(before_date);
         }
 
         // Add filtering based on key_ids if present.
         if !options.key_ids.is_empty() {
-            let _ = query.push("key_id IN ");
+            let _ = query.push(" AND key_id IN ");
             // Turn the key ids into bytes that postgres understands.
             let key_id_bytes = options.key_ids.iter().map(KeyId::as_bytes);
             append_value_list(&mut query, key_id_bytes)?;
-            let _ = query.push(" AND ");
         }
 
         if let Some(request_id) = options.request_id {
-            let _ = query
-                .push("request_id=")
-                .push_bind(request_id)
-                .push(" AND ");
+            let _ = query.push(" AND request_id=").push_bind(request_id);
         }
 
-        // Add filtering based on actions.
-        let _ = query.push("client_action_id IN ");
-        // Turn the actions into their integer value for faster searching.
-        let actions = event_type.client_actions();
-        let actions = actions.iter().map(|a| *a as i64);
+        // Add filtering based on actions if the user specific event types.
+        if !matches!(event_type, EventType::All) {
+            // We use an IN operator to match multiple values based on the value of
+            // `event_type`.
+            let _ = query.push(" AND client_action_id IN ");
+            // Turn the actions into their integer value for faster searching.
+            let actions = event_type.client_actions();
+            let actions = actions.iter().map(|a| *a as i64);
 
-        append_value_list(&mut query, actions)?;
-
-        // Ensure account name matches, otherwise a client could fetch anyone's audit
-        // events if they guess the request_id.
-        let _ = query.push("AND account_id=").push_bind(account_id.0);
+            append_value_list(&mut query, actions)?;
+        }
 
         debug!("Dynamically generated query: {}", query.sql());
 
@@ -267,6 +262,7 @@ impl PostgresDB {
             .build_query_as::<AuditEventDB>()
             .fetch_all(&self.connection_pool)
             .await?;
+        debug!("Matching entries from query: {}", matches.len());
 
         // Iterator will stop and the first error is returned if our conversion fails.
         let results: Result<Vec<_>, _> = matches.into_iter().map(TryFrom::try_from).collect();

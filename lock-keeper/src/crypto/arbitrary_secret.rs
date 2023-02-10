@@ -40,7 +40,7 @@ impl TryFrom<Vec<u8>> for Secret {
 /// internal type representation of the secret.
 impl Display for Secret {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", hex::encode(self.0.get_material()))
+        write!(f, "{}", hex::encode(self.0.borrow_material()))
     }
 }
 
@@ -97,7 +97,10 @@ impl Secret {
             .with_bytes(key_id.clone())
             .with_str(IMPORTED);
 
-        let secret = Secret(generic::Secret::from_parts(secret_material, &context));
+        let secret = Secret(generic::Secret::from_parts(
+            secret_material.to_vec(),
+            context.clone(),
+        ));
 
         Ok((
             secret.clone(),
@@ -117,7 +120,7 @@ impl Secret {
 impl From<Secret> for Export {
     fn from(secret: Secret) -> Self {
         Self {
-            key_material: secret.0.get_material().into(),
+            key_material: secret.0.borrow_material().into(),
             context: secret.context().clone().into(),
         }
     }
@@ -128,7 +131,7 @@ impl TryFrom<Export> for Secret {
 
     fn try_from(export: Export) -> Result<Self, Self::Error> {
         let context = export.context.clone().try_into()?;
-        let inner = generic::Secret::from_parts(&export.key_material, &context);
+        let inner = generic::Secret::from_parts(export.key_material.clone(), context);
         Ok(Secret(inner))
     }
 }

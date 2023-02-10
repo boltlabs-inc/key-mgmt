@@ -25,8 +25,8 @@ use uuid::Uuid;
 pub enum DatabaseError {
     #[error("No such entry in table.")]
     NoEntry,
-    #[error("More entries than expected were found.")]
-    InvalidCountFound,
+    #[error("Unexpected number of rows were affected by DB operation.")]
+    InvalidRowCountFound,
     #[error("The provided audit event filtering options were not formatted correctly.")]
     InvalidAuditEventOptions,
     #[error("Key ID exists but associated user ID or key type were incorrect.")]

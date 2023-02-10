@@ -21,7 +21,9 @@ VALUES
     (11, 'RetrieveSecret'),
     (12, 'RetrieveAuditEvents'),
     (13, 'RetrieveSigningKey'),
-    (14, 'RetrieveStorageKey')
+    (14, 'RetrieveStorageKey'),
+    (15, 'RetrieveServerEncryptedBlob'),
+    (16, 'StoreSererEncryptedBlob')
 ON CONFLICT (client_action_id) DO NOTHING;
 
 -- Maps secret types to unique ID
@@ -35,7 +37,8 @@ INSERT INTO SecretTypes (secret_type)
 VALUES
     ('arbitrary_secret'),
     ('remote_signing_key'),
-    ('signing_key_pair')
+    ('signing_key_pair'),
+    ('server_encrypted_blob')
 ON CONFLICT (secret_type) DO NOTHING;
 
 CREATE TABLE IF NOT EXISTS Accounts

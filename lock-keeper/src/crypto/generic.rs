@@ -7,7 +7,8 @@ use serde::{Deserialize, Serialize};
 use std::{iter, marker::PhantomData};
 use thiserror::Error;
 
-use std::{convert::Infallible, num::TryFromIntError};
+use std::{convert::Infallible, mem::size_of};
+use tracing::instrument;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
 /// Errors that arise in the cryptography module.
@@ -25,7 +26,7 @@ pub enum CryptoError {
     RandomNumberGeneratorFailed,
     /// Length of data too large for our integer data type.
     #[error("Encryption/Decryption failed due to data length.")]
-    TryFromIntError(#[from] TryFromIntError),
+    CannotEncodeDataLength,
     #[error("Signature did not verify")]
     VerificationFailed,
     /// The `impl<T> Encrypted<T>` has some trait bounds for converting a
@@ -153,7 +154,8 @@ impl TryFrom<EncryptionKey> for Vec<u8> {
 
     fn try_from(key: EncryptionKey) -> Result<Self, Self::Error> {
         // len || key || context
-        let key_length = u8::try_from(key.key.len())?;
+        let key_length =
+            u8::try_from(key.key.len()).map_err(|_| CryptoError::CannotEncodeDataLength)?;
         let associated_data = Vec::<u8>::from(key.context.to_owned());
 
         let bytes = iter::once(key_length)
@@ -295,10 +297,10 @@ impl Secret {
 
     /// Create a new secret from its constituent parts.
     /// This is unchecked; use with care.
-    pub(super) fn from_parts(secret_material: &[u8], context: &AssociatedData) -> Self {
+    pub(super) fn from_parts(secret_material: Vec<u8>, context: AssociatedData) -> Self {
         Self {
-            material: secret_material.to_vec(),
-            context: context.clone(),
+            material: secret_material,
+            context,
         }
     }
 
@@ -314,7 +316,7 @@ impl Secret {
     ///
     /// Return a reference to the underlying bytes of the secret. This should
     /// only be used to print the secret.
-    pub(super) fn get_material(&self) -> &[u8] {
+    pub(super) fn borrow_material(&self) -> &[u8] {
         &self.material
     }
 }
@@ -325,12 +327,15 @@ impl TryFrom<Secret> for Vec<u8> {
     fn try_from(secret: Secret) -> Result<Self, Self::Error> {
         // key len || key material || context len || context
         let ad: Vec<u8> = secret.context.to_owned().into();
-        let secret_length = u8::try_from(secret.material.len())?;
-        let ad_length = u8::try_from(ad.len())?;
+        let secret_length = u16::try_from(secret.material.len())
+            .map_err(|_| CryptoError::CannotEncodeDataLength)?;
+        let ad_length = u16::try_from(ad.len()).map_err(|_| CryptoError::CannotEncodeDataLength)?;
 
-        let bytes = iter::once(secret_length)
+        let bytes = secret_length
+            .to_be_bytes()
+            .into_iter()
             .chain(secret.material.to_owned())
-            .chain(iter::once(ad_length))
+            .chain(ad_length.to_be_bytes())
             .chain(ad)
             .collect();
         Ok(bytes)
@@ -339,21 +344,18 @@ impl TryFrom<Secret> for Vec<u8> {
 
 impl TryFrom<Vec<u8>> for Secret {
     type Error = CryptoError;
-    fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
-        // key len (1 byte) || key material || context len (1 byte) || context
-        let key_offset = 1 + *bytes.first().ok_or(CryptoError::ConversionError)? as usize;
-        let material = bytes
-            .get(1..key_offset)
-            .ok_or(CryptoError::ConversionError)?
-            .into();
 
-        let context_len = *bytes.get(key_offset).ok_or(CryptoError::ConversionError)? as usize;
-        let context_offset = key_offset + 1;
-        let context: Vec<u8> = bytes
-            .get(context_offset..)
-            .ok_or(CryptoError::ConversionError)?
-            .into();
-        if context.len() != context_len {
+    #[instrument(skip_all)]
+    fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
+        // key len (2 bytes) || key material || context len (2 byte) || context
+        let mut parse = ParseBytes::new(bytes);
+
+        let data_length = parse.take_bytes_as_u16()?;
+        let material = parse.take_bytes(data_length as usize)?.to_vec();
+        let context_length = parse.take_bytes_as_u16()?;
+        let context: Vec<u8> = parse.take_rest()?.to_vec();
+
+        if context.len() != context_length as usize {
             return Err(CryptoError::ConversionError);
         }
 
@@ -364,6 +366,43 @@ impl TryFrom<Vec<u8>> for Secret {
     }
 }
 
+/// Helper type for parsing byte array into integers and slices.
+struct ParseBytes {
+    bytes: Vec<u8>,
+    offset: usize,
+}
+
+impl ParseBytes {
+    fn new(bytes: Vec<u8>) -> ParseBytes {
+        ParseBytes { bytes, offset: 0 }
+    }
+
+    /// Take next `n` bytes from array.
+    fn take_bytes(&mut self, n: usize) -> Result<&[u8], CryptoError> {
+        let slice = &self
+            .bytes
+            .get(self.offset..self.offset + n)
+            .ok_or(CryptoError::ConversionError)?;
+        self.offset += n;
+        Ok(slice)
+    }
+
+    /// Take next two bytes and convert them into a u16.
+    pub fn take_bytes_as_u16(&mut self) -> Result<u16, CryptoError> {
+        let &[f, s] = self.take_bytes(size_of::<u16>())? else {
+            return Err(CryptoError::ConversionError)
+        };
+        Ok(u16::from_be_bytes([f, s]))
+    }
+
+    /// Take the rest of the bytes from the array.
+    fn take_rest(&mut self) -> Result<&[u8], CryptoError> {
+        self.bytes
+            .get(self.offset..)
+            .ok_or(CryptoError::ConversionError)
+    }
+}
+
 #[cfg(test)]
 mod test {
     use std::collections::HashSet;
@@ -371,6 +410,21 @@ mod test {
     use super::*;
     use crate::LockKeeperError;
     use rand::Rng;
+
+    #[test]
+    fn parse_bytes_works() -> Result<(), CryptoError> {
+        let mut bytes = ParseBytes::new(vec![0, 5, 6, 7, 8, 9, 10, 11]);
+
+        // We encoded 5 as 2 bytes in our vec. Ensure this matches.
+        let n = bytes.take_bytes_as_u16()?;
+        assert_eq!(n, 5);
+
+        // Take `n` bytes.
+        assert_eq!(bytes.take_bytes(n as usize)?, &[6, 7, 8, 9, 10]);
+
+        assert_eq!(bytes.take_rest()?, &[11]);
+        Ok(())
+    }
 
     #[test]
     fn associated_data_to_vec_u8_conversion_works() -> Result<(), CryptoError> {

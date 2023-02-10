@@ -1,7 +1,8 @@
 //! Database models for secrets
 
 use crate::{
-    crypto::{Encrypted, KeyId, Secret, SigningKeyPair},
+    crypto::{DataBlob, Encrypted, KeyId, Secret, SigningKeyPair},
+    types::database::secrets::secret_types::SERVER_ENCRYPTED_BLOB,
     LockKeeperError,
 };
 use serde::{Deserialize, Serialize};
@@ -80,12 +81,27 @@ impl StoredSecret {
             retrieved: false,
         })
     }
+
+    pub fn from_data_blob(
+        key_id: KeyId,
+        account_id: AccountId,
+        blob: Encrypted<DataBlob>,
+    ) -> Result<Self, LockKeeperError> {
+        Ok(Self {
+            key_id,
+            account_id,
+            secret_type: SERVER_ENCRYPTED_BLOB.to_string(),
+            bytes: serde_json::to_vec(&blob)?,
+            retrieved: false,
+        })
+    }
 }
 
 pub mod secret_types {
     pub const ARBITRARY_SECRET: &str = "arbitrary_secret";
     pub const SIGNING_KEY_PAIR: &str = "signing_key_pair";
     pub const REMOTE_SIGNING_KEY: &str = "remote_signing_key";
+    pub const SERVER_ENCRYPTED_BLOB: &str = "server_encrypted_blob";
 }
 
 impl TryFrom<StoredSecret> for Encrypted<SigningKeyPair> {

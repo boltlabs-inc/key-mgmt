@@ -149,6 +149,7 @@ port = 1114
 opaque_path = "dev/opaque"
 opaque_server_key = "dev/opaque/server_setup"
 remote_storage_key = "dev/remote-storage-key/gen/remote_storage.key"
+max_blob_size = 1024
 
 [tls_config]
 certificate_chain = "dev/test-pki/gen/certs/server.chain"
@@ -164,6 +165,7 @@ address = "127.0.0.1"
 port = 1114
 opaque_path = "dev/opaque"
 opaque_server_key = "dev/opaque/server_setup"
+max_blob_size = 1024
 
 [tls_config]
 private_key = "dev/test-pki/gen/certs/server.key"
@@ -181,6 +183,7 @@ port = 1114
 opaque_path = "dev/opaque"
 opaque_server_key = "dev/opaque/server_setup"
 remote_storage_key = "dev/remote-storage-key/gen/remote_storage.key"
+max_blob_size = 1024
 
 [tls_config]
 private_key = "dev/test-pki/gen/certs/server.key"

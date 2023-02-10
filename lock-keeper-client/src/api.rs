@@ -15,6 +15,8 @@ mod remote_generate_signing_key;
 mod remote_sign_bytes;
 mod retrieve;
 mod retrieve_audit_events;
+mod retrieve_server_encrypted_blob;
+mod store_server_encrypted_blob;
 
 use crate::{
     client::Password, config::Config, response::Metadata, LockKeeperClient, LockKeeperClientError,
@@ -269,6 +271,39 @@ impl LockKeeperClient {
             .await
     }
 
+    /// Retrieve a server-encrypted blob from server specified by the given
+    /// `key_id`.
+    pub async fn retrieve_server_encrypted_blob(
+        &self,
+        key_id: &KeyId,
+    ) -> LockKeeperResponse<Vec<u8>> {
+        let request_id = Uuid::new_v4();
+        LockKeeperResponse {
+            result: self
+                .retrieve_server_encrypted_blob_helper(key_id, request_id)
+                .await,
+            metadata: Some(Metadata { request_id }),
+        }
+    }
+
+    async fn retrieve_server_encrypted_blob_helper(
+        &self,
+        key_id: &KeyId,
+        request_id: Uuid,
+    ) -> Result<Vec<u8>, LockKeeperClientError> {
+        let metadata = self.create_metadata(ClientAction::RetrieveServerEncryptedBlob, request_id);
+        let client_channel = Self::create_authenticated_channel(
+            &mut self.tonic_client(),
+            &metadata,
+            self.session_key().clone(),
+            self.rng.clone(),
+        )
+        .await?;
+
+        self.handle_retrieve_server_encrypted_blob(client_channel, key_id)
+            .await
+    }
+
     /// Retrieve a secret from the key server by [`KeyId`]
     ///
     /// This operation will fail if it is called on a signing key.
@@ -410,6 +445,42 @@ impl LockKeeperClient {
         )
         .await?;
         self.handle_retrieve_audit_events(client_channel, event_type, options)
+            .await
+    }
+
+    /// Store a server-encrypted blob. This function will return a `[KeyId]`
+    /// which may be used to later retrieve the stored blob.
+    ///
+    /// Note: The server has a maximum configurable blob size. The server will
+    /// reject the store request if the blob size is too large.
+    pub async fn store_server_encrypted_blob(
+        &self,
+        data_blob: Vec<u8>,
+    ) -> LockKeeperResponse<KeyId> {
+        let request_id = Uuid::new_v4();
+        LockKeeperResponse {
+            result: self
+                .store_server_encrypted_blob_helper(data_blob, request_id)
+                .await,
+            metadata: Some(Metadata { request_id }),
+        }
+    }
+
+    async fn store_server_encrypted_blob_helper(
+        &self,
+        data_blob: Vec<u8>,
+        request_id: Uuid,
+    ) -> Result<KeyId, LockKeeperClientError> {
+        let metadata = self.create_metadata(ClientAction::StoreServerEncryptedBlob, request_id);
+        let client_channel = Self::create_authenticated_channel(
+            &mut self.tonic_client(),
+            &metadata,
+            self.session_key().clone(),
+            self.rng.clone(),
+        )
+        .await?;
+
+        self.handle_store_server_encrypted_blob(client_channel, data_blob)
             .await
     }
 }

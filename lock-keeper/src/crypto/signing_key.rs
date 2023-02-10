@@ -335,7 +335,8 @@ impl TryFrom<SigningKeyPair> for Vec<u8> {
     fn try_from(key_pair: SigningKeyPair) -> Result<Self, Self::Error> {
         let domain_separator_bytes: Vec<u8> = SigningKeyPair::domain_separator().into();
         let signing_key = key_pair.signing_key.to_bytes();
-        let sk_length = u8::try_from(signing_key.len())?;
+        let sk_length =
+            u8::try_from(signing_key.len()).map_err(|_| CryptoError::CannotEncodeDataLength)?;
         let context = Vec::<u8>::from(key_pair.context.to_owned());
 
         let bytes = domain_separator_bytes

@@ -9,9 +9,11 @@ service LockKeeperRpc {
   rpc Health (HealthCheck) returns (HealthCheck);
   rpc ImportSigningKey (stream Message) returns (stream Message);
   rpc Logout (stream Message) returns (stream Message);
+  rpc StoreServerEncryptedBlob (stream Message) returns (stream Message);
   rpc Register (stream Message) returns (stream Message);
   rpc RemoteGenerate (stream Message) returns (stream Message);
   rpc RemoteSignBytes (stream Message) returns (stream Message);
+  rpc RetrieveServerEncryptedBlob (stream Message) returns (stream Message);
   rpc RetrieveSecret (stream Message) returns (stream Message);
   rpc RetrieveAuditEvents (stream Message) returns (stream Message);
   rpc RetrieveStorageKey (stream Message) returns (stream Message);

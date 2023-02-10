@@ -11,7 +11,9 @@ pub mod remote_generate;
 pub mod remote_sign_bytes;
 pub mod retrieve_audit_events;
 pub mod retrieve_secret;
+pub mod retrieve_server_encrypted_blob;
 pub mod retrieve_storage_key;
+pub mod store_server_encrypted_blob;
 
 use crate::{types::database::account::AccountName, LockKeeperError};
 use serde::{Deserialize, Serialize};
@@ -43,6 +45,8 @@ pub enum ClientAction {
     RetrieveAuditEvents = 12,
     RetrieveSigningKey = 13,
     RetrieveStorageKey = 14,
+    RetrieveServerEncryptedBlob = 15,
+    StoreServerEncryptedBlob = 16,
 }
 
 impl TryFrom<i64> for ClientAction {
@@ -63,6 +67,9 @@ impl TryFrom<i64> for ClientAction {
                 Ok(ClientAction::RemoteGenerateSigningKey)
             }
             x if x == ClientAction::RemoteSignBytes as i64 => Ok(ClientAction::RemoteSignBytes),
+            x if x == ClientAction::RetrieveServerEncryptedBlob as i64 => {
+                Ok(ClientAction::RetrieveServerEncryptedBlob)
+            }
             x if x == ClientAction::RetrieveSecret as i64 => Ok(ClientAction::RetrieveSecret),
             x if x == ClientAction::RetrieveAuditEvents as i64 => {
                 Ok(ClientAction::RetrieveAuditEvents)
@@ -72,6 +79,9 @@ impl TryFrom<i64> for ClientAction {
             }
             x if x == ClientAction::RetrieveStorageKey as i64 => {
                 Ok(ClientAction::RetrieveStorageKey)
+            }
+            x if x == ClientAction::StoreServerEncryptedBlob as i64 => {
+                Ok(ClientAction::StoreServerEncryptedBlob)
             }
             // Return value of offending integer.
             _ => Err(v),

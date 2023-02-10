@@ -25,6 +25,9 @@ pub struct Config {
     pub opaque_server_setup: ServerSetup<OpaqueCipherSuite, PrivateKey<Ristretto255>>,
     pub remote_storage_key: RemoteStorageKey,
     pub logging: LoggingConfig,
+    /// Maximum size allowed for the store sever-encrypted blob endpoint.
+    /// This size  bounded by types lengths that can be represented as a u16.
+    pub max_blob_size: u16,
 }
 
 impl Config {
@@ -62,6 +65,7 @@ impl Config {
                 config.opaque_server_key,
             )?,
             logging: config.logging,
+            max_blob_size: config.max_blob_size,
         })
     }
 }
@@ -91,6 +95,7 @@ pub struct ConfigFile {
     pub opaque_server_key: PathBuf,
     pub logging: LoggingConfig,
     pub tls_config: Option<TlsConfig>,
+    pub max_blob_size: u16,
 }
 
 impl FromStr for ConfigFile {
@@ -184,6 +189,7 @@ mod tests {
             opaque_path = "tests/gen/opaque"
             opaque_server_key = "tests/gen/opaque/server_setup"
             remote_storage_key = "test_sse.key"
+            max_blob_size = 1024
 
             [tls_config]
             private_key = "test.key"
@@ -204,6 +210,7 @@ mod tests {
             opaque_path,
             opaque_server_key,
             logging,
+            max_blob_size,
         } = ConfigFile::from_str(config_str).unwrap();
 
         let tls_config = tls_config.unwrap();
@@ -219,6 +226,7 @@ mod tests {
             opaque_server_key,
             PathBuf::from("tests/gen/opaque/server_setup")
         );
+        assert_eq!(max_blob_size, 1024);
         let expected_log = LoggingConfig {
             lock_keeper_logs_file_name: "./dev/logs/server.log".parse().unwrap(),
             all_logs_file_name: "./dev/logs/all.log".parse().unwrap(),
