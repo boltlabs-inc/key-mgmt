@@ -155,6 +155,33 @@
 <a href="#155" id="155">155</a>
 <a href="#156" id="156">156</a>
 <a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
+<a href="#166" id="166">166</a>
+<a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::{
     str::FromStr,
     time::{Duration, SystemTime},
@@ -165,6 +192,7 @@
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>lock_keeper::types::audit_event::{AuditEventOptions, EventType};
 <span class="kw">use </span>lock_keeper_client::LockKeeperClient;
+<span class="kw">use </span>time::{format_description::well_known::Iso8601, OffsetDateTime};
 <span class="kw">use </span>uuid::Uuid;
 
 <span class="attr">#[derive(Debug)]
@@ -172,6 +200,8 @@
     event_type: EventType,
     key_names: Vec&lt;String&gt;,
     request_id: <span class="prelude-ty">Option</span>&lt;Uuid&gt;,
+    before_date: <span class="prelude-ty">Option</span>&lt;OffsetDateTime&gt;,
+    after_date: <span class="prelude-ty">Option</span>&lt;OffsetDateTime&gt;,
 }
 
 <span class="attr">#[async_trait]
@@ -185,7 +215,8 @@
         <span class="kw">let </span>options = AuditEventOptions {
             key_ids,
             request_id: <span class="self">self</span>.request_id,
-            ..Default::default()
+            before_date: <span class="self">self</span>.before_date,
+            after_date: <span class="self">self</span>.after_date,
         };
 
         <span class="kw">let </span>credentials = state.get_credentials()<span class="question-mark">?</span>;
@@ -223,12 +254,16 @@
                 event_type: EventType::All,
                 key_names: <span class="macro">vec!</span>[],
                 request_id: <span class="prelude-val">None</span>,
+                before_date: <span class="prelude-val">None</span>,
+                after_date: <span class="prelude-val">None</span>,
             }),
             options =&gt; {
                 <span class="kw">let </span><span class="kw-2">mut </span>result = GetAuditEvents {
                     event_type: EventType::All,
                     key_names: <span class="macro">vec!</span>[],
                     request_id: <span class="prelude-val">None</span>,
+                    before_date: <span class="prelude-val">None</span>,
+                    after_date: <span class="prelude-val">None</span>,
                 };
 
                 <span class="kw">for </span>option <span class="kw">in </span>options {
@@ -246,6 +281,12 @@
                         }
                         ParsedAuditEventOption::RequestId(request_id) =&gt; {
                             result.request_id = <span class="prelude-val">Some</span>(request_id);
+                        }
+                        ParsedAuditEventOption::BeforeDate(before) =&gt; {
+                            result.before_date = <span class="prelude-val">Some</span>(before);
+                        }
+                        ParsedAuditEventOption::AfterDate(before) =&gt; {
+                            result.after_date = <span class="prelude-val">Some</span>(before);
                         }
                     }
                 }
@@ -297,13 +338,24 @@
             <span class="prelude-val">Ok</span>(ParsedAuditEventOption::KeyNames(key_names))
         }
         <span class="string">&quot;request-id&quot; </span>=&gt; <span class="prelude-val">Ok</span>(ParsedAuditEventOption::RequestId(option_value.parse()<span class="question-mark">?</span>)),
-        <span class="string">&quot;before&quot; </span>=&gt; {
-            <span class="macro">anyhow::bail!</span>(<span class="string">&quot;`before` option is not implemented&quot;</span>);
-        }
-        <span class="string">&quot;after&quot; </span>=&gt; {
-            <span class="macro">anyhow::bail!</span>(<span class="string">&quot;`after` option is not implemented&quot;</span>);
-        }
+        <span class="string">&quot;before&quot; </span>=&gt; <span class="prelude-val">Ok</span>(ParsedAuditEventOption::BeforeDate(parse_date(
+            option_value,
+        )<span class="question-mark">?</span>)),
+        <span class="string">&quot;after&quot; </span>=&gt; <span class="prelude-val">Ok</span>(ParsedAuditEventOption::AfterDate(parse_date(option_value)<span class="question-mark">?</span>)),
         <span class="kw">_ </span>=&gt; <span class="macro">anyhow::bail!</span>(ERROR_MESSAGE),
+    }
+}
+
+<span class="kw">fn </span>parse_date(date_str: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;OffsetDateTime, Error&gt; {
+    <span class="kw">match </span>OffsetDateTime::parse(date_str, <span class="kw-2">&amp;</span>Iso8601::DEFAULT) {
+        <span class="prelude-val">Ok</span>(date) =&gt; <span class="prelude-val">Ok</span>(date),
+        <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
+            <span class="kw">let </span>iso_format = <span class="macro">format!</span>(<span class="string">&quot;{}T00:00:00Z&quot;</span>, date_str);
+            <span class="kw">match </span>OffsetDateTime::parse(<span class="kw-2">&amp;</span>iso_format, <span class="kw-2">&amp;</span>Iso8601::DEFAULT) {
+                <span class="prelude-val">Ok</span>(date) =&gt; <span class="prelude-val">Ok</span>(date),
+                <span class="prelude-val">Err</span>(e) =&gt; <span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;Invalid date format {:?}&quot;</span>, e)),
+            }
+        }
     }
 }
 
@@ -311,6 +363,8 @@
     EventType(EventType),
     KeyNames(Vec&lt;String&gt;),
     RequestId(Uuid),
+    BeforeDate(OffsetDateTime),
+    AfterDate(OffsetDateTime),
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="lock_keeper_client_cli" data-themes="" data-resource-suffix="" data-rustdoc-version="1.67.1 (d5a82bbd2 2023-02-07)" data-search-js="search-444266647c4dba98.js" data-settings-js="settings-bebeae96e00e4617.js" data-settings-css="settings-af96d9e2fc13e081.css" ></div></body></html>
