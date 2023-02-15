@@ -166,7 +166,7 @@ fn parse_date(date_str: &str) -> Result<OffsetDateTime, Error> {
     match OffsetDateTime::parse(date_str, &Iso8601::DEFAULT) {
         Ok(date) => Ok(date),
         Err(_) => {
-            let iso_format = format!("{}T00:00:00Z", date_str);
+            let iso_format = format!("{date_str}T00:00:00Z");
             match OffsetDateTime::parse(&iso_format, &Iso8601::DEFAULT) {
                 Ok(date) => Ok(date),
                 Err(e) => Err(anyhow!("Invalid date format {:?}", e)),
