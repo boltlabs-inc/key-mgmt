@@ -67,6 +67,11 @@ args = ["run", "--bin", "lock-keeper-tests", "--", "--standard-only", "--test-ty
 command = "cargo"
 args = ["run", "--bin", "lock-keeper-tests", "--", "--test-type", "integration"]
 
+# Run integration tests and print all errors even for tests that pass.
+[tasks.integration-debug]
+command = "cargo"
+args = ["run", "--bin", "lock-keeper-tests", "--", "--test-type", "integration", "--print-errors"]
+
 # Run all tests that require a server to be running in Docker.
 [tasks.all-tests]
 command = "cargo"

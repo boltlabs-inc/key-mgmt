@@ -25,6 +25,9 @@ pub struct Cli {
     pub test_type: TestType,
     #[clap(long, short = 's')]
     pub standard_only: bool,
+    /// Prints all errors even if the test was successful.
+    #[clap(long)]
+    pub print_errors: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -57,24 +60,27 @@ pub async fn main() {
 }
 
 async fn run() -> Result<(), LockKeeperTestError> {
-    // Allows capturing logs when tests are executed. Errors will always be printed.
-    // For higher verbosity, set RUST_LOG to a logging level, e.g: RUST_LOG=info.
-
-    // (These unwraps should never fail).
-    let logging_level = EnvFilter::from_default_env()
-        .max_level_hint()
-        .unwrap()
-        .into_level()
-        .unwrap();
-    // Only capture logging events from lock_keeper crates.
-    let targets = Targets::new().with_target("lock_keeper", logging_level);
-    let stdout_layer = tracing_subscriber::fmt::layer()
-        .pretty()
-        .with_filter(targets);
-
-    tracing_subscriber::registry().with(stdout_layer).init();
-
     let cli = Cli::try_parse()?;
+
+    if cli.print_errors {
+        // Allows capturing logs when tests are executed. Errors will always be printed.
+        // For higher verbosity, set RUST_LOG to a logging level, e.g: RUST_LOG=info.
+
+        let logging_level = EnvFilter::from_default_env()
+            .max_level_hint()
+            .expect("Should never fail")
+            .into_level()
+            .expect("Should never fail");
+
+        // Only capture logging events from lock_keeper crates.
+        let targets = Targets::new().with_target("lock_keeper", logging_level);
+        let stdout_layer = tracing_subscriber::fmt::layer()
+            .pretty()
+            .with_filter(targets);
+
+        tracing_subscriber::registry().with(stdout_layer).init();
+    }
+
     if cli.standard_only && cli.test_type != TestType::E2E {
         return Err(LockKeeperTestError::StandardOnlyFlag);
     }
