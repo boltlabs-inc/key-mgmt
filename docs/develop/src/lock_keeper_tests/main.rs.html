@@ -154,6 +154,12 @@
 <a href="#154" id="154">154</a>
 <a href="#155" id="155">155</a>
 <a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
 </pre><pre class="rust"><code><span class="kw">pub mod </span>config;
 <span class="kw">pub mod </span>error;
 <span class="kw">pub mod </span>test_suites;
@@ -181,6 +187,9 @@
     </span><span class="kw">pub </span>test_type: TestType,
     <span class="attr">#[clap(long, short = <span class="string">&#39;s&#39;</span>)]
     </span><span class="kw">pub </span>standard_only: bool,
+    <span class="doccomment">/// Prints all errors even if the test was successful.
+    </span><span class="attr">#[clap(long)]
+    </span><span class="kw">pub </span>print_errors: bool,
 }
 
 <span class="attr">#[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -213,24 +222,27 @@
 }
 
 <span class="kw">async fn </span>run() -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperTestError&gt; {
-    <span class="comment">// Allows capturing logs when tests are executed. Errors will always be printed.
-    // For higher verbosity, set RUST_LOG to a logging level, e.g: RUST_LOG=info.
-
-    // (These unwraps should never fail).
-    </span><span class="kw">let </span>logging_level = EnvFilter::from_default_env()
-        .max_level_hint()
-        .unwrap()
-        .into_level()
-        .unwrap();
-    <span class="comment">// Only capture logging events from lock_keeper crates.
-    </span><span class="kw">let </span>targets = Targets::new().with_target(<span class="string">&quot;lock_keeper&quot;</span>, logging_level);
-    <span class="kw">let </span>stdout_layer = tracing_subscriber::fmt::layer()
-        .pretty()
-        .with_filter(targets);
-
-    tracing_subscriber::registry().with(stdout_layer).init();
-
     <span class="kw">let </span>cli = Cli::try_parse()<span class="question-mark">?</span>;
+
+    <span class="kw">if </span>cli.print_errors {
+        <span class="comment">// Allows capturing logs when tests are executed. Errors will always be printed.
+        // For higher verbosity, set RUST_LOG to a logging level, e.g: RUST_LOG=info.
+
+        </span><span class="kw">let </span>logging_level = EnvFilter::from_default_env()
+            .max_level_hint()
+            .expect(<span class="string">&quot;Should never fail&quot;</span>)
+            .into_level()
+            .expect(<span class="string">&quot;Should never fail&quot;</span>);
+
+        <span class="comment">// Only capture logging events from lock_keeper crates.
+        </span><span class="kw">let </span>targets = Targets::new().with_target(<span class="string">&quot;lock_keeper&quot;</span>, logging_level);
+        <span class="kw">let </span>stdout_layer = tracing_subscriber::fmt::layer()
+            .pretty()
+            .with_filter(targets);
+
+        tracing_subscriber::registry().with(stdout_layer).init();
+    }
+
     <span class="kw">if </span>cli.standard_only &amp;&amp; cli.test_type != TestType::E2E {
         <span class="kw">return </span><span class="prelude-val">Err</span>(LockKeeperTestError::StandardOnlyFlag);
     }
