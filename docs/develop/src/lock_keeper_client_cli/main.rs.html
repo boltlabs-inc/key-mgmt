@@ -54,7 +54,6 @@
 <span class="kw">use </span>std::str::FromStr;
 
 <span class="kw">use </span>clap::Parser;
-<span class="kw">use </span>lock_keeper_client::Config;
 <span class="kw">use </span>tracing::info;
 <span class="kw">use </span>tracing_subscriber::EnvFilter;
 
@@ -63,7 +62,8 @@
 <span class="attr">#[tokio::main]
 </span><span class="kw">pub async fn </span>main() {
     <span class="kw">let </span>cli = cli::Cli::parse();
-    <span class="kw">let </span>config = Config::from_file(<span class="kw-2">&amp;</span>cli.config, <span class="prelude-val">None</span>).unwrap();
+
+    <span class="kw">let </span>config = cli.client_config().unwrap();
     <span class="kw">let </span>script = parse_script(<span class="kw-2">&amp;</span>cli).unwrap();
 
     tracing_subscriber::fmt::Subscriber::builder()

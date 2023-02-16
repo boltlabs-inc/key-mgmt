@@ -138,8 +138,6 @@
 <a href="#138" id="138">138</a>
 <a href="#139" id="139">139</a>
 <a href="#140" id="140">140</a>
-<a href="#141" id="141">141</a>
-<a href="#142" id="142">142</a>
 </pre><pre class="rust"><code><span class="kw">use </span>lock_keeper::infrastructure::pem_utils;
 <span class="kw">use </span>rustls::{ClientConfig, RootCertStore};
 <span class="kw">use </span>serde::{Deserialize, Serialize};
@@ -191,7 +189,6 @@
 <span class="doccomment">/// Client configuration file format.
 </span><span class="attr">#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = <span class="string">&quot;snake_case&quot;</span>)]
-#[non_exhaustive]
 </span><span class="kw">pub struct </span>ConfigFile {
     <span class="kw">pub </span>server_uri: String,
     <span class="kw">pub </span>ca_chain: PathBuf,
@@ -200,7 +197,6 @@
 
 <span class="attr">#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = <span class="string">&quot;snake_case&quot;</span>)]
-#[non_exhaustive]
 </span><span class="kw">pub struct </span>ClientAuth {
     <span class="kw">pub </span>certificate_chain: PathBuf,
     <span class="doccomment">/// The private key can be provided as a file or passed to the
