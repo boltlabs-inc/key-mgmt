@@ -3,7 +3,7 @@ use lock_keeper::{
     crypto::Secret,
     types::{audit_event::EventStatus, operations::ClientAction},
 };
-use lock_keeper_client::{api::GenerateResult, Config};
+use lock_keeper_client::{api::GenerateResult, Config, LockKeeperClientError};
 use tonic::Status;
 
 use crate::{
@@ -12,10 +12,10 @@ use crate::{
     run_parallel,
     test_suites::end_to_end::{
         operations::{
-            authenticate, check_audit_events, compare_errors, compare_status_errors,
-            generate_fake_key_id, import_signing_key,
+            authenticate, check_audit_events, compare_errors, generate_fake_key_id,
+            import_signing_key,
         },
-        test_cases::{init_test_state, NO_ENTRY_FOUND, NO_SESSION, WRONG_KEY_DATA},
+        test_cases::{init_test_state, NO_ENTRY_FOUND, WRONG_KEY_DATA},
     },
     utils::TestResult,
 };
@@ -115,7 +115,10 @@ async fn cannot_export_after_logout(config: Config) -> Result<()> {
     client.logout().await.result?;
 
     let res = client.export_secret(&key_id).await;
-    compare_status_errors(res, Status::unauthenticated(NO_SESSION))?;
+    assert!(matches!(
+        res.result,
+        Err(LockKeeperClientError::InvalidSession)
+    ));
 
     Ok(())
 }
@@ -198,7 +201,10 @@ async fn cannot_export_signing_key_after_logout(config: Config) -> Result<()> {
     client.logout().await.result?;
 
     let res = client.export_signing_key(&key_id).await;
-    compare_status_errors(res, Status::unauthenticated(NO_SESSION))?;
+    assert!(matches!(
+        res.result,
+        Err(LockKeeperClientError::InvalidSession)
+    ));
 
     Ok(())
 }

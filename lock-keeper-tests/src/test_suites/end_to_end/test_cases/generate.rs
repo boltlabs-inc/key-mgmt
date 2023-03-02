@@ -1,15 +1,14 @@
 use colored::Colorize;
 use lock_keeper::types::{audit_event::EventStatus, operations::ClientAction};
-use lock_keeper_client::Config;
-use tonic::Status;
+use lock_keeper_client::{Config, LockKeeperClientError};
 
 use crate::{
     config::TestFilters,
     error::Result,
     run_parallel,
     test_suites::end_to_end::{
-        operations::{authenticate, check_audit_events, compare_status_errors},
-        test_cases::{init_test_state, NO_SESSION},
+        operations::{authenticate, check_audit_events},
+        test_cases::init_test_state,
     },
     utils::TestResult,
 };
@@ -52,7 +51,10 @@ async fn cannot_generate_after_logout(config: Config) -> Result<()> {
     client.logout().await.result?;
 
     let res = client.generate_secret().await;
-    compare_status_errors(res, Status::unauthenticated(NO_SESSION))?;
+    assert!(matches!(
+        res.result,
+        Err(LockKeeperClientError::InvalidSession)
+    ));
 
     Ok(())
 }

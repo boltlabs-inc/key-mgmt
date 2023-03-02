@@ -13,7 +13,6 @@ pub mod remote_sign;
 pub mod retrieve;
 
 pub(crate) const NO_ENTRY_FOUND: &str = "No such entry in table.";
-pub(crate) const NO_SESSION: &str = "No session for this user";
 pub(crate) const WRONG_KEY_DATA: &str =
     "Key ID exists but associated user ID or key type were incorrect.";
 
