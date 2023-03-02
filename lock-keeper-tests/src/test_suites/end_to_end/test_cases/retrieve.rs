@@ -3,7 +3,7 @@ use lock_keeper::types::{
     audit_event::EventStatus,
     operations::{retrieve_secret::RetrieveContext, ClientAction},
 };
-use lock_keeper_client::{api::GenerateResult, Config};
+use lock_keeper_client::{api::GenerateResult, Config, LockKeeperClientError};
 use rand::Rng;
 use tonic::Status;
 
@@ -12,11 +12,8 @@ use crate::{
     error::Result,
     run_parallel,
     test_suites::end_to_end::{
-        operations::{
-            authenticate, check_audit_events, compare_errors, compare_status_errors,
-            generate_fake_key_id,
-        },
-        test_cases::{init_test_state, NO_ENTRY_FOUND, NO_SESSION},
+        operations::{authenticate, check_audit_events, compare_errors, generate_fake_key_id},
+        test_cases::{init_test_state, NO_ENTRY_FOUND},
     },
     utils::TestResult,
 };
@@ -128,7 +125,10 @@ async fn cannot_retrieve_after_logout(config: Config) -> Result<()> {
     client.logout().await.result?;
 
     let res = client.retrieve_secret(&key_id, RetrieveContext::Null).await;
-    compare_status_errors(res, Status::unauthenticated(NO_SESSION))?;
+    assert!(matches!(
+        res.result,
+        Err(LockKeeperClientError::InvalidSession)
+    ));
 
     Ok(())
 }
