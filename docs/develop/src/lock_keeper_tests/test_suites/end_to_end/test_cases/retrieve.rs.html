@@ -205,7 +205,7 @@
     audit_event::EventStatus,
     operations::{retrieve_secret::RetrieveContext, ClientAction},
 };
-<span class="kw">use </span>lock_keeper_client::{api::GenerateResult, Config};
+<span class="kw">use </span>lock_keeper_client::{api::GenerateResult, Config, LockKeeperClientError};
 <span class="kw">use </span>rand::Rng;
 <span class="kw">use </span>tonic::Status;
 
@@ -214,11 +214,8 @@
     error::Result,
     run_parallel,
     test_suites::end_to_end::{
-        operations::{
-            authenticate, check_audit_events, compare_errors, compare_status_errors,
-            generate_fake_key_id,
-        },
-        test_cases::{init_test_state, NO_ENTRY_FOUND, NO_SESSION},
+        operations::{authenticate, check_audit_events, compare_errors, generate_fake_key_id},
+        test_cases::{init_test_state, NO_ENTRY_FOUND},
     },
     utils::TestResult,
 };
@@ -330,7 +327,10 @@
     client.logout().<span class="kw">await</span>.result<span class="question-mark">?</span>;
 
     <span class="kw">let </span>res = client.retrieve_secret(<span class="kw-2">&amp;</span>key_id, RetrieveContext::Null).<span class="kw">await</span>;
-    compare_status_errors(res, Status::unauthenticated(NO_SESSION))<span class="question-mark">?</span>;
+    <span class="macro">assert!</span>(<span class="macro">matches!</span>(
+        res.result,
+        <span class="prelude-val">Err</span>(LockKeeperClientError::InvalidSession)
+    ));
 
     <span class="prelude-val">Ok</span>(())
 }

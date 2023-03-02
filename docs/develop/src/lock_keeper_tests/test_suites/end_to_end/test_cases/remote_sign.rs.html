@@ -79,14 +79,15 @@
 <a href="#79" id="79">79</a>
 <a href="#80" id="80">80</a>
 <a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
 </pre><pre class="rust"><code><span class="kw">use </span>colored::Colorize;
 <span class="kw">use </span>lock_keeper::{
     crypto::{Signable, SignableBytes},
     types::{audit_event::EventStatus, operations::ClientAction},
 };
-<span class="kw">use </span>lock_keeper_client::{api::RemoteGenerateResult, Config};
+<span class="kw">use </span>lock_keeper_client::{api::RemoteGenerateResult, Config, LockKeeperClientError};
 <span class="kw">use </span>rand::{rngs::StdRng, SeedableRng};
-<span class="kw">use </span>tonic::Status;
 <span class="kw">use </span>uuid::Uuid;
 
 <span class="kw">use crate</span>::{
@@ -94,8 +95,8 @@
     error::Result,
     run_parallel,
     test_suites::end_to_end::{
-        operations::{authenticate, check_audit_events, compare_status_errors},
-        test_cases::{init_test_state, NO_SESSION},
+        operations::{authenticate, check_audit_events},
+        test_cases::init_test_state,
     },
     utils::{<span class="self">self</span>, TestResult, RNG_SEED},
 };
@@ -156,7 +157,10 @@
     <span class="kw">let </span><span class="kw-2">mut </span>rng = StdRng::from_seed(<span class="kw-2">*</span>RNG_SEED);
     <span class="kw">let </span>data = SignableBytes(utils::random_bytes(<span class="kw-2">&amp;mut </span>rng, <span class="number">100</span>));
     <span class="kw">let </span>res = client.remote_sign_bytes(res.key_id, data).<span class="kw">await</span>;
-    compare_status_errors(res, Status::unauthenticated(NO_SESSION))<span class="question-mark">?</span>;
+    <span class="macro">assert!</span>(<span class="macro">matches!</span>(
+        res.result,
+        <span class="prelude-val">Err</span>(LockKeeperClientError::InvalidSession)
+    ));
 
     <span class="prelude-val">Ok</span>(())
 }

@@ -87,6 +87,9 @@
 <a href="#87" id="87">87</a>
 <a href="#88" id="88">88</a>
 <a href="#89" id="89">89</a>
+<a href="#90" id="90">90</a>
+<a href="#91" id="91">91</a>
+<a href="#92" id="92">92</a>
 </pre><pre class="rust"><code><span class="kw">use </span>lock_keeper::LockKeeperError;
 <span class="kw">use </span>thiserror::Error;
 <span class="kw">use </span>tonic::{Code, Status};
@@ -116,6 +119,8 @@
     </span>InvalidLogin,
     <span class="attr">#[error(<span class="string">&quot;Invalid key retrieved&quot;</span>)]
     </span>InvalidKeyRetrieved,
+    <span class="attr">#[error(<span class="string">&quot;Session is expired or invalid&quot;</span>)]
+    </span>InvalidSession,
     <span class="attr">#[error(<span class="string">&quot;An unauthenticated channel is needed for this action&quot;</span>)]
     </span>UnauthenticatedChannelNeeded,
     <span class="attr">#[error(<span class="string">&quot;An authenticated channel is needed for this action&quot;</span>)]
@@ -159,6 +164,7 @@
         <span class="kw">match </span>(status.code(), status.message()) {
             (Code::InvalidArgument, <span class="string">&quot;Account already registered&quot;</span>) =&gt; <span class="self">Self</span>::AccountAlreadyRegistered,
             (Code::InvalidArgument, <span class="string">&quot;Invalid account&quot;</span>) =&gt; <span class="self">Self</span>::InvalidAccount,
+            (Code::Unauthenticated, <span class="kw">_</span>) =&gt; <span class="self">Self</span>::InvalidSession,
             (Code::Unknown, <span class="string">&quot;connection error: received fatal alert: CertificateRequired&quot;</span>) =&gt; {
                 <span class="self">Self</span>::ClientAuthMissing
             }
