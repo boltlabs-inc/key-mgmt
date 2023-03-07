@@ -23,7 +23,8 @@ VALUES
     (13, 'RetrieveSigningKey'),
     (14, 'RetrieveStorageKey'),
     (15, 'RetrieveServerEncryptedBlob'),
-    (16, 'StoreSererEncryptedBlob')
+    (16, 'StoreSererEncryptedBlob'),
+    (17, 'CheckSession')
 ON CONFLICT (client_action_id) DO NOTHING;
 
 -- Maps secret types to unique ID

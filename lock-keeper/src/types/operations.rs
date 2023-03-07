@@ -47,6 +47,7 @@ pub enum ClientAction {
     RetrieveStorageKey = 14,
     RetrieveServerEncryptedBlob = 15,
     StoreServerEncryptedBlob = 16,
+    CheckSession = 17,
 }
 
 impl TryFrom<i64> for ClientAction {
@@ -83,6 +84,7 @@ impl TryFrom<i64> for ClientAction {
             x if x == ClientAction::StoreServerEncryptedBlob as i64 => {
                 Ok(ClientAction::StoreServerEncryptedBlob)
             }
+            x if x == ClientAction::CheckSession as i64 => Ok(ClientAction::CheckSession),
             // Return value of offending integer.
             _ => Err(v),
         }

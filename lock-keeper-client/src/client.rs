@@ -247,6 +247,11 @@ impl LockKeeperClient {
             | ClientAction::StoreServerEncryptedBlob => {
                 return Err(LockKeeperClientError::AuthenticatedChannelNeeded)
             }
+
+            // These actions do not require a channel
+            ClientAction::CheckSession => {
+                return Err(LockKeeperClientError::OperationDoesNotRequireChannel)
+            }
         }?;
 
         let mut channel = Channel::new(tx, server_response)?;
@@ -304,6 +309,11 @@ impl LockKeeperClient {
             // These actions generate an error because they should be on an unauthenticated channel
             ClientAction::Authenticate | ClientAction::Register => {
                 return Err(LockKeeperClientError::UnauthenticatedChannelNeeded)
+            }
+
+            // These actions do not require a channel
+            ClientAction::CheckSession => {
+                return Err(LockKeeperClientError::OperationDoesNotRequireChannel)
             }
         }?;
 

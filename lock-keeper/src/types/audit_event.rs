@@ -99,6 +99,7 @@ const ALL_ACTIONS: &[ClientAction] = &[
     ClientAction::RetrieveSigningKey,
     ClientAction::RetrieveStorageKey,
     ClientAction::StoreServerEncryptedBlob,
+    ClientAction::CheckSession,
 ];
 
 const SYSTEM_ONLY_ACTIONS: &[ClientAction] = &[
