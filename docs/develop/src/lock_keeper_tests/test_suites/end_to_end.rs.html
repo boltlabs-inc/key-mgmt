@@ -78,6 +78,13 @@
 <a href="#78" id="78">78</a>
 <a href="#79" id="79">79</a>
 <a href="#80" id="80">80</a>
+<a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
 </pre><pre class="rust"><code><span class="doccomment">//! End-to-end tests
 
 </span><span class="kw">pub mod </span>operations;
@@ -90,7 +97,8 @@
 <span class="kw">use </span>colored::Colorize;
 <span class="kw">use </span>lock_keeper_client::Config;
 <span class="kw">use </span>test_cases::{
-    authenticate, export, generate, import, register, remote_generate, remote_sign, retrieve,
+    authenticate, check_session, export, generate, import, register, remote_generate, remote_sign,
+    retrieve,
 };
 
 <span class="kw">pub async fn </span>run_tests(environments: <span class="kw-2">&amp;</span>Environments) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;TestResult&gt;&gt; {
@@ -116,6 +124,7 @@
 
     <span class="kw">let </span>register_results = register::run_tests(config, filters).<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="kw">let </span>authenticate_results = authenticate::run_tests(config, filters).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>check_session_results = check_session::run_tests(config, filters).<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="kw">let </span>generate_results = generate::run_tests(config, filters).<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="kw">let </span>retrieve_results = retrieve::run_tests(config, filters).<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="kw">let </span>export_results = export::run_tests(config, filters).<span class="kw">await</span><span class="question-mark">?</span>;
@@ -129,6 +138,10 @@
     <span class="macro">println!</span>(
         <span class="string">&quot;authenticate tests {}&quot;</span>,
         report_test_results(<span class="kw-2">&amp;</span>authenticate_results)
+    );
+    <span class="macro">println!</span>(
+        <span class="string">&quot;check session tests: {}&quot;</span>,
+        report_test_results(<span class="kw-2">&amp;</span>check_session_results)
     );
     <span class="macro">println!</span>(<span class="string">&quot;generate tests: {}&quot;</span>, report_test_results(<span class="kw-2">&amp;</span>generate_results));
     <span class="macro">println!</span>(<span class="string">&quot;retrieve tests: {}&quot;</span>, report_test_results(<span class="kw-2">&amp;</span>retrieve_results));
@@ -148,6 +161,7 @@
     <span class="kw">let </span>results = register_results
         .into_iter()
         .chain(authenticate_results)
+        .chain(check_session_results)
         .chain(generate_results)
         .chain(retrieve_results)
         .chain(export_results)

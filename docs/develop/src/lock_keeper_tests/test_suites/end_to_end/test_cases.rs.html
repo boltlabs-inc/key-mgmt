@@ -34,12 +34,14 @@
 <a href="#34" id="34">34</a>
 <a href="#35" id="35">35</a>
 <a href="#36" id="36">36</a>
+<a href="#37" id="37">37</a>
 </pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::utils::tagged;
 <span class="kw">use </span>lock_keeper::types::database::account::AccountName;
 <span class="kw">use </span>lock_keeper_client::{client::Password, Config, LockKeeperClient, LockKeeperClientError};
 <span class="kw">use </span>std::str::FromStr;
 
 <span class="kw">pub mod </span>authenticate;
+<span class="kw">pub mod </span>check_session;
 <span class="kw">pub mod </span>export;
 <span class="kw">pub mod </span>generate;
 <span class="kw">pub mod </span>import;

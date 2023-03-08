@@ -286,6 +286,33 @@
 <a href="#286" id="286">286</a>
 <a href="#287" id="287">287</a>
 <a href="#288" id="288">288</a>
+<a href="#289" id="289">289</a>
+<a href="#290" id="290">290</a>
+<a href="#291" id="291">291</a>
+<a href="#292" id="292">292</a>
+<a href="#293" id="293">293</a>
+<a href="#294" id="294">294</a>
+<a href="#295" id="295">295</a>
+<a href="#296" id="296">296</a>
+<a href="#297" id="297">297</a>
+<a href="#298" id="298">298</a>
+<a href="#299" id="299">299</a>
+<a href="#300" id="300">300</a>
+<a href="#301" id="301">301</a>
+<a href="#302" id="302">302</a>
+<a href="#303" id="303">303</a>
+<a href="#304" id="304">304</a>
+<a href="#305" id="305">305</a>
+<a href="#306" id="306">306</a>
+<a href="#307" id="307">307</a>
+<a href="#308" id="308">308</a>
+<a href="#309" id="309">309</a>
+<a href="#310" id="310">310</a>
+<a href="#311" id="311">311</a>
+<a href="#312" id="312">312</a>
+<a href="#313" id="313">313</a>
+<a href="#314" id="314">314</a>
+<a href="#315" id="315">315</a>
 </pre><pre class="rust"><code><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>channel;
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>context;
 <span class="kw">pub mod </span>database;
@@ -298,13 +325,14 @@
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use </span>operation::Operation;
 <span class="kw">pub use </span>service::start_lock_keeper_server;
 <span class="kw">use </span>tokio_stream::wrappers::ReceiverStream;
-<span class="kw">use </span>tracing::{debug, instrument};
+<span class="kw">use </span>tracing::{debug, info, instrument};
 
 <span class="kw">use crate</span>::{config::Config, error::LockKeeperServerError, operations};
 
 <span class="kw">use </span>lock_keeper::{
-    rpc::{lock_keeper_rpc_server::LockKeeperRpc, HealthCheck},
-    types::{Message, MessageStream},
+    constants::METADATA,
+    rpc::{lock_keeper_rpc_server::LockKeeperRpc, Empty, SessionStatus},
+    types::{operations::RequestMetadata, Message, MessageStream},
 };
 
 <span class="kw">use </span><span class="kw">crate</span>::server::{database::DataStore, session_cache::SessionCache};
@@ -369,8 +397,34 @@
     <span class="kw">type </span>RetrieveAuditEventsStream = MessageStream;
     <span class="kw">type </span>RetrieveStorageKeyStream = MessageStream;
 
-    <span class="kw">async fn </span>health(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="kw">_</span>: Request&lt;HealthCheck&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;HealthCheck&gt;, Status&gt; {
-        <span class="prelude-val">Ok</span>(Response::new(HealthCheck { check: <span class="bool-val">true </span>}))
+    <span class="kw">async fn </span>health(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="kw">_</span>: Request&lt;Empty&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;Empty&gt;, Status&gt; {
+        <span class="prelude-val">Ok</span>(Response::new(Empty {}))
+    }
+
+    <span class="attr">#[instrument(skip_all, err(Debug))]
+    </span><span class="kw">async fn </span>check_session(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        request: Request&lt;Empty&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;SessionStatus&gt;, Status&gt; {
+        <span class="macro">info!</span>(<span class="string">&quot;Checking that the authenticated user has a valid session.&quot;</span>);
+        <span class="kw">let </span>metadata: RequestMetadata = request
+            .metadata()
+            .get(METADATA)
+            .ok_or_else(|| Status::invalid_argument(<span class="string">&quot;Request is missing metadata&quot;</span>))<span class="question-mark">?
+            </span>.try_into()<span class="question-mark">?</span>;
+
+        <span class="kw">let </span>is_session_valid = {
+            <span class="kw">match </span>metadata.session_id() {
+                <span class="prelude-val">Some</span>(id) =&gt; {
+                    <span class="kw">let </span>session_cache = <span class="self">self</span>.session_cache.lock().<span class="kw">await</span>;
+                    session_cache.find_session(<span class="kw-2">*</span>id).<span class="kw">await</span>.is_ok()
+                }
+                <span class="prelude-val">None </span>=&gt; <span class="bool-val">false</span>,
+            }
+        };
+
+        <span class="macro">info!</span>(<span class="string">&quot;Session check complete.&quot;</span>);
+        <span class="prelude-val">Ok</span>(Response::new(SessionStatus { is_session_valid }))
     }
 
     <span class="kw">async fn </span>register(
