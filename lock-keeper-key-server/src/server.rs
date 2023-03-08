@@ -10,13 +10,14 @@ pub(crate) use context::Context;
 pub(crate) use operation::Operation;
 pub use service::start_lock_keeper_server;
 use tokio_stream::wrappers::ReceiverStream;
-use tracing::{debug, instrument};
+use tracing::{debug, info, instrument};
 
 use crate::{config::Config, error::LockKeeperServerError, operations};
 
 use lock_keeper::{
-    rpc::{lock_keeper_rpc_server::LockKeeperRpc, HealthCheck},
-    types::{Message, MessageStream},
+    constants::METADATA,
+    rpc::{lock_keeper_rpc_server::LockKeeperRpc, Empty, SessionStatus},
+    types::{operations::RequestMetadata, Message, MessageStream},
 };
 
 use crate::server::{database::DataStore, session_cache::SessionCache};
@@ -81,8 +82,34 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
     type RetrieveAuditEventsStream = MessageStream;
     type RetrieveStorageKeyStream = MessageStream;
 
-    async fn health(&self, _: Request<HealthCheck>) -> Result<Response<HealthCheck>, Status> {
-        Ok(Response::new(HealthCheck { check: true }))
+    async fn health(&self, _: Request<Empty>) -> Result<Response<Empty>, Status> {
+        Ok(Response::new(Empty {}))
+    }
+
+    #[instrument(skip_all, err(Debug))]
+    async fn check_session(
+        &self,
+        request: Request<Empty>,
+    ) -> Result<Response<SessionStatus>, Status> {
+        info!("Checking that the authenticated user has a valid session.");
+        let metadata: RequestMetadata = request
+            .metadata()
+            .get(METADATA)
+            .ok_or_else(|| Status::invalid_argument("Request is missing metadata"))?
+            .try_into()?;
+
+        let is_session_valid = {
+            match metadata.session_id() {
+                Some(id) => {
+                    let session_cache = self.session_cache.lock().await;
+                    session_cache.find_session(*id).await.is_ok()
+                }
+                None => false,
+            }
+        };
+
+        info!("Session check complete.");
+        Ok(Response::new(SessionStatus { is_session_valid }))
     }
 
     async fn register(

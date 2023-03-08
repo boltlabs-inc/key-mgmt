@@ -33,6 +33,8 @@ pub enum LockKeeperClientError {
     UnauthenticatedChannelNeeded,
     #[error("An authenticated channel is needed for this action")]
     AuthenticatedChannelNeeded,
+    #[error("No channel is needed for this action")]
+    OperationDoesNotRequireChannel,
 
     // Wrapped errors
     #[error(transparent)]

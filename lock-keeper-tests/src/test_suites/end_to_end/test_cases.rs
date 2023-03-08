@@ -4,6 +4,7 @@ use lock_keeper_client::{client::Password, Config, LockKeeperClient, LockKeeperC
 use std::str::FromStr;
 
 pub mod authenticate;
+pub mod check_session;
 pub mod export;
 pub mod generate;
 pub mod import;

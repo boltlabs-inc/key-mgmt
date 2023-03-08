@@ -3,10 +3,11 @@ package lock_keeper_rpc;
 
 service LockKeeperRpc {
   rpc Authenticate (stream Message) returns (stream Message);
+  rpc CheckSession (Empty) returns (SessionStatus);
   rpc CreateStorageKey (stream Message) returns (stream Message);
   rpc GenerateSecret (stream Message) returns (stream Message);
   rpc GetUserId (stream Message) returns (stream Message);
-  rpc Health (HealthCheck) returns (HealthCheck);
+  rpc Health (Empty) returns (Empty);
   rpc ImportSigningKey (stream Message) returns (stream Message);
   rpc Logout (stream Message) returns (stream Message);
   rpc StoreServerEncryptedBlob (stream Message) returns (stream Message);
@@ -23,6 +24,8 @@ message Message {
   bytes content = 1;
 }
 
-message HealthCheck {
-  bool check = 1;
+message Empty {}
+
+message SessionStatus {
+  bool is_session_valid = 1;
 }

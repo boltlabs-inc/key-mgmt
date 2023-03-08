@@ -23,7 +23,9 @@ use crate::{
     LockKeeperResponse,
 };
 use lock_keeper::{
+    constants::METADATA,
     crypto::{Export, Import, KeyId, Secret, Signable, Signature},
+    rpc::SessionStatus,
     types::{
         audit_event::{AuditEvent, AuditEventOptions, EventType},
         database::account::AccountName,
@@ -47,14 +49,14 @@ pub struct LocalStorage<T> {
 }
 
 impl LockKeeperClient {
-    /// Ping the server to make sure it is running and reachable
+    /// Ping the server to make sure it is running and reachable.
     pub async fn health(config: &Config) -> Result<(), LockKeeperClientError> {
-        use lock_keeper::rpc::HealthCheck;
+        use lock_keeper::rpc::Empty;
 
         let mut client = Self::connect(config).await?;
-        match client.health(HealthCheck { check: true }).await {
+        match client.health(Empty {}).await {
             Ok(response) => {
-                if response.into_inner() == (HealthCheck { check: true }) {
+                if response.into_inner() == (Empty {}) {
                     Ok(())
                 } else {
                     Err(LockKeeperClientError::HealthCheckFailed(
@@ -64,6 +66,27 @@ impl LockKeeperClient {
             }
             Err(e) => Err(e.into()),
         }
+    }
+
+    /// Check to see if the client's session is still valid.
+    pub async fn check_session(&self) -> Result<SessionStatus, LockKeeperClientError> {
+        use lock_keeper::rpc::Empty;
+
+        let request_id = Uuid::new_v4();
+        let metadata = self.create_metadata(ClientAction::CheckSession, request_id);
+
+        let mut request = tonic::Request::new(Empty {});
+        let _ = request
+            .metadata_mut()
+            .insert(METADATA, (&metadata).try_into()?);
+
+        let result = self
+            .tonic_client()
+            .check_session(request)
+            .await?
+            .into_inner();
+
+        Ok(result)
     }
 
     /// Expire the current session and session key for this user.
