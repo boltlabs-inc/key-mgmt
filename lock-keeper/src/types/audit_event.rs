@@ -84,6 +84,7 @@ pub enum EventType {
 const ALL_ACTIONS: &[ClientAction] = &[
     ClientAction::Authenticate,
     ClientAction::CreateStorageKey,
+    ClientAction::DeleteKey,
     ClientAction::ExportSecret,
     ClientAction::ExportSigningKey,
     ClientAction::GenerateSecret,
@@ -113,6 +114,7 @@ const SYSTEM_ONLY_ACTIONS: &[ClientAction] = &[
 ];
 
 const KEY_ONLY_ACTIONS: &[ClientAction] = &[
+    ClientAction::DeleteKey,
     ClientAction::ExportSecret,
     ClientAction::ExportSigningKey,
     ClientAction::GenerateSecret,

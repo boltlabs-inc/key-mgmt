@@ -5,6 +5,7 @@ use std::str::FromStr;
 
 pub mod authenticate;
 pub mod check_session;
+pub mod delete_key;
 pub mod export;
 pub mod generate;
 pub mod import;

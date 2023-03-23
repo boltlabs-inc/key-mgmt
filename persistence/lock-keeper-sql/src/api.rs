@@ -73,6 +73,14 @@ impl DataStore for PostgresDB {
         Ok(self.get_secret_impl(account_id, key_id, filter).await?)
     }
 
+    async fn delete_secret(
+        &self,
+        account_id: AccountId,
+        key_id: &KeyId,
+    ) -> Result<(), DatabaseError> {
+        Ok(self.delete_secret_impl(account_id, key_id).await?)
+    }
+
     async fn create_account(
         &self,
         user_id: &UserId,
@@ -304,7 +312,7 @@ impl PostgresDB {
     }
 
     /// This function verifies the user_id and key type matches. Otherwise will
-    /// return a IncorrectAssociatedKeyData error.
+    /// return a IncorrectKeyMetadata error.
     #[instrument(skip_all, err(Debug), fields(account_id=?account_id, key_id=?key_id, filter=?filter))]
     pub(crate) async fn get_secret_impl(
         &self,
@@ -357,6 +365,33 @@ impl PostgresDB {
             }
             Some(secret_db) => Ok(secret_db.try_into()?),
         }
+    }
+
+    /// This function verifies the account_id and key_id match. Otherwise will
+    /// return a NoEntry error.
+    #[instrument(skip_all, err(Debug), fields(account_id=?account_id, key_id=?key_id))]
+    pub(crate) async fn delete_secret_impl(
+        &self,
+        account_id: AccountId,
+        key_id: &KeyId,
+    ) -> Result<(), PostgresError> {
+        debug!("Deleting user secret.");
+
+        let rows_affected = sqlx::query!(
+            r#"DELETE FROM Secrets
+            WHERE account_id=$1 AND key_id=$2"#,
+            account_id.0,
+            key_id.as_bytes()
+        )
+        .execute(&self.connection_pool)
+        .await?
+        .rows_affected();
+
+        if rows_affected == 0 {
+            return Err(PostgresError::NoEntry);
+        }
+
+        Ok(())
     }
 
     #[instrument(skip_all, err(Debug), fields(user_id=?user_id, account_name=?account_name))]
