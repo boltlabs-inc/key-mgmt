@@ -809,7 +809,6 @@
 <a href="#809" id="809">809</a>
 <a href="#810" id="810">810</a>
 <a href="#811" id="811">811</a>
-<a href="#812" id="812">812</a>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{
     crypto::{
         generic::EncryptionKey,
@@ -1417,7 +1416,6 @@
 
         <span class="comment">// Signatures on random messages must verify
         </span><span class="macro">assert!</span>((<span class="number">0</span>..<span class="number">1000</span>)
-            .into_iter()
             .map(|len| -&gt; Vec&lt;u8&gt; { std::iter::repeat_with(|| rng.gen()).take(len).collect() })
             .map(|msg| (msg.sign(<span class="kw-2">&amp;</span>signing_key), msg))
             .all(|(sig, msg)| msg.verify(<span class="kw-2">&amp;</span>public_key, <span class="kw-2">&amp;</span>sig).is_ok()));

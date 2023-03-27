@@ -123,6 +123,9 @@
 <a href="#123" id="123">123</a>
 <a href="#124" id="124">124</a>
 <a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
 </pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::server::{database::DatabaseError, session_cache::SessionCacheError};
 <span class="kw">use </span>std::path::PathBuf;
 <span class="kw">use </span>thiserror::Error;
@@ -136,6 +139,8 @@
     </span>PrivateKeyMissing,
     <span class="attr">#[error(<span class="string">&quot;Remote storage key was not provided.&quot;</span>)]
     </span>RemoteStorageKeyMissing,
+    <span class="attr">#[error(<span class="string">&quot;Opaque server setup was not provided.&quot;</span>)]
+    </span>OpaqueServerSetupNotDefined,
 
     <span class="attr">#[error(<span class="string">&quot;Error in session keys cache.&quot;</span>)]
     </span>SessionCache(<span class="attr">#[from] </span>SessionCacheError),
@@ -239,6 +244,7 @@
             | LockKeeperServerError::Bincode(<span class="kw">_</span>)
             | LockKeeperServerError::OpaqueProtocol(<span class="kw">_</span>)
             | LockKeeperServerError::PrivateKeyMissing
+            | LockKeeperServerError::OpaqueServerSetupNotDefined
             | LockKeeperServerError::RemoteStorageKeyMissing
             | LockKeeperServerError::EnvVar(<span class="kw">_</span>)
             | LockKeeperServerError::Rustls(<span class="kw">_</span>)

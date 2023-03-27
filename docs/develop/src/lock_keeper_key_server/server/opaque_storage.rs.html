@@ -81,6 +81,46 @@
 <a href="#81" id="81">81</a>
 <a href="#82" id="82">82</a>
 <a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
+<a href="#89" id="89">89</a>
+<a href="#90" id="90">90</a>
+<a href="#91" id="91">91</a>
+<a href="#92" id="92">92</a>
+<a href="#93" id="93">93</a>
+<a href="#94" id="94">94</a>
+<a href="#95" id="95">95</a>
+<a href="#96" id="96">96</a>
+<a href="#97" id="97">97</a>
+<a href="#98" id="98">98</a>
+<a href="#99" id="99">99</a>
+<a href="#100" id="100">100</a>
+<a href="#101" id="101">101</a>
+<a href="#102" id="102">102</a>
+<a href="#103" id="103">103</a>
+<a href="#104" id="104">104</a>
+<a href="#105" id="105">105</a>
+<a href="#106" id="106">106</a>
+<a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
+<a href="#109" id="109">109</a>
+<a href="#110" id="110">110</a>
+<a href="#111" id="111">111</a>
+<a href="#112" id="112">112</a>
+<a href="#113" id="113">113</a>
+<a href="#114" id="114">114</a>
+<a href="#115" id="115">115</a>
+<a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
+<a href="#121" id="121">121</a>
+<a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
 </pre><pre class="rust"><code><span class="kw">use </span>lock_keeper::config::opaque::OpaqueCipherSuite;
 <span class="kw">use </span>opaque_ke::{keypair::PrivateKey, Ristretto255, ServerSetup};
 <span class="kw">use </span>rand::rngs::StdRng;
@@ -89,44 +129,65 @@
     io::{Read, Write},
     path::Path,
 };
+<span class="kw">use </span>tracing::log::warn;
 
 <span class="kw">use </span><span class="kw">crate</span>::LockKeeperServerError;
 
-<span class="doccomment">/// Retrieves the [`ServerSetup`] used for OPAQUE authentication, creating it if
-/// it doesn&#39;t already exist.
-///
-/// TODO: replace with decent and secure storage for server keys #56
-</span><span class="kw">pub fn </span>create_or_retrieve_server_key_opaque(
+<span class="doccomment">/// Retrieves the [`ServerSetup`] used for OPAQUE authentication,
+/// On a test environment it can be stored in a file or created upon startup.
+</span><span class="kw">pub fn </span>create_or_retrieve_server_setup_opaque(
     rng: <span class="kw-2">&amp;mut </span>StdRng,
-    opaque_server_key_path: <span class="kw">impl </span>AsRef&lt;Path&gt;,
+    opaque_server_setup_path: <span class="prelude-ty">Option</span>&lt;<span class="kw">impl </span>AsRef&lt;Path&gt;&gt;,
+    opaque_server_setup_bytes: <span class="prelude-ty">Option</span>&lt;Vec&lt;u8&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;ServerSetup&lt;OpaqueCipherSuite, PrivateKey&lt;Ristretto255&gt;&gt;, LockKeeperServerError&gt; {
-    <span class="kw">let </span>server_key_file = File::open(opaque_server_key_path.as_ref());
-    <span class="kw">match </span>server_key_file {
-        <span class="comment">// Server key file doesn&#39;t exist yet, create new
-        </span><span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
-            <span class="kw">let </span>server_setup = ServerSetup::&lt;OpaqueCipherSuite&gt;::new(rng);
-            <span class="kw">let </span>dir = opaque_server_key_path
-                .as_ref()
-                .parent()
-                .ok_or(LockKeeperServerError::InvalidOpaqueDirectory)<span class="question-mark">?</span>;
+    <span class="kw">match </span>opaque_server_setup_bytes {
+        <span class="prelude-val">None </span>=&gt; {
+            <span class="macro">warn!</span>(<span class="string">&quot;Opaque setup not defined in cli. Ensure you are not running in production!&quot;</span>);
+            <span class="kw">match </span>opaque_server_setup_path {
+                <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(LockKeeperServerError::OpaqueServerSetupNotDefined),
+                <span class="prelude-val">Some</span>(opaque_server_setup_path) =&gt; {
+                    <span class="kw">let </span>server_setup_file = File::open(opaque_server_setup_path.as_ref());
+                    <span class="kw">match </span>server_setup_file {
+                        <span class="comment">// Server key file doesn&#39;t exist yet, create new
+                        </span><span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
+                            <span class="kw">let </span>server_setup = ServerSetup::&lt;OpaqueCipherSuite&gt;::new(rng);
+                            <span class="kw">let </span>dir = opaque_server_setup_path
+                                .as_ref()
+                                .parent()
+                                .ok_or(LockKeeperServerError::InvalidOpaqueDirectory)<span class="question-mark">?</span>;
 
-            std::fs::create_dir_all(dir)
-                .map_err(|e| LockKeeperServerError::FileIo(e, dir.to_path_buf()))<span class="question-mark">?</span>;
+                            std::fs::create_dir_all(dir)
+                                .map_err(|e| LockKeeperServerError::FileIo(e, dir.to_path_buf()))<span class="question-mark">?</span>;
 
-            <span class="kw">let </span><span class="kw-2">mut </span>file = File::create(<span class="kw-2">&amp;</span>opaque_server_key_path).map_err(|e| {
-                LockKeeperServerError::FileIo(e, opaque_server_key_path.as_ref().to_path_buf())
-            })<span class="question-mark">?</span>;
+                            <span class="kw">let </span><span class="kw-2">mut </span>file =
+                                File::create(<span class="kw-2">&amp;</span>opaque_server_setup_path).map_err(|e| {
+                                    LockKeeperServerError::FileIo(
+                                        e,
+                                        opaque_server_setup_path.as_ref().to_path_buf(),
+                                    )
+                                })<span class="question-mark">?</span>;
 
-            file.write_all(bincode::serialize(<span class="kw-2">&amp;</span>server_setup)<span class="question-mark">?</span>.as_slice())<span class="question-mark">?</span>;
-            <span class="prelude-val">Ok</span>(server_setup)
+                            file.write_all(bincode::serialize(<span class="kw-2">&amp;</span>server_setup)<span class="question-mark">?</span>.as_slice())<span class="question-mark">?</span>;
+                            <span class="prelude-val">Ok</span>(server_setup)
+                        }
+
+                        <span class="comment">// Server key file does exist!
+                        </span><span class="prelude-val">Ok</span>(<span class="kw-2">mut </span>file) =&gt; {
+                            <span class="kw">let </span><span class="kw-2">mut </span>contents = <span class="macro">vec!</span>[];
+                            <span class="kw">let _ </span>= file.read_to_end(<span class="kw-2">&amp;mut </span>contents)<span class="question-mark">?</span>;
+                            <span class="kw">let </span>server_setup: ServerSetup&lt;
+                                OpaqueCipherSuite,
+                                PrivateKey&lt;Ristretto255&gt;,
+                            &gt; = bincode::deserialize(contents.as_slice())<span class="question-mark">?</span>;
+                            <span class="prelude-val">Ok</span>(server_setup)
+                        }
+                    }
+                }
+            }
         }
-
-        <span class="comment">// Server key file does exist!
-        </span><span class="prelude-val">Ok</span>(<span class="kw-2">mut </span>file) =&gt; {
-            <span class="kw">let </span><span class="kw-2">mut </span>contents = <span class="macro">vec!</span>[];
-            <span class="kw">let _ </span>= file.read_to_end(<span class="kw-2">&amp;mut </span>contents)<span class="question-mark">?</span>;
+        <span class="prelude-val">Some</span>(bytes) =&gt; {
             <span class="kw">let </span>server_setup: ServerSetup&lt;OpaqueCipherSuite, PrivateKey&lt;Ristretto255&gt;&gt; =
-                bincode::deserialize(contents.as_slice())<span class="question-mark">?</span>;
+                bincode::deserialize(bytes.as_ref())<span class="question-mark">?</span>;
             <span class="prelude-val">Ok</span>(server_setup)
         }
     }
@@ -149,16 +210,35 @@
         <span class="comment">// First, the storage key doesn&#39;t exist
         </span><span class="macro">assert!</span>(!Path::new(<span class="kw-2">&amp;</span>key_path).is_file());
 
-        <span class="kw">let </span>server_setup = create_or_retrieve_server_key_opaque(<span class="kw-2">&amp;mut </span>rng, <span class="kw-2">&amp;</span>key_path).unwrap();
+        <span class="kw">let </span>server_setup =
+            create_or_retrieve_server_setup_opaque(<span class="kw-2">&amp;mut </span>rng, <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>key_path), <span class="prelude-val">None</span>).unwrap();
 
         <span class="comment">// Then, it does exist
         </span><span class="macro">assert!</span>(Path::new(<span class="kw-2">&amp;</span>key_path).exists());
 
         <span class="kw">let </span>retrieved_server_setup =
-            create_or_retrieve_server_key_opaque(<span class="kw-2">&amp;mut </span>rng, <span class="kw-2">&amp;</span>key_path).unwrap();
+            create_or_retrieve_server_setup_opaque(<span class="kw-2">&amp;mut </span>rng, <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>key_path), <span class="prelude-val">None</span>).unwrap();
 
         <span class="comment">// Re-retrieving gets the same thing back
         </span><span class="macro">assert_eq!</span>(server_setup, retrieved_server_setup);
+
+        <span class="kw">const </span>SAMPLE_OPAQUE_SERVER_SETUP: <span class="kw-2">&amp;</span>str = <span class="string">&quot;5OYJzN1yWT2GZ7ThPeK3jtQXHjuIj7id6gSirS5Y+/iaAXC5w/nTVzzKHOjx0vZMYMI/IX/t/jyxZAM94U4wgcylgHMV3NxQkA+yI6J4XNqc6xq4oSXOpErA/3bIZuAiwuRqQieTBFYKWHd10mLu7yOWNKyY5aTfiVMQ1GwX8wAaQ+IZA7+MAm73B3NkceIq0bA2bB6v57cbMQJphzkhHy1D8ihI7HO+G2DlYvhGeZzZY2MX3Wwmhw3Agpq3/HYG&quot;</span>;
+        <span class="kw">let </span>opaque_server_setup_bytes = base64::decode(SAMPLE_OPAQUE_SERVER_SETUP).unwrap();
+        <span class="kw">let </span>cli_server_setup = create_or_retrieve_server_setup_opaque(
+            <span class="kw-2">&amp;mut </span>rng,
+            <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>key_path),
+            <span class="prelude-val">Some</span>(opaque_server_setup_bytes),
+        );
+
+        <span class="macro">assert!</span>(
+            cli_server_setup.is_ok(),
+            <span class="string">&quot;{}&quot;</span>,
+            cli_server_setup.unwrap_err()
+        );
+        <span class="macro">assert_eq!</span>(
+            base64::encode(bincode::serialize(<span class="kw-2">&amp;</span>cli_server_setup.unwrap()).unwrap()),
+            SAMPLE_OPAQUE_SERVER_SETUP
+        );
 
         <span class="comment">// Clean up
         </span><span class="macro">assert!</span>(std::fs::remove_file(<span class="kw-2">&amp;</span>key_path).is_ok());

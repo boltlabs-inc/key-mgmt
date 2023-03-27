@@ -420,6 +420,20 @@
 <a href="#420" id="420">420</a>
 <a href="#421" id="421">421</a>
 <a href="#422" id="422">422</a>
+<a href="#423" id="423">423</a>
+<a href="#424" id="424">424</a>
+<a href="#425" id="425">425</a>
+<a href="#426" id="426">426</a>
+<a href="#427" id="427">427</a>
+<a href="#428" id="428">428</a>
+<a href="#429" id="429">429</a>
+<a href="#430" id="430">430</a>
+<a href="#431" id="431">431</a>
+<a href="#432" id="432">432</a>
+<a href="#433" id="433">433</a>
+<a href="#434" id="434">434</a>
+<a href="#435" id="435">435</a>
+<a href="#436" id="436">436</a>
 </pre><pre class="rust"><code><span class="doccomment">//! Implementation of our LockKeeper server.
 //!
 //! ## Logging
@@ -628,6 +642,9 @@
     <span class="doccomment">/// Base64 encoded remote storage key data
     </span><span class="attr">#[clap(long)]
     </span><span class="kw">pub </span>remote_storage_key: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    <span class="doccomment">/// Base64 encoded opaque server key
+    </span><span class="attr">#[clap(long, env=ServerConfig::OPAQUE_SERVER_SETUP)]
+    </span><span class="kw">pub </span>opaque_server_setup: <span class="prelude-ty">Option</span>&lt;String&gt;,
 }
 
 <span class="attr">#[tokio::main]
@@ -653,10 +670,21 @@
         .transpose()
         .unwrap();
 
+    <span class="kw">let </span>opaque_server_setup_bytes = cli
+        .opaque_server_setup
+        .map(String::into_bytes)
+        .map(base64::decode)
+        .transpose()
+        .unwrap();
+
     <span class="kw">let </span>config = Config::from_file(<span class="kw-2">&amp;</span>cli.config)<span class="question-mark">?</span>;
 
-    <span class="kw">let </span>server_config =
-        ServerConfig::from_file(config.server, private_key_bytes, remote_storage_key_bytes)<span class="question-mark">?</span>;
+    <span class="kw">let </span>server_config = ServerConfig::from_file(
+        config.server,
+        private_key_bytes,
+        remote_storage_key_bytes,
+        opaque_server_setup_bytes,
+    )<span class="question-mark">?</span>;
 
     <span class="comment">// We keep `_logging` around for the lifetime of the server. On drop, this value
     // will ensure that our logs are flushed.
