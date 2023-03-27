@@ -313,6 +313,16 @@
 <a href="#313" id="313">313</a>
 <a href="#314" id="314">314</a>
 <a href="#315" id="315">315</a>
+<a href="#316" id="316">316</a>
+<a href="#317" id="317">317</a>
+<a href="#318" id="318">318</a>
+<a href="#319" id="319">319</a>
+<a href="#320" id="320">320</a>
+<a href="#321" id="321">321</a>
+<a href="#322" id="322">322</a>
+<a href="#323" id="323">323</a>
+<a href="#324" id="324">324</a>
+<a href="#325" id="325">325</a>
 </pre><pre class="rust"><code><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>channel;
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>context;
 <span class="kw">pub mod </span>database;
@@ -384,6 +394,7 @@
 </span><span class="kw">impl</span>&lt;DB: DataStore&gt; LockKeeperRpc <span class="kw">for </span>LockKeeperKeyServer&lt;DB&gt; {
     <span class="kw">type </span>AuthenticateStream = MessageStream;
     <span class="kw">type </span>CreateStorageKeyStream = MessageStream;
+    <span class="kw">type </span>DeleteKeyStream = MessageStream;
     <span class="kw">type </span>GenerateSecretStream = MessageStream;
     <span class="kw">type </span>GetUserIdStream = MessageStream;
     <span class="kw">type </span>ImportSigningKeyStream = MessageStream;
@@ -460,6 +471,15 @@
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;<span class="self">Self</span>::CreateStorageKeyStream&gt;, Status&gt; {
         <span class="kw">let </span>(channel, response) = <span class="self">self</span>.create_authenticated_channel(request).<span class="kw">await</span><span class="question-mark">?</span>;
         handle_authenticated_request(operations::CreateStorageKey, <span class="self">self</span>.context(), channel).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(response)
+    }
+
+    <span class="kw">async fn </span>delete_key(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        request: Request&lt;tonic::Streaming&lt;Message&gt;&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Response&lt;<span class="self">Self</span>::DeleteKeyStream&gt;, Status&gt; {
+        <span class="kw">let </span>(channel, response) = <span class="self">self</span>.create_authenticated_channel(request).<span class="kw">await</span><span class="question-mark">?</span>;
+        handle_authenticated_request(operations::DeleteKey, <span class="self">self</span>.context(), channel).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(response)
     }
 

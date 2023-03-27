@@ -507,6 +507,33 @@
 <a href="#507" id="507">507</a>
 <a href="#508" id="508">508</a>
 <a href="#509" id="509">509</a>
+<a href="#510" id="510">510</a>
+<a href="#511" id="511">511</a>
+<a href="#512" id="512">512</a>
+<a href="#513" id="513">513</a>
+<a href="#514" id="514">514</a>
+<a href="#515" id="515">515</a>
+<a href="#516" id="516">516</a>
+<a href="#517" id="517">517</a>
+<a href="#518" id="518">518</a>
+<a href="#519" id="519">519</a>
+<a href="#520" id="520">520</a>
+<a href="#521" id="521">521</a>
+<a href="#522" id="522">522</a>
+<a href="#523" id="523">523</a>
+<a href="#524" id="524">524</a>
+<a href="#525" id="525">525</a>
+<a href="#526" id="526">526</a>
+<a href="#527" id="527">527</a>
+<a href="#528" id="528">528</a>
+<a href="#529" id="529">529</a>
+<a href="#530" id="530">530</a>
+<a href="#531" id="531">531</a>
+<a href="#532" id="532">532</a>
+<a href="#533" id="533">533</a>
+<a href="#534" id="534">534</a>
+<a href="#535" id="535">535</a>
+<a href="#536" id="536">536</a>
 </pre><pre class="rust"><code><span class="doccomment">//! Full implementation of the public API for the Lock Keeper client library.
 //!
 //! This API is designed for use with a local client application - that is, an
@@ -516,6 +543,7 @@
 
 </span><span class="kw">mod </span>authenticate;
 <span class="kw">mod </span>create_storage_key;
+<span class="kw">mod </span>delete_key;
 <span class="kw">mod </span>generate_secret;
 <span class="kw">mod </span>get_user_id;
 <span class="kw">mod </span>import;
@@ -674,6 +702,32 @@
 
         <span class="prelude-val">Ok</span>(())
     }
+
+    <span class="doccomment">/// Delete a key from the key servers.
+    </span><span class="kw">pub async fn </span>delete_key(<span class="kw-2">&amp;</span><span class="self">self</span>, key_id: <span class="kw-2">&amp;</span>KeyId) -&gt; LockKeeperResponse&lt;()&gt; {
+        <span class="kw">let </span>request_id = Uuid::new_v4();
+        LockKeeperResponse {
+            result: <span class="self">self</span>.delete_key_helper(key_id, request_id).<span class="kw">await</span>,
+            metadata: <span class="prelude-val">Some</span>(Metadata { request_id }),
+        }
+    }
+
+    <span class="kw">async fn </span>delete_key_helper(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        key_id: <span class="kw-2">&amp;</span>KeyId,
+        request_id: Uuid,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperClientError&gt; {
+        <span class="kw">let </span>metadata = <span class="self">self</span>.create_metadata(ClientAction::DeleteKey, request_id);
+        <span class="kw">let </span>client_channel = <span class="self">Self</span>::create_authenticated_channel(
+            <span class="kw-2">&amp;mut </span><span class="self">self</span>.tonic_client(),
+            <span class="kw-2">&amp;</span>metadata,
+            <span class="self">self</span>.session_key().clone(),
+            <span class="self">self</span>.rng.clone(),
+        )
+        .<span class="kw">await</span><span class="question-mark">?</span>;
+
+        <span class="self">self</span>.handle_delete_key(client_channel, key_id).<span class="kw">await
+    </span>}
 
     <span class="doccomment">/// Export an arbitrary key from the key servers.
     ///

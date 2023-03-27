@@ -146,6 +146,13 @@
 <a href="#146" id="146">146</a>
 <a href="#147" id="147">147</a>
 <a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
 </pre><pre class="rust"><code><span class="doccomment">//! Database for key-servers.
 //!
 //! This database will hold information on users and the secret material
@@ -228,6 +235,13 @@
         key_id: <span class="kw-2">&amp;</span>KeyId,
         filter: SecretFilter,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;StoredSecret, DatabaseError&gt;;
+
+    <span class="doccomment">/// Delete a [`StoredSecret`] from an [`Account`]&#39;s list of secrets.
+    </span><span class="kw">async fn </span>delete_secret(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        account_id: AccountId,
+        key_id: <span class="kw-2">&amp;</span>KeyId,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), DatabaseError&gt;;
 
     <span class="comment">// User
     </span><span class="doccomment">/// Create a new [`Account`] with their authentication information and

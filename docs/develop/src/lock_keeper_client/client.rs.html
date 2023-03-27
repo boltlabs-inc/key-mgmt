@@ -383,6 +383,8 @@
 <a href="#383" id="383">383</a>
 <a href="#384" id="384">384</a>
 <a href="#385" id="385">385</a>
+<a href="#386" id="386">386</a>
+<a href="#387" id="387">387</a>
 </pre><pre class="rust"><code><span class="doccomment">//! Client object to interact with the key server.
 
 </span><span class="kw">use crate</span>::{
@@ -616,6 +618,7 @@
 
             <span class="comment">// These actions generate an error because they should be on an authenticated channel
             </span>ClientAction::CreateStorageKey
+            | ClientAction::DeleteKey
             | ClientAction::ExportSecret
             | ClientAction::ExportSigningKey
             | ClientAction::GenerateSecret
@@ -671,6 +674,7 @@
         <span class="comment">// Server returns its own channel that is uses to send responses
         </span><span class="kw">let </span>server_response = <span class="kw">match </span>metadata.action() {
             ClientAction::CreateStorageKey =&gt; client.create_storage_key(stream).<span class="kw">await</span>,
+            ClientAction::DeleteKey =&gt; client.delete_key(stream).<span class="kw">await</span>,
             ClientAction::ExportSecret =&gt; client.retrieve_secret(stream).<span class="kw">await</span>,
             ClientAction::ExportSigningKey =&gt; client.retrieve_secret(stream).<span class="kw">await</span>,
             ClientAction::GenerateSecret =&gt; client.generate_secret(stream).<span class="kw">await</span>,

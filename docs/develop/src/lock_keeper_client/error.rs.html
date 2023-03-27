@@ -92,6 +92,8 @@
 <a href="#92" id="92">92</a>
 <a href="#93" id="93">93</a>
 <a href="#94" id="94">94</a>
+<a href="#95" id="95">95</a>
+<a href="#96" id="96">96</a>
 </pre><pre class="rust"><code><span class="kw">use </span>lock_keeper::LockKeeperError;
 <span class="kw">use </span>thiserror::Error;
 <span class="kw">use </span>tonic::{Code, Status};
@@ -111,6 +113,8 @@
 
     <span class="attr">#[error(<span class="string">&quot;Account already registered&quot;</span>)]
     </span>AccountAlreadyRegistered,
+    <span class="attr">#[error(<span class="string">&quot;Delete key failed&quot;</span>)]
+    </span>DeleteKeyFailed,
     <span class="attr">#[error(<span class="string">&quot;Export failed&quot;</span>)]
     </span>ExportFailed,
     <span class="attr">#[error(<span class="string">&quot;Logout failed&quot;</span>)]
