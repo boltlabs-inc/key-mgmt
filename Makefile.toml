@@ -177,3 +177,8 @@ script = { file = "dev/test-pki/generate-test-pki.sh" }
 # Generate remote storage key in the dev/remote-storage-key/gen directory
 [tasks.remote-storage-key]
 script = { file = "dev/remote-storage-key/generate-test-remote-storage-key.sh" }
+
+# Generate and print base64-encoded Opaque Server Setup
+[tasks.opaque-server-setup]
+command = "cargo"
+args = ["run", "--manifest-path", "dev/generate-opaque-server-setup/Cargo.toml"]

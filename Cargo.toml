@@ -9,6 +9,7 @@ members = [
     "persistence/lock-keeper-sql",
     "persistence/lock-keeper-session-cache-sql",
 ]
+exclude = ["dev/generate-opaque-server-setup"]
 
 [workspace.package]
 version = "0.3.0"

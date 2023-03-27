@@ -25,8 +25,10 @@ pub async fn run_tests(filters: &TestFilters) -> Result<Vec<TestResult>> {
         server_config_with_file_private_key_works(),
         server_config_with_manual_private_key_works(),
         server_config_with_manual_remote_storage_key_works(),
+        server_config_with_manual_opaque_server_setup_works(),
         server_config_without_private_key_fails(),
         server_config_without_remote_storage_key_fails(),
+        server_config_without_opaque_server_setup_fails(),
     )?;
 
     println!("config file tests: {}", report_test_results(&results));
@@ -71,7 +73,7 @@ async fn server_config_with_file_private_key_works() -> Result<()> {
     use lock_keeper_key_server::config::{Config as ServerConfig, ConfigFile};
 
     let config_file = ConfigFile::from_str(SERVER_CONFIG_WITH_KEY)?;
-    let config = ServerConfig::from_config_file(config_file, None, None);
+    let config = ServerConfig::from_config_file(config_file, None, None, None);
     assert!(config.is_ok());
 
     Ok(())
@@ -82,7 +84,7 @@ async fn server_config_with_manual_private_key_works() -> Result<()> {
 
     let config_file = ConfigFile::from_str(SERVER_CONFIG_NO_KEY)?;
     let private_key_bytes = SAMPLE_PRIVATE_KEY.to_string().into_bytes();
-    let config = ServerConfig::from_config_file(config_file, Some(private_key_bytes), None);
+    let config = ServerConfig::from_config_file(config_file, Some(private_key_bytes), None, None);
     assert!(config.is_ok());
 
     Ok(())
@@ -94,7 +96,19 @@ async fn server_config_with_manual_remote_storage_key_works() -> Result<()> {
     let config_file = ConfigFile::from_str(SERVER_CONFIG_NO_SSE_KEY)?;
     let sse_key_bytes = SAMPLE_SSE_KEY.to_string().into_bytes();
     println!("{}", sse_key_bytes.len());
-    let config = ServerConfig::from_config_file(config_file, None, Some(sse_key_bytes));
+    let config = ServerConfig::from_config_file(config_file, None, Some(sse_key_bytes), None);
+    assert!(config.is_ok(), "{}", config.unwrap_err());
+
+    Ok(())
+}
+
+async fn server_config_with_manual_opaque_server_setup_works() -> Result<()> {
+    use lock_keeper_key_server::config::{Config as ServerConfig, ConfigFile};
+
+    let config_file = ConfigFile::from_str(SERVER_CONFIG_WITH_KEY)?;
+    let opaque_server_setup_bytes = base64::decode(SAMPLE_OPAQUE_SERVER_SETUP).unwrap();
+    let config =
+        ServerConfig::from_config_file(config_file, None, None, Some(opaque_server_setup_bytes));
     assert!(config.is_ok(), "{}", config.unwrap_err());
 
     Ok(())
@@ -104,7 +118,7 @@ async fn server_config_without_private_key_fails() -> Result<()> {
     use lock_keeper_key_server::config::{Config as ServerConfig, ConfigFile};
 
     let config_file = ConfigFile::from_str(SERVER_CONFIG_NO_KEY)?;
-    let config = ServerConfig::from_config_file(config_file, None, None);
+    let config = ServerConfig::from_config_file(config_file, None, None, None);
     assert!(matches!(
         config,
         Err(LockKeeperServerError::PrivateKeyMissing)
@@ -117,10 +131,23 @@ async fn server_config_without_remote_storage_key_fails() -> Result<()> {
     use lock_keeper_key_server::config::{Config as ServerConfig, ConfigFile};
 
     let config_file = ConfigFile::from_str(SERVER_CONFIG_NO_SSE_KEY)?;
-    let config = ServerConfig::from_config_file(config_file, None, None);
+    let config = ServerConfig::from_config_file(config_file, None, None, None);
     assert!(matches!(
         config,
         Err(LockKeeperServerError::RemoteStorageKeyMissing)
+    ));
+
+    Ok(())
+}
+
+async fn server_config_without_opaque_server_setup_fails() -> Result<()> {
+    use lock_keeper_key_server::config::{Config as ServerConfig, ConfigFile};
+
+    let config_file = ConfigFile::from_str(SERVER_CONFIG_NO_OPAQUE)?;
+    let config = ServerConfig::from_config_file(config_file, None, None, None);
+    assert!(matches!(
+        config,
+        Err(LockKeeperServerError::OpaqueServerSetupNotDefined)
     ));
 
     Ok(())
@@ -165,6 +192,23 @@ address = "127.0.0.1"
 port = 1114
 opaque_path = "dev/opaque"
 opaque_server_key = "dev/opaque/server_setup"
+max_blob_size = 1024
+
+[tls_config]
+private_key = "dev/test-pki/gen/certs/server.key"
+certificate_chain = "dev/test-pki/gen/certs/server.chain"
+client_auth = true
+
+[logging]
+lock_keeper_logs_file_name = "/app/logs/server.log"
+all_logs_file_name = "/app/logs/all.log"
+"#;
+
+const SERVER_CONFIG_NO_OPAQUE: &str = r#"
+address = "127.0.0.1"
+port = 1114
+opaque_path = "dev/opaque"
+remote_storage_key = "dev/remote-storage-key/gen/remote_storage.key"
 max_blob_size = 1024
 
 [tls_config]
@@ -227,3 +271,5 @@ XrqXH4XVk0PdxqQL0Ntny3OZT0QCnAFMIzs5Tb1hZy6mwOgXcOSOo+qs0l0ckvX3
 "#;
 
 const SAMPLE_SSE_KEY: &str = "32randombytes-As test!#$%^-\\_^^/";
+
+const SAMPLE_OPAQUE_SERVER_SETUP: &str = "5OYJzN1yWT2GZ7ThPeK3jtQXHjuIj7id6gSirS5Y+/iaAXC5w/nTVzzKHOjx0vZMYMI/IX/t/jyxZAM94U4wgcylgHMV3NxQkA+yI6J4XNqc6xq4oSXOpErA/3bIZuAiwuRqQieTBFYKWHd10mLu7yOWNKyY5aTfiVMQ1GwX8wAaQ+IZA7+MAm73B3NkceIq0bA2bB6v57cbMQJphzkhHy1D8ihI7HO+G2DlYvhGeZzZY2MX3Wwmhw3Agpq3/HYG";

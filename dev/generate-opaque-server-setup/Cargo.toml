@@ -1,0 +1,12 @@
+[package]
+name = "generate-opaque-server-setup"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+lock-keeper = { path = "../../lock-keeper" }
+
+base64 = "0.13"
+bincode = "1"
+opaque-ke = {version = "2.0.0-pre.2", features = ["argon2"]}
+rand = "0"
