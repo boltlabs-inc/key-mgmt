@@ -605,7 +605,6 @@ mod test {
 
         // Signatures on random messages must verify
         assert!((0..1000)
-            .into_iter()
             .map(|len| -> Vec<u8> { std::iter::repeat_with(|| rng.gen()).take(len).collect() })
             .map(|msg| (msg.sign(&signing_key), msg))
             .all(|(sig, msg)| msg.verify(&public_key, &sig).is_ok()));

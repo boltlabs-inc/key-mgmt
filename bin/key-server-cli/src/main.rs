@@ -206,6 +206,9 @@ pub struct Cli {
     /// Base64 encoded remote storage key data
     #[clap(long)]
     pub remote_storage_key: Option<String>,
+    /// Base64 encoded opaque server key
+    #[clap(long, env=ServerConfig::OPAQUE_SERVER_SETUP)]
+    pub opaque_server_setup: Option<String>,
 }
 
 #[tokio::main]
@@ -231,10 +234,21 @@ pub async fn run_main() -> Result<(), LockKeeperServerError> {
         .transpose()
         .unwrap();
 
+    let opaque_server_setup_bytes = cli
+        .opaque_server_setup
+        .map(String::into_bytes)
+        .map(base64::decode)
+        .transpose()
+        .unwrap();
+
     let config = Config::from_file(&cli.config)?;
 
-    let server_config =
-        ServerConfig::from_file(config.server, private_key_bytes, remote_storage_key_bytes)?;
+    let server_config = ServerConfig::from_file(
+        config.server,
+        private_key_bytes,
+        remote_storage_key_bytes,
+        opaque_server_setup_bytes,
+    )?;
 
     // We keep `_logging` around for the lifetime of the server. On drop, this value
     // will ensure that our logs are flushed.

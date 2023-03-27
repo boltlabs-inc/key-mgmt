@@ -42,3 +42,4 @@ tower = "0.4"
 
 [dev-dependencies]
 generic-array.workspace = true
+base64 = "0.13"

@@ -14,7 +14,9 @@ use std::{
     str::FromStr,
 };
 
-use crate::{server::opaque_storage::create_or_retrieve_server_key_opaque, LockKeeperServerError};
+use crate::{
+    server::opaque_storage::create_or_retrieve_server_setup_opaque, LockKeeperServerError,
+};
 
 /// Server configuration with all fields ready to use
 #[derive(Clone)]
@@ -31,21 +33,30 @@ pub struct Config {
 }
 
 impl Config {
+    pub const OPAQUE_SERVER_SETUP: &'static str = "OPAQUE_SERVER_SETUP";
+
     pub fn from_file(
         config_path: impl AsRef<Path>,
         private_key_bytes: Option<Vec<u8>>,
         remote_storage_key_bytes: Option<Vec<u8>>,
+        opaque_server_setup_bytes: Option<Vec<u8>>,
     ) -> Result<Self, LockKeeperServerError> {
         let config_string = std::fs::read_to_string(&config_path)
             .map_err(|e| LockKeeperServerError::FileIo(e, config_path.as_ref().to_path_buf()))?;
         let config_file = ConfigFile::from_str(&config_string)?;
-        Self::from_config_file(config_file, private_key_bytes, remote_storage_key_bytes)
+        Self::from_config_file(
+            config_file,
+            private_key_bytes,
+            remote_storage_key_bytes,
+            opaque_server_setup_bytes,
+        )
     }
 
     pub fn from_config_file(
         config: ConfigFile,
         private_key_bytes: Option<Vec<u8>>,
         remote_storage_key_bytes: Option<Vec<u8>>,
+        opaque_server_setup_bytes: Option<Vec<u8>>,
     ) -> Result<Self, LockKeeperServerError> {
         let mut rng = StdRng::from_entropy();
 
@@ -55,15 +66,18 @@ impl Config {
             .map(|tc| tc.into_rustls_config(private_key_bytes))
             .transpose()?;
 
+        let opaque_server_setup = create_or_retrieve_server_setup_opaque(
+            &mut rng,
+            config.opaque_server_key,
+            opaque_server_setup_bytes,
+        )?;
+
         Ok(Self {
             remote_storage_key,
             address: config.address,
             port: config.port,
             tls_config,
-            opaque_server_setup: create_or_retrieve_server_key_opaque(
-                &mut rng,
-                config.opaque_server_key,
-            )?,
+            opaque_server_setup,
             logging: config.logging,
             max_blob_size: config.max_blob_size,
         })
@@ -92,7 +106,7 @@ pub struct ConfigFile {
     /// the [`Config`] constructors.
     pub remote_storage_key: Option<PathBuf>,
     pub opaque_path: PathBuf,
-    pub opaque_server_key: PathBuf,
+    pub opaque_server_key: Option<PathBuf>,
     pub logging: LoggingConfig,
     pub tls_config: Option<TlsConfig>,
     pub max_blob_size: u16,
@@ -223,7 +237,7 @@ mod tests {
         assert!(!tls_config.client_auth);
         assert_eq!(opaque_path, PathBuf::from("tests/gen/opaque"));
         assert_eq!(
-            opaque_server_key,
+            opaque_server_key.unwrap(),
             PathBuf::from("tests/gen/opaque/server_setup")
         );
         assert_eq!(max_blob_size, 1024);
