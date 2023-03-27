@@ -292,6 +292,19 @@
     },
     "query": "SELECT count(*) as count FROM Accounts\n                WHERE user_id=$1"
   },
+  "c6f0107e37f43190293ef3ca849ff284ca7d1f266b9fc168284467873246245b": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Bytea"
+        ]
+      }
+    },
+    "query": "DELETE FROM Secrets\n            WHERE account_id=$1 AND key_id=$2"
+  },
   "cc9e4405f5fa1a5a48347e39a92c9f5b07ca0f8012d087523b21844089da0778": {
     "describe": {
       "columns": [

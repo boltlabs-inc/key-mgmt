@@ -231,6 +231,7 @@ impl LockKeeperClient {
 
             // These actions generate an error because they should be on an authenticated channel
             ClientAction::CreateStorageKey
+            | ClientAction::DeleteKey
             | ClientAction::ExportSecret
             | ClientAction::ExportSigningKey
             | ClientAction::GenerateSecret
@@ -286,6 +287,7 @@ impl LockKeeperClient {
         // Server returns its own channel that is uses to send responses
         let server_response = match metadata.action() {
             ClientAction::CreateStorageKey => client.create_storage_key(stream).await,
+            ClientAction::DeleteKey => client.delete_key(stream).await,
             ClientAction::ExportSecret => client.retrieve_secret(stream).await,
             ClientAction::ExportSigningKey => client.retrieve_secret(stream).await,
             ClientAction::GenerateSecret => client.generate_secret(stream).await,

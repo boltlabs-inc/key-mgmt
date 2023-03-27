@@ -69,6 +69,7 @@ impl<DB: DataStore> LockKeeperKeyServer<DB> {
 impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
     type AuthenticateStream = MessageStream;
     type CreateStorageKeyStream = MessageStream;
+    type DeleteKeyStream = MessageStream;
     type GenerateSecretStream = MessageStream;
     type GetUserIdStream = MessageStream;
     type ImportSigningKeyStream = MessageStream;
@@ -145,6 +146,15 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
     ) -> Result<Response<Self::CreateStorageKeyStream>, Status> {
         let (channel, response) = self.create_authenticated_channel(request).await?;
         handle_authenticated_request(operations::CreateStorageKey, self.context(), channel).await?;
+        Ok(response)
+    }
+
+    async fn delete_key(
+        &self,
+        request: Request<tonic::Streaming<Message>>,
+    ) -> Result<Response<Self::DeleteKeyStream>, Status> {
+        let (channel, response) = self.create_authenticated_channel(request).await?;
+        handle_authenticated_request(operations::DeleteKey, self.context(), channel).await?;
         Ok(response)
     }
 

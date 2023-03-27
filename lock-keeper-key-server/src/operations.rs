@@ -1,5 +1,6 @@
 mod authenticate;
 mod create_storage_key;
+mod delete_key;
 mod generate_secret;
 mod get_user_id;
 mod import_signing_key;
@@ -15,6 +16,7 @@ mod store_server_encrypted_blob;
 
 pub use authenticate::Authenticate;
 pub use create_storage_key::CreateStorageKey;
+pub use delete_key::DeleteKey;
 pub use generate_secret::GenerateSecret;
 pub use get_user_id::GetUserId;
 pub use import_signing_key::ImportSigningKey;

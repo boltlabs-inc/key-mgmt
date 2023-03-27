@@ -2,6 +2,7 @@
 
 pub mod authenticate;
 pub mod create_storage_key;
+pub mod delete_key;
 pub mod generate;
 pub mod get_user_id;
 pub mod import;
@@ -48,6 +49,7 @@ pub enum ClientAction {
     RetrieveServerEncryptedBlob = 15,
     StoreServerEncryptedBlob = 16,
     CheckSession = 17,
+    DeleteKey = 18,
 }
 
 impl TryFrom<i64> for ClientAction {
@@ -85,6 +87,7 @@ impl TryFrom<i64> for ClientAction {
                 Ok(ClientAction::StoreServerEncryptedBlob)
             }
             x if x == ClientAction::CheckSession as i64 => Ok(ClientAction::CheckSession),
+            x if x == ClientAction::DeleteKey as i64 => Ok(ClientAction::DeleteKey),
             // Return value of offending integer.
             _ => Err(v),
         }
