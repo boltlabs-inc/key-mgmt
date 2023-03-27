@@ -7,6 +7,7 @@
 
 mod authenticate;
 mod create_storage_key;
+mod delete_key;
 mod generate_secret;
 mod get_user_id;
 mod import;
@@ -164,6 +165,32 @@ impl LockKeeperClient {
             .await?;
 
         Ok(())
+    }
+
+    /// Delete a key from the key servers.
+    pub async fn delete_key(&self, key_id: &KeyId) -> LockKeeperResponse<()> {
+        let request_id = Uuid::new_v4();
+        LockKeeperResponse {
+            result: self.delete_key_helper(key_id, request_id).await,
+            metadata: Some(Metadata { request_id }),
+        }
+    }
+
+    async fn delete_key_helper(
+        &self,
+        key_id: &KeyId,
+        request_id: Uuid,
+    ) -> Result<(), LockKeeperClientError> {
+        let metadata = self.create_metadata(ClientAction::DeleteKey, request_id);
+        let client_channel = Self::create_authenticated_channel(
+            &mut self.tonic_client(),
+            &metadata,
+            self.session_key().clone(),
+            self.rng.clone(),
+        )
+        .await?;
+
+        self.handle_delete_key(client_channel, key_id).await
     }
 
     /// Export an arbitrary key from the key servers.

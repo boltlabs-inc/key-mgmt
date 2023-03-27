@@ -81,6 +81,13 @@ pub trait DataStore: Send + Sync + 'static {
         filter: SecretFilter,
     ) -> Result<StoredSecret, DatabaseError>;
 
+    /// Delete a [`StoredSecret`] from an [`Account`]'s list of secrets.
+    async fn delete_secret(
+        &self,
+        account_id: AccountId,
+        key_id: &KeyId,
+    ) -> Result<(), DatabaseError>;
+
     // User
     /// Create a new [`Account`] with their authentication information and
     /// insert it into the database.
