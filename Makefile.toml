@@ -32,7 +32,6 @@ args = ["compose", "up",
         "--attach", "ks_client_auth",
         "--attach", "ks_nginx",
 ]
-dependencies = ["certs", "remote-storage-key"]
 
 # Start a key server in the background
 [tasks.start-server-detached]
@@ -41,7 +40,6 @@ args = ["compose", "up",
         "--build", "postgres", "nginx", "key_server", "ks_client_auth", "ks_nginx",
         "--wait",
 ]
-dependencies = ["certs", "remote-storage-key"]
 
 # Stop a key server running in the background.
 [tasks.stop-server]
@@ -169,6 +167,10 @@ args = ["run", "--bin", "lock-keeper-client-cli", "--", "--config", "dev/config/
 # Runs all scripts
 [tasks.all-scripts]
 dependencies = ["script-generate", "script-sign", "script-export", "script-import"]
+
+# Run all initial tasks required to start LockKeeper
+[tasks.init]
+dependencies = ["certs", "remote-storage-key"]
 
 # Generate certificates in the dev/certs/gen directory
 [tasks.certs]

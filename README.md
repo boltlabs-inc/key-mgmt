@@ -68,7 +68,13 @@ cargo test --all-features --doc
 
 Integration tests are separated into two categories, end-to-end tests and general integration tests. Both categories require the key server to be running.
 
-Start the server running in the background. This will compile the project from scratch the first time you run it so it will take a while. It should be faster for future runs.
+Before running Lock Keeper for the first time, you will need to generate the necessary certs and keys for the key server. 
+```bash
+cargo make init
+```
+Any time you need to refresh your certs and keys, you can run this command again.
+
+Then, start the server running in the background. This will compile the project from scratch the first time you run it so it will take a while. It should be faster for future runs.
 ```bash
 cargo make start
 ```
