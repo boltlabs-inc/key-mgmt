@@ -39,6 +39,9 @@ jobs:
           command: install
           args: --debug cargo-make
 
+      - name: Initialize certs and keys
+        run: cargo make init
+
       - name: Start Server
         run: cargo make start
           
