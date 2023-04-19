@@ -434,6 +434,18 @@
 <a href="#434" id="434">434</a>
 <a href="#435" id="435">435</a>
 <a href="#436" id="436">436</a>
+<a href="#437" id="437">437</a>
+<a href="#438" id="438">438</a>
+<a href="#439" id="439">439</a>
+<a href="#440" id="440">440</a>
+<a href="#441" id="441">441</a>
+<a href="#442" id="442">442</a>
+<a href="#443" id="443">443</a>
+<a href="#444" id="444">444</a>
+<a href="#445" id="445">445</a>
+<a href="#446" id="446">446</a>
+<a href="#447" id="447">447</a>
+<a href="#448" id="448">448</a>
 </pre><pre class="rust"><code><span class="doccomment">//! Implementation of our LockKeeper server.
 //!
 //! ## Logging
@@ -688,10 +700,7 @@
 
     <span class="comment">// We keep `_logging` around for the lifetime of the server. On drop, this value
     // will ensure that our logs are flushed.
-    </span><span class="kw">let </span>_logging = init_logging(
-        <span class="kw-2">&amp;</span>server_config.logging.all_logs_file_name,
-        <span class="kw-2">&amp;</span>server_config.logging.lock_keeper_logs_file_name,
-    )<span class="question-mark">?</span>;
+    </span><span class="kw">let </span>_logging = init_logging(<span class="kw-2">&amp;</span>server_config)<span class="question-mark">?</span>;
 
     <span class="macro">info!</span>(<span class="string">&quot;Sever started!&quot;</span>);
     <span class="macro">info!</span>(<span class="string">&quot;Logging config settings: {:?}&quot;</span>, server_config.logging);
@@ -794,81 +803,96 @@
 <span class="doccomment">/// Object representing our logging. Should be kept around as our logging
 /// writers return guards that should live for the lifetime of the program. Do
 /// not do anything with the guards. Just make sure they are not dropped!
-</span><span class="kw">struct </span>Logging {
-    _all_layer_guard: WorkerGuard,
-    _server_layer_guard: WorkerGuard,
+</span><span class="attr">#[derive(Default)]
+</span><span class="kw">struct </span>LoggingGuards {
+    _all_layer_guard: <span class="prelude-ty">Option</span>&lt;WorkerGuard&gt;,
+    _server_layer_guard: <span class="prelude-ty">Option</span>&lt;WorkerGuard&gt;,
 }
 
-<span class="doccomment">/// Initialize our logging with three different logging layers:
+<span class="doccomment">/// Initialize our logging with different logging layers:
 /// 1) Log all INFO-level messages (or higher) from our key_server* crates to
-/// standard out. 2) Log all messages (TRACE or higher) from our key_server*
+/// standard out.
+/// 2) (OPTIONAL) Log all messages (TRACE or higher) from our key_server*
 /// crates to the path specified by `server_logs`.
-/// 3) Log all messages ((TRACE or higher) from any crate to the path specified
-/// by `all_logs`.
+/// 3) (OPTIONAL) Log all messages ((TRACE or higher) from any crate to the path
+/// specified by `all_logs`.
 ///
 /// Returns an object which should be kept around for the lifetime of the
 /// program.
-</span><span class="kw">fn </span>init_logging(all_logs: <span class="kw-2">&amp;</span>Path, server_logs: <span class="kw-2">&amp;</span>Path) -&gt; <span class="prelude-ty">Result</span>&lt;Logging, LockKeeperServerError&gt; {
-    <span class="kw">let </span>(all_logs_dir, all_logs_file) = get_paths(all_logs)<span class="question-mark">?</span>;
-    <span class="kw">let </span>(server_logs_dir, server_logs_file) = get_paths(server_logs)<span class="question-mark">?</span>;
-
-    <span class="comment">// Initialize logging. With our three different layers.
-
-    // Log info level events generated from lock keeper into stdout.
+</span><span class="kw">fn </span>init_logging(config: <span class="kw-2">&amp;</span>ServerConfig) -&gt; <span class="prelude-ty">Result</span>&lt;LoggingGuards, LockKeeperServerError&gt; {
+    <span class="comment">// Log info level events generated from lock keeper into stdout.
     </span><span class="kw">let </span>stdout_layer = tracing_subscriber::fmt::layer()
         .pretty()
-        .with_filter(our_targets_filter(Level::INFO));
+        .with_filter(our_targets_filter(config.logging.stdout_log_level));
 
-    <span class="comment">// This layers logs all events into a file.
-    </span><span class="kw">let </span>all_appender = tracing_appender::rolling::hourly(all_logs_dir, all_logs_file);
-    <span class="kw">let </span>(non_blocking, _all_layer_guard) = tracing_appender::non_blocking(all_appender);
-    <span class="kw">let </span>all_layer = tracing_subscriber::fmt::layer()
-        .json()
-        .with_writer(non_blocking);
+    <span class="kw">let </span>logging_guards = <span class="kw">match </span><span class="kw-2">&amp;</span>config.logging.log_files {
+        <span class="prelude-val">Some</span>(file_config) =&gt; {
+            <span class="kw">let </span>(all_logs_dir, all_logs_file) = get_paths(<span class="kw-2">&amp;</span>file_config.all_logs_file_name)<span class="question-mark">?</span>;
+            <span class="kw">let </span>(server_logs_dir, server_logs_file) =
+                get_paths(<span class="kw-2">&amp;</span>file_config.lock_keeper_logs_file_name)<span class="question-mark">?</span>;
 
-    <span class="comment">// Log all events generated from lock keeper into a file.
-    </span><span class="kw">let </span>server_appender = tracing_appender::rolling::hourly(server_logs_dir, server_logs_file);
-    <span class="kw">let </span>(non_blocking, _server_layer_guard) = tracing_appender::non_blocking(server_appender);
-    <span class="kw">let </span>server_layer = tracing_subscriber::fmt::layer()
-        .json()
-        .with_writer(non_blocking)
-        .with_filter(our_targets_filter(Level::TRACE));
+            <span class="comment">// This layers logs all events into a file.
+            </span><span class="kw">let </span>all_appender = tracing_appender::rolling::hourly(all_logs_dir, all_logs_file);
+            <span class="kw">let </span>(non_blocking, _all_layer_guard) = tracing_appender::non_blocking(all_appender);
+            <span class="kw">let </span>all_layer = tracing_subscriber::fmt::layer()
+                .json()
+                .with_writer(non_blocking);
 
-    <span class="comment">// Build our logging subscriber with all three of our layers.
-    </span>tracing_subscriber::registry()
-        .with(stdout_layer)
-        .with(server_layer)
-        .with(all_layer)
-        .init();
+            <span class="comment">// Log all events generated from lock keeper into a file.
+            </span><span class="kw">let </span>server_appender =
+                tracing_appender::rolling::hourly(server_logs_dir, server_logs_file);
+            <span class="kw">let </span>(non_blocking, _server_layer_guard) =
+                tracing_appender::non_blocking(server_appender);
+            <span class="kw">let </span>server_layer = tracing_subscriber::fmt::layer()
+                .json()
+                .with_writer(non_blocking)
+                .with_filter(our_targets_filter(Level::TRACE));
 
-    <span class="kw">return </span><span class="prelude-val">Ok</span>(Logging {
-        _all_layer_guard,
-        _server_layer_guard,
-    });
+            <span class="comment">// Build our logging subscriber with all three of our layers.
+            </span>tracing_subscriber::registry()
+                .with(stdout_layer)
+                .with(server_layer)
+                .with(all_layer)
+                .init();
 
-    <span class="doccomment">/// Return the path directory and the file name. Needed for passing to
-    /// tracing_appender.
-    </span><span class="kw">fn </span>get_paths(path: <span class="kw-2">&amp;</span>Path) -&gt; <span class="prelude-ty">Result</span>&lt;(<span class="kw-2">&amp;</span>Path, <span class="kw-2">&amp;</span>OsStr), LockKeeperServerError&gt; {
-        <span class="kw">let </span>dir = path
-            .parent()
-            .ok_or_else(|| LockKeeperServerError::InvalidLogFilePath(path.into()))<span class="question-mark">?</span>;
+            LoggingGuards {
+                _all_layer_guard: <span class="prelude-val">Some</span>(_all_layer_guard),
+                _server_layer_guard: <span class="prelude-val">Some</span>(_server_layer_guard),
+            }
+        }
+        <span class="prelude-val">None </span>=&gt; {
+            <span class="comment">// Build our logging subscriber with just the stdout layer.
+            </span>tracing_subscriber::registry().with(stdout_layer).init();
 
-        <span class="kw">let </span>file_name = path
-            .file_name()
-            .ok_or_else(|| LockKeeperServerError::InvalidLogFilePath(path.into()))<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>((dir, file_name))
-    }
+            LoggingGuards::default()
+        }
+    };
 
-    <span class="doccomment">/// Create filters for logging events originating from our lock_keeper*
-    /// crates.
-    </span><span class="kw">fn </span>our_targets_filter(level: Level) -&gt; Targets {
-        Targets::new()
-            <span class="comment">// List our different targets here. Anything under our server.
-            </span>.with_target(<span class="string">&quot;key_server_cli&quot;</span>, level)
-            .with_target(<span class="string">&quot;lock_keeper_key_server&quot;</span>, level)
-            .with_target(<span class="string">&quot;lock_keeper&quot;</span>, level)
-            .with_target(<span class="string">&quot;lock_keeper_session_cache_sql&quot;</span>, level)
-    }
+    <span class="prelude-val">Ok</span>(logging_guards)
+}
+
+<span class="doccomment">/// Return the path directory and the file name. Needed for passing to
+/// tracing_appender.
+</span><span class="kw">fn </span>get_paths(path: <span class="kw-2">&amp;</span>Path) -&gt; <span class="prelude-ty">Result</span>&lt;(<span class="kw-2">&amp;</span>Path, <span class="kw-2">&amp;</span>OsStr), LockKeeperServerError&gt; {
+    <span class="kw">let </span>dir = path
+        .parent()
+        .ok_or_else(|| LockKeeperServerError::InvalidLogFilePath(path.into()))<span class="question-mark">?</span>;
+
+    <span class="kw">let </span>file_name = path
+        .file_name()
+        .ok_or_else(|| LockKeeperServerError::InvalidLogFilePath(path.into()))<span class="question-mark">?</span>;
+    <span class="prelude-val">Ok</span>((dir, file_name))
+}
+
+<span class="doccomment">/// Create filters for logging events originating from our lock_keeper*
+/// crates.
+</span><span class="kw">fn </span>our_targets_filter(level: Level) -&gt; Targets {
+    Targets::new()
+        <span class="comment">// List our different targets here. Anything under our server.
+        </span>.with_target(<span class="string">&quot;key_server_cli&quot;</span>, level)
+        .with_target(<span class="string">&quot;lock_keeper_key_server&quot;</span>, level)
+        .with_target(<span class="string">&quot;lock_keeper&quot;</span>, level)
+        .with_target(<span class="string">&quot;lock_keeper_session_cache_sql&quot;</span>, level)
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="key_server_cli" data-themes="" data-resource-suffix="" data-rustdoc-version="1.67.1 (d5a82bbd2 2023-02-07)" data-search-js="search-444266647c4dba98.js" data-settings-js="settings-bebeae96e00e4617.js" data-settings-css="settings-af96d9e2fc13e081.css" ></div></body></html>
