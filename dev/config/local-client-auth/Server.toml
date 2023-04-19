@@ -11,5 +11,4 @@ certificate_chain = "dev/test-pki/gen/certs/server.chain"
 client_auth = true
 
 [logging]
-lock_keeper_logs_file_name = "dev/logs/server.log"
-all_logs_file_name = "dev/logs/all.log"
+stdout_log_level = "INFO"

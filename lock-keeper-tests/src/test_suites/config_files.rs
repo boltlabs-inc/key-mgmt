@@ -183,6 +183,9 @@ certificate_chain = "dev/test-pki/gen/certs/server.chain"
 client_auth = true
 
 [logging]
+stdout_log_level = "INFO"
+
+[logging.log_files]
 lock_keeper_logs_file_name = "/app/logs/server.log"
 all_logs_file_name = "/app/logs/all.log"
 "#;
@@ -200,6 +203,9 @@ certificate_chain = "dev/test-pki/gen/certs/server.chain"
 client_auth = true
 
 [logging]
+stdout_log_level = "INFO"
+
+[logging.log_files]
 lock_keeper_logs_file_name = "/app/logs/server.log"
 all_logs_file_name = "/app/logs/all.log"
 "#;
@@ -217,6 +223,9 @@ certificate_chain = "dev/test-pki/gen/certs/server.chain"
 client_auth = true
 
 [logging]
+stdout_log_level = "INFO"
+
+[logging.log_files]
 lock_keeper_logs_file_name = "/app/logs/server.log"
 all_logs_file_name = "/app/logs/all.log"
 "#;
@@ -235,6 +244,9 @@ certificate_chain = "dev/test-pki/gen/certs/server.chain"
 client_auth = true
 
 [logging]
+stdout_log_level = "INFO"
+
+[logging.log_files]
 lock_keeper_logs_file_name = "/app/logs/server.log"
 all_logs_file_name = "/app/logs/all.log"
 "#;

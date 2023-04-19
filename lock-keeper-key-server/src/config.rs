@@ -8,11 +8,13 @@ use rustls::{
     RootCertStore, ServerConfig,
 };
 use serde::{Deserialize, Serialize};
+use serde_with::{serde_as, DisplayFromStr};
 use std::{
     net::IpAddr,
     path::{Path, PathBuf},
     str::FromStr,
 };
+use tracing::Level;
 
 use crate::{
     server::opaque_storage::create_or_retrieve_server_setup_opaque, LockKeeperServerError,
@@ -137,9 +139,18 @@ impl ConfigFile {
     }
 }
 
+#[serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct LoggingConfig {
+    #[serde_as(as = "DisplayFromStr")]
+    pub stdout_log_level: Level,
+    pub log_files: Option<LoggingFileConfig>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
+pub struct LoggingFileConfig {
     pub lock_keeper_logs_file_name: PathBuf,
     pub all_logs_file_name: PathBuf,
 }
@@ -211,6 +222,9 @@ mod tests {
             client_auth = false
 
             [logging]
+            stdout_log_level = "INFO"
+
+            [logging.log_files]
             lock_keeper_logs_file_name = "./dev/logs/server.log"
             all_logs_file_name = "./dev/logs/all.log"
         "#;
@@ -242,8 +256,11 @@ mod tests {
         );
         assert_eq!(max_blob_size, 1024);
         let expected_log = LoggingConfig {
-            lock_keeper_logs_file_name: "./dev/logs/server.log".parse().unwrap(),
-            all_logs_file_name: "./dev/logs/all.log".parse().unwrap(),
+            stdout_log_level: Level::INFO,
+            log_files: Some(LoggingFileConfig {
+                lock_keeper_logs_file_name: "./dev/logs/server.log".parse().unwrap(),
+                all_logs_file_name: "./dev/logs/all.log".parse().unwrap(),
+            }),
         };
         assert_eq!(logging, expected_log);
     }
