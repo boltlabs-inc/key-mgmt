@@ -10,7 +10,9 @@ private_key = "/app/test-pki/gen/certs/server.key"
 certificate_chain = "/app/test-pki/gen/certs/server.chain"
 client_auth = false
 
-# Point logging to a different directory since these log files will be created under "root" user.
 [logging]
+stdout_log_level = "INFO"
+
+[logging.log_files]
 lock_keeper_logs_file_name = "/app/logs/docker/server.log"
 all_logs_file_name = "/app/logs/docker/all.log"
