@@ -1,14 +1,13 @@
 use colored::Colorize;
 use lock_keeper::types::{audit_event::EventStatus, operations::ClientAction};
-use lock_keeper_client::Config;
-use tonic::Status;
+use lock_keeper_client::{Config, LockKeeperClientError};
 
 use crate::{
     config::TestFilters,
     error::Result,
     run_parallel,
     test_suites::end_to_end::{
-        operations::{authenticate, check_audit_events, compare_status_errors},
+        operations::{authenticate, check_audit_events},
         test_cases::init_test_state,
     },
     utils::TestResult,
@@ -32,13 +31,14 @@ async fn remote_generate_works(config: Config) -> Result<()> {
 
     let remote_gen_res = client.remote_generate().await;
     let request_id = remote_gen_res.metadata.clone().unwrap().request_id;
-    assert!(remote_gen_res.result.is_ok());
+    let key_id = remote_gen_res.result?.key_id;
 
     check_audit_events(
         &state,
         EventStatus::Successful,
         ClientAction::RemoteGenerateSigningKey,
         request_id,
+        Some(key_id),
     )
     .await?;
 
@@ -52,7 +52,10 @@ async fn cannot_remote_generate_after_logout(config: Config) -> Result<()> {
     client.logout().await.result?;
 
     let res = client.remote_generate().await;
-    compare_status_errors(res, Status::unauthenticated("No session key for this user"))?;
+    assert!(matches!(
+        res.result,
+        Err(LockKeeperClientError::InvalidSession)
+    ));
 
     Ok(())
 }

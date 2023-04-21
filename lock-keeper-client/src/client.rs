@@ -1,16 +1,19 @@
 //! Client object to interact with the key server.
 
-use crate::{config::Config, LockKeeperClientError, Result};
+use crate::{
+    channel::{Authenticated, Channel, Unauthenticated},
+    config::Config,
+    LockKeeperClientError, Result,
+};
 use http_body::combinators::UnsyncBoxBody;
 use hyper::client::HttpConnector;
 use hyper_rustls::HttpsConnector;
 use lock_keeper::{
     constants::METADATA,
     crypto::{MasterKey, OpaqueSessionKey, StorageKey},
-    infrastructure::channel::{Authenticated, ClientChannel, Unauthenticated},
     rpc::lock_keeper_rpc_client::LockKeeperRpcClient,
     types::{
-        database::user::{AccountName, UserId},
+        database::account::{AccountName, UserId},
         operations::{
             logout::server as logout_server, retrieve_storage_key::server, ClientAction,
             RequestMetadata,
@@ -118,7 +121,7 @@ impl LockKeeperClient {
             .enable_http2()
             .build();
 
-        let client = hyper::Client::builder().build(connector);
+        let client = hyper::Client::builder().http2_only(true).build(connector);
         let rpc_client = LockKeeperRpcClient::with_origin(client, config.server_uri.clone());
 
         Ok(rpc_client)
@@ -137,16 +140,12 @@ impl LockKeeperClient {
             None => Self::connect(config).await?,
         };
 
-        let metadata = RequestMetadata::new(
-            account_name,
-            ClientAction::Authenticate,
-            None,
-            None,
-            request_id,
-        );
+        let metadata =
+            RequestMetadata::new(account_name, ClientAction::Authenticate, None, request_id);
         let mut rng = StdRng::from_entropy();
         let rng_arc_mutex = Arc::new(Mutex::new(rng));
-        let mut client_channel = Self::create_channel(&mut client, &metadata).await?;
+        let mut client_channel =
+            Self::create_unauthenticated_channel(&mut client, &metadata).await?;
         let mut auth_result = Self::handle_authentication(
             client_channel,
             rng_arc_mutex.clone(),
@@ -159,7 +158,6 @@ impl LockKeeperClient {
         let metadata = RequestMetadata::new(
             account_name,
             ClientAction::GetUserId,
-            None,
             Some(&auth_result.session_id),
             request_id,
         );
@@ -197,23 +195,27 @@ impl LockKeeperClient {
         RequestMetadata::new(
             self.account_name(),
             action,
-            Some(self.user_id()),
             Some(&self.session.session_id),
             request_id,
         )
     }
 
-    /// Helper to create the appropriate [`ClientChannel`] to send to tonic
-    /// handler functions based on the client's action. This function creates
-    /// unauthenticated channels. Use `create_authenticated_channel` to create
-    /// an authenticated channel.
+    /// Create a [`Channel<Unauthenticated>`] object for communicating with the
+    /// server.
     ///
-    /// This function will return an error if the [`ClientAction`] requires
-    /// authentication.
-    pub(crate) async fn create_channel(
+    /// The client will make the proper gRPC call here based on the
+    /// [`ClientAction`]. After this gRPC call our client and server are
+    /// ready to communicate back and forth to complete our cryptographic
+    /// protocols.
+    ///
+    /// This function creates unauthenticated channels. Use
+    /// `create_authenticated_channel` to create an authenticated channel.
+    /// This function will return an error if the [`ClientAction`]
+    /// (contained in `metadata`) requires authentication.
+    pub(crate) async fn create_unauthenticated_channel(
         client: &mut LockKeeperRpcClient<LockKeeperRpcClientInner>,
         metadata: &RequestMetadata,
-    ) -> Result<ClientChannel<Unauthenticated>> {
+    ) -> Result<Channel<Unauthenticated>> {
         // Create channel to send messages to server after connection is established via
         // RPC
         let (tx, rx) = mpsc::channel(2);
@@ -229,6 +231,7 @@ impl LockKeeperClient {
 
             // These actions generate an error because they should be on an authenticated channel
             ClientAction::CreateStorageKey
+            | ClientAction::DeleteKey
             | ClientAction::ExportSecret
             | ClientAction::ExportSigningKey
             | ClientAction::GenerateSecret
@@ -239,29 +242,40 @@ impl LockKeeperClient {
             | ClientAction::RemoteSignBytes
             | ClientAction::RetrieveSecret
             | ClientAction::RetrieveAuditEvents
+            | ClientAction::RetrieveServerEncryptedBlob
             | ClientAction::RetrieveSigningKey
-            | ClientAction::RetrieveStorageKey => {
+            | ClientAction::RetrieveStorageKey
+            | ClientAction::StoreServerEncryptedBlob => {
                 return Err(LockKeeperClientError::AuthenticatedChannelNeeded)
+            }
+
+            // These actions do not require a channel
+            ClientAction::CheckSession => {
+                return Err(LockKeeperClientError::OperationDoesNotRequireChannel)
             }
         }?;
 
-        let mut channel = ClientChannel::new(tx, server_response)?;
+        let mut channel = Channel::new(tx, server_response)?;
         Ok(channel)
     }
 
-    /// Helper to create the appropriate [`ClientChannel`] to send to tonic
-    /// handler functions based on the client's action. This function creates
-    /// authenticated channels. Use `create_channel` to create
-    /// an unauthenticated channel.
+    /// Create a [`Channel<Authenticated<StdRng>>`] object for communicating
+    /// with the server.
     ///
-    /// This function will return an error if the [`ClientAction`] requires
-    /// an unauthenticated channel.
+    /// The client will make the proper gRPC call here based on the
+    /// [`ClientAction`]. After this gRPC call our client and server are
+    /// ready to communicate back and forth to complete our cryptographic
+    /// protocols.
+    ///
+    /// This function creates authenticated channels. This function will return
+    /// an error if the [`ClientAction`] (contained in `metadata`) does not
+    /// need authentication.
     pub(crate) async fn create_authenticated_channel(
         client: &mut LockKeeperRpcClient<LockKeeperRpcClientInner>,
         metadata: &RequestMetadata,
         session_key: OpaqueSessionKey,
         rng: Arc<Mutex<StdRng>>,
-    ) -> Result<ClientChannel<Authenticated<StdRng>>> {
+    ) -> Result<Channel<Authenticated<StdRng>>> {
         // Create channel to send messages to server after connection is established via
         // RPC
         let (tx, rx) = mpsc::channel(2);
@@ -273,6 +287,7 @@ impl LockKeeperClient {
         // Server returns its own channel that is uses to send responses
         let server_response = match metadata.action() {
             ClientAction::CreateStorageKey => client.create_storage_key(stream).await,
+            ClientAction::DeleteKey => client.delete_key(stream).await,
             ClientAction::ExportSecret => client.retrieve_secret(stream).await,
             ClientAction::ExportSigningKey => client.retrieve_secret(stream).await,
             ClientAction::GenerateSecret => client.generate_secret(stream).await,
@@ -282,19 +297,30 @@ impl LockKeeperClient {
             ClientAction::Register => client.register(stream).await,
             ClientAction::RemoteGenerateSigningKey => client.remote_generate(stream).await,
             ClientAction::RemoteSignBytes => client.remote_sign_bytes(stream).await,
+            ClientAction::RetrieveServerEncryptedBlob => {
+                client.retrieve_server_encrypted_blob(stream).await
+            }
             ClientAction::RetrieveSecret => client.retrieve_secret(stream).await,
             ClientAction::RetrieveAuditEvents => client.retrieve_audit_events(stream).await,
             ClientAction::RetrieveSigningKey => client.retrieve_secret(stream).await,
             ClientAction::RetrieveStorageKey => client.retrieve_storage_key(stream).await,
+            ClientAction::StoreServerEncryptedBlob => {
+                client.store_server_encrypted_blob(stream).await
+            }
 
             // These actions generate an error because they should be on an unauthenticated channel
             ClientAction::Authenticate | ClientAction::Register => {
                 return Err(LockKeeperClientError::UnauthenticatedChannelNeeded)
             }
+
+            // These actions do not require a channel
+            ClientAction::CheckSession => {
+                return Err(LockKeeperClientError::OperationDoesNotRequireChannel)
+            }
         }?;
 
         let mut channel =
-            ClientChannel::new(tx, server_response)?.into_authenticated(session_key, rng.clone());
+            Channel::new(tx, server_response)?.into_authenticated(session_key, rng.clone());
         Ok(channel)
     }
 

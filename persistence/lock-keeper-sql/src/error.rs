@@ -1,8 +1,11 @@
+use lock_keeper_key_server::server::database::DatabaseError;
 use std::{array::TryFromSliceError, path::PathBuf};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum PostgresError {
+    #[error("Failed to connect to database after maximum number of attempts")]
+    ExceededMaxConnectionAttempts,
     #[error("sqlx error")]
     Sqlx(#[from] sqlx::Error),
     #[error("Could not serialize/deserialize data to/from databases.")]
@@ -16,9 +19,9 @@ pub enum PostgresError {
     #[error("Unexpected number of rows returned.")]
     InvalidRowCountFound,
     #[error("Key ID exists but associated user ID or key type were incorrect.")]
-    IncorrectAssociatedKeyData,
+    IncorrectKeyMetadata,
     #[error("Empty iterator for append_value_list function.")]
-    EmptyIterator,
+    InvalidAuditEventOptions,
     #[error("Config file error.")]
     ConfigError(#[from] ConfigError),
 }
@@ -33,4 +36,16 @@ pub enum ConfigError {
     MissingUsername,
     #[error("Missing database password.")]
     MissingPassword,
+}
+
+impl From<PostgresError> for DatabaseError {
+    fn from(error: PostgresError) -> Self {
+        match error {
+            PostgresError::InvalidRowCountFound => Self::InvalidRowCountFound,
+            PostgresError::NoEntry => Self::NoEntry,
+            PostgresError::InvalidAuditEventOptions => Self::InvalidAuditEventOptions,
+            PostgresError::IncorrectKeyMetadata => Self::IncorrectKeyMetadata,
+            _ => Self::InternalDatabaseError(error.to_string()),
+        }
+    }
 }

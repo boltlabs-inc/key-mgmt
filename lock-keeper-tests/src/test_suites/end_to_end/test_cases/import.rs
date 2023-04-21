@@ -1,14 +1,13 @@
 use colored::Colorize;
 use lock_keeper::types::{audit_event::EventStatus, operations::ClientAction};
-use lock_keeper_client::Config;
-use tonic::Status;
+use lock_keeper_client::{Config, LockKeeperClientError};
 
 use crate::{
     config::TestFilters,
     error::Result,
     run_parallel,
     test_suites::end_to_end::{
-        operations::{authenticate, check_audit_events, compare_status_errors, import_signing_key},
+        operations::{authenticate, check_audit_events, import_signing_key},
         test_cases::init_test_state,
     },
     utils::TestResult,
@@ -32,12 +31,13 @@ async fn import_works(config: Config) -> Result<()> {
 
     let import_res = import_signing_key(&client).await;
     let request_id = import_res.metadata.unwrap().request_id;
-    assert!(import_res.result.is_ok());
+    let key_id = import_res.result?.0;
     check_audit_events(
         &state,
         EventStatus::Successful,
         ClientAction::ImportSigningKey,
         request_id,
+        Some(key_id),
     )
     .await?;
 
@@ -51,7 +51,10 @@ async fn cannot_import_after_logout(config: Config) -> Result<()> {
     client.logout().await.result?;
 
     let res = import_signing_key(&client).await;
-    compare_status_errors(res, Status::unauthenticated("No session key for this user"))?;
+    assert!(matches!(
+        res.result,
+        Err(LockKeeperClientError::InvalidSession)
+    ));
 
     Ok(())
 }

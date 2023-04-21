@@ -8,7 +8,7 @@ use std::{
     time::Duration,
 };
 
-#[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq)]
+#[derive(Clone, Deserialize, Serialize, Eq, PartialEq)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct ConfigFile {
     /// Optional, convenience field for specifying the username. Should only be
@@ -20,6 +20,9 @@ pub struct ConfigFile {
     pub address: String,
     pub db_name: String,
     pub max_connections: u32,
+    pub connection_retries: u32,
+    #[serde(with = "humantime_serde")]
+    pub connection_retry_delay: Duration,
     #[serde(with = "humantime_serde")]
     pub connection_timeout: Duration,
 }
@@ -30,6 +33,21 @@ impl ConfigFile {
             ConfigError::ConfigFileReadFailure(e, config_path.as_ref().to_path_buf())
         })?;
         Self::from_str(&config_string)
+    }
+}
+
+impl Debug for ConfigFile {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Config")
+            .field("username", &"REDACTED")
+            .field("password", &"REDACTED")
+            .field("address", &self.address)
+            .field("db_name", &self.db_name)
+            .field("max_connections", &self.max_connections)
+            .field("connection_retries", &self.connection_retries)
+            .field("connection_retry_delay", &self.connection_retry_delay)
+            .field("connection_timeout", &self.connection_timeout)
+            .finish()
     }
 }
 
@@ -49,6 +67,8 @@ pub struct Config {
     /// Name of database. Appended to URI to make the full path.
     pub db_name: String,
     pub max_connections: u32,
+    pub connection_retries: u32,
+    pub connection_retry_delay: Duration,
     pub connection_timeout: Duration,
 }
 
@@ -60,6 +80,8 @@ impl Debug for Config {
             .field("address", &self.address)
             .field("db_name", &self.db_name)
             .field("max_connections", &self.max_connections)
+            .field("connection_retries", &self.connection_retries)
+            .field("connection_retry_delay", &self.connection_retry_delay)
             .field("connection_timeout", &self.connection_timeout)
             .finish()
     }
@@ -89,6 +111,8 @@ impl TryFrom<ConfigFile> for Config {
             address: config.address,
             db_name: config.db_name,
             max_connections: config.max_connections,
+            connection_retries: config.connection_retries,
+            connection_retry_delay: config.connection_retry_delay,
             connection_timeout: config.connection_timeout,
         };
 
@@ -108,6 +132,8 @@ mod test {
             address: "localhost".to_string(),
             db_name: "test_db".to_string(),
             max_connections: 5,
+            connection_retries: 5,
+            connection_retry_delay: Duration::from_secs(5),
             connection_timeout: Duration::from_secs(3),
         }
     }
@@ -120,6 +146,8 @@ mod test {
             address = "localhost"
             db_name = "test_db"
             max_connections = 5
+            connection_retries = 5
+            connection_retry_delay = "5s"
             connection_timeout = "3s"
             "#;
 
@@ -134,5 +162,23 @@ mod test {
             config.uri(),
             "postgres://test_user:test_password@localhost/test_db"
         );
+    }
+
+    #[test]
+    fn config_does_not_show_password_on_debug() {
+        let config: Config = test_config_file().try_into().unwrap();
+        let debug_format_config = format!("{config:?}");
+        assert!(debug_format_config.contains("REDACTED"));
+        assert!(!debug_format_config.contains("test_user"));
+        assert!(!debug_format_config.contains("test_password"));
+    }
+
+    #[test]
+    fn config_file_does_not_show_password_on_debug() {
+        let config_file = test_config_file();
+        let debug_format_config = format!("{config_file:?}");
+        assert!(debug_format_config.contains("REDACTED"));
+        assert!(!debug_format_config.contains("test_user"));
+        assert!(!debug_format_config.contains("test_password"));
     }
 }

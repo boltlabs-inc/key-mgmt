@@ -1,13 +1,13 @@
 use crate::{
+    channel::{Channel, Unauthenticated},
     client::{LockKeeperClient, Password},
     LockKeeperClientError,
 };
 use lock_keeper::{
     config::opaque::OpaqueCipherSuite,
     crypto::MasterKey,
-    infrastructure::channel::{ClientChannel, Unauthenticated},
     types::{
-        database::user::AccountName,
+        database::account::AccountName,
         operations::register::{client, server},
     },
 };
@@ -20,7 +20,7 @@ use tokio::sync::Mutex;
 
 impl LockKeeperClient {
     pub(crate) async fn handle_registration(
-        mut channel: ClientChannel<Unauthenticated>,
+        mut channel: Channel<Unauthenticated>,
         rng: Arc<Mutex<StdRng>>,
         account_name: &AccountName,
         password: &Password,
@@ -37,7 +37,7 @@ impl LockKeeperClient {
 }
 
 async fn register_start(
-    channel: &mut ClientChannel<Unauthenticated>,
+    channel: &mut Channel<Unauthenticated>,
     rng: Arc<Mutex<StdRng>>,
     account_name: &AccountName,
     password: &Password,
@@ -58,7 +58,7 @@ async fn register_start(
 }
 
 async fn register_finish(
-    channel: &mut ClientChannel<Unauthenticated>,
+    channel: &mut Channel<Unauthenticated>,
     rng: Arc<Mutex<StdRng>>,
     password: &Password,
     client_start_result: ClientRegistrationStartResult<OpaqueCipherSuite>,

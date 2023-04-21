@@ -17,6 +17,8 @@ pub enum LockKeeperClientError {
 
     #[error("Account already registered")]
     AccountAlreadyRegistered,
+    #[error("Delete key failed")]
+    DeleteKeyFailed,
     #[error("Export failed")]
     ExportFailed,
     #[error("Logout failed")]
@@ -27,10 +29,14 @@ pub enum LockKeeperClientError {
     InvalidLogin,
     #[error("Invalid key retrieved")]
     InvalidKeyRetrieved,
+    #[error("Session is expired or invalid")]
+    InvalidSession,
     #[error("An unauthenticated channel is needed for this action")]
     UnauthenticatedChannelNeeded,
     #[error("An authenticated channel is needed for this action")]
     AuthenticatedChannelNeeded,
+    #[error("No channel is needed for this action")]
+    OperationDoesNotRequireChannel,
 
     // Wrapped errors
     #[error(transparent)]
@@ -70,6 +76,7 @@ impl From<Status> for LockKeeperClientError {
         match (status.code(), status.message()) {
             (Code::InvalidArgument, "Account already registered") => Self::AccountAlreadyRegistered,
             (Code::InvalidArgument, "Invalid account") => Self::InvalidAccount,
+            (Code::Unauthenticated, _) => Self::InvalidSession,
             (Code::Unknown, "connection error: received fatal alert: CertificateRequired") => {
                 Self::ClientAuthMissing
             }

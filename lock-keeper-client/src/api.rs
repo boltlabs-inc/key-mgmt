@@ -7,6 +7,7 @@
 
 mod authenticate;
 mod create_storage_key;
+mod delete_key;
 mod generate_secret;
 mod get_user_id;
 mod import;
@@ -15,16 +16,20 @@ mod remote_generate_signing_key;
 mod remote_sign_bytes;
 mod retrieve;
 mod retrieve_audit_events;
+mod retrieve_server_encrypted_blob;
+mod store_server_encrypted_blob;
 
 use crate::{
     client::Password, config::Config, response::Metadata, LockKeeperClient, LockKeeperClientError,
     LockKeeperResponse,
 };
 use lock_keeper::{
+    constants::METADATA,
     crypto::{Export, Import, KeyId, Secret, Signable, Signature},
+    rpc::SessionStatus,
     types::{
         audit_event::{AuditEvent, AuditEventOptions, EventType},
-        database::user::AccountName,
+        database::account::AccountName,
         operations::{retrieve_secret::RetrieveContext, ClientAction, RequestMetadata},
     },
 };
@@ -45,14 +50,14 @@ pub struct LocalStorage<T> {
 }
 
 impl LockKeeperClient {
-    /// Ping the server to make sure it is running and reachable
+    /// Ping the server to make sure it is running and reachable.
     pub async fn health(config: &Config) -> Result<(), LockKeeperClientError> {
-        use lock_keeper::rpc::HealthCheck;
+        use lock_keeper::rpc::Empty;
 
         let mut client = Self::connect(config).await?;
-        match client.health(HealthCheck { check: true }).await {
+        match client.health(Empty {}).await {
             Ok(response) => {
-                if response.into_inner() == (HealthCheck { check: true }) {
+                if response.into_inner() == (Empty {}) {
                     Ok(())
                 } else {
                     Err(LockKeeperClientError::HealthCheckFailed(
@@ -62,6 +67,27 @@ impl LockKeeperClient {
             }
             Err(e) => Err(e.into()),
         }
+    }
+
+    /// Check to see if the client's session is still valid.
+    pub async fn check_session(&self) -> Result<SessionStatus, LockKeeperClientError> {
+        use lock_keeper::rpc::Empty;
+
+        let request_id = Uuid::new_v4();
+        let metadata = self.create_metadata(ClientAction::CheckSession, request_id);
+
+        let mut request = tonic::Request::new(Empty {});
+        let _ = request
+            .metadata_mut()
+            .insert(METADATA, (&metadata).try_into()?);
+
+        let result = self
+            .tonic_client()
+            .check_session(request)
+            .await?
+            .into_inner();
+
+        Ok(result)
     }
 
     /// Expire the current session and session key for this user.
@@ -115,19 +141,14 @@ impl LockKeeperClient {
         config: &Config,
         request_id: Uuid,
     ) -> Result<(), LockKeeperClientError> {
-        let rng = StdRng::from_entropy();
+        let rng = Arc::new(Mutex::new(StdRng::from_entropy()));
         let mut client = Self::connect(config).await?;
-        let metadata =
-            RequestMetadata::new(account_name, ClientAction::Register, None, None, request_id);
-        let rng_arc_mutex = Arc::new(Mutex::new(rng));
-        let client_channel = Self::create_channel(&mut client, &metadata).await?;
-        let master_key = Self::handle_registration(
-            client_channel,
-            rng_arc_mutex.clone(),
-            account_name,
-            password,
-        )
-        .await?;
+        let metadata = RequestMetadata::new(account_name, ClientAction::Register, None, request_id);
+
+        let client_channel = Self::create_unauthenticated_channel(&mut client, &metadata).await?;
+        let master_key =
+            Self::handle_registration(client_channel, rng.clone(), account_name, password).await?;
+
         let client =
             Self::authenticate(Some(client), account_name, password, config, request_id).await?;
         // After authenticating we can create the storage key
@@ -136,14 +157,40 @@ impl LockKeeperClient {
             &mut client.tonic_client(),
             &request_metadata,
             client.session_key().clone(),
-            rng_arc_mutex.clone(),
+            rng.clone(),
         )
         .await?;
         client
-            .handle_create_storage_key(client_channel, rng_arc_mutex, master_key)
+            .handle_create_storage_key(client_channel, rng, master_key)
             .await?;
 
         Ok(())
+    }
+
+    /// Delete a key from the key servers.
+    pub async fn delete_key(&self, key_id: &KeyId) -> LockKeeperResponse<()> {
+        let request_id = Uuid::new_v4();
+        LockKeeperResponse {
+            result: self.delete_key_helper(key_id, request_id).await,
+            metadata: Some(Metadata { request_id }),
+        }
+    }
+
+    async fn delete_key_helper(
+        &self,
+        key_id: &KeyId,
+        request_id: Uuid,
+    ) -> Result<(), LockKeeperClientError> {
+        let metadata = self.create_metadata(ClientAction::DeleteKey, request_id);
+        let client_channel = Self::create_authenticated_channel(
+            &mut self.tonic_client(),
+            &metadata,
+            self.session_key().clone(),
+            self.rng.clone(),
+        )
+        .await?;
+
+        self.handle_delete_key(client_channel, key_id).await
     }
 
     /// Export an arbitrary key from the key servers.
@@ -274,6 +321,39 @@ impl LockKeeperClient {
             .await
     }
 
+    /// Retrieve a server-encrypted blob from server specified by the given
+    /// `key_id`.
+    pub async fn retrieve_server_encrypted_blob(
+        &self,
+        key_id: &KeyId,
+    ) -> LockKeeperResponse<Vec<u8>> {
+        let request_id = Uuid::new_v4();
+        LockKeeperResponse {
+            result: self
+                .retrieve_server_encrypted_blob_helper(key_id, request_id)
+                .await,
+            metadata: Some(Metadata { request_id }),
+        }
+    }
+
+    async fn retrieve_server_encrypted_blob_helper(
+        &self,
+        key_id: &KeyId,
+        request_id: Uuid,
+    ) -> Result<Vec<u8>, LockKeeperClientError> {
+        let metadata = self.create_metadata(ClientAction::RetrieveServerEncryptedBlob, request_id);
+        let client_channel = Self::create_authenticated_channel(
+            &mut self.tonic_client(),
+            &metadata,
+            self.session_key().clone(),
+            self.rng.clone(),
+        )
+        .await?;
+
+        self.handle_retrieve_server_encrypted_blob(client_channel, key_id)
+            .await
+    }
+
     /// Retrieve a secret from the key server by [`KeyId`]
     ///
     /// This operation will fail if it is called on a signing key.
@@ -382,10 +462,8 @@ impl LockKeeperClient {
     /// and each asset fiduciary (if relevant), and any other relevant
     /// details.
     ///
-    /// The [`lock_keeper::types::database::user::UserId`] must match the asset
-    /// owner authenticated in the [`crate::LockKeeperClient`], and if
-    /// specified, the [`KeyId`] must correspond to a key owned by the
-    /// [`lock_keeper::types::database::user::UserId`].
+    /// If specified, the [`KeyId`] must correspond to a key owned by the
+    /// authenticated account.
     ///
     /// Output: if successful, returns a [`String`] representation of the logs.
     pub async fn retrieve_audit_event_log(
@@ -417,6 +495,42 @@ impl LockKeeperClient {
         )
         .await?;
         self.handle_retrieve_audit_events(client_channel, event_type, options)
+            .await
+    }
+
+    /// Store a server-encrypted blob. This function will return a `[KeyId]`
+    /// which may be used to later retrieve the stored blob.
+    ///
+    /// Note: The server has a maximum configurable blob size. The server will
+    /// reject the store request if the blob size is too large.
+    pub async fn store_server_encrypted_blob(
+        &self,
+        data_blob: Vec<u8>,
+    ) -> LockKeeperResponse<KeyId> {
+        let request_id = Uuid::new_v4();
+        LockKeeperResponse {
+            result: self
+                .store_server_encrypted_blob_helper(data_blob, request_id)
+                .await,
+            metadata: Some(Metadata { request_id }),
+        }
+    }
+
+    async fn store_server_encrypted_blob_helper(
+        &self,
+        data_blob: Vec<u8>,
+        request_id: Uuid,
+    ) -> Result<KeyId, LockKeeperClientError> {
+        let metadata = self.create_metadata(ClientAction::StoreServerEncryptedBlob, request_id);
+        let client_channel = Self::create_authenticated_channel(
+            &mut self.tonic_client(),
+            &metadata,
+            self.session_key().clone(),
+            self.rng.clone(),
+        )
+        .await?;
+
+        self.handle_store_server_encrypted_blob(client_channel, data_blob)
             .await
     }
 }

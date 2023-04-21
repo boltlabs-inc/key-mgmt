@@ -21,10 +21,17 @@ use super::HexBytes;
 /// authenticate with.
 #[derive(Deserialize, Serialize)]
 pub struct Account {
+    pub account_id: AccountId,
     pub user_id: UserId,
     pub account_name: AccountName,
     pub storage_key: Option<Encrypted<StorageKey>>,
     pub server_registration: ServerRegistration<OpaqueCipherSuite>,
+}
+
+impl Account {
+    pub fn id(&self) -> AccountId {
+        self.account_id
+    }
 }
 
 /// Manual implement Debug to avoid printing storage key or server_registration.
@@ -37,22 +44,18 @@ impl Debug for Account {
     }
 }
 
-impl Account {
-    pub fn new(
-        user_id: UserId,
-        account_name: AccountName,
-        server_registration: ServerRegistration<OpaqueCipherSuite>,
-    ) -> Self {
-        Account {
-            user_id,
-            account_name,
-            storage_key: None,
-            server_registration,
-        }
-    }
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
+pub struct AccountId(pub i64);
 
-    pub fn into_parts(self) -> (ServerRegistration<OpaqueCipherSuite>, UserId) {
-        (self.server_registration, self.user_id)
+impl From<i64> for AccountId {
+    fn from(n: i64) -> Self {
+        Self(n)
+    }
+}
+
+impl From<AccountId> for i64 {
+    fn from(account_id: AccountId) -> Self {
+        account_id.0
     }
 }
 
@@ -154,7 +157,7 @@ impl AsRef<str> for AccountName {
 }
 
 impl FromStr for AccountName {
-    type Err = ();
+    type Err = LockKeeperError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(AccountName(s.to_string()))

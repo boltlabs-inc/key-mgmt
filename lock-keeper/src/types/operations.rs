@@ -2,6 +2,7 @@
 
 pub mod authenticate;
 pub mod create_storage_key;
+pub mod delete_key;
 pub mod generate;
 pub mod get_user_id;
 pub mod import;
@@ -11,12 +12,11 @@ pub mod remote_generate;
 pub mod remote_sign_bytes;
 pub mod retrieve_audit_events;
 pub mod retrieve_secret;
+pub mod retrieve_server_encrypted_blob;
 pub mod retrieve_storage_key;
+pub mod store_server_encrypted_blob;
 
-use crate::{
-    types::database::user::{AccountName, UserId},
-    LockKeeperError,
-};
+use crate::{types::database::account::AccountName, LockKeeperError};
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumIter, EnumString};
 use tonic::metadata::{Ascii, MetadataValue};
@@ -46,6 +46,10 @@ pub enum ClientAction {
     RetrieveAuditEvents = 12,
     RetrieveSigningKey = 13,
     RetrieveStorageKey = 14,
+    RetrieveServerEncryptedBlob = 15,
+    StoreServerEncryptedBlob = 16,
+    CheckSession = 17,
+    DeleteKey = 18,
 }
 
 impl TryFrom<i64> for ClientAction {
@@ -66,6 +70,9 @@ impl TryFrom<i64> for ClientAction {
                 Ok(ClientAction::RemoteGenerateSigningKey)
             }
             x if x == ClientAction::RemoteSignBytes as i64 => Ok(ClientAction::RemoteSignBytes),
+            x if x == ClientAction::RetrieveServerEncryptedBlob as i64 => {
+                Ok(ClientAction::RetrieveServerEncryptedBlob)
+            }
             x if x == ClientAction::RetrieveSecret as i64 => Ok(ClientAction::RetrieveSecret),
             x if x == ClientAction::RetrieveAuditEvents as i64 => {
                 Ok(ClientAction::RetrieveAuditEvents)
@@ -76,6 +83,11 @@ impl TryFrom<i64> for ClientAction {
             x if x == ClientAction::RetrieveStorageKey as i64 => {
                 Ok(ClientAction::RetrieveStorageKey)
             }
+            x if x == ClientAction::StoreServerEncryptedBlob as i64 => {
+                Ok(ClientAction::StoreServerEncryptedBlob)
+            }
+            x if x == ClientAction::CheckSession as i64 => Ok(ClientAction::CheckSession),
+            x if x == ClientAction::DeleteKey as i64 => Ok(ClientAction::DeleteKey),
             // Return value of offending integer.
             _ => Err(v),
         }
@@ -105,7 +117,6 @@ impl<T: for<'a> Deserialize<'a> + Serialize> ConvertMessage for T {}
 pub struct RequestMetadata {
     account_name: AccountName,
     action: ClientAction,
-    user_id: Option<UserId>,
     session_id: Option<Uuid>,
     request_id: Uuid,
 }
@@ -114,14 +125,12 @@ impl RequestMetadata {
     pub fn new(
         account_name: &AccountName,
         action: ClientAction,
-        user_id: Option<&UserId>,
         session_id: Option<&Uuid>,
         request_id: Uuid,
     ) -> Self {
         Self {
             account_name: account_name.clone(),
             action,
-            user_id: user_id.cloned(),
             session_id: session_id.cloned(),
             request_id,
         }
@@ -139,16 +148,8 @@ impl RequestMetadata {
         self.request_id
     }
 
-    pub fn user_id(&self) -> Option<&UserId> {
-        self.user_id.as_ref()
-    }
-
     pub fn session_id(&self) -> Option<&Uuid> {
         self.session_id.as_ref()
-    }
-
-    pub fn set_user_id(&mut self, user_id: UserId) {
-        self.user_id = Some(user_id);
     }
 }
 

@@ -182,7 +182,7 @@ use tracing_appender::{self, non_blocking::WorkerGuard};
 
 use tracing_subscriber::{filter::Targets, prelude::*};
 
-#[derive(Debug, Parser)]
+#[derive(Parser)] //Should not derive debug, contains secrets
 pub struct Cli {
     /// Path to the server config file
     pub config: PathBuf,
@@ -206,10 +206,19 @@ pub struct Cli {
     /// Base64 encoded remote storage key data
     #[clap(long)]
     pub remote_storage_key: Option<String>,
+    /// Base64 encoded opaque server key
+    #[clap(long, env=ServerConfig::OPAQUE_SERVER_SETUP)]
+    pub opaque_server_setup: Option<String>,
 }
 
 #[tokio::main]
 pub async fn main() {
+    if let Err(e) = run_main().await {
+        eprintln!("Server error: {e}");
+    }
+}
+
+pub async fn run_main() -> Result<(), LockKeeperServerError> {
     let cli = Cli::parse();
     let private_key_bytes = cli
         .private_key
@@ -225,19 +234,25 @@ pub async fn main() {
         .transpose()
         .unwrap();
 
-    let config = Config::from_file(&cli.config);
+    let opaque_server_setup_bytes = cli
+        .opaque_server_setup
+        .map(String::into_bytes)
+        .map(base64::decode)
+        .transpose()
+        .unwrap();
 
-    let server_config =
-        ServerConfig::from_file(config.server, private_key_bytes, remote_storage_key_bytes)
-            .unwrap();
+    let config = Config::from_file(&cli.config)?;
+
+    let server_config = ServerConfig::from_file(
+        config.server,
+        private_key_bytes,
+        remote_storage_key_bytes,
+        opaque_server_setup_bytes,
+    )?;
 
     // We keep `_logging` around for the lifetime of the server. On drop, this value
     // will ensure that our logs are flushed.
-    let _logging = init_logging(
-        &server_config.logging.all_logs_file_name,
-        &server_config.logging.lock_keeper_logs_file_name,
-    )
-    .unwrap();
+    let _logging = init_logging(&server_config)?;
 
     info!("Sever started!");
     info!("Logging config settings: {:?}", server_config.logging);
@@ -248,7 +263,9 @@ pub async fn main() {
         &config.database,
     );
     info!("Database config settings: {:?}", database_config);
-    let postgres = PostgresDB::connect(database_config).await.unwrap();
+    let postgres = PostgresDB::connect(database_config)
+        .await
+        .expect("Failed connecting to database.");
 
     let session_config = get_session_cache_config(
         cli.session_cache_username,
@@ -256,10 +273,11 @@ pub async fn main() {
         &config.session_cache,
     );
     info!("Session cache config settings: {:?}", session_config);
-    let session_cache = PostgresSessionCache::connect(session_config).await.unwrap();
-    start_lock_keeper_server(server_config, postgres, session_cache)
+    let session_cache = PostgresSessionCache::connect(session_config)
         .await
-        .unwrap();
+        .expect("Failed connecting to session cache.");
+    start_lock_keeper_server(server_config, postgres, session_cache).await?;
+    Ok(())
 }
 
 fn get_database_config(
@@ -268,7 +286,13 @@ fn get_database_config(
     path: &Path,
 ) -> PostgresConfig {
     // Read config file for database settings.
-    let mut db_config_file = DatabaseConfigFile::from_file(path).unwrap();
+    let mut db_config_file = DatabaseConfigFile::from_file(path).unwrap_or_else(|e| {
+        panic!(
+            "Failed to read database config file. File: {}. Reason {}",
+            path.display(),
+            e
+        )
+    });
 
     if db_config_file.username.is_some() {
         warn!(
@@ -298,7 +322,13 @@ fn get_session_cache_config(
     path: &Path,
 ) -> SessionConfig {
     // Read config file for database settings.
-    let mut session_config_file = SessionConfigFile::from_file(path).unwrap();
+    let mut session_config_file = SessionConfigFile::from_file(path).unwrap_or_else(|e| {
+        panic!(
+            "Failed to read session cache config. Reason {} file: {}.",
+            e,
+            path.display()
+        )
+    });
 
     if session_config_file.username.is_some() {
         warn!(
@@ -325,79 +355,94 @@ fn get_session_cache_config(
 /// Object representing our logging. Should be kept around as our logging
 /// writers return guards that should live for the lifetime of the program. Do
 /// not do anything with the guards. Just make sure they are not dropped!
-struct Logging {
-    _all_layer_guard: WorkerGuard,
-    _server_layer_guard: WorkerGuard,
+#[derive(Default)]
+struct LoggingGuards {
+    _all_layer_guard: Option<WorkerGuard>,
+    _server_layer_guard: Option<WorkerGuard>,
 }
 
-/// Initialize our logging with three different logging layers:
+/// Initialize our logging with different logging layers:
 /// 1) Log all INFO-level messages (or higher) from our key_server* crates to
-/// standard out. 2) Log all messages (TRACE or higher) from our key_server*
+/// standard out.
+/// 2) (OPTIONAL) Log all messages (TRACE or higher) from our key_server*
 /// crates to the path specified by `server_logs`.
-/// 3) Log all messages ((TRACE or higher) from any crate to the path specified
-/// by `all_logs`.
+/// 3) (OPTIONAL) Log all messages ((TRACE or higher) from any crate to the path
+/// specified by `all_logs`.
 ///
 /// Returns an object which should be kept around for the lifetime of the
 /// program.
-fn init_logging(all_logs: &Path, server_logs: &Path) -> Result<Logging, LockKeeperServerError> {
-    let (all_logs_dir, all_logs_file) = get_paths(all_logs)?;
-    let (server_logs_dir, server_logs_file) = get_paths(server_logs)?;
-
-    // Initialize logging. With our three different layers.
-
+fn init_logging(config: &ServerConfig) -> Result<LoggingGuards, LockKeeperServerError> {
     // Log info level events generated from lock keeper into stdout.
     let stdout_layer = tracing_subscriber::fmt::layer()
         .pretty()
-        .with_filter(our_targets_filter(Level::INFO));
+        .with_filter(our_targets_filter(config.logging.stdout_log_level));
 
-    // This layers logs all events into a file.
-    let all_appender = tracing_appender::rolling::hourly(all_logs_dir, all_logs_file);
-    let (non_blocking, _all_layer_guard) = tracing_appender::non_blocking(all_appender);
-    let all_layer = tracing_subscriber::fmt::layer()
-        .json()
-        .with_writer(non_blocking);
+    let logging_guards = match &config.logging.log_files {
+        Some(file_config) => {
+            let (all_logs_dir, all_logs_file) = get_paths(&file_config.all_logs_file_name)?;
+            let (server_logs_dir, server_logs_file) =
+                get_paths(&file_config.lock_keeper_logs_file_name)?;
 
-    // Log all events generated from lock keeper into a file.
-    let server_appender = tracing_appender::rolling::hourly(server_logs_dir, server_logs_file);
-    let (non_blocking, _server_layer_guard) = tracing_appender::non_blocking(server_appender);
-    let server_layer = tracing_subscriber::fmt::layer()
-        .json()
-        .with_writer(non_blocking)
-        .with_filter(our_targets_filter(Level::TRACE));
+            // This layers logs all events into a file.
+            let all_appender = tracing_appender::rolling::hourly(all_logs_dir, all_logs_file);
+            let (non_blocking, _all_layer_guard) = tracing_appender::non_blocking(all_appender);
+            let all_layer = tracing_subscriber::fmt::layer()
+                .json()
+                .with_writer(non_blocking);
 
-    // Build our logging subscriber with all three of our layers.
-    tracing_subscriber::registry()
-        .with(stdout_layer)
-        .with(server_layer)
-        .with(all_layer)
-        .init();
+            // Log all events generated from lock keeper into a file.
+            let server_appender =
+                tracing_appender::rolling::hourly(server_logs_dir, server_logs_file);
+            let (non_blocking, _server_layer_guard) =
+                tracing_appender::non_blocking(server_appender);
+            let server_layer = tracing_subscriber::fmt::layer()
+                .json()
+                .with_writer(non_blocking)
+                .with_filter(our_targets_filter(Level::TRACE));
 
-    return Ok(Logging {
-        _all_layer_guard,
-        _server_layer_guard,
-    });
+            // Build our logging subscriber with all three of our layers.
+            tracing_subscriber::registry()
+                .with(stdout_layer)
+                .with(server_layer)
+                .with(all_layer)
+                .init();
 
-    /// Return the path directory and the file name. Needed for passing to
-    /// tracing_appender.
-    fn get_paths(path: &Path) -> Result<(&Path, &OsStr), LockKeeperServerError> {
-        let dir = path
-            .parent()
-            .ok_or_else(|| LockKeeperServerError::InvalidLogFilePath(path.into()))?;
+            LoggingGuards {
+                _all_layer_guard: Some(_all_layer_guard),
+                _server_layer_guard: Some(_server_layer_guard),
+            }
+        }
+        None => {
+            // Build our logging subscriber with just the stdout layer.
+            tracing_subscriber::registry().with(stdout_layer).init();
 
-        let file_name = path
-            .file_name()
-            .ok_or_else(|| LockKeeperServerError::InvalidLogFilePath(path.into()))?;
-        Ok((dir, file_name))
-    }
+            LoggingGuards::default()
+        }
+    };
 
-    /// Create filters for logging events originating from our lock_keeper*
-    /// crates.
-    fn our_targets_filter(level: Level) -> Targets {
-        Targets::new()
-            // List our different targets here. Anything under our server.
-            .with_target("key_server_cli", level)
-            .with_target("lock_keeper_key_server", level)
-            .with_target("lock_keeper", level)
-            .with_target("lock_keeper_session_cache_sql", level)
-    }
+    Ok(logging_guards)
+}
+
+/// Return the path directory and the file name. Needed for passing to
+/// tracing_appender.
+fn get_paths(path: &Path) -> Result<(&Path, &OsStr), LockKeeperServerError> {
+    let dir = path
+        .parent()
+        .ok_or_else(|| LockKeeperServerError::InvalidLogFilePath(path.into()))?;
+
+    let file_name = path
+        .file_name()
+        .ok_or_else(|| LockKeeperServerError::InvalidLogFilePath(path.into()))?;
+    Ok((dir, file_name))
+}
+
+/// Create filters for logging events originating from our lock_keeper*
+/// crates.
+fn our_targets_filter(level: Level) -> Targets {
+    Targets::new()
+        // List our different targets here. Anything under our server.
+        .with_target("key_server_cli", level)
+        .with_target("lock_keeper_key_server", level)
+        .with_target("lock_keeper", level)
+        .with_target("lock_keeper_session_cache_sql", level)
 }

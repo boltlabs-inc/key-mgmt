@@ -49,7 +49,6 @@ impl std::fmt::Debug for Config {
 /// Client configuration file format.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
-#[non_exhaustive]
 pub struct ConfigFile {
     pub server_uri: String,
     pub ca_chain: PathBuf,
@@ -58,7 +57,6 @@ pub struct ConfigFile {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
-#[non_exhaustive]
 pub struct ClientAuth {
     pub certificate_chain: PathBuf,
     /// The private key can be provided as a file or passed to the

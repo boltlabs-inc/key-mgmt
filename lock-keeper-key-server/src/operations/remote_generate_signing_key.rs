@@ -1,15 +1,17 @@
 //! Client has asked server to generate a new signing key and store it in the
 //! server.
 use crate::{
-    server::{Context, Operation},
+    server::{
+        channel::{Authenticated, Channel},
+        Context, Operation,
+    },
     LockKeeperServerError,
 };
 
-use crate::database::DataStore;
+use crate::server::database::DataStore;
 use async_trait::async_trait;
 use lock_keeper::{
     crypto::{KeyId, SigningKeyPair},
-    infrastructure::channel::{Authenticated, ServerChannel},
     types::{database::secrets::StoredSecret, operations::remote_generate::server},
 };
 use rand::rngs::StdRng;
@@ -28,14 +30,12 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for RemoteGenerateSigni
     #[instrument(skip_all, err(Debug))]
     async fn operation(
         self,
-        channel: &mut ServerChannel<Authenticated<StdRng>>,
+        channel: &mut Channel<Authenticated<StdRng>>,
         context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
         info!("Starting remote generate protocol.");
-        let user_id = channel
-            .metadata()
-            .user_id()
-            .ok_or(LockKeeperServerError::InvalidAccount)?;
+        let user_id = channel.user_id();
+
         // Create a scope for rng mutex
         let (key_id, key_pair) = {
             let mut rng = context.rng.lock().await;
@@ -44,6 +44,7 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for RemoteGenerateSigni
             info!("Generated key ID: {:?}", key_id);
             (key_id, key_pair)
         };
+        context.key_id = Some(key_id.clone());
 
         let public_key = key_pair.public_key();
 
@@ -59,15 +60,11 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for RemoteGenerateSigni
         let secret = StoredSecret::from_remote_signing_key_pair(
             key_id.clone(),
             encrypted_key_pair,
-            user_id.clone(),
+            channel.account_id(),
         )?;
 
         // Store key in database
-        context
-            .db
-            .add_secret(secret)
-            .await
-            .map_err(LockKeeperServerError::database)?;
+        context.db.add_secret(secret).await?;
 
         channel
             .send(server::ReturnKeyId { key_id, public_key })

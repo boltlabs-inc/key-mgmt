@@ -3,9 +3,8 @@ use lock_keeper::{
     crypto::{Signable, SignableBytes},
     types::{audit_event::EventStatus, operations::ClientAction},
 };
-use lock_keeper_client::{api::RemoteGenerateResult, Config};
+use lock_keeper_client::{api::RemoteGenerateResult, Config, LockKeeperClientError};
 use rand::{rngs::StdRng, SeedableRng};
-use tonic::Status;
 use uuid::Uuid;
 
 use crate::{
@@ -13,7 +12,7 @@ use crate::{
     error::Result,
     run_parallel,
     test_suites::end_to_end::{
-        operations::{authenticate, check_audit_events, compare_status_errors},
+        operations::{authenticate, check_audit_events},
         test_cases::init_test_state,
     },
     utils::{self, TestResult, RNG_SEED},
@@ -57,6 +56,7 @@ async fn remote_sign_works(config: Config) -> Result<()> {
         EventStatus::Successful,
         ClientAction::RemoteSignBytes,
         request_id,
+        Some(key_id),
     )
     .await?;
 
@@ -74,7 +74,10 @@ async fn cannot_remote_sign_after_logout(config: Config) -> Result<()> {
     let mut rng = StdRng::from_seed(*RNG_SEED);
     let data = SignableBytes(utils::random_bytes(&mut rng, 100));
     let res = client.remote_sign_bytes(res.key_id, data).await;
-    compare_status_errors(res, Status::unauthenticated("No session key for this user"))?;
+    assert!(matches!(
+        res.result,
+        Err(LockKeeperClientError::InvalidSession)
+    ));
 
     Ok(())
 }

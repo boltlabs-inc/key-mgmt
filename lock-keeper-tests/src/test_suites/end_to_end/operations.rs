@@ -64,6 +64,7 @@ pub(crate) async fn check_audit_events(
     expected_status: EventStatus,
     expected_action: ClientAction,
     request_id: Uuid,
+    key_id: Option<KeyId>,
 ) -> Result<(), LockKeeperClientError> {
     // Authenticate to LockKeeperClient
     let lock_keeper_client =
@@ -82,14 +83,16 @@ pub(crate) async fn check_audit_events(
         .result?;
 
     // Get all events that match given expected values.
-    let matching_events = audit_event_log
-        .into_iter()
-        .filter(|event| event.status == expected_status && event.client_action == expected_action);
+    let matching_events = audit_event_log.iter().filter(|event| {
+        event.key_id == key_id
+            && event.status == expected_status
+            && event.client_action == expected_action
+    });
 
     assert_eq!(
         matching_events.count(),
         1,
-        "Exactly one audit event should have matched."
+        "Exactly one audit event should have matched. All events: {audit_event_log:?}",
     );
 
     Ok(())

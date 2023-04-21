@@ -1,5 +1,6 @@
 //! Config for key server binary.
 
+use lock_keeper_key_server::LockKeeperServerError;
 use serde::{Deserialize, Serialize};
 use std::{
     path::{Path, PathBuf},
@@ -15,10 +16,10 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn from_file(config_path: impl AsRef<Path>) -> Self {
-        let config_string =
-            std::fs::read_to_string(&config_path).expect("Unable to read from config file.");
-        Self::from_str(&config_string).expect("Unable to convert config to TOML.")
+    pub fn from_file(config_path: impl AsRef<Path>) -> Result<Self, LockKeeperServerError> {
+        let config_string = std::fs::read_to_string(&config_path)
+            .map_err(|e| LockKeeperServerError::FileIo(e, config_path.as_ref().to_path_buf()))?;
+        Ok(Self::from_str(&config_string)?)
     }
 }
 

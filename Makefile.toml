@@ -32,7 +32,6 @@ args = ["compose", "up",
         "--attach", "ks_client_auth",
         "--attach", "ks_nginx",
 ]
-dependencies = ["certs", "remote-storage-key"]
 
 # Start a key server in the background
 [tasks.start-server-detached]
@@ -41,7 +40,6 @@ args = ["compose", "up",
         "--build", "postgres", "nginx", "key_server", "ks_client_auth", "ks_nginx",
         "--wait",
 ]
-dependencies = ["certs", "remote-storage-key"]
 
 # Stop a key server running in the background.
 [tasks.stop-server]
@@ -59,13 +57,18 @@ args = ["compose", "down", "--rmi", "local", "--volumes", "--remove-orphans"]
 # Servers running in Docker satisfy this requirement.
 [tasks.e2e]
 command = "cargo"
-args = ["run", "--bin", "lock-keeper-tests", "--", "--test-type", "e2e"]
+args = ["run", "--bin", "lock-keeper-tests", "--", "--standard-only", "--test-type", "e2e"]
 
 # Run integration tests against a server that can be accessed via localhost.
 # Servers running in Docker satisfy this requirement.
 [tasks.integration]
 command = "cargo"
 args = ["run", "--bin", "lock-keeper-tests", "--", "--test-type", "integration"]
+
+# Run integration tests and print all errors even for tests that pass.
+[tasks.integration-debug]
+command = "cargo"
+args = ["run", "--bin", "lock-keeper-tests", "--", "--test-type", "integration", "--print-errors"]
 
 # Run all tests that require a server to be running in Docker.
 [tasks.all-tests]
@@ -107,9 +110,10 @@ args = ["doc", "--all-features", "--no-deps", "--document-private-items", "--wor
 # -- Database Tasks --
 
 # Update the `sqlx-data.json` file
-[tasks.refresh-db-cache]
+[tasks.sqlx-prepare]
+env = { "DATABASE_URL" = "postgres://test:test_password@localhost:5432/test" }
 command = "cargo"
-args = ["sqlx", "prepare", "--database-url", "postgres://test:test_password@localhost:5432/test", "--merged"]
+args = ["sqlx", "prepare", "--merged"]
 
 # Connect to test database using `psql`
 [tasks.test-db]
@@ -138,31 +142,35 @@ alias = "ci-test"
 # Run the client CLI in interactive mode
 [tasks.cli]
 command = "cargo"
-args = ["run", "--bin", "lock-keeper-client-cli"]
+args = ["run", "--bin", "lock-keeper-client-cli", "--", "--config", "dev/config/local/Client.toml"]
 
 # Runs a CLI script to generate a retrieve a few keys
 [tasks.script-generate]
 command = "cargo"
-args = ["run", "--bin", "lock-keeper-client-cli", "--", "--script-file", "dev/cli-scripts/generate.lk"]
+args = ["run", "--bin", "lock-keeper-client-cli", "--", "--config", "dev/config/local/Client.toml", "--script-file", "dev/cli-scripts/generate.lk"]
 
 # Runs a CLI script to remotely generate a signing key and sign some data
 [tasks.script-sign]
 command = "cargo"
-args = ["run", "--bin", "lock-keeper-client-cli", "--", "--script-file", "dev/cli-scripts/sign.lk"]
+args = ["run", "--bin", "lock-keeper-client-cli", "--", "--config", "dev/config/local/Client.toml", "--script-file", "dev/cli-scripts/sign.lk"]
 
 # Runs a CLI script to export a remotely generated signing key
 [tasks.script-export]
 command = "cargo"
-args = ["run", "--bin", "lock-keeper-client-cli", "--", "--script-file", "dev/cli-scripts/export.lk"]
+args = ["run", "--bin", "lock-keeper-client-cli", "--", "--config", "dev/config/local/Client.toml", "--script-file", "dev/cli-scripts/export.lk"]
 
 # Runs a CLI script to import and then export a signing key
 [tasks.script-import]
 command = "cargo"
-args = ["run", "--bin", "lock-keeper-client-cli", "--", "--script-file", "dev/cli-scripts/import.lk"]
+args = ["run", "--bin", "lock-keeper-client-cli", "--", "--config", "dev/config/local/Client.toml", "--script-file", "dev/cli-scripts/import.lk"]
 
 # Runs all scripts
 [tasks.all-scripts]
 dependencies = ["script-generate", "script-sign", "script-export", "script-import"]
+
+# Run all initial tasks required to start LockKeeper
+[tasks.init]
+dependencies = ["certs", "remote-storage-key"]
 
 # Generate certificates in the dev/certs/gen directory
 [tasks.certs]
@@ -171,3 +179,8 @@ script = { file = "dev/test-pki/generate-test-pki.sh" }
 # Generate remote storage key in the dev/remote-storage-key/gen directory
 [tasks.remote-storage-key]
 script = { file = "dev/remote-storage-key/generate-test-remote-storage-key.sh" }
+
+# Generate and print base64-encoded Opaque Server Setup
+[tasks.opaque-server-setup]
+command = "cargo"
+args = ["run", "--manifest-path", "dev/generate-opaque-server-setup/Cargo.toml"]

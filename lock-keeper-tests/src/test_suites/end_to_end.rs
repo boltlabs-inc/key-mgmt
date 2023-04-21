@@ -10,7 +10,8 @@ use crate::{
 use colored::Colorize;
 use lock_keeper_client::Config;
 use test_cases::{
-    authenticate, export, generate, import, register, remote_generate, remote_sign, retrieve,
+    authenticate, check_session, delete_key, export, generate, import, register, remote_generate,
+    remote_sign, retrieve,
 };
 
 pub async fn run_tests(environments: &Environments) -> Result<Vec<TestResult>> {
@@ -36,6 +37,8 @@ pub async fn run_tests_with_config(
 
     let register_results = register::run_tests(config, filters).await?;
     let authenticate_results = authenticate::run_tests(config, filters).await?;
+    let check_session_results = check_session::run_tests(config, filters).await?;
+    let delete_key_tests = delete_key::run_tests(config, filters).await?;
     let generate_results = generate::run_tests(config, filters).await?;
     let retrieve_results = retrieve::run_tests(config, filters).await?;
     let export_results = export::run_tests(config, filters).await?;
@@ -49,6 +52,14 @@ pub async fn run_tests_with_config(
     println!(
         "authenticate tests {}",
         report_test_results(&authenticate_results)
+    );
+    println!(
+        "check session tests: {}",
+        report_test_results(&check_session_results)
+    );
+    println!(
+        "delete key tests: {}",
+        report_test_results(&delete_key_tests)
     );
     println!("generate tests: {}", report_test_results(&generate_results));
     println!("retrieve tests: {}", report_test_results(&retrieve_results));
@@ -68,6 +79,8 @@ pub async fn run_tests_with_config(
     let results = register_results
         .into_iter()
         .chain(authenticate_results)
+        .chain(check_session_results)
+        .chain(delete_key_tests)
         .chain(generate_results)
         .chain(retrieve_results)
         .chain(export_results)

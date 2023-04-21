@@ -22,6 +22,7 @@ prost.workspace = true
 rand.workspace = true
 rustls.workspace = true
 serde.workspace = true
+serde_json.workspace = true
 serde_with.workspace = true
 thiserror.workspace = true
 time.workspace = true
@@ -41,3 +42,4 @@ tower = "0.4"
 
 [dev-dependencies]
 generic-array.workspace = true
+base64 = "0.13"

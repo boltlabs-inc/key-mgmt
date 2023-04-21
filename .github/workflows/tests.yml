@@ -20,10 +20,9 @@ jobs:
           version: '3.x'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-      # Ensure Rust is the latest version
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
+          toolchain: 1.67
 
       - name: Cache
         uses: actions/cache@v2
@@ -39,6 +38,9 @@ jobs:
         with:
           command: install
           args: --debug cargo-make
+
+      - name: Initialize certs and keys
+        run: cargo make init
 
       - name: Start Server
         run: cargo make start

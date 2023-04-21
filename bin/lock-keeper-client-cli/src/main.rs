@@ -8,7 +8,6 @@ mod storage;
 use std::str::FromStr;
 
 use clap::Parser;
-use lock_keeper_client::Config;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
 
@@ -17,7 +16,8 @@ use crate::scripting::Script;
 #[tokio::main]
 pub async fn main() {
     let cli = cli::Cli::parse();
-    let config = Config::from_file(&cli.config, None).unwrap();
+
+    let config = cli.client_config().unwrap();
     let script = parse_script(&cli).unwrap();
 
     tracing_subscriber::fmt::Subscriber::builder()

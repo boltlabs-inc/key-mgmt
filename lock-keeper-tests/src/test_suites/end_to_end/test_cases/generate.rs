@@ -1,14 +1,13 @@
 use colored::Colorize;
 use lock_keeper::types::{audit_event::EventStatus, operations::ClientAction};
-use lock_keeper_client::Config;
-use tonic::Status;
+use lock_keeper_client::{Config, LockKeeperClientError};
 
 use crate::{
     config::TestFilters,
     error::Result,
     run_parallel,
     test_suites::end_to_end::{
-        operations::{authenticate, check_audit_events, compare_status_errors},
+        operations::{authenticate, check_audit_events},
         test_cases::init_test_state,
     },
     utils::TestResult,
@@ -32,11 +31,13 @@ async fn generate_works(config: Config) -> Result<()> {
 
     let generate_result = client.generate_secret().await;
     let request_id = generate_result.metadata.unwrap().request_id;
+    let key_id = generate_result.result?.key_id;
     check_audit_events(
         &state,
         EventStatus::Successful,
         ClientAction::GenerateSecret,
         request_id,
+        Some(key_id),
     )
     .await?;
 
@@ -50,7 +51,10 @@ async fn cannot_generate_after_logout(config: Config) -> Result<()> {
     client.logout().await.result?;
 
     let res = client.generate_secret().await;
-    compare_status_errors(res, Status::unauthenticated("No session key for this user"))?;
+    assert!(matches!(
+        res.result,
+        Err(LockKeeperClientError::InvalidSession)
+    ));
 
     Ok(())
 }

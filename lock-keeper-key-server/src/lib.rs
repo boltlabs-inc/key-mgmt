@@ -5,7 +5,6 @@
 #![forbid(rustdoc::broken_intra_doc_links)]
 
 pub mod config;
-pub mod database;
 pub mod error;
 pub mod operations;
 pub mod server;

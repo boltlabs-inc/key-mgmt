@@ -1,35 +1,44 @@
 {
   "db": "PostgreSQL",
-  "0ac4d9151b57d4a468dd3dfe116874d3b731f5aae44ae709150f99d88c6f4693": {
+  "0dbaba4e850d2127afdc744c19623d9f342930d3fc766a92dd99933220bc773f": {
     "describe": {
-      "columns": [],
-      "nullable": [],
+      "columns": [
+        {
+          "name": "session_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "account_id",
+          "ordinal": 1,
+          "type_info": "Int8"
+        },
+        {
+          "name": "timestamp",
+          "ordinal": 2,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "session_key",
+          "ordinal": 3,
+          "type_info": "Bytea"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false
+      ],
       "parameters": {
         "Left": [
-          "Bytea",
-          "Bytea"
+          "Uuid"
         ]
       }
     },
-    "query": "UPDATE Accounts SET storage_key=$1 WHERE user_id=$2"
+    "query": "SELECT session_id, account_id, timestamp, session_key FROM Session WHERE session_id=$1"
   },
-  "1a5b3c8c45c335fc7175396aa3911167c5c93c1cd38ef1af25118fb9334591ce": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Left": [
-          "Bytea",
-          "Bytea",
-          "Bytea",
-          "Bool",
-          "Text"
-        ]
-      }
-    },
-    "query": "INSERT INTO Secrets (key_id, user_id, secret, secret_type_id, retrieved) SELECT $1, $2, $3, SecretTypes.secret_type_id, $4 FROM SecretTypes WHERE SecretTypes.secret_type=$5"
-  },
-  "2f7e466e183916bcef3e01a48bdbfd5ead68bafbdf877b7f8aa2f84595113627": {
+  "27588991d5982bb5bd621827d016d1a245f14023ac68a3a29fd84a7284e52f02": {
     "describe": {
       "columns": [
         {
@@ -43,11 +52,46 @@
       ],
       "parameters": {
         "Left": [
+          "Int8"
+        ]
+      }
+    },
+    "query": "WITH deleted AS (DELETE FROM Accounts WHERE account_id=$1 RETURNING *) SELECT count(*) AS \"count!\" FROM deleted"
+  },
+  "2a476ff3e93a6bcf01abfe53b79e46f057dabe847af05d5282151530eca770b9": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Int8"
+        ]
+      }
+    },
+    "query": "UPDATE Accounts SET storage_key=$1 WHERE account_id=$2"
+  },
+  "334009b11337bff8167b51944bc98c5c2f4b8be1246e93064f3d1e5cdd928a47": {
+    "describe": {
+      "columns": [
+        {
+          "name": "account_id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Varchar",
           "Bytea"
         ]
       }
     },
-    "query": "WITH deleted AS (DELETE FROM Accounts WHERE user_id=$1 RETURNING *) SELECT count(*) AS \"count!\" FROM deleted"
+    "query": "INSERT INTO Accounts (user_id, account_name, server_registration)VALUES ($1, $2, $3)\n             RETURNING account_id"
   },
   "3d49508f10ddaec3e02c708ecc0f10095eecc72b9475dd99af6f41c85f4e0dcd": {
     "describe": {
@@ -93,74 +137,7 @@
     },
     "query": "SELECT account_id, user_id, account_name, storage_key, server_registration FROM Accounts WHERE account_name=$1"
   },
-  "4ed23e9a07ff7723c0692ce77c376d66afc19a70ebe70a9c98cf7737b5ffdac0": {
-    "describe": {
-      "columns": [
-        {
-          "name": "session_id",
-          "ordinal": 0,
-          "type_info": "Uuid"
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Left": [
-          "Bytea",
-          "Bytea"
-        ]
-      }
-    },
-    "query": "INSERT INTO Session (user_id, session_key) VALUES ($1, $2) RETURNING session_id"
-  },
-  "5113b063905dd02a364fd46625ce66fa903916312273d66d709bb47355fad6ac": {
-    "describe": {
-      "columns": [
-        {
-          "name": "key_id",
-          "ordinal": 0,
-          "type_info": "Bytea"
-        },
-        {
-          "name": "user_id",
-          "ordinal": 1,
-          "type_info": "Bytea"
-        },
-        {
-          "name": "secret_type",
-          "ordinal": 2,
-          "type_info": "Varchar"
-        },
-        {
-          "name": "secret",
-          "ordinal": 3,
-          "type_info": "Bytea"
-        },
-        {
-          "name": "retrieved",
-          "ordinal": 4,
-          "type_info": "Bool"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false
-      ],
-      "parameters": {
-        "Left": [
-          "Bytea",
-          "Bytea",
-          "Text"
-        ]
-      }
-    },
-    "query": "UPDATE Secrets SET retrieved=TRUE FROM Secrets S LEFT JOIN SecretTypes ST ON S.secret_type_id=ST.secret_type_id WHERE S.key_id=$1 AND S.user_id=$2 AND ST.secret_type LIKE $3 RETURNING S.key_id, S.user_id, ST.secret_type, S.secret, S.retrieved"
-  },
-  "6bb4786a839134fd11cb2e84df34b2a3bb5158c9a82c6a4f798a766077328492": {
+  "4fcd142401d4ae2f09ff38e404c00e98337600e2216a141a14b28e1ede711d77": {
     "describe": {
       "columns": [
         {
@@ -198,50 +175,27 @@
       ],
       "parameters": {
         "Left": [
-          "Bytea"
+          "Int8"
         ]
       }
     },
-    "query": "SELECT account_id, user_id, account_name, storage_key, server_registration FROM Accounts WHERE user_id=$1"
+    "query": "SELECT account_id, user_id, account_name, storage_key, server_registration FROM Accounts WHERE account_id=$1"
   },
-  "77cf5b28693bce775496b4bd73ed7af6f7db3cc56a5186b9dfae7f35061210ed": {
+  "5b84e7a6d3ddcfa41c0a1ffab525850dc6d2b72a6e7ca7cfd0dc401bb067da93": {
     "describe": {
-      "columns": [
-        {
-          "name": "session_id",
-          "ordinal": 0,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "user_id",
-          "ordinal": 1,
-          "type_info": "Bytea"
-        },
-        {
-          "name": "timestamp",
-          "ordinal": 2,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "session_key",
-          "ordinal": 3,
-          "type_info": "Bytea"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        false
-      ],
+      "columns": [],
+      "nullable": [],
       "parameters": {
         "Left": [
-          "Uuid",
-          "Bytea"
+          "Bytea",
+          "Int8",
+          "Bytea",
+          "Bool",
+          "Text"
         ]
       }
     },
-    "query": "SELECT session_id, user_id, timestamp, session_key FROM Session WHERE session_id=$1 AND user_id=$2"
+    "query": "INSERT INTO Secrets (key_id, account_id, secret, secret_type_id, retrieved) SELECT $1, $2, $3, SecretTypes.secret_type_id, $4 FROM SecretTypes WHERE SecretTypes.secret_type=$5"
   },
   "78c00eff015db1567510b1ad30a6402dc60a7ec198ff32c74e22ec1f823db198": {
     "describe": {
@@ -255,13 +209,59 @@
     },
     "query": "DELETE FROM Session WHERE session_id=$1"
   },
-  "94a5ed04091f4775cd371b1d0e8ea292df47864e5bb2333ed0dca29526bb75d4": {
+  "80a65d1c4a01b551f1d51c6653fa0b11db7c19989f7d173236d18aee81cf23aa": {
+    "describe": {
+      "columns": [
+        {
+          "name": "key_id",
+          "ordinal": 0,
+          "type_info": "Bytea"
+        },
+        {
+          "name": "account_id",
+          "ordinal": 1,
+          "type_info": "Int8"
+        },
+        {
+          "name": "secret_type",
+          "ordinal": 2,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "secret",
+          "ordinal": 3,
+          "type_info": "Bytea"
+        },
+        {
+          "name": "retrieved",
+          "ordinal": 4,
+          "type_info": "Bool"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Int8",
+          "Text"
+        ]
+      }
+    },
+    "query": "UPDATE Secrets SET retrieved=TRUE FROM Secrets S LEFT JOIN SecretTypes ST ON S.secret_type_id=ST.secret_type_id WHERE S.key_id=$1 AND S.account_id=$2 AND ST.secret_type LIKE $3 RETURNING S.key_id, S.account_id, ST.secret_type, S.secret, S.retrieved"
+  },
+  "a21d7af271ced00fee3c25d1411292882da68f5c1602979a761ca29aaa2b1ba0": {
     "describe": {
       "columns": [],
       "nullable": [],
       "parameters": {
         "Left": [
-          "Varchar",
+          "Int8",
           "Bytea",
           "Uuid",
           "Int8",
@@ -270,21 +270,40 @@
         ]
       }
     },
-    "query": "INSERT INTO AuditEvents (account_name, key_id, request_id, client_action_id, event_status, timestamp) VALUES ($1, $2, $3, $4, $5, $6)"
+    "query": "INSERT INTO AuditEvents (account_id, key_id, request_id, client_action_id, event_status, timestamp) VALUES ($1, $2, $3, $4, $5, $6)"
   },
-  "b35d2924ad509e3ac7d4adf71b571472530c61b824c9b67197bb7ecc7f6d8ecd": {
+  "bd8fe1f2f89d7790c89c35d995826826047fb75f5ea114ca5256d5143c7ba178": {
+    "describe": {
+      "columns": [
+        {
+          "name": "count",
+          "ordinal": 0,
+          "type_info": "Int8"
+        }
+      ],
+      "nullable": [
+        null
+      ],
+      "parameters": {
+        "Left": [
+          "Bytea"
+        ]
+      }
+    },
+    "query": "SELECT count(*) as count FROM Accounts\n                WHERE user_id=$1"
+  },
+  "c6f0107e37f43190293ef3ca849ff284ca7d1f266b9fc168284467873246245b": {
     "describe": {
       "columns": [],
       "nullable": [],
       "parameters": {
         "Left": [
-          "Bytea",
-          "Varchar",
+          "Int8",
           "Bytea"
         ]
       }
     },
-    "query": "INSERT INTO Accounts (user_id, account_name, server_registration)VALUES ($1, $2, $3)"
+    "query": "DELETE FROM Secrets\n            WHERE account_id=$1 AND key_id=$2"
   },
   "cc9e4405f5fa1a5a48347e39a92c9f5b07ca0f8012d087523b21844089da0778": {
     "describe": {
@@ -305,5 +324,26 @@
       }
     },
     "query": "SELECT COUNT(1) as \"count!\" FROM Secrets WHERE key_id=$1"
+  },
+  "e97f51eea5136f5c4632dc4e9d1a73f5715d84ab053d3c643f50a6599d1ad924": {
+    "describe": {
+      "columns": [
+        {
+          "name": "session_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Bytea"
+        ]
+      }
+    },
+    "query": "INSERT INTO Session (account_id, session_key) VALUES ($1, $2) RETURNING session_id"
   }
 }

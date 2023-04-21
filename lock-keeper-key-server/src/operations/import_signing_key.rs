@@ -1,15 +1,17 @@
 //! Import signing key operation. This protocol allows the client to import a
 //! key into the server.
 use crate::{
-    server::{Context, Operation},
+    server::{
+        channel::{Authenticated, Channel},
+        Context, Operation,
+    },
     LockKeeperServerError,
 };
 
-use crate::database::DataStore;
+use crate::server::database::DataStore;
 use async_trait::async_trait;
 use lock_keeper::{
     crypto::KeyId,
-    infrastructure::channel::{Authenticated, ServerChannel},
     types::{
         database::secrets::StoredSecret,
         operations::import::{client, server},
@@ -26,16 +28,13 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for ImportSigningKey {
     #[instrument(skip_all, err(Debug))]
     async fn operation(
         self,
-        channel: &mut ServerChannel<Authenticated<StdRng>>,
+        channel: &mut Channel<Authenticated<StdRng>>,
         context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
         info!("Starting import key operation.");
         // Receive UserId and key material from client.
         let request: client::Request = channel.receive().await?;
-        let user_id = channel
-            .metadata()
-            .user_id()
-            .ok_or(LockKeeperServerError::InvalidAccount)?;
+        let user_id = channel.user_id();
 
         // Generate new KeyId
         let key_id = {
@@ -59,15 +58,11 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for ImportSigningKey {
         let secret = StoredSecret::from_remote_signing_key_pair(
             key_id.clone(),
             encrypted_key_pair,
-            user_id.clone(),
+            channel.account_id(),
         )?;
 
         // Check validity of ciphertext and store in DB
-        context
-            .db
-            .add_secret(secret)
-            .await
-            .map_err(LockKeeperServerError::database)?;
+        context.db.add_secret(secret).await?;
 
         // Serialize KeyId and send to client
         let reply = server::Response {

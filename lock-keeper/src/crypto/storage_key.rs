@@ -6,7 +6,11 @@ use super::{
     generic::{AssociatedData, EncryptionKey},
     CryptoError, Encrypted, MasterKey, SigningKeyPair,
 };
-use crate::{crypto::OpaqueSessionKey, types::database::user::UserId, LockKeeperError};
+use crate::{
+    crypto::{data_blob::DataBlob, OpaqueSessionKey},
+    types::database::account::UserId,
+    LockKeeperError,
+};
 use rand::{CryptoRng, RngCore};
 use std::path::Path;
 use zeroize::{Zeroize, ZeroizeOnDrop};
@@ -28,7 +32,8 @@ impl RemoteStorageKey {
     /// Returns the remote storage key found in the file at the given
     /// path
     pub fn read_from_file(path: impl AsRef<Path>) -> Result<Self, LockKeeperError> {
-        let bytes = std::fs::read(path)?;
+        let bytes = std::fs::read(&path)
+            .map_err(|e| LockKeeperError::FileIo(e, path.as_ref().to_path_buf()))?;
         Self::from_bytes(&bytes)
     }
 
@@ -70,6 +75,21 @@ impl RemoteStorageKey {
         Encrypted::encrypt(rng, &self.0, session_key.clone(), session_key.context())
             .map_err(LockKeeperError::Crypto)
     }
+
+    /// Encrypt the given [`DataBlob`] under the [`RemoteStorageKey`] using an
+    /// AEAD scheme.
+    pub fn encrypt_data_blob(
+        &self,
+        rng: &mut (impl CryptoRng + RngCore),
+        data_blob: DataBlob,
+    ) -> Result<Encrypted<DataBlob>, LockKeeperError> {
+        // Get the cloned context first. This is necessary as the `Encrypted::encrypt`
+        // function will take our data_blob by value. The alternative would be
+        // cloning the data_blob which would be expensive.
+        let context = data_blob.context().clone();
+
+        Encrypted::encrypt(rng, &self.0, data_blob, &context).map_err(LockKeeperError::Crypto)
+    }
 }
 
 /// A storage key is a default-length symmetric encryption key for an
@@ -94,14 +114,18 @@ impl StorageKey {
     }
 }
 
-impl From<StorageKey> for Vec<u8> {
-    fn from(key: StorageKey) -> Self {
-        StorageKey::domain_separator()
+impl TryFrom<StorageKey> for Vec<u8> {
+    type Error = CryptoError;
+
+    fn try_from(key: StorageKey) -> Result<Self, Self::Error> {
+        let key = Vec::<u8>::try_from(key.0.to_owned())?;
+        let bytes = StorageKey::domain_separator()
             .as_bytes()
             .iter()
             .copied()
-            .chain::<Vec<u8>>(key.0.to_owned().into())
-            .collect()
+            .chain(key)
+            .collect();
+        Ok(bytes)
     }
 }
 
@@ -178,7 +202,7 @@ pub(super) mod test {
         for _ in 0..1000 {
             let storage_key = StorageKey::generate(&mut rng);
 
-            let vec: Vec<u8> = storage_key.clone().into();
+            let vec: Vec<u8> = storage_key.clone().try_into()?;
             let output_storage_key = vec.try_into()?;
 
             assert_eq!(storage_key, output_storage_key);

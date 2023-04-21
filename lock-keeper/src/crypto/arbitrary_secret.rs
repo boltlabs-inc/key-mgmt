@@ -1,4 +1,4 @@
-use crate::{types::database::user::UserId, LockKeeperError};
+use crate::{types::database::account::UserId, LockKeeperError};
 use rand::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -21,9 +21,11 @@ use super::Export;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ZeroizeOnDrop)]
 pub struct Secret(pub(super) generic::Secret);
 
-impl From<Secret> for Vec<u8> {
-    fn from(secret: Secret) -> Self {
-        secret.0.to_owned().into()
+impl TryFrom<Secret> for Vec<u8> {
+    type Error = CryptoError;
+
+    fn try_from(secret: Secret) -> Result<Self, Self::Error> {
+        secret.0.to_owned().try_into()
     }
 }
 
@@ -38,7 +40,7 @@ impl TryFrom<Vec<u8>> for Secret {
 /// internal type representation of the secret.
 impl Display for Secret {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", hex::encode(self.0.get_material()))
+        write!(f, "{}", hex::encode(self.0.borrow_material()))
     }
 }
 
@@ -95,7 +97,10 @@ impl Secret {
             .with_bytes(key_id.clone())
             .with_str(IMPORTED);
 
-        let secret = Secret(generic::Secret::from_parts(secret_material, &context));
+        let secret = Secret(generic::Secret::from_parts(
+            secret_material.to_vec(),
+            context.clone(),
+        ));
 
         Ok((
             secret.clone(),
@@ -115,7 +120,7 @@ impl Secret {
 impl From<Secret> for Export {
     fn from(secret: Secret) -> Self {
         Self {
-            key_material: secret.0.get_material().into(),
+            key_material: secret.0.borrow_material().into(),
             context: secret.context().clone().into(),
         }
     }
@@ -126,7 +131,7 @@ impl TryFrom<Export> for Secret {
 
     fn try_from(export: Export) -> Result<Self, Self::Error> {
         let context = export.context.clone().try_into()?;
-        let inner = generic::Secret::from_parts(&export.key_material, &context);
+        let inner = generic::Secret::from_parts(export.key_material.clone(), context);
         Ok(Secret(inner))
     }
 }
@@ -148,7 +153,7 @@ mod test {
                 Secret::create_and_encrypt(&mut rng, &storage_key, &user_id, &key_id)?;
 
             // Convert to Vec<u8> and back
-            let secret_vec: Vec<u8> = secret.clone().into();
+            let secret_vec: Vec<u8> = secret.clone().try_into()?;
             let output_secret: Secret = secret_vec.try_into()?;
 
             assert_eq!(secret, output_secret);
@@ -199,7 +204,7 @@ mod test {
 
         // Make sure secret matches input secret material (e.g. the secret material
         // appears somewhere within the serialization).
-        let bytes: Vec<u8> = secret.into();
+        let bytes: Vec<u8> = secret.try_into()?;
         assert!(bytes.windows(32).any(|c| c == secret_material));
 
         Ok(())

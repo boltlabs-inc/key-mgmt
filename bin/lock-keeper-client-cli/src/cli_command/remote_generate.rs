@@ -31,7 +31,7 @@ impl CliCommand for RemoteGenerate {
 
         // Store Key Id
         let stored = state.store_entry(self.name, key_id)?;
-        println!("Generated Key: {}", stored);
+        println!("Generated Key: {stored}");
         Ok(elapsed)
     }
 

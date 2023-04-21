@@ -4,7 +4,7 @@ use crate::{
         signing_key::generation_types::{CLIENT_GENERATED, IMPORTED, SERVER_GENERATED},
         RemoteStorageKey,
     },
-    types::database::user::UserId,
+    types::database::account::UserId,
     LockKeeperError,
 };
 use k256::ecdsa::{
@@ -329,17 +329,23 @@ impl Export {
     }
 }
 
-impl From<SigningKeyPair> for Vec<u8> {
-    fn from(key_pair: SigningKeyPair) -> Self {
+impl TryFrom<SigningKeyPair> for Vec<u8> {
+    type Error = CryptoError;
+
+    fn try_from(key_pair: SigningKeyPair) -> Result<Self, Self::Error> {
         let domain_separator_bytes: Vec<u8> = SigningKeyPair::domain_separator().into();
         let signing_key = key_pair.signing_key.to_bytes();
+        let sk_length =
+            u8::try_from(signing_key.len()).map_err(|_| CryptoError::CannotEncodeDataLength)?;
+        let context = Vec::<u8>::from(key_pair.context.to_owned());
 
-        domain_separator_bytes
+        let bytes = domain_separator_bytes
             .into_iter()
-            .chain(std::iter::once(signing_key.len() as u8))
+            .chain(std::iter::once(sk_length))
             .chain(signing_key)
-            .chain::<Vec<u8>>(key_pair.context.to_owned().into())
-            .collect()
+            .chain(context)
+            .collect();
+        Ok(bytes)
     }
 }
 
@@ -403,7 +409,7 @@ mod test {
 
     use crate::{
         crypto::{generic::AssociatedData, CryptoError, KeyId, SigningKeyPair, StorageKey},
-        types::database::user::UserId,
+        types::database::account::UserId,
         LockKeeperError,
     };
     use k256::{ecdsa::SigningKey, schnorr::signature::Signature as EcdsaSignature};
@@ -431,7 +437,7 @@ mod test {
         for i in 0_i32..1000 {
             let context = AssociatedData::new().with_bytes(i.to_le_bytes());
             let key = SigningKeyPair::generate(&mut rng, &context);
-            let vec: Vec<u8> = key.clone().into();
+            let vec: Vec<u8> = key.clone().try_into()?;
 
             let output_key = vec.try_into()?;
             assert_eq!(key, output_key);
@@ -599,7 +605,6 @@ mod test {
 
         // Signatures on random messages must verify
         assert!((0..1000)
-            .into_iter()
             .map(|len| -> Vec<u8> { std::iter::repeat_with(|| rng.gen()).take(len).collect() })
             .map(|msg| (msg.sign(&signing_key), msg))
             .all(|(sig, msg)| msg.verify(&public_key, &sig).is_ok()));
@@ -676,7 +681,7 @@ mod test {
 
         // Make sure key matches input key material (e.g. the secret material
         // appears somewhere within the serialization).
-        let bytes: Vec<u8> = key_pair.into();
+        let bytes: Vec<u8> = key_pair.try_into()?;
         assert!(bytes.windows(32).any(|c| c == key_material));
 
         // Key material must be the right size
@@ -715,7 +720,7 @@ mod test {
 
         // Make sure key matches input key material (e.g. the secret material
         // appears somewhere within the serialization).
-        let bytes: Vec<u8> = key.into();
+        let bytes: Vec<u8> = key.try_into()?;
         assert!(bytes.windows(32).any(|c| c == key_material));
 
         Ok(())

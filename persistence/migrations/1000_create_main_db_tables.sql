@@ -21,7 +21,10 @@ VALUES
     (11, 'RetrieveSecret'),
     (12, 'RetrieveAuditEvents'),
     (13, 'RetrieveSigningKey'),
-    (14, 'RetrieveStorageKey')
+    (14, 'RetrieveStorageKey'),
+    (15, 'RetrieveServerEncryptedBlob'),
+    (16, 'StoreSererEncryptedBlob'),
+    (17, 'CheckSession')
 ON CONFLICT (client_action_id) DO NOTHING;
 
 -- Maps secret types to unique ID
@@ -35,7 +38,8 @@ INSERT INTO SecretTypes (secret_type)
 VALUES
     ('arbitrary_secret'),
     ('remote_signing_key'),
-    ('signing_key_pair')
+    ('signing_key_pair'),
+    ('server_encrypted_blob')
 ON CONFLICT (secret_type) DO NOTHING;
 
 CREATE TABLE IF NOT EXISTS Accounts
@@ -52,28 +56,24 @@ CREATE TABLE IF NOT EXISTS Secrets
     secret_id BIGINT GENERATED ALWAYS AS IDENTITY,
 
     key_id BYTEA UNIQUE NOT NULL,
-    user_id BYTEA NOT NULL,
-    -- TODO: Use account_id from Accounts table instead of user_id. See Issue #442
-    -- account_id BIGINT NOT NULL,
+    account_id BIGINT NOT NULL,
     secret BYTEA NOT NULL,
     secret_type_id BIGINT NOT NULL,
     retrieved BOOL NOT NULL,
     PRIMARY KEY (secret_id),
-    FOREIGN KEY (user_id) REFERENCES Accounts(user_id),
-    FOREIGN KEY (secret_type_id) REFERENCES SecretTypes(secret_type_id)
+    FOREIGN KEY (account_id) REFERENCES Accounts(account_id)
 );
 
 CREATE TABLE IF NOT EXISTS AuditEvents
 (
     audit_event_id BIGINT GENERATED ALWAYS AS IDENTITY,
-    -- TODO: Use account_id from Accounts table instead of account_name. See Issue #443
-    -- account_id BIGSERIAL NOT NULL,
-    account_name VARCHAR(50) NOT NULL,
+    account_id BIGINT NOT NULL,
     key_id BYTEA,
     request_id UUID NOT NULL,
     client_action_id BIGINT NOT NULL,
     event_status TEXT NOT NULL,
     timestamp TIMESTAMPTZ NOT NULL,
     PRIMARY KEY (audit_event_id),
-    FOREIGN KEY (client_action_id) REFERENCES ClientActionsTypes(client_action_id)
+    FOREIGN KEY (account_id) REFERENCES Accounts(account_id)
+    -- FOREIGN KEY (key_id) REFERENCES Secrets(key_id)
 );

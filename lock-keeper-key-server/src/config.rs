@@ -8,13 +8,17 @@ use rustls::{
     RootCertStore, ServerConfig,
 };
 use serde::{Deserialize, Serialize};
+use serde_with::{serde_as, DisplayFromStr};
 use std::{
     net::IpAddr,
     path::{Path, PathBuf},
     str::FromStr,
 };
+use tracing::Level;
 
-use crate::{server::opaque_storage::create_or_retrieve_server_key_opaque, LockKeeperServerError};
+use crate::{
+    server::opaque_storage::create_or_retrieve_server_setup_opaque, LockKeeperServerError,
+};
 
 /// Server configuration with all fields ready to use
 #[derive(Clone)]
@@ -25,23 +29,36 @@ pub struct Config {
     pub opaque_server_setup: ServerSetup<OpaqueCipherSuite, PrivateKey<Ristretto255>>,
     pub remote_storage_key: RemoteStorageKey,
     pub logging: LoggingConfig,
+    /// Maximum size allowed for the store sever-encrypted blob endpoint.
+    /// This size  bounded by types lengths that can be represented as a u16.
+    pub max_blob_size: u16,
 }
 
 impl Config {
+    pub const OPAQUE_SERVER_SETUP: &'static str = "OPAQUE_SERVER_SETUP";
+
     pub fn from_file(
         config_path: impl AsRef<Path>,
         private_key_bytes: Option<Vec<u8>>,
         remote_storage_key_bytes: Option<Vec<u8>>,
+        opaque_server_setup_bytes: Option<Vec<u8>>,
     ) -> Result<Self, LockKeeperServerError> {
-        let config_string = std::fs::read_to_string(&config_path)?;
+        let config_string = std::fs::read_to_string(&config_path)
+            .map_err(|e| LockKeeperServerError::FileIo(e, config_path.as_ref().to_path_buf()))?;
         let config_file = ConfigFile::from_str(&config_string)?;
-        Self::from_config_file(config_file, private_key_bytes, remote_storage_key_bytes)
+        Self::from_config_file(
+            config_file,
+            private_key_bytes,
+            remote_storage_key_bytes,
+            opaque_server_setup_bytes,
+        )
     }
 
     pub fn from_config_file(
         config: ConfigFile,
         private_key_bytes: Option<Vec<u8>>,
         remote_storage_key_bytes: Option<Vec<u8>>,
+        opaque_server_setup_bytes: Option<Vec<u8>>,
     ) -> Result<Self, LockKeeperServerError> {
         let mut rng = StdRng::from_entropy();
 
@@ -51,16 +68,20 @@ impl Config {
             .map(|tc| tc.into_rustls_config(private_key_bytes))
             .transpose()?;
 
+        let opaque_server_setup = create_or_retrieve_server_setup_opaque(
+            &mut rng,
+            config.opaque_server_key,
+            opaque_server_setup_bytes,
+        )?;
+
         Ok(Self {
             remote_storage_key,
             address: config.address,
             port: config.port,
             tls_config,
-            opaque_server_setup: create_or_retrieve_server_key_opaque(
-                &mut rng,
-                config.opaque_server_key,
-            )?,
+            opaque_server_setup,
             logging: config.logging,
+            max_blob_size: config.max_blob_size,
         })
     }
 }
@@ -87,9 +108,10 @@ pub struct ConfigFile {
     /// the [`Config`] constructors.
     pub remote_storage_key: Option<PathBuf>,
     pub opaque_path: PathBuf,
-    pub opaque_server_key: PathBuf,
+    pub opaque_server_key: Option<PathBuf>,
     pub logging: LoggingConfig,
     pub tls_config: Option<TlsConfig>,
+    pub max_blob_size: u16,
 }
 
 impl FromStr for ConfigFile {
@@ -117,9 +139,18 @@ impl ConfigFile {
     }
 }
 
+#[serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct LoggingConfig {
+    #[serde_as(as = "DisplayFromStr")]
+    pub stdout_log_level: Level,
+    pub log_files: Option<LoggingFileConfig>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
+pub struct LoggingFileConfig {
     pub lock_keeper_logs_file_name: PathBuf,
     pub all_logs_file_name: PathBuf,
 }
@@ -183,6 +214,7 @@ mod tests {
             opaque_path = "tests/gen/opaque"
             opaque_server_key = "tests/gen/opaque/server_setup"
             remote_storage_key = "test_sse.key"
+            max_blob_size = 1024
 
             [tls_config]
             private_key = "test.key"
@@ -190,6 +222,9 @@ mod tests {
             client_auth = false
 
             [logging]
+            stdout_log_level = "INFO"
+
+            [logging.log_files]
             lock_keeper_logs_file_name = "./dev/logs/server.log"
             all_logs_file_name = "./dev/logs/all.log"
         "#;
@@ -203,6 +238,7 @@ mod tests {
             opaque_path,
             opaque_server_key,
             logging,
+            max_blob_size,
         } = ConfigFile::from_str(config_str).unwrap();
 
         let tls_config = tls_config.unwrap();
@@ -215,12 +251,16 @@ mod tests {
         assert!(!tls_config.client_auth);
         assert_eq!(opaque_path, PathBuf::from("tests/gen/opaque"));
         assert_eq!(
-            opaque_server_key,
+            opaque_server_key.unwrap(),
             PathBuf::from("tests/gen/opaque/server_setup")
         );
+        assert_eq!(max_blob_size, 1024);
         let expected_log = LoggingConfig {
-            lock_keeper_logs_file_name: "./dev/logs/server.log".parse().unwrap(),
-            all_logs_file_name: "./dev/logs/all.log".parse().unwrap(),
+            stdout_log_level: Level::INFO,
+            log_files: Some(LoggingFileConfig {
+                lock_keeper_logs_file_name: "./dev/logs/server.log".parse().unwrap(),
+                all_logs_file_name: "./dev/logs/all.log".parse().unwrap(),
+            }),
         };
         assert_eq!(logging, expected_log);
     }

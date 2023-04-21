@@ -1,8 +1,7 @@
 use crate::{
     config::Config,
-    database::DataStore,
     error::LockKeeperServerError,
-    server::{session_cache::SessionCache, LockKeeperKeyServer},
+    server::{database::DataStore, session_cache::SessionCache, LockKeeperKeyServer},
 };
 
 use hyper::server::conn::Http;
@@ -76,7 +75,7 @@ async fn start_service<DB: DataStore + Clone>(
     let listener = TcpListener::bind(SocketAddr::new(addr, port)).await?;
 
     // Spawn a task to accept connections
-    let _ = tokio::spawn(async move {
+    let handle = tokio::spawn(async move {
         loop {
             let (conn, client) = match listener.accept().await {
                 Ok(incoming) => incoming,
@@ -91,14 +90,22 @@ async fn start_service<DB: DataStore + Clone>(
             let svc = svc.clone();
 
             // Spawn a task to handle each connection
-            let _ = tokio::spawn(async move {
+            let handle = tokio::spawn(async move {
                 if let Err(e) = handle_connection(http, conn, tls_acceptor, svc).await {
                     // Log the error but don't bother returning it since it has nowhere to go.
                     error!("{}", e);
                 }
             });
+
+            // We don't want to await this so we'll just drop the handle to make `clippy`
+            // happy.
+            std::mem::drop(handle);
         }
     });
+
+    // We don't want to await this so we'll just drop the handle to make `clippy`
+    // happy.
+    std::mem::drop(handle);
 
     Ok(())
 }

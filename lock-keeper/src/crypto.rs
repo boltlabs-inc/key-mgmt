@@ -19,15 +19,17 @@ use std::{
 use tracing::error;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
-use crate::types::database::user::UserId;
+use crate::types::database::account::UserId;
 
 mod arbitrary_secret;
+mod data_blob;
 mod generic;
 mod signing_key;
 mod storage_key;
 
 use crate::rpc::Message;
 pub use arbitrary_secret::Secret;
+pub use data_blob::DataBlob;
 use generic::{AssociatedData, EncryptionKey};
 pub use generic::{CryptoError, Encrypted};
 pub use signing_key::{
@@ -63,7 +65,7 @@ impl TryFrom<GenericArray<u8, U64>> for OpaqueSessionKey {
 impl OpaqueSessionKey {
     /// Encrypt the given [`Message`] under the [`OpaqueSessionKey`] using an
     /// AEAD scheme.
-    pub(crate) fn encrypt(
+    pub fn encrypt(
         &self,
         rng: &mut (impl CryptoRng + RngCore),
         message: Message,
@@ -80,14 +82,17 @@ impl OpaqueSessionKey {
     }
 }
 
-impl From<OpaqueSessionKey> for Vec<u8> {
-    fn from(key: OpaqueSessionKey) -> Self {
-        OpaqueSessionKey::domain_separator()
+impl TryFrom<OpaqueSessionKey> for Vec<u8> {
+    type Error = CryptoError;
+
+    fn try_from(key: OpaqueSessionKey) -> Result<Self, Self::Error> {
+        let bytes = Vec::<u8>::try_from(key.0.to_owned())?;
+        Ok(OpaqueSessionKey::domain_separator()
             .as_bytes()
             .iter()
             .copied()
-            .chain::<Vec<u8>>(key.0.to_owned().into())
-            .collect()
+            .chain(bytes)
+            .collect())
     }
 }
 
@@ -236,7 +241,7 @@ impl Encrypted<Message> {
 
     /// Translates an [`Encrypted<Message>`] to a [`Message`] in order to be
     /// sent through an authenticated channel.
-    pub(crate) fn try_into_message(self) -> Result<Message, LockKeeperError> {
+    pub fn try_into_message(self) -> Result<Message, LockKeeperError> {
         let content = serde_json::to_vec(&self)?;
 
         Ok(Message { content })
@@ -244,7 +249,7 @@ impl Encrypted<Message> {
 
     /// Translates a [`Message`] received through an authenticated channel to an
     /// [`Encrypted<Message>`].
-    pub(crate) fn try_from_message(message: Message) -> Result<Self, LockKeeperError> {
+    pub fn try_from_message(message: Message) -> Result<Self, LockKeeperError> {
         Ok(serde_json::from_slice(&message.content)?)
     }
 }
@@ -286,6 +291,12 @@ impl TryFrom<&[u8]> for KeyId {
     }
 }
 
+impl AsRef<[u8]> for KeyId {
+    fn as_ref(&self) -> &[u8] {
+        self.0.as_ref()
+    }
+}
+
 impl KeyId {
     /// Generate a new, random `KeyId` for the given [`UserId`].
     ///
@@ -301,12 +312,17 @@ impl KeyId {
         let domain_separator = b"Lock Keeper key ID";
 
         let hasher = Sha3_256::new();
+        let user_id_length =
+            u8::try_from(user_id.len()).map_err(|_| CryptoError::CannotEncodeDataLength)?;
+        let random_len =
+            u8::try_from(RANDOM_LEN).map_err(|_| CryptoError::CannotEncodeDataLength)?;
+
         let bytes = hasher
             .chain_update(domain_separator.len().to_be_bytes())
             .chain_update(domain_separator)
-            .chain_update([user_id.len() as u8])
+            .chain_update([user_id_length])
             .chain_update(user_id.as_bytes())
-            .chain_update([RANDOM_LEN as u8])
+            .chain_update([random_len])
             .chain_update(randomness)
             .finalize();
 
@@ -333,12 +349,6 @@ impl Debug for KeyId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let hex = hex::encode(*self.0);
         f.debug_tuple("KeyId").field(&hex).finish()
-    }
-}
-
-impl From<KeyId> for HexBytes {
-    fn from(key_id: KeyId) -> Self {
-        (*key_id.0).into()
     }
 }
 
@@ -510,7 +520,7 @@ mod test {
         for _ in 0..1000 {
             let session_key = create_test_session_key(&mut rng);
 
-            let vec: Vec<u8> = session_key.clone().into();
+            let vec: Vec<u8> = session_key.clone().try_into()?;
             let output_session_key = vec.try_into()?;
 
             assert_eq!(session_key, output_session_key);

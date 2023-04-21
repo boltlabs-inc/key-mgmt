@@ -34,3 +34,4 @@ uuid.workspace = true
 
 # Other dependencies
 colored = "2.0"
+base64 = "0.13"

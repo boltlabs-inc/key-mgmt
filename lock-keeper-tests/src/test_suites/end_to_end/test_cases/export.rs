@@ -3,7 +3,7 @@ use lock_keeper::{
     crypto::Secret,
     types::{audit_event::EventStatus, operations::ClientAction},
 };
-use lock_keeper_client::{api::GenerateResult, Config};
+use lock_keeper_client::{api::GenerateResult, Config, LockKeeperClientError};
 use tonic::Status;
 
 use crate::{
@@ -12,10 +12,10 @@ use crate::{
     run_parallel,
     test_suites::end_to_end::{
         operations::{
-            authenticate, check_audit_events, compare_errors, compare_status_errors,
-            generate_fake_key_id, import_signing_key,
+            authenticate, check_audit_events, compare_errors, generate_fake_key_id,
+            import_signing_key,
         },
-        test_cases::init_test_state,
+        test_cases::{init_test_state, NO_ENTRY_FOUND, WRONG_KEY_DATA},
     },
     utils::TestResult,
 };
@@ -57,6 +57,7 @@ async fn export_works(config: Config) -> Result<()> {
         EventStatus::Successful,
         ClientAction::ExportSecret,
         request_id,
+        Some(key_id),
     )
     .await?;
 
@@ -70,12 +71,13 @@ async fn cannot_export_fake_key(config: Config) -> Result<()> {
     let fake_key_id = generate_fake_key_id(&client).await?;
     let bytes_res = client.export_secret(&fake_key_id).await;
     let request_id = bytes_res.metadata.clone().unwrap().request_id;
-    compare_errors(bytes_res, Status::internal("Internal server error"));
+    compare_errors(bytes_res, Status::internal(NO_ENTRY_FOUND));
     check_audit_events(
         &state,
         EventStatus::Failed,
         ClientAction::ExportSecret,
         request_id,
+        Some(fake_key_id),
     )
     .await?;
 
@@ -89,12 +91,13 @@ async fn cannot_export_signing_key_as_secret(config: Config) -> Result<()> {
     let (key_id, _) = import_signing_key(&client).await.result?;
     let export_res = client.export_secret(&key_id).await;
     let request_id = export_res.metadata.clone().unwrap().request_id;
-    compare_errors(export_res, Status::internal("Internal server error"));
+    compare_errors(export_res, Status::internal(WRONG_KEY_DATA));
     check_audit_events(
         &state,
         EventStatus::Failed,
         ClientAction::ExportSecret,
         request_id,
+        Some(key_id),
     )
     .await?;
 
@@ -112,7 +115,10 @@ async fn cannot_export_after_logout(config: Config) -> Result<()> {
     client.logout().await.result?;
 
     let res = client.export_secret(&key_id).await;
-    compare_status_errors(res, Status::unauthenticated("No session key for this user"))?;
+    assert!(matches!(
+        res.result,
+        Err(LockKeeperClientError::InvalidSession)
+    ));
 
     Ok(())
 }
@@ -137,6 +143,7 @@ async fn export_signing_key_works(config: Config) -> Result<()> {
         EventStatus::Successful,
         ClientAction::ExportSigningKey,
         request_id,
+        Some(key_id),
     )
     .await?;
 
@@ -150,12 +157,13 @@ async fn cannot_export_fake_signing_key(config: Config) -> Result<()> {
     let fake_key_id = generate_fake_key_id(&client).await?;
     let export_res = client.export_signing_key(&fake_key_id).await;
     let request_id = export_res.metadata.clone().unwrap().request_id;
-    compare_errors(export_res, Status::internal("Internal server error"));
+    compare_errors(export_res, Status::internal(NO_ENTRY_FOUND));
     check_audit_events(
         &state,
         EventStatus::Failed,
         ClientAction::ExportSigningKey,
         request_id,
+        Some(fake_key_id),
     )
     .await?;
 
@@ -172,12 +180,13 @@ async fn cannot_export_secret_as_signing_key(config: Config) -> Result<()> {
     } = client.generate_secret().await.result?;
     let export_res = client.export_signing_key(&key_id).await;
     let request_id = export_res.metadata.clone().unwrap().request_id;
-    compare_errors(export_res, Status::internal("Internal server error"));
+    compare_errors(export_res, Status::internal(WRONG_KEY_DATA));
     check_audit_events(
         &state,
         EventStatus::Failed,
         ClientAction::ExportSigningKey,
         request_id,
+        Some(key_id),
     )
     .await?;
 
@@ -192,7 +201,10 @@ async fn cannot_export_signing_key_after_logout(config: Config) -> Result<()> {
     client.logout().await.result?;
 
     let res = client.export_signing_key(&key_id).await;
-    compare_status_errors(res, Status::unauthenticated("No session key for this user"))?;
+    assert!(matches!(
+        res.result,
+        Err(LockKeeperClientError::InvalidSession)
+    ));
 
     Ok(())
 }
