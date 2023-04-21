@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"struct":[["SecretFilter","Filters that can be used to influence database queries. Any new database filters for secrets (e.g. created_time) should be added to this struct as optional fields. This will allow us to add new filters with minimal breakage."]],"trait":[["DataStore","Defines the expected interface between a key server and its database."]]};
