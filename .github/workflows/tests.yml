@@ -21,7 +21,8 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       # action repo is here https://github.com/dtolnay/rust-toolchain
-      - uses: dtolnay/rust-toolchain@1.67
+      - name: Install Rust toolchain stable      
+        uses: dtolnay/rust-toolchain@1.67
         with:
           toolchain: stable
 

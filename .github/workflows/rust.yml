@@ -27,8 +27,9 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
 
       # Install nightly toolchain
-      # action repo is here https://github.com/dtolnay/rust-toolchain      
-      - uses: dtolnay/rust-toolchain@nightly
+      # action repo is here https://github.com/dtolnay/rust-toolchain  
+      - name: Install Rust toolchain nightly
+        uses: dtolnay/rust-toolchain@nightly
         with:
           components: rustfmt                
 
@@ -41,6 +42,7 @@ jobs:
 
       # Install toolchain
       # action repo is here https://github.com/dtolnay/rust-toolchain
+      - name: Install Rust toolchain stable      
       - uses: dtolnay/rust-toolchain@1.67
         with:
           toolchain: stable
