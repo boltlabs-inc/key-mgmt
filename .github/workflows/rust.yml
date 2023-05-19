@@ -26,18 +26,31 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
 
       # Install nightly toolchain
-      - uses: actions-rs/toolchain@v1
+      # action repo is here https://github.com/dtolnay/rust-toolchain      
+      - uses: dtolnay/rust-toolchain@nightly
         with:
-          toolchain: nightly
-          profile: minimal
-          components: rustfmt
+          components: rustfmt                
+
+      # tptodo: remove
+      # - uses: actions-rs/toolchain@v1
+      #   with:
+      #     toolchain: nightly
+      #     profile: minimal
+      #     components: rustfmt
 
       # Install toolchain
-      - uses: actions-rs/toolchain@v1
+      # action repo is here https://github.com/dtolnay/rust-toolchain
+      - uses: dtolnay/rust-toolchain@1.67
         with:
-          toolchain: 1.67
-          components: clippy
-          default: true
+          toolchain: stable
+          components: clippy                
+
+      # tptodo: remove
+      # - uses: actions-rs/toolchain@v1
+      #   with:
+      #     toolchain: 1.67
+      #     components: clippy
+      #     default: true
 
       - name: Install Protoc
         uses: arduino/setup-protoc@v1.1.2
