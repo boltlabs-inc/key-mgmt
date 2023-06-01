@@ -81,6 +81,17 @@ pub trait DataStore: Send + Sync + 'static {
         filter: SecretFilter,
     ) -> Result<StoredSecret, DatabaseError>;
 
+    /// Get a [`StoredSecret`] with a `SecretType` of `server_encrypted_blob`.
+    /// This method different from `get_secret` by using a simplified
+    /// interface tailored to the use case of stored blobs. Implementations
+    /// can use simplified and more efficient database queries for this
+    /// method.
+    async fn get_server_encrypted_blob(
+        &self,
+        account_id: AccountId,
+        key_id: &KeyId,
+    ) -> Result<StoredSecret, DatabaseError>;
+
     /// Delete a [`StoredSecret`] from an [`Account`]'s list of secrets.
     async fn delete_secret(
         &self,
