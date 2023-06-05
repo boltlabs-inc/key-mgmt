@@ -200,6 +200,7 @@ pub enum DataType {
     None,
     ArbitraryKey(LocalStorage<Secret>),
     Export(Export),
+    Blob(Vec<u8>),
 }
 
 impl DataType {
@@ -209,6 +210,7 @@ impl DataType {
             DataType::None => "None",
             DataType::ArbitraryKey(_) => "ArbitraryKey",
             DataType::Export(_) => "Export",
+            DataType::Blob(_) => "Blob",
         };
 
         String::from(t)
@@ -243,6 +245,7 @@ impl Display for Entry {
             DataType::Export(export) => {
                 writeln!(f, "Export Data: {}", hex::encode(&export.key_material))?
             }
+            DataType::Blob(blob) => writeln!(f, "Blob: {}", hex::encode(blob))?,
         }
 
         Ok(())
@@ -271,5 +274,11 @@ impl From<KeyId> for Entry {
 impl From<GenerateResult> for Entry {
     fn from(result: GenerateResult) -> Self {
         (result.key_id, result.local_storage).into()
+    }
+}
+
+impl From<(KeyId, Vec<u8>)> for Entry {
+    fn from((key_id, blob): (KeyId, Vec<u8>)) -> Self {
+        Entry::new(key_id, DataType::Blob(blob))
     }
 }

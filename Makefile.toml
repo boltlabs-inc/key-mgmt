@@ -142,7 +142,7 @@ alias = "ci-test"
 # Run the client CLI in interactive mode
 [tasks.cli]
 command = "cargo"
-args = ["run", "--bin", "lock-keeper-client-cli", "--", "--config", "dev/config/local/Client.toml"]
+args = ["run", "--bin", "lock-keeper-client-cli", "--", "--config", "dev/config/local/Client.toml", "${@}"]
 
 # Runs a CLI script to generate a retrieve a few keys
 [tasks.script-generate]
