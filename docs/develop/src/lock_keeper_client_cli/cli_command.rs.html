@@ -187,6 +187,12 @@
 <a href="#187" id="187">187</a>
 <a href="#188" id="188">188</a>
 <a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
 </pre><pre class="rust"><code><span class="kw">pub mod </span>authenticate;
 <span class="kw">pub mod </span>export;
 <span class="kw">pub mod </span>generate;
@@ -202,6 +208,8 @@
 <span class="kw">pub mod </span>remote_generate;
 <span class="kw">pub mod </span>remote_sign;
 <span class="kw">pub mod </span>retrieve;
+<span class="kw">pub mod </span>retrieve_blob;
+<span class="kw">pub mod </span>store_blob;
 <span class="kw">pub mod </span>wait;
 
 <span class="kw">pub use </span>authenticate::Authenticate;
@@ -219,6 +227,8 @@
 <span class="kw">pub use </span>remote_generate::RemoteGenerate;
 <span class="kw">pub use </span>remote_sign::RemoteSign;
 <span class="kw">pub use </span>retrieve::Retrieve;
+<span class="kw">pub use </span>retrieve_blob::RetrieveBlob;
+<span class="kw">pub use </span>store_blob::StoreBlob;
 <span class="kw">pub use </span>wait::Wait;
 
 <span class="kw">use </span><span class="kw">crate</span>::state::State;
@@ -352,6 +362,8 @@
         F::get_function::&lt;RemoteGenerate&gt;(),
         F::get_function::&lt;RemoteSign&gt;(),
         F::get_function::&lt;Retrieve&gt;(),
+        F::get_function::&lt;RetrieveBlob&gt;(),
+        F::get_function::&lt;StoreBlob&gt;(),
         F::get_function::&lt;Wait&gt;(),
     ]
 }

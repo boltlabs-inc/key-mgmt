@@ -273,6 +273,15 @@
 <a href="#273" id="273">273</a>
 <a href="#274" id="274">274</a>
 <a href="#275" id="275">275</a>
+<a href="#276" id="276">276</a>
+<a href="#277" id="277">277</a>
+<a href="#278" id="278">278</a>
+<a href="#279" id="279">279</a>
+<a href="#280" id="280">280</a>
+<a href="#281" id="281">281</a>
+<a href="#282" id="282">282</a>
+<a href="#283" id="283">283</a>
+<a href="#284" id="284">284</a>
 </pre><pre class="rust"><code><span class="doccomment">//! Local storage types for in-memory and on-disk storage of key information.
 
 </span><span class="kw">use </span>std::{
@@ -475,6 +484,7 @@
     <span class="prelude-val">None</span>,
     ArbitraryKey(LocalStorage&lt;Secret&gt;),
     Export(Export),
+    Blob(Vec&lt;u8&gt;),
 }
 
 <span class="kw">impl </span>DataType {
@@ -484,6 +494,7 @@
             DataType::None =&gt; <span class="string">&quot;None&quot;</span>,
             DataType::ArbitraryKey(<span class="kw">_</span>) =&gt; <span class="string">&quot;ArbitraryKey&quot;</span>,
             DataType::Export(<span class="kw">_</span>) =&gt; <span class="string">&quot;Export&quot;</span>,
+            DataType::Blob(<span class="kw">_</span>) =&gt; <span class="string">&quot;Blob&quot;</span>,
         };
 
         String::from(t)
@@ -518,6 +529,7 @@
             DataType::Export(export) =&gt; {
                 <span class="macro">writeln!</span>(f, <span class="string">&quot;Export Data: {}&quot;</span>, hex::encode(<span class="kw-2">&amp;</span>export.key_material))<span class="question-mark">?
             </span>}
+            DataType::Blob(blob) =&gt; <span class="macro">writeln!</span>(f, <span class="string">&quot;Blob: {}&quot;</span>, hex::encode(blob))<span class="question-mark">?</span>,
         }
 
         <span class="prelude-val">Ok</span>(())
@@ -546,6 +558,12 @@
 <span class="kw">impl </span>From&lt;GenerateResult&gt; <span class="kw">for </span>Entry {
     <span class="kw">fn </span>from(result: GenerateResult) -&gt; <span class="self">Self </span>{
         (result.key_id, result.local_storage).into()
+    }
+}
+
+<span class="kw">impl </span>From&lt;(KeyId, Vec&lt;u8&gt;)&gt; <span class="kw">for </span>Entry {
+    <span class="kw">fn </span>from((key_id, blob): (KeyId, Vec&lt;u8&gt;)) -&gt; <span class="self">Self </span>{
+        Entry::new(key_id, DataType::Blob(blob))
     }
 }
 </code></pre></div>
