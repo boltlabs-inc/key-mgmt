@@ -32,20 +32,13 @@ jobs:
           version: '3.x'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-      # Install toolchain
+      # Install Rust toolchain
       # action repo is here https://github.com/dtolnay/rust-toolchain
       - name: Install Rust toolchain stable
         uses: dtolnay/rust-toolchain@1.67
         with:
           toolchain: stable
           components: clippy                
-
-      # tptodo: remove
-      # - uses: actions-rs/toolchain@v1
-      #   with:
-      #     toolchain: 1.67
-      #     components: clippy
-      #     default: true
 
       - name: Build documentation in current branch
         run: cargo doc --all-features --no-deps --document-private-items --workspace
