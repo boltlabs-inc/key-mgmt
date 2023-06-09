@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":[["ACCOUNT_NAME",""],["ACTION",""],["KEY_ID",""],["LOCAL_SERVER_URI",""],["METADATA",""],["USER_ID",""]]};
+window.SIDEBAR_ITEMS = {"constant":["ACCOUNT_NAME","ACTION","KEY_ID","LOCAL_SERVER_URI","METADATA","USER_ID"]};

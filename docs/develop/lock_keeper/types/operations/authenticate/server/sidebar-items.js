@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["AuthenticateFinish","Return true if successful."],["AuthenticateStart","Check if user exists and return OPAQUE message if so"]]};
+window.SIDEBAR_ITEMS = {"struct":["AuthenticateFinish","AuthenticateStart"]};

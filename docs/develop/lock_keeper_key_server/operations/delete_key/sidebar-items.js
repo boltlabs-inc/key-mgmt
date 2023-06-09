@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["DeleteKey",""]]};
+window.SIDEBAR_ITEMS = {"static":["CALLSITE","META"],"struct":["DeleteKey"]};

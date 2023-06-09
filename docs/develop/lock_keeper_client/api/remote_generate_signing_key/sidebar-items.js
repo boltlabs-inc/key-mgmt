@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["RemoteGenerateResult",""]]};
+window.SIDEBAR_ITEMS = {"struct":["RemoteGenerateResult"]};

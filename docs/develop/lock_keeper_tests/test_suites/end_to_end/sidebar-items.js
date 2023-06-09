@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":[["run_tests",""],["run_tests_with_config",""]],"mod":[["operations",""],["test_cases",""]]};
+window.SIDEBAR_ITEMS = {"fn":["run_tests","run_tests_with_config"],"mod":["operations","test_cases"]};

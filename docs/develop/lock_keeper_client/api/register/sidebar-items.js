@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":[["register_finish",""],["register_start",""]]};
+window.SIDEBAR_ITEMS = {"fn":["register_finish","register_start"]};

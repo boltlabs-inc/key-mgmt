@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":[["lock_keeper_rpc_client","Generated client implementations."],["lock_keeper_rpc_server","Generated server implementations."]],"struct":[["Empty",""],["Message",""],["SessionStatus",""]]};
+window.SIDEBAR_ITEMS = {"constant":["STRUCT_NAME"],"fn":["ScalarWrapper"],"mod":["lock_keeper_rpc_client","lock_keeper_rpc_server"],"struct":["Empty","Message","SessionStatus"]};

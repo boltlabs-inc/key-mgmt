@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["LockKeeperRpcClient",""]]};
+window.SIDEBAR_ITEMS = {"struct":["LockKeeperRpcClient"]};

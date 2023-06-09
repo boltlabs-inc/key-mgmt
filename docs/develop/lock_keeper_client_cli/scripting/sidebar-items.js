@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":[["parse_repeats",""]],"struct":[["Script","A sequence of commands that can be executed without user input."]]};
+window.SIDEBAR_ITEMS = {"fn":["parse_repeats"],"struct":["Script"]};

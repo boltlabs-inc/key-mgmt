@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["Generate","return new requested key ID"],["Store","Return true if successful"]]};
+window.SIDEBAR_ITEMS = {"struct":["Generate","Store"]};

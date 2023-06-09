@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["Response","return requested key and key ID"]]};
+window.SIDEBAR_ITEMS = {"struct":["Response"]};

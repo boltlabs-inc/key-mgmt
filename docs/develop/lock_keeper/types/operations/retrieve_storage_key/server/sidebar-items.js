@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["Response","return encrypted storage key"]]};
+window.SIDEBAR_ITEMS = {"struct":["Response"]};

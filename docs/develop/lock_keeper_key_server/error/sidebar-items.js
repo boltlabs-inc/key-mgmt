@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":[["LockKeeperServerError",""]]};
+window.SIDEBAR_ITEMS = {"enum":["LockKeeperServerError"]};

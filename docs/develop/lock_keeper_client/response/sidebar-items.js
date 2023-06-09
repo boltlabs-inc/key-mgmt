@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["LockKeeperResponse",""],["Metadata",""]]};
+window.SIDEBAR_ITEMS = {"struct":["LockKeeperResponse","Metadata"]};

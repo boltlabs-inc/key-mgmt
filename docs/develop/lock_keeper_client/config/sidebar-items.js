@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["ClientAuth",""],["Config","Client configuration with all fields ready to use."],["ConfigFile","Client configuration file format."]]};
+window.SIDEBAR_ITEMS = {"struct":["ClientAuth","Config","ConfigFile"]};

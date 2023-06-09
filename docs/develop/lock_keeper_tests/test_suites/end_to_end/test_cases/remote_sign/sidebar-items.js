@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":[["cannot_remote_sign_after_logout",""],["remote_sign_works",""],["run_tests",""]]};
+window.SIDEBAR_ITEMS = {"constant":["COUNT"],"fn":["cannot_remote_sign_after_logout","remote_sign_works","run_tests"]};

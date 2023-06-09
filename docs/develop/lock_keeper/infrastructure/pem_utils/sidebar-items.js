@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":[["read_certificates","Returns all certificates in the pemfile at the given path"],["read_private_key_from_bytes","Returns the first private key found in the given bytes"],["read_private_key_from_file","Returns the first private key found in the pemfile at the given path"]]};
+window.SIDEBAR_ITEMS = {"fn":["read_certificates","read_private_key_from_bytes","read_private_key_from_file"]};

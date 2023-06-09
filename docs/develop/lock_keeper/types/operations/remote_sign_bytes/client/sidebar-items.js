@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["RequestRemoteSign",""]]};
+window.SIDEBAR_ITEMS = {"struct":["RequestRemoteSign"]};

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":[["record_field","For the current active span, record `field_value` for the field `field_name`. This fields must already be defined in the current span."]]};
+window.SIDEBAR_ITEMS = {"fn":["record_field"],"static":["CALLSITE","META"]};

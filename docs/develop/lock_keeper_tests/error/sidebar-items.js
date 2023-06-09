@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":[["LockKeeperTestError",""]],"type":[["Result",""]]};
+window.SIDEBAR_ITEMS = {"enum":["LockKeeperTestError"],"type":["Result"]};

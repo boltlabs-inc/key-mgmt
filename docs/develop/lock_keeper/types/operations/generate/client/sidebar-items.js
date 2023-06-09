@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["Store","pass user ID and encrypted secret"]]};
+window.SIDEBAR_ITEMS = {"struct":["Store"]};

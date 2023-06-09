@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["ImportSigningKey",""]]};
+window.SIDEBAR_ITEMS = {"static":["CALLSITE","META"],"struct":["ImportSigningKey"]};

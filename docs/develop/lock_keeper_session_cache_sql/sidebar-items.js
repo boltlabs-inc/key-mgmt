@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":[["api",""],["config","Config for session cache."],["error",""],["types",""]]};
+window.SIDEBAR_ITEMS = {"mod":["api","config","error","types"]};

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":[["parse_input","Reads next command from standard input."],["run","Runs the interactive client"],["run_script","Runs the interactive client"]]};
+window.SIDEBAR_ITEMS = {"fn":["parse_input","run","run_script"]};
