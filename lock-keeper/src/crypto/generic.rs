@@ -7,12 +7,13 @@ use serde::{Deserialize, Serialize};
 use std::{iter, marker::PhantomData};
 use thiserror::Error;
 
+use k256::ecdsa;
 use std::{convert::Infallible, mem::size_of};
 use tracing::instrument;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
 /// Errors that arise in the cryptography module.
-#[derive(Debug, Clone, Copy, Error)]
+#[derive(Debug, Error)]
 pub enum CryptoError {
     #[error("Conversion error")]
     ConversionError,
@@ -22,6 +23,8 @@ pub enum CryptoError {
     DecryptionFailed,
     #[error("Key derivation failed: {0}")]
     KeyDerivationFailed(hkdf::InvalidLength),
+    #[error("Signature generation failed: {0}")]
+    Signature(#[from] ecdsa::signature::Error),
     #[error("RNG failed")]
     RandomNumberGeneratorFailed,
     /// Length of data too large for our integer data type.
