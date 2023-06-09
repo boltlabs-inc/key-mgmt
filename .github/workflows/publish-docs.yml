@@ -35,7 +35,7 @@ jobs:
       # Install Rust toolchain
       # action repo is here https://github.com/dtolnay/rust-toolchain
       - name: Install Rust toolchain stable
-        uses: dtolnay/rust-toolchain@1.67
+        uses: dtolnay/rust-toolchain@1.70
         with:
           toolchain: stable
           components: clippy                
