@@ -25,6 +25,7 @@ mod arbitrary_secret;
 mod data_blob;
 mod generic;
 mod signing_key;
+mod signing_private_key;
 mod storage_key;
 
 use crate::rpc::Message;
@@ -35,6 +36,7 @@ pub use generic::{CryptoError, Encrypted};
 pub use signing_key::{
     Import, Signable, SignableBytes, Signature, SigningKeyPair, SigningPublicKey,
 };
+pub use signing_private_key::{RecoverableSignature, SigningPrivateKey};
 #[cfg(test)]
 use storage_key::test::create_test_export_key;
 pub use storage_key::{RemoteStorageKey, StorageKey};

@@ -283,7 +283,7 @@ impl PostgresDB {
         debug!("Matching entries from query: {}", matches.len());
 
         // Iterator will stop and the first error is returned if our conversion fails.
-        let results: Result<Vec<_>, _> = matches.into_iter().map(TryFrom::try_from).collect();
+        let results: Result<Vec<_>, _> = matches.into_iter().map(AuditEvent::try_from).collect();
         results
     }
 

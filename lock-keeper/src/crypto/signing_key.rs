@@ -9,11 +9,13 @@ use crate::{
 };
 use k256::ecdsa::{
     self,
-    signature::{Signer, Verifier},
-    SigningKey, VerifyingKey,
+    signature::{hazmat::PrehashVerifier, Signer, Verifier},
+    VerifyingKey,
 };
 use rand::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
+use tracing::error;
 use zeroize::ZeroizeOnDrop;
 
 use super::{generic::AssociatedData, CryptoError, Encrypted, Export, KeyId, StorageKey};
@@ -31,7 +33,7 @@ pub trait Signable: AsRef<[u8]> {
         &self,
         public_key: &SigningPublicKey,
         signature: &Signature,
-    ) -> Result<(), LockKeeperError>;
+    ) -> Result<(), CryptoError>;
 }
 
 /// Wrapper used to declare arbitrary bytes as [`Signable`].
@@ -59,11 +61,8 @@ impl Signable for SignableBytes {
         &self,
         public_key: &SigningPublicKey,
         signature: &Signature,
-    ) -> Result<(), LockKeeperError> {
-        Ok(public_key
-            .0
-            .verify(&self.0, &signature.0)
-            .map_err(|_| CryptoError::VerificationFailed)?)
+    ) -> Result<(), CryptoError> {
+        public_key.verify(&self.0, signature)
     }
 }
 
@@ -80,21 +79,16 @@ pub mod generation_types {
 /// This can be generated locally by the client or remotely by the server.
 #[derive(Debug, Clone, PartialEq, Eq, ZeroizeOnDrop)]
 pub struct SigningKeyPair {
-    signing_key: SigningKey,
+    signing_key: ecdsa::SigningKey,
     #[zeroize(skip)]
     context: AssociatedData,
 }
-
-/// The public component of an ECDSA signing key, and context about the key.
-#[allow(unused)]
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct SigningPublicKey(VerifyingKey);
 
 impl SigningKeyPair {
     /// Create a new `SigningKeyPair` with the given associated data.
     fn generate(rng: &mut (impl CryptoRng + RngCore), context: &AssociatedData) -> Self {
         Self {
-            signing_key: SigningKey::random(rng),
+            signing_key: ecdsa::SigningKey::random(rng),
             context: context.clone(),
         }
     }
@@ -154,7 +148,7 @@ impl SigningKeyPair {
             .with_str(IMPORTED);
 
         let signing_key = Self {
-            signing_key: SigningKey::from_bytes(key_material)
+            signing_key: ecdsa::SigningKey::from_bytes(key_material)
                 .map_err(|_| CryptoError::ConversionError)?,
             context: context.clone(),
         };
@@ -191,6 +185,54 @@ impl SigningKeyPair {
             signing_key.clone(),
             Encrypted::encrypt(rng, &storage_key.0, signing_key, &context)?,
         ))
+    }
+}
+
+/// The public component of an ECDSA signing key.
+#[allow(unused)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SigningPublicKey(pub VerifyingKey);
+
+impl SigningPublicKey {
+    /// Verify a `Signature` using this public key. This function will hash the
+    /// message using ??? TODO.
+    pub fn verify(
+        &self,
+        message: impl AsRef<[u8]>,
+        signature: &Signature,
+    ) -> Result<(), CryptoError> {
+        self.0.verify(message.as_ref(), &signature.0).map_err(|e| {
+            error!("{e}");
+            CryptoError::VerificationFailed
+        })
+    }
+
+    /// Verify a `Signature` using this public key. This function expects `hash`
+    /// to be an already hashed message.
+    pub fn verify_prehash(
+        &self,
+        hash: impl AsRef<[u8]>,
+        signature: &Signature,
+    ) -> Result<(), CryptoError> {
+        self.0
+            .verify_prehash(hash.as_ref(), &signature.0)
+            .map_err(|e| {
+                error!("{e}");
+                CryptoError::VerificationFailed
+            })
+    }
+
+    // Construct a [`SigningPublicKey`] from a PEM-encoded string.
+    //
+    // Keys in this format begin with the following delimiter:
+    // -----BEGIN PUBLIC KEY-----
+    pub fn from_pem(pem: &str) -> Result<Self, CryptoError> {
+        let key = VerifyingKey::from_str(pem).map_err(|e| {
+            error!("{e}");
+            CryptoError::ConversionError
+        })?;
+
+        Ok(Self(key))
     }
 }
 
@@ -262,7 +304,7 @@ impl TryFrom<&[u8]> for Import {
         // Check if these bytes are correctly formatted to make a signing key,
         // but don't actually use the key.
         let _signing_key =
-            SigningKey::from_bytes(bytes).map_err(|_| CryptoError::ConversionError)?;
+            ecdsa::SigningKey::from_bytes(bytes).map_err(|_| CryptoError::ConversionError)?;
 
         Ok(Self {
             key_material: bytes.into(),
@@ -297,8 +339,8 @@ impl Import {
             .with_bytes(key_id.clone())
             .with_str(IMPORTED);
 
-        let signing_key =
-            SigningKey::from_bytes(&self.key_material).map_err(|_| CryptoError::ConversionError)?;
+        let signing_key = ecdsa::SigningKey::from_bytes(&self.key_material)
+            .map_err(|_| CryptoError::ConversionError)?;
 
         Ok(SigningKeyPair {
             signing_key,
@@ -319,7 +361,7 @@ impl From<SigningKeyPair> for Export {
 impl Export {
     /// Convert `Export` into a [`SigningKeyPair`].
     pub fn into_signing_key(self) -> Result<SigningKeyPair, LockKeeperError> {
-        let signing_key = SigningKey::from_bytes(self.key_material.as_slice())
+        let signing_key = ecdsa::SigningKey::from_bytes(self.key_material.as_slice())
             .map_err(|_| CryptoError::ConversionError)?;
         let context = self.context.to_owned().try_into()?;
         Ok(SigningKeyPair {
@@ -374,8 +416,8 @@ impl TryFrom<Vec<u8>> for SigningKeyPair {
         let signing_key_bytes = value
             .get(signing_key_offset..signing_key_end)
             .ok_or(CryptoError::ConversionError)?;
-        let signing_key =
-            SigningKey::from_bytes(signing_key_bytes).map_err(|_| CryptoError::ConversionError)?;
+        let signing_key = ecdsa::SigningKey::from_bytes(signing_key_bytes)
+            .map_err(|_| CryptoError::ConversionError)?;
 
         // AssociatedData `try_into` handles length prepending
         let context_offset = signing_key_end;
@@ -394,11 +436,12 @@ impl TryFrom<Vec<u8>> for SigningKeyPair {
 
 /// A signature on an object encrypted under the ECDSA signature scheme.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Signature(ecdsa::Signature);
+pub struct Signature(pub(super) ecdsa::Signature);
 
-impl AsRef<[u8]> for Signature {
-    fn as_ref(&self) -> &[u8] {
-        self.0.as_ref()
+impl Signature {
+    /// Serialize this signature as ASN.1 DER.
+    pub fn to_der(&self) -> Vec<u8> {
+        self.0.to_der().as_bytes().to_vec()
     }
 }
 
@@ -407,26 +450,68 @@ mod test {
     use super::*;
     use rand::Rng;
 
+    use super::Signature;
     use crate::{
-        crypto::{generic::AssociatedData, CryptoError, KeyId, SigningKeyPair, StorageKey},
+        crypto::{generic::AssociatedData, CryptoError, KeyId, Signable, StorageKey},
         types::database::account::UserId,
         LockKeeperError,
     };
-    use k256::{ecdsa::SigningKey, schnorr::signature::Signature as EcdsaSignature};
+    use k256::{ecdsa, schnorr::signature::Signature as EcdsaSignature};
 
-    use super::Signature;
+    /* Public and private key pairs used for testing. These keys were generated
+       as follows using the `openssl` command line utility:
+       # Generate `secp256k1` private key
+       > openssl ecparam -genkey -out test.pem -name secp256k1 -noout
+       # Derive  public key from private key.
+       > openssl ec -in test.pem -pubout -out test_public.pem
+       # Get private key in PKCS#8-encoded pem format.
+       > openssl pkcs8 -topk8 -nocrypt -in test.pem -out test_p8.pem
+    */
+    const PUBLIC_KEY: &'static str = r#"
+-----BEGIN PUBLIC KEY-----
+MFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAEEfw/MOmtobnF36IKi6WcN/sSbP2nrdSE
+3bKZV9X0j+bukH19wqtyp+JC6OiKY5E8LQn5bWM7ihBy2+0Tl0mHVQ==
+-----END PUBLIC KEY-----
+"#;
+
+    const PRIVATE_KEY: &'static str = r#"
+-----BEGIN PRIVATE KEY-----
+MIGEAgEAMBAGByqGSM49AgEGBSuBBAAKBG0wawIBAQQg5X2FE2dAPaL6hD6hAN93
+6Gd61wZkW5i00WrrIQVt9P2hRANCAAQR/D8w6a2hucXfogqLpZw3+xJs/aet1ITd
+splX1fSP5u6QfX3Cq3Kn4kLo6IpjkTwtCfltYzuKEHLb7ROXSYdV
+-----END PRIVATE KEY-----
+"#;
+
+    // Ensure we can read a public key in the expected format.
+    #[test]
+    fn public_key_from_pem_works() {
+        let _ = SigningPublicKey::from_pem(PUBLIC_KEY).unwrap();
+    }
+
+    // Ensure a public key we read in can be used to verify bytes signed by the
+    // corresponding private key.
+    #[test]
+    fn public_key_from_pem_can_verify() {
+        let public_key = SigningPublicKey::from_pem(PUBLIC_KEY).unwrap();
+        let signing_key = ecdsa::SigningKey::from_str(PRIVATE_KEY).unwrap();
+
+        let message = "hello world!".as_bytes();
+        let signature = Signature(signing_key.sign(&message));
+
+        public_key.verify(&message, &signature).unwrap();
+    }
 
     #[test]
     fn signing_keys_conversion_works() {
         let mut rng = rand::thread_rng();
         for _ in 0..1000 {
-            let signing_key = SigningKey::random(&mut rng);
+            let signing_key = ecdsa::SigningKey::random(&mut rng);
             let bytes = signing_key.to_bytes();
-            let output_key = SigningKey::from_bytes(&bytes).unwrap();
+            let output_key = ecdsa::SigningKey::from_bytes(&bytes).unwrap();
             assert_eq!(signing_key, output_key);
 
             let byte_vec: Vec<u8> = signing_key.to_bytes().into_iter().collect();
-            let output_key = SigningKey::from_bytes(&byte_vec).unwrap();
+            let output_key = ecdsa::SigningKey::from_bytes(&byte_vec).unwrap();
             assert_eq!(signing_key, output_key);
         }
     }
@@ -541,7 +626,7 @@ mod test {
         let user_id = UserId::new(&mut rng)?;
         let key_id = KeyId::generate(&mut rng, &user_id)?;
 
-        let key_material = SigningKey::random(rng.clone()).to_bytes().to_vec();
+        let key_material = ecdsa::SigningKey::random(rng.clone()).to_bytes().to_vec();
         let (_, encrypted_import_key) = SigningKeyPair::import_and_encrypt(
             &key_material,
             &mut rng,
@@ -705,7 +790,7 @@ mod test {
         let user_id = UserId::new(&mut rng)?;
         let key_id = KeyId::generate(&mut rng, &user_id)?;
 
-        let key_material = SigningKey::random(rng.clone()).to_bytes().to_vec();
+        let key_material = ecdsa::SigningKey::random(rng.clone()).to_bytes().to_vec();
         let (key, encrypted_key) = SigningKeyPair::import_and_encrypt(
             &key_material,
             &mut rng,
@@ -756,7 +841,7 @@ mod test {
         assert!(contains_str(secret, SERVER_GENERATED));
 
         // Use the local-import creation function
-        let key_material = SigningKey::random(rng.clone()).to_bytes();
+        let key_material = ecdsa::SigningKey::random(rng.clone()).to_bytes();
         let (imported_secret, _) = SigningKeyPair::import_and_encrypt(
             &key_material,
             &mut rng,
@@ -787,7 +872,7 @@ mod test {
             &self,
             public_key: &SigningPublicKey,
             signature: &Signature,
-        ) -> Result<(), LockKeeperError> {
+        ) -> Result<(), CryptoError> {
             (&self).verify(public_key, signature)
         }
     }
@@ -801,11 +886,11 @@ mod test {
             &self,
             public_key: &SigningPublicKey,
             signature: &Signature,
-        ) -> Result<(), LockKeeperError> {
-            Ok(public_key
+        ) -> Result<(), CryptoError> {
+            public_key
                 .0
                 .verify(self, &signature.0)
-                .map_err(|_| CryptoError::VerificationFailed)?)
+                .map_err(|_| CryptoError::VerificationFailed)
         }
     }
 }
