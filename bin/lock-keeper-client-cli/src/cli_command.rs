@@ -84,7 +84,7 @@ pub trait CliCommand: Debug {
     where
         Self: Sized,
     {
-        let mut split: _ = s.trim().split(' ');
+        let mut split = s.trim().split(' ');
 
         let command = split
             .next()

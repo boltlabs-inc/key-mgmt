@@ -20,9 +20,12 @@ jobs:
           version: '3.x'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: actions-rs/toolchain@v1
+      # Install Rust toolchain
+      # action repo is here https://github.com/dtolnay/rust-toolchain
+      - name: Install Rust toolchain stable      
+        uses: dtolnay/rust-toolchain@1.70
         with:
-          toolchain: 1.67
+          toolchain: stable
 
       - name: Cache
         uses: actions/cache@v2

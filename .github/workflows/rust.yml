@@ -3,6 +3,7 @@
 name: Rust
 
 on:
+  workflow_dispatch:
   pull_request:
     branches: [ main, develop ]
 
@@ -25,19 +26,20 @@ jobs:
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
 
-      # Install nightly toolchain
-      - uses: actions-rs/toolchain@v1
+      # Install Rust nightly toolchain
+      # action repo is here https://github.com/dtolnay/rust-toolchain  
+      - name: Install Rust toolchain nightly
+        uses: dtolnay/rust-toolchain@nightly
         with:
-          toolchain: nightly
-          profile: minimal
-          components: rustfmt
+          components: rustfmt                
 
-      # Install toolchain
-      - uses: actions-rs/toolchain@v1
+      # Install Rust toolchain
+      # action repo is here https://github.com/dtolnay/rust-toolchain
+      - name: Install Rust toolchain stable      
+        uses: dtolnay/rust-toolchain@1.70
         with:
-          toolchain: 1.67
-          components: clippy
-          default: true
+          toolchain: stable
+          components: clippy                
 
       - name: Install Protoc
         uses: arduino/setup-protoc@v1.1.2
