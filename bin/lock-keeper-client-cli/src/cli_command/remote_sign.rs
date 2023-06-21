@@ -38,7 +38,7 @@ impl CliCommand for RemoteSign {
             .result?;
         let elapsed = now.elapsed()?;
 
-        println!("Signature: {}", hex::encode(signature));
+        println!("Signature: {}", hex::encode(signature.to_der()));
         Ok(elapsed)
     }
 
