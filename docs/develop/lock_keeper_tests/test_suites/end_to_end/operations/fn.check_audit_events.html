@@ -2,7 +2,7 @@
     state: &amp;<a class="struct" href="../test_cases/struct.TestState.html" title="struct lock_keeper_tests::test_suites::end_to_end::test_cases::TestState">TestState</a>,
     expected_status: EventStatus,
     expected_action: ClientAction,
-    request_id: <a class="struct" href="https://docs.rs/uuid/1.3.3/uuid/struct.Uuid.html" title="struct uuid::Uuid">Uuid</a>,
+    request_id: <a class="struct" href="https://docs.rs/uuid/1.3.4/uuid/struct.Uuid.html" title="struct uuid::Uuid">Uuid</a>,
     key_id: <a class="enum" href="https://doc.rust-lang.org/1.70.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;KeyId&gt;
 ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.70.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.70.0/std/primitive.unit.html">()</a>, LockKeeperClientError&gt;</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Fetch relevant events based on request_id. Ensure that some event on the
 list matches the expected_status and expected_action. Note: we cannot rely

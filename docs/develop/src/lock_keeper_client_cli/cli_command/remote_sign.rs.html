@@ -105,7 +105,7 @@
             </span>.result<span class="question-mark">?</span>;
         <span class="kw">let </span>elapsed = now.elapsed()<span class="question-mark">?</span>;
 
-        <span class="macro">println!</span>(<span class="string">&quot;Signature: {}&quot;</span>, hex::encode(signature));
+        <span class="macro">println!</span>(<span class="string">&quot;Signature: {}&quot;</span>, hex::encode(signature.to_der()));
         <span class="prelude-val">Ok</span>(elapsed)
     }
 

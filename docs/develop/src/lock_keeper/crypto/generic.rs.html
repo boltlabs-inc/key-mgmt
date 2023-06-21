@@ -688,6 +688,9 @@
 <a href="#688" id="688">688</a>
 <a href="#689" id="689">689</a>
 <a href="#690" id="690">690</a>
+<a href="#691" id="691">691</a>
+<a href="#692" id="692">692</a>
+<a href="#693" id="693">693</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>chacha20poly1305::{
     aead::{Aead, Payload},
     AeadCore, ChaCha20Poly1305, KeyInit,
@@ -697,12 +700,13 @@
 <span class="kw">use </span>std::{iter, marker::PhantomData};
 <span class="kw">use </span>thiserror::Error;
 
+<span class="kw">use </span>k256::ecdsa;
 <span class="kw">use </span>std::{convert::Infallible, mem::size_of};
 <span class="kw">use </span>tracing::instrument;
 <span class="kw">use </span>zeroize::{Zeroize, ZeroizeOnDrop};
 
 <span class="doccomment">/// Errors that arise in the cryptography module.
-</span><span class="attr">#[derive(Debug, Clone, Copy, Error)]
+</span><span class="attr">#[derive(Debug, Error)]
 </span><span class="kw">pub enum </span>CryptoError {
     <span class="attr">#[error(<span class="string">&quot;Conversion error&quot;</span>)]
     </span>ConversionError,
@@ -712,6 +716,8 @@
     </span>DecryptionFailed,
     <span class="attr">#[error(<span class="string">&quot;Key derivation failed: {0}&quot;</span>)]
     </span>KeyDerivationFailed(hkdf::InvalidLength),
+    <span class="attr">#[error(<span class="string">&quot;Signature generation failed: {0}&quot;</span>)]
+    </span>Signature(<span class="attr">#[from] </span>ecdsa::signature::Error),
     <span class="attr">#[error(<span class="string">&quot;RNG failed&quot;</span>)]
     </span>RandomNumberGeneratorFailed,
     <span class="doccomment">/// Length of data too large for our integer data type.

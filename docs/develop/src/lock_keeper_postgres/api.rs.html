@@ -877,7 +877,7 @@
         <span class="macro">debug!</span>(<span class="string">&quot;Matching entries from query: {}&quot;</span>, matches.len());
 
         <span class="comment">// Iterator will stop and the first error is returned if our conversion fails.
-        </span><span class="kw">let </span>results: <span class="prelude-ty">Result</span>&lt;Vec&lt;<span class="kw">_</span>&gt;, <span class="kw">_</span>&gt; = matches.into_iter().map(TryFrom::try_from).collect();
+        </span><span class="kw">let </span>results: <span class="prelude-ty">Result</span>&lt;Vec&lt;<span class="kw">_</span>&gt;, <span class="kw">_</span>&gt; = matches.into_iter().map(AuditEvent::try_from).collect();
         results
     }
 

@@ -528,6 +528,8 @@
 <a href="#528" id="528">528</a>
 <a href="#529" id="529">529</a>
 <a href="#530" id="530">530</a>
+<a href="#531" id="531">531</a>
+<a href="#532" id="532">532</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Application-specific cryptographic types and operations.
 //!
 //! Defines and implements keys and secret types, and the appropriate
@@ -555,6 +557,7 @@
 <span class="kw">mod </span>data_blob;
 <span class="kw">mod </span>generic;
 <span class="kw">mod </span>signing_key;
+<span class="kw">mod </span>signing_private_key;
 <span class="kw">mod </span>storage_key;
 
 <span class="kw">use </span><span class="kw">crate</span>::rpc::Message;
@@ -565,6 +568,7 @@
 <span class="kw">pub use </span>signing_key::{
     Import, Signable, SignableBytes, Signature, SigningKeyPair, SigningPublicKey,
 };
+<span class="kw">pub use </span>signing_private_key::{RecoverableSignature, SigningPrivateKey};
 <span class="attr">#[cfg(test)]
 </span><span class="kw">use </span>storage_key::test::create_test_export_key;
 <span class="kw">pub use </span>storage_key::{RemoteStorageKey, StorageKey};
@@ -706,10 +710,10 @@
     /// This must be run by the client.
     /// It takes the following steps:
     /// 1. Generate a new [`StorageKey`] to encrypt stored data with
-    /// 2. Derive the decryption key from the master key,
-    ///    using the associated data
-    /// 3. Encrypt the storage key under the encryption key,
-    ///    using an AEAD scheme
+    /// 2. Derive the decryption key from the master key, using the associated
+    ///    data
+    /// 3. Encrypt the storage key under the encryption key, using an AEAD
+    ///    scheme
     /// 4. Return the encrypted storage key
     </span><span class="kw">pub fn </span>create_and_encrypt_storage_key(
         <span class="self">self</span>,
