@@ -27,6 +27,8 @@ mod generic;
 mod signing_key;
 mod signing_private_key;
 mod storage_key;
+mod password_key;
+mod password;
 
 use crate::rpc::Message;
 pub use arbitrary_secret::Secret;
@@ -40,6 +42,7 @@ pub use signing_private_key::{RecoverableSignature, SigningPrivateKey};
 #[cfg(test)]
 use storage_key::test::create_test_export_key;
 pub use storage_key::{RemoteStorageKey, StorageKey};
+pub use password_key::PasswordKey;
 
 /// A session key is produced as shared output for client and server from
 /// OPAQUE.
