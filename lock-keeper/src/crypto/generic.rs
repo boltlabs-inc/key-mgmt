@@ -113,19 +113,27 @@ pub struct Encrypted<T> {
 }
 
 //////
-/// 
+///
 /// An implementation of the `std::fmt::Debug` trait for Password.
 ///
-/// The Debug trait controls how a value is formatted when using the `println!` or `format!` macros 
-/// with the {:?} format specifier.
-/// 
+/// The Debug trait controls how a value is formatted when using the `println!`
+/// or `format!` macros with the {:?} format specifier.
 impl<T> std::fmt::Debug for Encrypted<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Encrypted")
-            .field("\nCiphertext", &format_args!("\n\t{:02x?\n}", &self.ciphertext))
-            .field("\nAssociated_data", &format_args!("\n\t{:02x?\n}", &self.associated_data))
+            .field(
+                "\nCiphertext",
+                &format_args!("\n\t{:02x?\n}", &self.ciphertext),
+            )
+            .field(
+                "\nAssociated_data",
+                &format_args!("\n\t{:02x?\n}", &self.associated_data),
+            )
             .field("\nNonce", &format_args!("\n\t{:02x?\n}", &self.nonce))
-            .field("\nOriginal_type", &format_args!("\n\t{:02x?\n}", &self.original_type))
+            .field(
+                "\nOriginal_type",
+                &format_args!("\n\t{:02x?\n}", &self.original_type),
+            )
             .finish()
     }
 }
@@ -400,9 +408,8 @@ impl TryFrom<Vec<u8>> for Secret {
 }
 
 //////
-/// 
+///
 /// A password contains password material and associated data.
-/// 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, ZeroizeOnDrop)]
 pub(super) struct Password {
     /// The actual bytes of password material.
@@ -413,22 +420,17 @@ pub(super) struct Password {
 }
 
 impl Password {
-
     //////
-    /// 
+    ///
     /// Generate a new password of length `len` (in bytes).
-    /// 
+    ///
     /// Note: we could use different algorithms to generate passwords.
-    /// 
     #[allow(unused)]
     pub(super) fn generate(
-
         rng: &mut (impl CryptoRng + RngCore),
         len: usize,
         context: AssociatedData,
-
     ) -> Self {
-
         Self {
             material: iter::repeat_with(|| rng.gen()).take(len).collect(),
             context,
@@ -436,55 +438,46 @@ impl Password {
     }
 
     //////
-    /// 
+    ///
     /// Create a new password from its constituent parts.
-    /// 
     pub(super) fn from_parts(password_material: Vec<u8>, context: AssociatedData) -> Option<Self> {
-
         // Perform input validation checks
         if password_material.is_empty() {
-            return None; 
-        }        
+            return None;
+        }
 
         Some(Self {
             material: password_material,
             context,
         })
-
     }
 
     //////
-    /// 
-    /// Retrieve the context for this password.
     ///
-    /// 
+    /// Retrieve the context for this password.
     pub(super) fn context(&self) -> &AssociatedData {
         &self.context
     }
 
     //////
-    /// 
+    ///
     /// Retrieve the password material.
     ///
-    /// Return a reference to the underlying bytes of the password. 
+    /// Return a reference to the underlying bytes of the password.
     /// This should only be used to print the password.
-    /// 
     pub(super) fn borrow_material(&self) -> &[u8] {
         &self.material
     }
 }
 
 //////
-/// 
+///
 /// An implementation of the `std::fmt::Debug` trait for Password.
 ///
-/// The Debug trait controls how a value is formatted when using the `println!` or `format!` macros 
-/// with the {:?} format specifier.
-/// 
+/// The Debug trait controls how a value is formatted when using the `println!`
+/// or `format!` macros with the {:?} format specifier.
 impl std::fmt::Debug for Password {
-
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-
         f.debug_struct("Password")
             .field("material", &format_args!("{:02x?\n}", &self.material))
             .field("context", &format_args!("{:02x?\n}", &self.context))
@@ -493,17 +486,16 @@ impl std::fmt::Debug for Password {
 }
 
 //////
-/// 
-/// Implementation of the `TryFrom` trait for converting from `Password` to `Vec<u8>`
 ///
+/// Implementation of the `TryFrom` trait for converting from `Password` to
+/// `Vec<u8>`
 impl TryFrom<Password> for Vec<u8> {
     type Error = CryptoError;
 
     fn try_from(password: Password) -> Result<Self, Self::Error> {
-
         // password len || password material || context len || context
         let ad: Vec<u8> = password.context.to_owned().into();
-        
+
         let password_length = u16::try_from(password.material.len())
             .map_err(|_| CryptoError::CannotEncodeDataLength)?;
 
@@ -521,16 +513,16 @@ impl TryFrom<Password> for Vec<u8> {
 }
 
 //////
-/// 
-/// Implementation of the `TryFrom` trait for converting from `Vec<u8>` to `Password`
 ///
-impl TryFrom<Vec<u8>> for Password{
+/// Implementation of the `TryFrom` trait for converting from `Vec<u8>` to
+/// `Password`
+impl TryFrom<Vec<u8>> for Password {
     type Error = CryptoError;
 
     #[instrument(skip_all)]
     fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
-        
-        // password length (2 bytes) || password material || context len (2 byte) || context
+        // password length (2 bytes) || password material || context len (2 byte) ||
+        // context
         let mut parse = ParseBytes::new(bytes);
 
         let data_length = parse.take_bytes_as_u16()?;
