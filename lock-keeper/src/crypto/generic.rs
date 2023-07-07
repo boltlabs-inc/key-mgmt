@@ -104,12 +104,30 @@ impl AssociatedData {
 /// As implied by the scheme name, this uses the recommended 20 rounds and a
 /// standard 96-bit nonce. For more details, see the
 /// [ChaCha20Poly1305 crate](https://docs.rs/chacha20poly1305/latest/chacha20poly1305/index.html).
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Encrypted<T> {
     pub(super) ciphertext: Vec<u8>,
     pub(super) associated_data: AssociatedData,
     pub(super) nonce: chacha20poly1305::Nonce,
     pub(super) original_type: PhantomData<T>,
+}
+
+//////
+/// 
+/// An implementation of the `std::fmt::Debug` trait for Password.
+///
+/// The Debug trait controls how a value is formatted when using the `println!` or `format!` macros 
+/// with the {:?} format specifier.
+/// 
+impl<T> std::fmt::Debug for Encrypted<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Encrypted")
+            .field("\nCiphertext", &format_args!("\n\t{:02x?\n}", &self.ciphertext))
+            .field("\nAssociated_data", &format_args!("\n\t{:02x?\n}", &self.associated_data))
+            .field("\nNonce", &format_args!("\n\t{:02x?\n}", &self.nonce))
+            .field("\nOriginal_type", &format_args!("\n\t{:02x?\n}", &self.original_type))
+            .finish()
+    }
 }
 
 /// A well-formed symmetric encryption key for an AEAD scheme.
@@ -363,6 +381,156 @@ impl TryFrom<Vec<u8>> for Secret {
     #[instrument(skip_all)]
     fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
         // key len (2 bytes) || key material || context len (2 byte) || context
+        let mut parse = ParseBytes::new(bytes);
+
+        let data_length = parse.take_bytes_as_u16()?;
+        let material = parse.take_bytes(data_length as usize)?.to_vec();
+        let context_length = parse.take_bytes_as_u16()?;
+        let context: Vec<u8> = parse.take_rest()?.to_vec();
+
+        if context.len() != context_length as usize {
+            return Err(CryptoError::ConversionError);
+        }
+
+        Ok(Self {
+            material,
+            context: context.try_into()?,
+        })
+    }
+}
+
+//////
+/// 
+/// A password contains password material and associated data.
+/// 
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, ZeroizeOnDrop)]
+pub(super) struct Password {
+    /// The actual bytes of password material.
+    material: Vec<u8>,
+    /// Additional context about the password.
+    #[zeroize(skip)]
+    context: AssociatedData,
+}
+
+impl Password {
+
+    //////
+    /// 
+    /// Generate a new password of length `len` (in bytes).
+    /// 
+    /// Note: we could use different algorithms to generate passwords.
+    /// 
+    #[allow(unused)]
+    pub(super) fn generate(
+
+        rng: &mut (impl CryptoRng + RngCore),
+        len: usize,
+        context: AssociatedData,
+
+    ) -> Self {
+
+        Self {
+            material: iter::repeat_with(|| rng.gen()).take(len).collect(),
+            context,
+        }
+    }
+
+    //////
+    /// 
+    /// Create a new password from its constituent parts.
+    /// 
+    pub(super) fn from_parts(password_material: Vec<u8>, context: AssociatedData) -> Option<Self> {
+
+        // Perform input validation checks
+        if password_material.is_empty() {
+            return None; 
+        }        
+
+        Some(Self {
+            material: password_material,
+            context,
+        })
+
+    }
+
+    //////
+    /// 
+    /// Retrieve the context for this password.
+    ///
+    /// 
+    pub(super) fn context(&self) -> &AssociatedData {
+        &self.context
+    }
+
+    //////
+    /// 
+    /// Retrieve the password material.
+    ///
+    /// Return a reference to the underlying bytes of the password. 
+    /// This should only be used to print the password.
+    /// 
+    pub(super) fn borrow_material(&self) -> &[u8] {
+        &self.material
+    }
+}
+
+//////
+/// 
+/// An implementation of the `std::fmt::Debug` trait for Password.
+///
+/// The Debug trait controls how a value is formatted when using the `println!` or `format!` macros 
+/// with the {:?} format specifier.
+/// 
+impl std::fmt::Debug for Password {
+
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+
+        f.debug_struct("Password")
+            .field("material", &format_args!("{:02x?\n}", &self.material))
+            .field("context", &format_args!("{:02x?\n}", &self.context))
+            .finish()
+    }
+}
+
+//////
+/// 
+/// Implementation of the `TryFrom` trait for converting from `Password` to `Vec<u8>`
+///
+impl TryFrom<Password> for Vec<u8> {
+    type Error = CryptoError;
+
+    fn try_from(password: Password) -> Result<Self, Self::Error> {
+
+        // password len || password material || context len || context
+        let ad: Vec<u8> = password.context.to_owned().into();
+        
+        let password_length = u16::try_from(password.material.len())
+            .map_err(|_| CryptoError::CannotEncodeDataLength)?;
+
+        let ad_length = u16::try_from(ad.len()).map_err(|_| CryptoError::CannotEncodeDataLength)?;
+
+        let bytes = password_length
+            .to_be_bytes()
+            .into_iter()
+            .chain(password.material.to_owned())
+            .chain(ad_length.to_be_bytes())
+            .chain(ad)
+            .collect();
+        Ok(bytes)
+    }
+}
+
+//////
+/// 
+/// Implementation of the `TryFrom` trait for converting from `Vec<u8>` to `Password`
+///
+impl TryFrom<Vec<u8>> for Password{
+    type Error = CryptoError;
+
+    #[instrument(skip_all)]
+    fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
+        
+        // password length (2 bytes) || password material || context len (2 byte) || context
         let mut parse = ParseBytes::new(bytes);
 
         let data_length = parse.take_bytes_as_u16()?;
