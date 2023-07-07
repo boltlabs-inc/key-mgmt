@@ -9,7 +9,6 @@ use crate::{
 };
 use k256::{
     ecdsa::{self, signature::DigestVerifier, VerifyingKey},
-    elliptic_curve::sec1::ToEncodedPoint,
 };
 use rand::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
@@ -226,10 +225,10 @@ impl SigningPublicKey {
         Ok(Self(key))
     }
 
-    /// Serialize this VerifyingKey as a SEC1-encoded bytestring (with point
+    /// Serialize this VerifyingKey as a SEC1-encoded bytes (with point
     /// compression applied).
     pub fn to_bytes(&self) -> Vec<u8> {
-        self.0.to_bytes().as_slice().to_vec()
+        self.0.to_sec1_bytes().to_vec()
     }
 
     /// Serialize this VerifyingKey as a SEC1-encoded bytestring (without point
@@ -307,7 +306,7 @@ impl TryFrom<&[u8]> for Import {
         // Check if these bytes are correctly formatted to make a signing key,
         // but don't actually use the key.
         let _signing_key =
-            ecdsa::SigningKey::from_bytes(bytes).map_err(|_| CryptoError::ConversionError)?;
+            ecdsa::SigningKey::try_from(bytes).map_err(|_| CryptoError::ConversionError)?;
 
         Ok(Self {
             key_material: bytes.into(),
@@ -443,6 +442,12 @@ impl Signature {
     pub fn to_der(&self) -> Vec<u8> {
         self.0.to_der().as_bytes().to_vec()
     }
+
+    /// Parse a signature from ASN.1 DER.
+    pub fn from_der(der: &[u8]) -> Result<Self, CryptoError> {
+        let signature = ecdsa::Signature::from_der(der)?;
+        Ok(Signature(signature))
+    }
 }
 
 #[cfg(test)]
@@ -456,7 +461,7 @@ mod test {
         types::database::account::UserId,
         LockKeeperError,
     };
-    use k256::{ecdsa, schnorr::signature::Signature as EcdsaSignature};
+    use k256::{ecdsa};
 
     /* Public and private key pairs used for testing. These keys were generated
        as follows using the `openssl` command line utility:
@@ -510,8 +515,8 @@ splX1fSP5u6QfX3Cq3Kn4kLo6IpjkTwtCfltYzuKEHLb7ROXSYdV
             let output_key = ecdsa::SigningKey::from_bytes(&bytes).unwrap();
             assert_eq!(signing_key, output_key);
 
-            let byte_vec: Vec<u8> = signing_key.to_bytes().into_iter().collect();
-            let output_key = ecdsa::SigningKey::from_bytes(&byte_vec).unwrap();
+            let bytes = signing_key.to_bytes();
+            let output_key = ecdsa::SigningKey::from_bytes(&bytes).unwrap();
             assert_eq!(signing_key, output_key);
         }
     }
@@ -626,7 +631,7 @@ splX1fSP5u6QfX3Cq3Kn4kLo6IpjkTwtCfltYzuKEHLb7ROXSYdV
         let user_id = UserId::new(&mut rng)?;
         let key_id = KeyId::generate(&mut rng, &user_id)?;
 
-        let key_material = ecdsa::SigningKey::random(rng.clone()).to_bytes().to_vec();
+        let key_material = ecdsa::SigningKey::random(&mut rng).to_bytes().to_vec();
         let (_, encrypted_import_key) = SigningKeyPair::import_and_encrypt(
             &key_material,
             &mut rng,
@@ -729,7 +734,7 @@ splX1fSP5u6QfX3Cq3Kn4kLo6IpjkTwtCfltYzuKEHLb7ROXSYdV
         let signing_key = SigningKeyPair::generate(&mut rng, &AssociatedData::new());
         let message = b"the signature on this message will get tweaked".to_vec();
         let sig = message.sign(&signing_key);
-        let sig_bytes = sig.0.as_bytes();
+        let sig_bytes = sig.0.to_bytes();
 
         // try flipping some of the bits
         for i in 0..sig_bytes.len() {
@@ -737,7 +742,7 @@ splX1fSP5u6QfX3Cq3Kn4kLo6IpjkTwtCfltYzuKEHLb7ROXSYdV
             tweaked[i] ^= 1;
 
             // either the signature won't parse...
-            let signature = match k256::ecdsa::Signature::from_bytes(&tweaked) {
+            let signature = match k256::ecdsa::Signature::from_slice(&tweaked) {
                 Ok(sig) => sig,
                 Err(_) => continue,
             };
@@ -790,7 +795,7 @@ splX1fSP5u6QfX3Cq3Kn4kLo6IpjkTwtCfltYzuKEHLb7ROXSYdV
         let user_id = UserId::new(&mut rng)?;
         let key_id = KeyId::generate(&mut rng, &user_id)?;
 
-        let key_material = ecdsa::SigningKey::random(rng.clone()).to_bytes().to_vec();
+        let key_material = ecdsa::SigningKey::random(&mut rng).to_bytes().to_vec();
         let (key, encrypted_key) = SigningKeyPair::import_and_encrypt(
             &key_material,
             &mut rng,
@@ -841,7 +846,7 @@ splX1fSP5u6QfX3Cq3Kn4kLo6IpjkTwtCfltYzuKEHLb7ROXSYdV
         assert!(contains_str(secret, SERVER_GENERATED));
 
         // Use the local-import creation function
-        let key_material = ecdsa::SigningKey::random(rng.clone()).to_bytes();
+        let key_material = ecdsa::SigningKey::random(&mut rng).to_bytes();
         let (imported_secret, _) = SigningKeyPair::import_and_encrypt(
             &key_material,
             &mut rng,
