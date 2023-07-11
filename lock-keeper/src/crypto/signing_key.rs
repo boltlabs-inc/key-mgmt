@@ -7,9 +7,7 @@ use crate::{
     types::database::account::UserId,
     LockKeeperError,
 };
-use k256::{
-    ecdsa::{self, signature::DigestVerifier, VerifyingKey},
-};
+use k256::ecdsa::{self, signature::DigestVerifier, VerifyingKey};
 use rand::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 use sha3::Digest;
@@ -461,7 +459,7 @@ mod test {
         types::database::account::UserId,
         LockKeeperError,
     };
-    use k256::{ecdsa};
+    use k256::ecdsa;
 
     /* Public and private key pairs used for testing. These keys were generated
        as follows using the `openssl` command line utility:
