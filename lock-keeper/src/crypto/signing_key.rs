@@ -687,7 +687,6 @@ splX1fSP5u6QfX3Cq3Kn4kLo6IpjkTwtCfltYzuKEHLb7ROXSYdV
     #[test]
     fn signing_works() {
         let mut rng = rand::thread_rng();
-
         let signing_key = SigningKeyPair::generate(&mut rng, &AssociatedData::new());
         let public_key = signing_key.public_key();
 
@@ -696,6 +695,28 @@ splX1fSP5u6QfX3Cq3Kn4kLo6IpjkTwtCfltYzuKEHLb7ROXSYdV
             .map(|len| -> Vec<u8> { std::iter::repeat_with(|| rng.gen()).take(len).collect() })
             .map(|msg| (msg.sign(&signing_key), msg))
             .all(|(sig, msg)| msg.verify(&public_key, &sig).is_ok()));
+    }
+
+    #[test]
+    fn signature_from_der_works() {
+        const MESSAGE: &str = "Hello World!";
+        // Create a signature and convert it to der format.
+        let mut rng = rand::thread_rng();
+        let signing_key = SigningKeyPair::generate(&mut rng, &AssociatedData::new());
+        let signature = signing_key.signing_key.sign(MESSAGE);
+        let der = signature.to_der();
+
+        // Make new signature from der and verify.
+        let signature2 = Signature::from_der(&der).expect("Failed to read from der.");
+        let public_key = signing_key.public_key();
+        public_key
+            .verify(MESSAGE, &signature2)
+            .expect("Verification failed.");
+
+        assert_eq!(
+            signature, signature2,
+            "Signature mismatch after conversion."
+        );
     }
 
     #[test]
