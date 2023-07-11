@@ -1086,7 +1086,7 @@
     <span class="doccomment">/// Take next two bytes and convert them into a u16.
     </span><span class="kw">pub fn </span>take_bytes_as_u16(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;u16, CryptoError&gt; {
         <span class="kw">let </span><span class="kw-2">&amp;</span>[f, s] = <span class="self">self</span>.take_bytes(size_of::&lt;u16&gt;())<span class="question-mark">? </span><span class="kw">else </span>{
-            <span class="kw">return </span><span class="prelude-val">Err</span>(CryptoError::ConversionError)
+            <span class="kw">return </span><span class="prelude-val">Err</span>(CryptoError::ConversionError);
         };
         <span class="prelude-val">Ok</span>(u16::from_be_bytes([f, s]))
     }

@@ -4,7 +4,7 @@
     key_ids: &amp;<a class="struct" href="https://doc.rust-lang.org/1.70.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;KeyId&gt;,
     account: &amp;Account,
     db: &amp;<a class="struct" href="../struct.TestDatabase.html" title="struct lock_keeper_tests::test_suites::database::TestDatabase">TestDatabase</a>
-) -&gt; <a class="type" href="../../../error/type.Result.html" title="type lock_keeper_tests::error::Result">Result</a>&lt;(KeyId, <a class="struct" href="https://docs.rs/uuid/1.3.4/uuid/struct.Uuid.html" title="struct uuid::Uuid">Uuid</a>, ClientAction)&gt;</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Create a single random audit event and store it in our DB. This function
+) -&gt; <a class="type" href="../../../error/type.Result.html" title="type lock_keeper_tests::error::Result">Result</a>&lt;(KeyId, <a class="struct" href="https://docs.rs/uuid/1.4.0/uuid/struct.Uuid.html" title="struct uuid::Uuid">Uuid</a>, ClientAction)&gt;</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Create a single random audit event and store it in our DB. This function
 samples from the passed vectors of client actions and key IDs.</p>
 <p>The key IDs must already exist in database to make foreign key constraint
 happy. Returns the chosen (key_ids, request_ids, action) 3-tuples.</p>

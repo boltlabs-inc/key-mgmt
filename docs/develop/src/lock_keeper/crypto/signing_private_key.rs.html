@@ -194,14 +194,35 @@
 <a href="#194" id="194">194</a>
 <a href="#195" id="195">195</a>
 <a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a>
+<a href="#200" id="200">200</a>
+<a href="#201" id="201">201</a>
+<a href="#202" id="202">202</a>
+<a href="#203" id="203">203</a>
+<a href="#204" id="204">204</a>
+<a href="#205" id="205">205</a>
+<a href="#206" id="206">206</a>
+<a href="#207" id="207">207</a>
+<a href="#208" id="208">208</a>
+<a href="#209" id="209">209</a>
+<a href="#210" id="210">210</a>
+<a href="#211" id="211">211</a>
+<a href="#212" id="212">212</a>
+<a href="#213" id="213">213</a>
+<a href="#214" id="214">214</a>
+<a href="#215" id="215">215</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::crypto::{CryptoError, Signature, SigningPublicKey};
 <span class="kw">use </span>k256::{
     ecdsa,
-    ecdsa::{recoverable, signature::DigestSigner},
+    ecdsa::{signature::DigestSigner, RecoveryId, VerifyingKey},
+    NonZeroScalar,
 };
 <span class="kw">use </span>rand::{CryptoRng, RngCore};
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>sha3::Digest;
+<span class="kw">use </span>std::str::FromStr;
 <span class="kw">use </span>zeroize::ZeroizeOnDrop;
 
 <span class="doccomment">/// A recoverable signature.
@@ -229,7 +250,7 @@
 }
 
 <span class="kw">impl </span>RecoverableSignature {
-    <span class="kw">fn </span>new(signature: Signature, recovery_id: recoverable::Id) -&gt; <span class="self">Self </span>{
+    <span class="kw">fn </span>new(signature: Signature, recovery_id: RecoveryId) -&gt; <span class="self">Self </span>{
         RecoverableSignature {
             signature,
             recovery_id: u8::from(recovery_id),
@@ -243,15 +264,11 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         message: <span class="kw">impl </span>AsRef&lt;[u8]&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;SigningPublicKey, CryptoError&gt; {
-        <span class="kw">let </span>recovery_id = recoverable::Id::new(<span class="self">self</span>.recovery_id)<span class="question-mark">?</span>;
-        <span class="kw">let </span>signature = recoverable::Signature::new(<span class="kw-2">&amp;</span><span class="self">self</span>.signature.<span class="number">0</span>, recovery_id)<span class="question-mark">?</span>;
-
+        <span class="kw">let </span>recovery_id = RecoveryId::try_from(<span class="self">self</span>.recovery_id)<span class="question-mark">?</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>digest = sha3::Keccak256::new();
         digest.update(message);
 
-        <span class="kw">let </span>pk = signature
-            .recover_verifying_key_from_digest(digest)
-            .map_err(CryptoError::Signature)<span class="question-mark">?</span>;
+        <span class="kw">let </span>pk = VerifyingKey::recover_from_digest(digest, <span class="kw-2">&amp;</span><span class="self">self</span>.signature.<span class="number">0</span>, recovery_id)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(SigningPublicKey::from(pk))
     }
 
@@ -279,8 +296,8 @@
     <span class="doccomment">/// Create a `[SigningPrivateKey]` from the bytes emitted by a previous call
     /// to `[SigningPrivateKey::as_bytes]`
     </span><span class="kw">pub fn </span>from_bytes(key_material: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, CryptoError&gt; {
-        <span class="kw">let </span>key = ecdsa::SigningKey::from_bytes(key_material)
-            .map_err(|<span class="kw">_</span>| CryptoError::ConversionError)<span class="question-mark">?</span>;
+        <span class="kw">let </span>key =
+            ecdsa::SigningKey::try_from(key_material).map_err(|<span class="kw">_</span>| CryptoError::ConversionError)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(<span class="self">Self</span>(key))
     }
 
@@ -300,7 +317,7 @@
 
     <span class="doccomment">/// Retrieve the public portion of the key.
     </span><span class="kw">pub fn </span>public_key(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SigningPublicKey {
-        SigningPublicKey::from(<span class="self">self</span>.<span class="number">0</span>.verifying_key())
+        SigningPublicKey::from(<span class="kw-2">*</span><span class="self">self</span>.<span class="number">0</span>.verifying_key())
     }
 
     <span class="doccomment">/// Sign a message returning a `[Signature]`. This function will hash the
@@ -313,21 +330,27 @@
 
     <span class="doccomment">/// Sign a message returning a `[RecoverableSignature]`. This function will
     /// hash the message using SHA3-256 (Keccak).
-    </span><span class="kw">pub fn </span>sign_recoverable(<span class="kw-2">&amp;</span><span class="self">self</span>, message: <span class="kw">impl </span>AsRef&lt;[u8]&gt;) -&gt; RecoverableSignature {
+    </span><span class="kw">pub fn </span>sign_recoverable(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        message: <span class="kw">impl </span>AsRef&lt;[u8]&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;RecoverableSignature, CryptoError&gt; {
         <span class="kw">let </span>digest = sha3::Keccak256::new_with_prefix(message);
-        <span class="kw">let </span>signature: recoverable::Signature = <span class="self">self</span>.<span class="number">0</span>.sign_digest(digest);
+        <span class="kw">let </span>(signature, recovery_id) = <span class="self">self</span>.<span class="number">0</span>.sign_digest_recoverable(digest)<span class="question-mark">?</span>;
 
         <span class="comment">// Convert `recoverable::Signature` into regular `Signature`.
-        </span><span class="kw">let </span>regular_sig = Signature(ecdsa::Signature::from(signature));
-        RecoverableSignature::new(regular_sig, signature.recovery_id())
+        </span><span class="prelude-val">Ok</span>(RecoverableSignature::new(Signature(signature), recovery_id))
     }
 
-    <span class="doccomment">/// Get the underlying `[ecdsa::SigningKey]`. WARNING: This function should
-    /// only be used for testing.
-    ///
-    /// The caller is responsible for zeroizing the returned private key.
-    </span><span class="kw">pub fn </span>to_k256_signing_key(<span class="self">self</span>) -&gt; ecdsa::SigningKey {
-        <span class="self">self</span>.<span class="number">0</span>.clone()
+    <span class="kw">pub fn </span>as_nonzero_scalar(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>NonZeroScalar {
+        <span class="self">self</span>.<span class="number">0</span>.as_nonzero_scalar()
+    }
+
+    <span class="doccomment">/// Deserialize PKCS#8-encoded private key from PEM.
+    </span><span class="comment">// Keys in this format begin with the following delimiter:
+    // -----BEGIN PRIVATE KEY-----
+    </span><span class="kw">pub fn </span>from_pkcs8_pem(pem: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, CryptoError&gt; {
+        <span class="kw">let </span>key = ecdsa::SigningKey::from_str(pem)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(<span class="self">Self</span>(key))
     }
 }
 
@@ -335,6 +358,21 @@
 </span><span class="kw">mod </span>test {
     <span class="kw">use </span><span class="kw">crate</span>::crypto::signing_private_key::SigningPrivateKey;
     <span class="kw">use </span>rand::rngs::OsRng;
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>from_pkcs8_pem_works() {
+        <span class="kw">const </span>TEST_PRIVATE_KEY: <span class="kw-2">&amp;</span>str = <span class="string">r#&quot;
+-----BEGIN PRIVATE KEY-----
+MIGEAgEAMBAGByqGSM49AgEGBSuBBAAKBG0wawIBAQQg5X2FE2dAPaL6hD6hAN93
+6Gd61wZkW5i00WrrIQVt9P2hRANCAAQR/D8w6a2hucXfogqLpZw3+xJs/aet1ITd
+splX1fSP5u6QfX3Cq3Kn4kLo6IpjkTwtCfltYzuKEHLb7ROXSYdV
+-----END PRIVATE KEY-----
+&quot;#</span>;
+        <span class="macro">assert!</span>(
+            SigningPrivateKey::from_pkcs8_pem(TEST_PRIVATE_KEY).is_ok(),
+            <span class="string">&quot;Failed to parse given private key.&quot;
+        </span>);
+    }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>signing_and_verification_works() -&gt; anyhow::Result&lt;()&gt; {
@@ -366,7 +404,7 @@
     </span><span class="kw">fn </span>signing_and_verification_works_recoverable_sig() -&gt; anyhow::Result&lt;()&gt; {
         <span class="kw">let </span>message = <span class="string">b&quot;Hello World!&quot;</span>;
         <span class="kw">let </span>key = SigningPrivateKey::generate(<span class="kw-2">&amp;mut </span>OsRng);
-        <span class="kw">let </span>signature = key.sign_recoverable(message);
+        <span class="kw">let </span>signature = key.sign_recoverable(message)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>recovered_public_key = signature.recover_verifying_key(message)<span class="question-mark">?</span>;
         recovered_public_key.verify(message, signature.to_standard())<span class="question-mark">?</span>;
@@ -380,7 +418,7 @@
         <span class="kw">let </span>message2 = <span class="string">b&quot;Goodbye World!&quot;</span>;
 
         <span class="kw">let </span>key = SigningPrivateKey::generate(<span class="kw-2">&amp;mut </span>OsRng);
-        <span class="kw">let </span>signature = key.sign_recoverable(message);
+        <span class="kw">let </span>signature = key.sign_recoverable(message)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>recovered_public_key = signature.recover_verifying_key(message2)<span class="question-mark">?</span>;
 

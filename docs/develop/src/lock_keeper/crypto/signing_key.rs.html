@@ -891,6 +891,30 @@
 <a href="#891" id="891">891</a>
 <a href="#892" id="892">892</a>
 <a href="#893" id="893">893</a>
+<a href="#894" id="894">894</a>
+<a href="#895" id="895">895</a>
+<a href="#896" id="896">896</a>
+<a href="#897" id="897">897</a>
+<a href="#898" id="898">898</a>
+<a href="#899" id="899">899</a>
+<a href="#900" id="900">900</a>
+<a href="#901" id="901">901</a>
+<a href="#902" id="902">902</a>
+<a href="#903" id="903">903</a>
+<a href="#904" id="904">904</a>
+<a href="#905" id="905">905</a>
+<a href="#906" id="906">906</a>
+<a href="#907" id="907">907</a>
+<a href="#908" id="908">908</a>
+<a href="#909" id="909">909</a>
+<a href="#910" id="910">910</a>
+<a href="#911" id="911">911</a>
+<a href="#912" id="912">912</a>
+<a href="#913" id="913">913</a>
+<a href="#914" id="914">914</a>
+<a href="#915" id="915">915</a>
+<a href="#916" id="916">916</a>
+<a href="#917" id="917">917</a>
 </pre></div><pre class="rust"><code><span class="kw">use crate</span>::{
     crypto::{
         generic::EncryptionKey,
@@ -900,10 +924,7 @@
     types::database::account::UserId,
     LockKeeperError,
 };
-<span class="kw">use </span>k256::{
-    ecdsa::{<span class="self">self</span>, signature::DigestVerifier, VerifyingKey},
-    elliptic_curve::sec1::ToEncodedPoint,
-};
+<span class="kw">use </span>k256::ecdsa::{<span class="self">self</span>, signature::DigestVerifier, VerifyingKey};
 <span class="kw">use </span>rand::{CryptoRng, RngCore};
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>sha3::Digest;
@@ -1119,10 +1140,10 @@
         <span class="prelude-val">Ok</span>(<span class="self">Self</span>(key))
     }
 
-    <span class="doccomment">/// Serialize this VerifyingKey as a SEC1-encoded bytestring (with point
+    <span class="doccomment">/// Serialize this VerifyingKey as a SEC1-encoded bytes (with point
     /// compression applied).
     </span><span class="kw">pub fn </span>to_bytes(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;u8&gt; {
-        <span class="self">self</span>.<span class="number">0</span>.to_bytes().as_slice().to_vec()
+        <span class="self">self</span>.<span class="number">0</span>.to_sec1_bytes().to_vec()
     }
 
     <span class="doccomment">/// Serialize this VerifyingKey as a SEC1-encoded bytestring (without point
@@ -1200,7 +1221,7 @@
         <span class="comment">// Check if these bytes are correctly formatted to make a signing key,
         // but don&#39;t actually use the key.
         </span><span class="kw">let </span>_signing_key =
-            ecdsa::SigningKey::from_bytes(bytes).map_err(|<span class="kw">_</span>| CryptoError::ConversionError)<span class="question-mark">?</span>;
+            ecdsa::SigningKey::try_from(bytes).map_err(|<span class="kw">_</span>| CryptoError::ConversionError)<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
             key_material: bytes.into(),
@@ -1336,6 +1357,12 @@
     </span><span class="kw">pub fn </span>to_der(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;u8&gt; {
         <span class="self">self</span>.<span class="number">0</span>.to_der().as_bytes().to_vec()
     }
+
+    <span class="doccomment">/// Parse a signature from ASN.1 DER.
+    </span><span class="kw">pub fn </span>from_der(der: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, CryptoError&gt; {
+        <span class="kw">let </span>signature = ecdsa::Signature::from_der(der)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(Signature(signature))
+    }
 }
 
 <span class="attr">#[cfg(test)]
@@ -1349,7 +1376,7 @@
         types::database::account::UserId,
         LockKeeperError,
     };
-    <span class="kw">use </span>k256::{ecdsa, schnorr::signature::Signature <span class="kw">as </span>EcdsaSignature};
+    <span class="kw">use </span>k256::ecdsa;
 
     <span class="comment">/* Public and private key pairs used for testing. These keys were generated
        as follows using the `openssl` command line utility:
@@ -1403,8 +1430,8 @@ splX1fSP5u6QfX3Cq3Kn4kLo6IpjkTwtCfltYzuKEHLb7ROXSYdV
             <span class="kw">let </span>output_key = ecdsa::SigningKey::from_bytes(<span class="kw-2">&amp;</span>bytes).unwrap();
             <span class="macro">assert_eq!</span>(signing_key, output_key);
 
-            <span class="kw">let </span>byte_vec: Vec&lt;u8&gt; = signing_key.to_bytes().into_iter().collect();
-            <span class="kw">let </span>output_key = ecdsa::SigningKey::from_bytes(<span class="kw-2">&amp;</span>byte_vec).unwrap();
+            <span class="kw">let </span>bytes = signing_key.to_bytes();
+            <span class="kw">let </span>output_key = ecdsa::SigningKey::from_bytes(<span class="kw-2">&amp;</span>bytes).unwrap();
             <span class="macro">assert_eq!</span>(signing_key, output_key);
         }
     }
@@ -1519,7 +1546,7 @@ splX1fSP5u6QfX3Cq3Kn4kLo6IpjkTwtCfltYzuKEHLb7ROXSYdV
         <span class="kw">let </span>user_id = UserId::new(<span class="kw-2">&amp;mut </span>rng)<span class="question-mark">?</span>;
         <span class="kw">let </span>key_id = KeyId::generate(<span class="kw-2">&amp;mut </span>rng, <span class="kw-2">&amp;</span>user_id)<span class="question-mark">?</span>;
 
-        <span class="kw">let </span>key_material = ecdsa::SigningKey::random(rng.clone()).to_bytes().to_vec();
+        <span class="kw">let </span>key_material = ecdsa::SigningKey::random(<span class="kw-2">&amp;mut </span>rng).to_bytes().to_vec();
         <span class="kw">let </span>(<span class="kw">_</span>, encrypted_import_key) = SigningKeyPair::import_and_encrypt(
             <span class="kw-2">&amp;</span>key_material,
             <span class="kw-2">&amp;mut </span>rng,
@@ -1577,7 +1604,6 @@ splX1fSP5u6QfX3Cq3Kn4kLo6IpjkTwtCfltYzuKEHLb7ROXSYdV
     <span class="attr">#[test]
     </span><span class="kw">fn </span>signing_works() {
         <span class="kw">let </span><span class="kw-2">mut </span>rng = rand::thread_rng();
-
         <span class="kw">let </span>signing_key = SigningKeyPair::generate(<span class="kw-2">&amp;mut </span>rng, <span class="kw-2">&amp;</span>AssociatedData::new());
         <span class="kw">let </span>public_key = signing_key.public_key();
 
@@ -1586,6 +1612,28 @@ splX1fSP5u6QfX3Cq3Kn4kLo6IpjkTwtCfltYzuKEHLb7ROXSYdV
             .map(|len| -&gt; Vec&lt;u8&gt; { std::iter::repeat_with(|| rng.gen()).take(len).collect() })
             .map(|msg| (msg.sign(<span class="kw-2">&amp;</span>signing_key), msg))
             .all(|(sig, msg)| msg.verify(<span class="kw-2">&amp;</span>public_key, <span class="kw-2">&amp;</span>sig).is_ok()));
+    }
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>signature_from_der_works() {
+        <span class="kw">const </span>MESSAGE: <span class="kw-2">&amp;</span>str = <span class="string">&quot;Hello World!&quot;</span>;
+        <span class="comment">// Create a signature and convert it to der format.
+        </span><span class="kw">let </span><span class="kw-2">mut </span>rng = rand::thread_rng();
+        <span class="kw">let </span>signing_key = SigningKeyPair::generate(<span class="kw-2">&amp;mut </span>rng, <span class="kw-2">&amp;</span>AssociatedData::new());
+        <span class="kw">let </span>signature = signing_key.signing_key.sign(MESSAGE);
+        <span class="kw">let </span>der = signature.to_der();
+
+        <span class="comment">// Make new signature from der and verify.
+        </span><span class="kw">let </span>signature2 = Signature::from_der(<span class="kw-2">&amp;</span>der).expect(<span class="string">&quot;Failed to read from der.&quot;</span>);
+        <span class="kw">let </span>public_key = signing_key.public_key();
+        public_key
+            .verify(MESSAGE, <span class="kw-2">&amp;</span>signature2)
+            .expect(<span class="string">&quot;Verification failed.&quot;</span>);
+
+        <span class="macro">assert_eq!</span>(
+            signature, signature2,
+            <span class="string">&quot;Signature mismatch after conversion.&quot;
+        </span>);
     }
 
     <span class="attr">#[test]
@@ -1622,7 +1670,7 @@ splX1fSP5u6QfX3Cq3Kn4kLo6IpjkTwtCfltYzuKEHLb7ROXSYdV
         <span class="kw">let </span>signing_key = SigningKeyPair::generate(<span class="kw-2">&amp;mut </span>rng, <span class="kw-2">&amp;</span>AssociatedData::new());
         <span class="kw">let </span>message = <span class="string">b&quot;the signature on this message will get tweaked&quot;</span>.to_vec();
         <span class="kw">let </span>sig = message.sign(<span class="kw-2">&amp;</span>signing_key);
-        <span class="kw">let </span>sig_bytes = sig.<span class="number">0</span>.as_bytes();
+        <span class="kw">let </span>sig_bytes = sig.<span class="number">0</span>.to_bytes();
 
         <span class="comment">// try flipping some of the bits
         </span><span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..sig_bytes.len() {
@@ -1630,7 +1678,7 @@ splX1fSP5u6QfX3Cq3Kn4kLo6IpjkTwtCfltYzuKEHLb7ROXSYdV
             tweaked[i] ^= <span class="number">1</span>;
 
             <span class="comment">// either the signature won&#39;t parse...
-            </span><span class="kw">let </span>signature = <span class="kw">match </span>k256::ecdsa::Signature::from_bytes(<span class="kw-2">&amp;</span>tweaked) {
+            </span><span class="kw">let </span>signature = <span class="kw">match </span>k256::ecdsa::Signature::from_slice(<span class="kw-2">&amp;</span>tweaked) {
                 <span class="prelude-val">Ok</span>(sig) =&gt; sig,
                 <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="kw">continue</span>,
             };
@@ -1683,7 +1731,7 @@ splX1fSP5u6QfX3Cq3Kn4kLo6IpjkTwtCfltYzuKEHLb7ROXSYdV
         <span class="kw">let </span>user_id = UserId::new(<span class="kw-2">&amp;mut </span>rng)<span class="question-mark">?</span>;
         <span class="kw">let </span>key_id = KeyId::generate(<span class="kw-2">&amp;mut </span>rng, <span class="kw-2">&amp;</span>user_id)<span class="question-mark">?</span>;
 
-        <span class="kw">let </span>key_material = ecdsa::SigningKey::random(rng.clone()).to_bytes().to_vec();
+        <span class="kw">let </span>key_material = ecdsa::SigningKey::random(<span class="kw-2">&amp;mut </span>rng).to_bytes().to_vec();
         <span class="kw">let </span>(key, encrypted_key) = SigningKeyPair::import_and_encrypt(
             <span class="kw-2">&amp;</span>key_material,
             <span class="kw-2">&amp;mut </span>rng,
@@ -1734,7 +1782,7 @@ splX1fSP5u6QfX3Cq3Kn4kLo6IpjkTwtCfltYzuKEHLb7ROXSYdV
         <span class="macro">assert!</span>(contains_str(secret, SERVER_GENERATED));
 
         <span class="comment">// Use the local-import creation function
-        </span><span class="kw">let </span>key_material = ecdsa::SigningKey::random(rng.clone()).to_bytes();
+        </span><span class="kw">let </span>key_material = ecdsa::SigningKey::random(<span class="kw-2">&amp;mut </span>rng).to_bytes();
         <span class="kw">let </span>(imported_secret, <span class="kw">_</span>) = SigningKeyPair::import_and_encrypt(
             <span class="kw-2">&amp;</span>key_material,
             <span class="kw-2">&amp;mut </span>rng,
