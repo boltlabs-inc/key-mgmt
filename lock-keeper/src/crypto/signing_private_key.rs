@@ -1,11 +1,13 @@
 use crate::crypto::{CryptoError, Signature, SigningPublicKey};
 use k256::{
     ecdsa,
-    ecdsa::{recoverable, signature::DigestSigner},
+    ecdsa::{signature::DigestSigner, RecoveryId, VerifyingKey},
+    NonZeroScalar,
 };
 use rand::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 use sha3::Digest;
+use std::str::FromStr;
 use zeroize::ZeroizeOnDrop;
 
 /// A recoverable signature.
@@ -33,7 +35,7 @@ pub struct RecoverableSignatureParts {
 }
 
 impl RecoverableSignature {
-    fn new(signature: Signature, recovery_id: recoverable::Id) -> Self {
+    fn new(signature: Signature, recovery_id: RecoveryId) -> Self {
         RecoverableSignature {
             signature,
             recovery_id: u8::from(recovery_id),
@@ -47,15 +49,11 @@ impl RecoverableSignature {
         &self,
         message: impl AsRef<[u8]>,
     ) -> Result<SigningPublicKey, CryptoError> {
-        let recovery_id = recoverable::Id::new(self.recovery_id)?;
-        let signature = recoverable::Signature::new(&self.signature.0, recovery_id)?;
-
+        let recovery_id = RecoveryId::try_from(self.recovery_id)?;
         let mut digest = sha3::Keccak256::new();
         digest.update(message);
 
-        let pk = signature
-            .recover_verifying_key_from_digest(digest)
-            .map_err(CryptoError::Signature)?;
+        let pk = VerifyingKey::recover_from_digest(digest, &self.signature.0, recovery_id)?;
         Ok(SigningPublicKey::from(pk))
     }
 
@@ -83,8 +81,8 @@ impl SigningPrivateKey {
     /// Create a `[SigningPrivateKey]` from the bytes emitted by a previous call
     /// to `[SigningPrivateKey::as_bytes]`
     pub fn from_bytes(key_material: &[u8]) -> Result<Self, CryptoError> {
-        let key = ecdsa::SigningKey::from_bytes(key_material)
-            .map_err(|_| CryptoError::ConversionError)?;
+        let key =
+            ecdsa::SigningKey::try_from(key_material).map_err(|_| CryptoError::ConversionError)?;
         Ok(Self(key))
     }
 
@@ -104,7 +102,7 @@ impl SigningPrivateKey {
 
     /// Retrieve the public portion of the key.
     pub fn public_key(&self) -> SigningPublicKey {
-        SigningPublicKey::from(self.0.verifying_key())
+        SigningPublicKey::from(*self.0.verifying_key())
     }
 
     /// Sign a message returning a `[Signature]`. This function will hash the
@@ -117,21 +115,27 @@ impl SigningPrivateKey {
 
     /// Sign a message returning a `[RecoverableSignature]`. This function will
     /// hash the message using SHA3-256 (Keccak).
-    pub fn sign_recoverable(&self, message: impl AsRef<[u8]>) -> RecoverableSignature {
+    pub fn sign_recoverable(
+        &self,
+        message: impl AsRef<[u8]>,
+    ) -> Result<RecoverableSignature, CryptoError> {
         let digest = sha3::Keccak256::new_with_prefix(message);
-        let signature: recoverable::Signature = self.0.sign_digest(digest);
+        let (signature, recovery_id) = self.0.sign_digest_recoverable(digest)?;
 
         // Convert `recoverable::Signature` into regular `Signature`.
-        let regular_sig = Signature(ecdsa::Signature::from(signature));
-        RecoverableSignature::new(regular_sig, signature.recovery_id())
+        Ok(RecoverableSignature::new(Signature(signature), recovery_id))
     }
 
-    /// Get the underlying `[ecdsa::SigningKey]`. WARNING: This function should
-    /// only be used for testing.
-    ///
-    /// The caller is responsible for zeroizing the returned private key.
-    pub fn to_k256_signing_key(self) -> ecdsa::SigningKey {
-        self.0.clone()
+    pub fn as_nonzero_scalar(&self) -> &NonZeroScalar {
+        self.0.as_nonzero_scalar()
+    }
+
+    /// Deserialize PKCS#8-encoded private key from PEM.
+    // Keys in this format begin with the following delimiter:
+    // -----BEGIN PRIVATE KEY-----
+    pub fn from_pkcs8_pem(pem: &str) -> Result<Self, CryptoError> {
+        let key = ecdsa::SigningKey::from_str(pem)?;
+        Ok(Self(key))
     }
 }
 
@@ -139,6 +143,21 @@ impl SigningPrivateKey {
 mod test {
     use crate::crypto::signing_private_key::SigningPrivateKey;
     use rand::rngs::OsRng;
+
+    #[test]
+    fn from_pkcs8_pem_works() {
+        const TEST_PRIVATE_KEY: &str = r#"
+-----BEGIN PRIVATE KEY-----
+MIGEAgEAMBAGByqGSM49AgEGBSuBBAAKBG0wawIBAQQg5X2FE2dAPaL6hD6hAN93
+6Gd61wZkW5i00WrrIQVt9P2hRANCAAQR/D8w6a2hucXfogqLpZw3+xJs/aet1ITd
+splX1fSP5u6QfX3Cq3Kn4kLo6IpjkTwtCfltYzuKEHLb7ROXSYdV
+-----END PRIVATE KEY-----
+"#;
+        assert!(
+            SigningPrivateKey::from_pkcs8_pem(TEST_PRIVATE_KEY).is_ok(),
+            "Failed to parse given private key."
+        );
+    }
 
     #[test]
     fn signing_and_verification_works() -> anyhow::Result<()> {
@@ -170,7 +189,7 @@ mod test {
     fn signing_and_verification_works_recoverable_sig() -> anyhow::Result<()> {
         let message = b"Hello World!";
         let key = SigningPrivateKey::generate(&mut OsRng);
-        let signature = key.sign_recoverable(message);
+        let signature = key.sign_recoverable(message)?;
 
         let recovered_public_key = signature.recover_verifying_key(message)?;
         recovered_public_key.verify(message, signature.to_standard())?;
@@ -184,7 +203,7 @@ mod test {
         let message2 = b"Goodbye World!";
 
         let key = SigningPrivateKey::generate(&mut OsRng);
-        let signature = key.sign_recoverable(message);
+        let signature = key.sign_recoverable(message)?;
 
         let recovered_public_key = signature.recover_verifying_key(message2)?;
 

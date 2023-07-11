@@ -393,7 +393,7 @@ impl ParseBytes {
     /// Take next two bytes and convert them into a u16.
     pub fn take_bytes_as_u16(&mut self) -> Result<u16, CryptoError> {
         let &[f, s] = self.take_bytes(size_of::<u16>())? else {
-            return Err(CryptoError::ConversionError)
+            return Err(CryptoError::ConversionError);
         };
         Ok(u16::from_be_bytes([f, s]))
     }
