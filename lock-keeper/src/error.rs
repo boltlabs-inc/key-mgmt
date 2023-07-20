@@ -44,14 +44,6 @@ pub enum LockKeeperError {
     #[error("Invalid remote storage key")]
     InvalidRemoteStorageKey,
 
-    // Client side encryption error
-    #[error("Invalid password encryption key")]
-    InvalidPasswordKey,
-
-    // Client side password error
-    #[error("Invalid password")]
-    InvalidPassword,
-
     // Wrapped errors
     #[error(transparent)]
     Hex(#[from] hex::FromHexError),
@@ -94,8 +86,6 @@ impl From<LockKeeperError> for Status {
             LockKeeperError::InvalidMessage
             | LockKeeperError::MetadataNotFound
             | LockKeeperError::UnknownSecretType(_)
-            | LockKeeperError::InvalidPasswordKey
-            | LockKeeperError::InvalidPassword
             | LockKeeperError::InvalidSecretType => Status::invalid_argument(error.to_string()),
             LockKeeperError::NoMessageReceived => Status::deadline_exceeded(error.to_string()),
 
