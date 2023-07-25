@@ -28,10 +28,8 @@ pub enum CryptoError {
     DecryptionFailed,
     #[error("Encryption failed")]
     EncryptionFailed,
-    #[error("Invalid password")]
-    InvalidPassword,
-    #[error("Invalid password encryption key")]
-    InvalidPasswordKey,
+    #[error("Invalid encryption key")]
+    InvalidEncryptionKey,
 
     /// The `impl<T> Encrypted<T>` has some trait bounds for converting a
     /// `TryFrom::Error` associated type into a CryptoError.
