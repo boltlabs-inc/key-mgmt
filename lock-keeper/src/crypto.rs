@@ -24,6 +24,7 @@ use crate::types::database::account::UserId;
 mod arbitrary_secret;
 mod data_blob;
 mod generic;
+pub mod sharding;
 mod signing_key;
 mod signing_private_key;
 mod storage_key;

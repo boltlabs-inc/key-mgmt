@@ -15,23 +15,17 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 /// Errors that arise in the cryptography module.
 #[derive(Debug, Error)]
 pub enum CryptoError {
-    #[error("Conversion error")]
-    ConversionError,
-    #[error("Encryption failed")]
-    EncryptionFailed,
-    #[error("Decryption failed")]
-    DecryptionFailed,
-    #[error("Key derivation failed: {0}")]
-    KeyDerivationFailed(hkdf::InvalidLength),
-    #[error("Signature generation failed: {0}")]
-    Signature(#[from] ecdsa::signature::Error),
-    #[error("RNG failed")]
-    RandomNumberGeneratorFailed,
     /// Length of data too large for our integer data type.
     #[error("Encryption/Decryption failed due to data length.")]
     CannotEncodeDataLength,
-    #[error("Signature did not verify")]
-    VerificationFailed,
+    #[error("Failed to combine shards into key: {0}")]
+    CombineShardsFailed(String),
+    #[error("Conversion error")]
+    ConversionError,
+    #[error("Decryption failed")]
+    DecryptionFailed,
+    #[error("Encryption failed")]
+    EncryptionFailed,
     /// The `impl<T> Encrypted<T>` has some trait bounds for converting a
     /// `TryFrom::Error` associated type into a CryptoError.
     /// Rust automatically implements `TryFrom<T, Error=Infallible>` when
@@ -39,6 +33,24 @@ pub enum CryptoError {
     /// From<CryptoError> for Infallible` holds true in this case.
     #[error(transparent)]
     Infallible(#[from] Infallible),
+    #[error("Key derivation failed: {0}")]
+    KeyDerivationFailed(hkdf::InvalidLength),
+    #[error("Failed to convert scalar to non-zero scalar.")]
+    NonZeroScalarConversion,
+    #[error("RNG failed")]
+    RandomNumberGeneratorFailed,
+    #[error("Incorrect size for seal key: {0}.")]
+    IncorrectSealKeySize(usize),
+    #[error("Signature generation failed: {0}")]
+    Signature(#[from] ecdsa::signature::Error),
+    #[error("Failed to decrypt shard: {0}")]
+    ShardDecryptionFailed(String),
+    #[error("Failed to encrypt shard: {0}")]
+    ShardEncryptionFailed(String),
+    #[error("Failed split key into shards: {0}")]
+    ShardingFailed(String),
+    #[error("Signature did not verify")]
+    VerificationFailed,
 }
 
 /// The associated data used in [`Encrypted`] AEAD ciphertexts and
