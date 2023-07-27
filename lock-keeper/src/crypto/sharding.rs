@@ -1,23 +1,28 @@
 use crate::crypto::{CryptoError, SigningPrivateKey, SigningPublicKey};
 use aes_gcm::{aead::Aead, AeadCore, Aes256Gcm, Key, KeyInit, Nonce};
-use k256::{elliptic_curve::PrimeField, NonZeroScalar, Scalar};
+use k256::Scalar;
 use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
-use std::ops::Deref;
+use std::{
+    fmt::{Debug, Formatter},
+    ops::Deref,
+};
 use vsss_rs::{combine_shares, shamir};
-use zeroize::Zeroize;
+use zeroize::{Zeroize, ZeroizeOnDrop};
 
-// TODO: Is this comment true? I don't see why NUM_SHARDS must be a constant.
-// The number of shards we want to use must be a constant
+/// KMS Seal Key used for encryption and decryption.
+///
+/// It is currently a 256-bit value.
+pub const SEAL_KEY_LENGTH: usize = 32;
+// Note: These no longer need to be constants. In the future we will allow
+// the caller to select these values dynamically.
 pub const NUM_SHARDS: usize = 3;
 pub const SHARD_THRESHOLD: usize = 3;
-/// Seal key is 32 bytes.
-pub const SEAL_KEY_LENGTH: usize = 32;
 
-/// TODO What exactly is a seal key?
+/// KMS Seal Key used for encryption and decryption.
 ///
 /// We implement `Debug` and `Clone` because enclave codes relies on it.
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Clone, Eq, PartialEq, ZeroizeOnDrop)]
 pub struct SealKey {
     /// Our seal key is represented as a [`SEAL_KEY_LENGTH`] byte array.
     material: [u8; SEAL_KEY_LENGTH],
@@ -28,13 +33,21 @@ impl SealKey {
         Self { material: seal_key }
     }
 
-    /// Convert key into a format that `[aes_gcm]` understands.
+    /// Convert key into a format that [`aes_gcm`] understands.
     fn as_aes256gcm(&self) -> &Key<Aes256Gcm> {
-        (&self.material).into()
+        self.material().into()
     }
 
     pub fn material(&self) -> &[u8] {
         &self.material
+    }
+}
+
+impl Debug for SealKey {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SealKey")
+            .field("material", &"REDACTED")
+            .finish()
     }
 }
 
@@ -73,52 +86,46 @@ impl SigningPrivateKey {
             .map(|shard| UnencryptedShard::new(shard).encrypt_shard(seal_key))
             .collect()
     }
-}
 
-/// Rebuild the [`SigningPrivateKey`] from its encrypted shards using the
-/// specified `seal_key`.
-///
-/// 1) Decrypt each shard with the given `seal_key`.
-/// 2) Rebuild key from decrypted shards.
-pub fn rebuild_key_from_encrypted_shards(
-    encrypted_shards: Vec<EncryptedShard>,
-    seal_key: &SealKey,
-) -> Result<SigningPrivateKey, CryptoError> {
-    let unencrypted_shards: Vec<UnencryptedShard> = encrypted_shards
-        .into_iter()
-        .map(|shard| shard.decrypt_shard(seal_key))
-        .collect::<Result<_, _>>()?;
+    /// Rebuild the [`SigningPrivateKey`] from its encrypted shards using the
+    /// specified `seal_key`.
+    ///
+    /// 1) Decrypt each shard with the given `seal_key`.
+    /// 2) Rebuild key from decrypted shards.
+    pub fn rebuild_key_from_encrypted_shards(
+        encrypted_shards: Vec<EncryptedShard>,
+        seal_key: &SealKey,
+    ) -> Result<Self, CryptoError> {
+        let unencrypted_shards: Vec<UnencryptedShard> = encrypted_shards
+            .into_iter()
+            .map(|shard| shard.decrypt_shard(seal_key))
+            .collect::<Result<_, _>>()?;
 
-    rebuild_key_from_shards(unencrypted_shards)
-}
+        Self::rebuild_key_from_shards(unencrypted_shards)
+    }
 
-/// Combine a vector of unencrypted shards into a `SigningPrivateKey`.
-fn rebuild_key_from_shards(
-    shards: Vec<UnencryptedShard>,
-) -> Result<SigningPrivateKey, CryptoError> {
-    // Put shards in the format `combine_shares` expects.
-    let shards: Vec<Vec<u8>> = shards.into_iter().map(|shard| shard.material).collect();
-    let results = combine_shares(&shards);
+    /// Combine a vector of unencrypted shards into a `SigningPrivateKey`.
+    fn rebuild_key_from_shards(
+        shards: Vec<UnencryptedShard>,
+    ) -> Result<SigningPrivateKey, CryptoError> {
+        // Put shards in the format `combine_shares` expects.
+        let shards: Vec<Vec<u8>> = shards.into_iter().map(|shard| shard.material).collect();
+        let results = combine_shares(&shards);
 
-    // We no longer need the unencrypted shards. Zeroize them.
-    shards.into_iter().for_each(|mut shard| shard.zeroize());
+        // We no longer need the unencrypted shards. Zeroize them.
+        shards.into_iter().for_each(|mut shard| shard.zeroize());
 
-    let scalar: Scalar = results.map_err(|e| CryptoError::CombineShardsFailed(e.to_string()))?;
-    let non_zero_scalar = NonZeroScalar::from_repr(scalar.to_repr());
+        let scalar: Scalar =
+            results.map_err(|e| CryptoError::CombineShardsFailed(e.to_string()))?;
 
-    if bool::from(non_zero_scalar.is_none()) {
-        Err(CryptoError::NonZeroScalarConversion)?
-    } else {
         // Safe unwrap, we just handled the none case.
-        Ok(SigningPrivateKey::from_bytes(
-            non_zero_scalar.unwrap().to_bytes().as_slice(),
-        )?)
+        SigningPrivateKey::from_bytes(scalar.to_bytes().as_slice())
     }
 }
 
 /// An unecrypted shard. Handle with care!
 ///
-/// This type does not implement `DropOnZeroize` as the `material` must taken
+/// This type does not implement `ZeroizeOnDrop` as the `material` must taken
 /// to rebuild the original signing key. You must call zeroize yourself.
 #[derive(Zeroize, Eq, PartialEq, Clone)]
 pub struct UnencryptedShard {
@@ -144,6 +151,14 @@ impl UnencryptedShard {
     }
 }
 
+impl Debug for UnencryptedShard {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("UnencryptedShard")
+            .field("material", &"REDACTED")
+            .finish()
+    }
+}
+
 /// Maestro key pair made up of the public key, and the private key split into
 /// shards.
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -160,15 +175,15 @@ impl ShardedSigningKeyPair {
         }
     }
 
-    pub fn get_public_key(&self) -> &SigningPublicKey {
+    pub fn public_key(&self) -> &SigningPublicKey {
         &self.public_key
     }
 
-    pub fn get_shards(&self) -> &[EncryptedShard] {
+    pub fn shards(&self) -> &[EncryptedShard] {
         &self.encrypted_shards
     }
 
-    pub fn take_shards(self) -> Vec<EncryptedShard> {
+    pub fn into_shards(self) -> Vec<EncryptedShard> {
         self.encrypted_shards
     }
 
@@ -177,8 +192,11 @@ impl ShardedSigningKeyPair {
     }
 }
 
-// TODO: Should encrypted shards or nonce be zeroized after use?
-#[derive(Clone, Debug, Serialize, Deserialize)]
+/// A shard that has been encrypted with a given seal key. The same key must be
+/// used for decryption.
+///
+/// This type includes the nonce used for encryption.
+#[derive(Clone, Serialize, Deserialize)]
 pub struct EncryptedShard {
     /// Encrypted material for this shard.
     encrypted: Vec<u8>,
@@ -197,10 +215,19 @@ impl EncryptedShard {
     }
 }
 
+impl Debug for EncryptedShard {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("EncryptedShard")
+            .field("encrypted", &"REDACTED")
+            .field("nonce", &"REDACTED")
+            .finish()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::crypto::{
-        sharding::{rebuild_key_from_encrypted_shards, SealKey, UnencryptedShard, NUM_SHARDS},
+        sharding::{SealKey, UnencryptedShard, NUM_SHARDS},
         SigningPrivateKey,
     };
     use rand::{rngs::OsRng, Rng};
@@ -226,12 +253,6 @@ mod tests {
     }
 
     #[test]
-    fn encrypt_shard_works() {
-        let shard = random_shard();
-        let _encrypted = shard.encrypt_shard(&TESTING_SEAL_KEY).unwrap();
-    }
-
-    #[test]
     fn shard_roundtrip_works() {
         let shard = random_shard();
         // Make clone shard for comparison.
@@ -239,11 +260,7 @@ mod tests {
 
         let encrypted = shard.encrypt_shard(&TESTING_SEAL_KEY).unwrap();
         let decrypted = encrypted.decrypt_shard(&TESTING_SEAL_KEY).unwrap();
-
-        // Note: Cannot use `assert_eq!` as `UnencryptedShard` does not impl Debug.
-        if shard_copy != decrypted {
-            panic!("Shards should be equal.")
-        }
+        assert_eq!(shard_copy, decrypted, "Shards should be equal.");
     }
 
     #[test]
@@ -274,7 +291,9 @@ mod tests {
             .clone()
             .shard_key_and_encrypt(&TESTING_SEAL_KEY)
             .unwrap();
-        let private_key2 = rebuild_key_from_encrypted_shards(encrypted, &TESTING_SEAL_KEY).unwrap();
+        let private_key2 =
+            SigningPrivateKey::rebuild_key_from_encrypted_shards(encrypted, &TESTING_SEAL_KEY)
+                .unwrap();
         assert_eq!(
             private_key, private_key2,
             "Keys look is different after sharding and reconstruction"
@@ -290,7 +309,8 @@ mod tests {
 
         // Try decrypting with different seal key.
         assert!(
-            rebuild_key_from_encrypted_shards(encrypted, &TESTING_SEAL_KEY_2).is_err(),
+            SigningPrivateKey::rebuild_key_from_encrypted_shards(encrypted, &TESTING_SEAL_KEY_2)
+                .is_err(),
             "Decrypting with wrong seal key should fail."
         );
     }
