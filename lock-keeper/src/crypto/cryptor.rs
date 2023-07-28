@@ -23,21 +23,18 @@ use crate::infrastructure::sensitive_info::SensitiveInfoConfig;
 /// It contains `data` to be encrypted, plus `context` and `config` fields.
 #[derive(Clone, Eq, ZeroizeOnDrop)]
 pub struct Encryptor {
-
     /// The actual bytes of data to be encrypted.
     data: Vec<u8>,
     /// Additional context about the data.
     #[zeroize(skip)]
     context: CryptorContext,
     /// Configuration
-    config: SensitiveInfoConfig,    
+    config: SensitiveInfoConfig,
 }
 
 /// An implementation of the `std::fmt::Display` trait for [`Encryptor`]
 impl std::fmt::Display for Encryptor {
-
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-
         if cfg!(debug_assertions) && !self.config.is_redacted() {
             // this is a Debug build *AND* redacted flag is FALSE
 
@@ -57,12 +54,10 @@ impl std::fmt::Display for Encryptor {
                 {context}\n\
                 \
                 \n---Encryptor end---\n",
-
                 data = data_hex,
                 data_len = self.data.len(),
                 context = self.context,
             )
-
         } else {
             // this is a Release build *OR* redacted flag is TRUE
             write!(
@@ -70,8 +65,7 @@ impl std::fmt::Display for Encryptor {
                 "\n---Encryptor begin---\n\n\
                 \t{redacted}\n\
                 \n---Encryptor end---\n",
-
-                redacted=self.config.clone().redacted_label(),
+                redacted = self.config.clone().redacted_label(),
             )
         }
     }
@@ -79,33 +73,26 @@ impl std::fmt::Display for Encryptor {
 
 /// An implementation of the `std::fmt::Debug` trait for [`Encryptor`]
 impl std::fmt::Debug for Encryptor {
-    
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-
         if cfg!(debug_assertions) && !self.config.is_redacted() {
             // this is a Debug build *AND* redacted flag is FALSE
 
             f.debug_struct("Encryptor")
-            .field("data", &self.data)
-            .field("context", &self.context)
-            .finish()
-
+                .field("data", &self.data)
+                .field("context", &self.context)
+                .finish()
         } else {
-
             // this is a Release build *OR* redacted flag is TRUE
             write!(f, "Encryptor {}", self.config.clone().redacted_label())
         }
     }
 }
 
-/// Implementation of the `TryFrom` trait for converting from [`Encryptor`] to
-/// `Vec<u8>`
+/// Implementation of the `TryFrom` trait for converting to `Vec<u8>`
 impl TryFrom<Encryptor> for Vec<u8> {
-
     type Error = CryptoError;
 
     fn try_from(encryptor: Encryptor) -> Result<Self, Self::Error> {
-
         // Output byte array format:
         // data len (2 bytes) || data || context len (2 bytes) ||
         // context data || config len (2 bytes) || config data
@@ -113,8 +100,8 @@ impl TryFrom<Encryptor> for Vec<u8> {
         let context: Vec<u8> = encryptor.context.to_owned().into();
         let config: Vec<u8> = encryptor.config.to_owned().into();
 
-        let data_length = u16::try_from(encryptor.data.len())
-            .map_err(|_| CryptoError::CannotEncodeDataLength)?;
+        let data_length =
+            u16::try_from(encryptor.data.len()).map_err(|_| CryptoError::CannotEncodeDataLength)?;
 
         let context_length =
             u16::try_from(context.len()).map_err(|_| CryptoError::CannotEncodeDataLength)?;
@@ -139,12 +126,10 @@ impl TryFrom<Encryptor> for Vec<u8> {
 /// Implementation of the `TryFrom` trait for converting from `Vec<u8>` to
 /// [`Encryptor`]
 impl TryFrom<Vec<u8>> for Encryptor {
-
     type Error = CryptoError;
 
     #[instrument(skip_all, err(Debug))]
     fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
-
         // Input byte array format:
         // data len (2 bytes) || data || context len (2 bytes) ||
         // context data || config len (2 bytes) || config data
@@ -153,7 +138,7 @@ impl TryFrom<Vec<u8>> for Encryptor {
         let mut parse = ParseBytes::new(bytes);
 
         let data_length = parse.take_bytes_as_u16()?;
-        // data_length is being converted from u16 to usize.  
+        // data_length is being converted from u16 to usize.
         // This conversion is always valid, guaranteed to never truncate data,
         // because a usize is always at least as large as a u16.
         let data = parse.take_bytes(data_length as usize)?.to_vec();
@@ -175,20 +160,21 @@ impl TryFrom<Vec<u8>> for Encryptor {
         }
 
         Ok(Self {
-            data: data,
+            data,
             context: context.try_into()?,
-            config: config.try_into()?,            
+            config: config.try_into()?,
         })
     }
 }
 
 /// Implement the `PartialEq` trait for the [`Encryptor`] type.
 impl PartialEq for Encryptor {
-
     /// Determines if two [`Encryptor`] instances are equal.
     ///
-    /// This function compares the `data` and `context` fields of two [`Encryptor`] instances.
-    /// It does not compare the `config` fields because the `config` field does not affect the functional equivalence of two [`Encryptor`] instances.
+    /// This function compares the `data` and `context` fields of two
+    /// [`Encryptor`] instances. It does not compare the `config` fields
+    /// because the `config` field does not affect the functional equivalence of
+    /// two [`Encryptor`] instances.
     ///
     /// # Arguments
     ///
@@ -196,33 +182,34 @@ impl PartialEq for Encryptor {
     ///
     /// # Returns
     ///
-    /// Returns `true` if the `data` and `context` fields are equal between the two [`Encryptor`] instances, 
-    /// Otherwise returns `false`.
+    /// Returns `true` if the `data` and `context` fields are equal between the
+    /// two [`Encryptor`] instances, Otherwise returns `false`.
     fn eq(&self, other: &Self) -> bool {
-
         // Don't compare the config fields
-        self.data == other.data &&
-        self.context == other.context 
+        self.data == other.data && self.context == other.context
     }
 }
 
 impl Encryptor {
-
     /// Constructs a new instance of [`Encryptor`] type.
     ///
     /// # Arguments
     ///
-    /// * `data` - A vector of bytes representing the data to be managed by the instance. 
+    /// * `data` - A vector of bytes representing the data to be managed by the
+    ///   instance.
     ///
-    /// * `context` - An instance of [`CryptorContext`] that provides necessary cryptographic context 
+    /// * `context` - An instance of [`CryptorContext`] that provides necessary
+    ///   cryptographic context
     /// for operations that may be performed on `data`.
     ///
-    /// * `config` - A [`SensitiveInfoConfig`] instance that provides configuration details for 
-    /// managing sensitive information. 
+    /// * `config` - A [`SensitiveInfoConfig`] instance that provides
+    ///   configuration details for
+    /// managing sensitive information.
     ///
     /// # Returns
     ///
-    /// * Returns a new instance of [`Encryptor`] type, initialized with the provided `data`, `context`, and `config`.
+    /// * Returns a new instance of [`Encryptor`] type, initialized with the
+    ///   provided `data`, `context`, and `config`.
     ///
     /// # Example
     ///
@@ -230,15 +217,14 @@ impl Encryptor {
     /// let data = vec![1, 2, 3, 4, 5];
     /// let context = CryptorContext::new(...);
     /// let config = SensitiveInfoConfig::new(true);
-    /// 
+    ///
     /// let encryptor = Encryptor::new(data, context, config);
     /// ```
     pub fn new(data: Vec<u8>, context: CryptorContext, config: SensitiveInfoConfig) -> Self {
-
         Self {
-            data: data,
-            context: context,
-            config: config,
+            data,
+            context,
+            config,
         }
     }
 
@@ -258,26 +244,22 @@ impl Encryptor {
         self,
         rng: &mut (impl CryptoRng + RngCore),
         encryption_key: &CryptorKey,
-
     ) -> Result<Decryptor, CryptoError> {
-
         // setup cipher... create a new instance of ChaCha20Poly1305 with key
         let cipher = ChaCha20Poly1305::new(&encryption_key.key_material);
 
         // Format plaintext and associated data
         let payload = Payload {
             msg: &self.data,
-            aad: &self.context.as_ref(),
+            aad: self.context.as_ref(),
         };
 
         // Generate nonce and encrypt the payload
         let nonce = ChaCha20Poly1305::generate_nonce(rng);
-        let encrypted_data = cipher
-            .encrypt(&nonce, payload)
-            .map_err(|e| {
-                error!("Encryption failed unexpectedly. {:?}", e);
-                CryptoError::EncryptionFailed
-            })?;
+        let encrypted_data = cipher.encrypt(&nonce, payload).map_err(|e| {
+            error!("Encryption failed unexpectedly. {:?}", e);
+            CryptoError::EncryptionFailed
+        })?;
 
         Ok(Decryptor::new(
             encrypted_data,
@@ -296,9 +278,7 @@ pub struct CryptorContext {
 
 /// An implementation of the `std::fmt::Display` trait for [`CryptorContext`].
 impl std::fmt::Display for CryptorContext {
-
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-
         let key_server_name_hex = self
             .key_server_name
             .iter()
@@ -311,7 +291,6 @@ impl std::fmt::Display for CryptorContext {
             "\n\nContext:\n\
             \tkey server name: 0x[{key_server_name}]\n\
             \tkey server name length: {key_server_name_len}\n",
-
             key_server_name = key_server_name_hex,
             key_server_name_len = self.key_server_name.len(),
         )
@@ -320,17 +299,15 @@ impl std::fmt::Display for CryptorContext {
 
 /// Implement the `AsRef<[u8]>` trait for [`CryptorContext`].
 impl AsRef<[u8]> for CryptorContext {
-
     fn as_ref(&self) -> &[u8] {
         &self.key_server_name
     }
 }
 
 impl CryptorContext {
-
     /// Constructs an instance of [`CryptorContext`].
     /// A type parameter is bounded by the `AsRef<[u8]>` trait.
-    /// 
+    ///
     /// This trait is implemented by types that can be referenced as a byte
     /// slice, e.g. `&str`, `Vec<u8>`
     ///
@@ -346,7 +323,6 @@ impl CryptorContext {
     ///     let key_server_name = "my_key_server".as_bytes().to_vec();
     ///     let context = CryptorContext::new(key_server_name);
     /// ```
-    /// 
     pub fn new<T: AsRef<[u8]>>(key_server_name: T) -> Self {
         CryptorContext {
             // use as_ref method to get a byte slice from the parameter,
@@ -358,7 +334,6 @@ impl CryptorContext {
 
 /// Conversion from `Vec<u8>` to [`CryptorContext`]
 impl From<Vec<u8>> for CryptorContext {
-
     fn from(data_bytes: Vec<u8>) -> Self {
         // Create a new CryptorContext using the byte data
         CryptorContext {
@@ -367,7 +342,7 @@ impl From<Vec<u8>> for CryptorContext {
     }
 }
 
-/// Conversion from [`CryptorContext`] to `Vec<u8>`
+/// Conversion to `Vec<u8>`
 impl From<CryptorContext> for Vec<u8> {
     fn from(context: CryptorContext) -> Self {
         context.key_server_name
@@ -383,18 +358,15 @@ impl From<CryptorContext> for Vec<u8> {
 /// [ChaCha20Poly1305 crate](https://docs.rs/chacha20poly1305/latest/chacha20poly1305/index.html).
 #[derive(Clone, Eq)]
 pub struct Decryptor {
-
     ciphertext: Vec<u8>,
     context: CryptorContext,
     nonce: chacha20poly1305::Nonce,
-    config: SensitiveInfoConfig,    
+    config: SensitiveInfoConfig,
 }
 
 /// An implementation of the `std::fmt::Display` trait for `Decryptor`
 impl std::fmt::Display for Decryptor {
-
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-
         let ciphertext_hex = self
             .ciphertext
             .iter()
@@ -404,7 +376,7 @@ impl std::fmt::Display for Decryptor {
 
         if cfg!(debug_assertions) && !self.config.is_redacted() {
             // this is a Debug build *AND* redacted flag is FALSE
-    
+
             write!(
                 f,
                 "\n---Encrypted data begin---\n\n\
@@ -416,14 +388,12 @@ impl std::fmt::Display for Decryptor {
                 \tnonce length: {nonce_len}\n
                 \
                 \n---Encrypted data end---\n",
-
                 ciphertext = ciphertext_hex,
                 ciphertext_len = self.ciphertext.len(),
                 context = self.context,
                 nonce = self.nonce,
                 nonce_len = self.nonce.len(),
             )
-
         } else {
             // this is a Release build *OR* redacted flag is TRUE
             write!(
@@ -431,8 +401,7 @@ impl std::fmt::Display for Decryptor {
                 "\n---Encrypted data begin---\n\n\
                 \t{redacted}\n\
                 \n---Encrypted data end---\n",
-
-                redacted=self.config.clone().redacted_label(),
+                redacted = self.config.clone().redacted_label(),
             )
         }
     }
@@ -441,16 +410,14 @@ impl std::fmt::Display for Decryptor {
 /// An implementation of the `std::fmt::Debug` trait for [`Decryptor`]
 impl std::fmt::Debug for Decryptor {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-
         if cfg!(debug_assertions) && !self.config.is_redacted() {
             // this is a Debug build *AND* redacted flag is FALSE
 
             f.debug_struct("Decryptor")
-            .field("ciphertext", &self.ciphertext)
-            .field("nonce", &self.nonce)
-            .field("context", &self.context)
-            .finish()
-
+                .field("ciphertext", &self.ciphertext)
+                .field("nonce", &self.nonce)
+                .field("context", &self.context)
+                .finish()
         } else {
             // this is a Release build *OR* redacted flag is TRUE
             write!(f, "Decryptor {}", self.config.clone().redacted_label())
@@ -460,11 +427,12 @@ impl std::fmt::Debug for Decryptor {
 
 /// Implement the `PartialEq` trait for the [`Decryptor`] type.
 impl PartialEq for Decryptor {
-
     /// Determines if two [`Decryptor`] instances are equal.
     ///
-    /// This function compares the `data`, `ciphertext` and `none` fields of two [`Decryptor`] instances.
-    /// It does not compare the `config` fields because the `config` field does not affect the functional equivalence of two [`Decryptor`] instances.
+    /// This function compares the `data`, `ciphertext` and `none` fields of two
+    /// [`Decryptor`] instances. It does not compare the `config` fields
+    /// because the `config` field does not affect the functional equivalence of
+    /// two [`Decryptor`] instances.
     ///
     /// # Arguments
     ///
@@ -472,49 +440,45 @@ impl PartialEq for Decryptor {
     ///
     /// # Returns
     ///
-    /// Returns `true` if the `data` and `context` fields are equal between the two [`Decryptor`] instances, 
-    /// Otherwise returns `false`.
+    /// Returns `true` if the `data` and `context` fields are equal between the
+    /// two [`Decryptor`] instances, Otherwise returns `false`.
     fn eq(&self, other: &Self) -> bool {
-
         // Don't compare the config fields
-        self.ciphertext == other.ciphertext &&
-        self.context == other.context &&
-        self.nonce == other.nonce
+        self.ciphertext == other.ciphertext
+            && self.context == other.context
+            && self.nonce == other.nonce
     }
 }
 
 impl Decryptor {
-
     /// Constructs a new instance of the [`Decryptor`] type.
     ///
     /// # Arguments
     ///
-    /// * `ciphertext` - A vector of bytes representing the ciphertext. 
-    ///                  This is typically the result of the encrypt operation.
+    /// * `ciphertext` - A vector of bytes representing the ciphertext. This is
+    ///   typically the result of the encrypt operation.
     ///
     /// * `context` - An instance of [`CryptorContext`]
     ///
-    /// * `nonce` - A `chacha20poly1305::Nonce` instance. 
-    ///             This is used in the encryption process to ensure the security of the ciphertext. 
-    ///             Every time data is encrypted, a unique nonce should be generated.
+    /// * `nonce` - A `chacha20poly1305::Nonce` instance. This is used in the
+    ///   encryption process to ensure the security of the ciphertext. Every
+    ///   time data is encrypted, a unique nonce should be generated.
     ///
     /// # Returns
     ///
-    /// Returns a new instance of the [`Decryptor`] type, initialized with the provided `ciphertext`, `context`, `nonce`, and `config`.
-    ///
+    /// Returns a new instance of the [`Decryptor`] type, initialized with the
+    /// provided `ciphertext`, `context`, `nonce`, and `config`.
     pub fn new(
-        ciphertext: Vec<u8>, 
+        ciphertext: Vec<u8>,
         context: CryptorContext,
         nonce: chacha20poly1305::Nonce,
         config: SensitiveInfoConfig,
-
     ) -> Self {
-
         Self {
-            ciphertext: ciphertext,
-            context: context,
-            nonce: nonce,
-            config: config,
+            ciphertext,
+            context,
+            nonce,
+            config,
         }
     }
 
@@ -530,14 +494,13 @@ impl Decryptor {
     /// * Returns an error of type [`CryptoError`] if the decryption process
     ///   fails.
     pub fn decrypt(self, decryption_key: &CryptorKey) -> Result<Encryptor, CryptoError> {
-
         // setup cipher... create a new instance of ChaCha20Poly1305 with key
         let cipher = ChaCha20Poly1305::new(&decryption_key.key_material);
 
         // Format ciphertext and associated data
         let payload = Payload {
             msg: &self.ciphertext,
-            aad: &self.context.as_ref(),
+            aad: self.context.as_ref(),
         };
 
         // Decrypt
@@ -549,7 +512,7 @@ impl Decryptor {
         Ok(Encryptor::new(
             plaintext_data,
             self.context,
-            SensitiveInfoConfig::new(true),            
+            SensitiveInfoConfig::new(true),
         ))
     }
 }
@@ -558,7 +521,7 @@ impl Decryptor {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::infrastructure::sensitive_info::sensitive_info_check;        
+    use crate::infrastructure::sensitive_info::sensitive_info_check;
 
     const KEY_SERVER_NAME: &str = "test_key_server_1";
     const DATA_BYTES_LENGTH: usize = 257;
@@ -566,7 +529,6 @@ mod test {
     /// Test the correctness of the sensitive information handling.
     #[test]
     fn cryptor_key_sensitive_info_handling_on_debug_and_display() {
-
         // generate some random data
         let data_plaintext = generate_random_data(DATA_BYTES_LENGTH);
 
@@ -577,7 +539,10 @@ mod test {
             SensitiveInfoConfig::new(true),
         );
 
-        println!("\nEncryptor with redacted config:\n{encryptor}", encryptor=encryptor);
+        println!(
+            "\nEncryptor with redacted config:\n{encryptor}",
+            encryptor = encryptor
+        );
 
         // sensitive information is currently redacted, let's test that
         sensitive_info_check(&encryptor, &encryptor.config).unwrap();
@@ -585,13 +550,16 @@ mod test {
         // unredact sensitive information, and test
         encryptor.config.unredact();
 
-        println!("\nEncryptor with un-redacted config:\n{encryptor}", encryptor=encryptor);
+        println!(
+            "\nEncryptor with un-redacted config:\n{encryptor}",
+            encryptor = encryptor
+        );
 
         sensitive_info_check(&encryptor, &encryptor.config).unwrap();
     }
 
-    /// Converts an encryptor between [`Encryptor`] and `Vec<u8>` representations and
-    /// verifies the conversion.
+    /// Converts an encryptor between [`Encryptor`] and `Vec<u8>`
+    /// representations and verifies the conversion.
     ///
     /// # Errors
     ///
@@ -599,7 +567,6 @@ mod test {
     /// conversion.
     #[test]
     fn encryptor_vec_u8_conversion() -> Result<(), CryptoError> {
-
         // generate some random data
         let data_plaintext = generate_random_data(DATA_BYTES_LENGTH);
 
@@ -607,7 +574,7 @@ mod test {
         let encryptor = Encryptor::new(
             data_plaintext.to_vec(),
             CryptorContext::new(KEY_SERVER_NAME),
-            SensitiveInfoConfig::new(false),            
+            SensitiveInfoConfig::new(false),
         );
 
         // convert Encryptor to Vec<u8> by cloning
@@ -626,7 +593,9 @@ mod test {
         );
 
         println!("\nOriginal encryptor: {encryptor}", encryptor = encryptor);
-        println!("\nConverted encryptor: {encryptor}", encryptor = encryptor_from_vec
+        println!(
+            "\nConverted encryptor: {encryptor}",
+            encryptor = encryptor_from_vec
         );
 
         // compare the original and converted encryptor
@@ -644,7 +613,6 @@ mod test {
     ///   decryption, or verification.
     #[test]
     fn data_encrypt_decrypt() -> Result<(), CryptoError> {
-
         let mut rng = rand::thread_rng();
 
         // generate some random data
@@ -677,7 +645,6 @@ mod test {
             "\nPlaintext data:{data:02x?}\
             \nPlaintext data length: {data_len}\
             \n\nEncrypted data:\n{encrypted_data}",
-
             data = data,
             data_len = data.len(),
             encrypted_data = encrypted_data,
@@ -692,7 +659,6 @@ mod test {
             "\nPlaintext data: {data:02x?}\
             \nPlaintext data length: {data_len}\
             \n\nDecrypted data:\n{decrypted_data}",
-
             data = data,
             data_len = data.len(),
             decrypted_data = decrypted_data,
@@ -724,13 +690,12 @@ mod test {
         // create a new instance of Encryptor
         let plaintext_data = Encryptor::new(
             data.to_vec(),
-            CryptorContext::new(KEY_SERVER_NAME),    
+            CryptorContext::new(KEY_SERVER_NAME),
             SensitiveInfoConfig::new(true),
         );
 
         // encrypt the data
-        let mut encrypted_data =
-            plaintext_data.encrypt(&mut rng, &data_encryption_key)?;
+        let mut encrypted_data = plaintext_data.encrypt(&mut rng, &data_encryption_key)?;
         // unredact for display
         encrypted_data.config.unredact();
 
@@ -772,13 +737,10 @@ mod test {
     ///
     /// * A vector of bytes holding the random data requested by the caller.
     fn generate_random_data(num_bytes: usize) -> Vec<u8> {
-
         let mut rng = rand::rngs::OsRng;
         let mut random_data = vec![0; num_bytes];
         rng.fill_bytes(&mut random_data);
 
         random_data
     }
-
 }
-
