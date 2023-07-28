@@ -286,12 +286,6 @@ impl Encryptor {
             SensitiveInfoConfig::new(true),
         ))
     }
-
-    /// Retrieve the context for this Encryptor
-    #[allow(dead_code)]
-    fn context(&self) -> &CryptorContext {
-        &self.context
-    }
 }
 
 /// The context (a.k.a. associated data).
