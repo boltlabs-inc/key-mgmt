@@ -30,6 +30,8 @@ pub enum CryptoError {
     EncryptionFailed,
     #[error("Invalid encryption key")]
     InvalidEncryptionKey,
+    #[error("Sensitive info check failed")]
+    SensitiveInfoCheckFailed,
 
     /// The `impl<T> Encrypted<T>` has some trait bounds for converting a
     /// `TryFrom::Error` associated type into a CryptoError.
@@ -392,6 +394,7 @@ impl TryFrom<Vec<u8>> for Secret {
 }
 
 /// Helper type for parsing byte array into integers and slices.
+#[derive(ZeroizeOnDrop)]
 pub(super) struct ParseBytes {
     bytes: Vec<u8>,
     offset: usize,
