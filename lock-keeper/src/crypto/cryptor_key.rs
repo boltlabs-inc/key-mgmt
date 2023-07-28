@@ -1,4 +1,4 @@
-//! This defines [`CryptorKey`], which can be used to securely encrypt
+//! This defines [`CryptorKey`] type, which is an encryption key that can be used to securely encrypt/decrypt
 //! data.
 
 use super::CryptoError;
@@ -6,8 +6,10 @@ use super::CryptoError;
 use chacha20poly1305::{ChaCha20Poly1305, KeyInit};
 
 use rand::{CryptoRng, RngCore};
-use std::{iter, path::Path};
+use std::{path::Path};
 use zeroize::{Zeroize, ZeroizeOnDrop};
+
+use crate::infrastructure::sensitive_info::SensitiveInfoConfig;
 
 /// The [`CryptorKey`] type is a default-length symmetric encryption key
 /// for an AEAD scheme. It can be used to securely encrypt data.
@@ -16,84 +18,117 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 /// This is because implementing Copy could potentially lead to multiple copies
 /// of the key in memory, which increases the chances of the key being leaked or
 /// exposed.
-#[derive(Clone, PartialEq, Eq, Zeroize, ZeroizeOnDrop)]
+#[derive(Clone, Eq, Zeroize, ZeroizeOnDrop)]
 pub struct CryptorKey {
     pub(super) key_material: Box<chacha20poly1305::Key>,
+    config: SensitiveInfoConfig,
 }
 
-/// An implementation of the `std::fmt::Display` trait for `CryptorKey`
+/// An implementation of the `std::fmt::Display` trait for [`CryptorKey`]
 impl std::fmt::Display for CryptorKey {
+
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
 
-        if cfg!(debug_assertions) {
-            // this is a Debug build AND display sensitive info is ENABLED
+        if cfg!(debug_assertions) && !self.config.is_redacted() {
 
+            // this is a Debug build *AND* redacted flag is FALSE
             write!(
                 f,
+
                 "\n---Cryptor key begin---\n\n\
                 \
                 \tKey: 0x{key:02x?}\n\
                 \tKey length: {key_len}\n\
                 \
                 \n---Cryptor key end---\n",
+
                 key = self.key_material,
                 key_len = self.key_material.len(),
             )
 
         } else {
-
+            
+            // this is a Release build *OR* redacted flag is TRUE
             write!(
                 f,
+
                 "\n---Cryptor key begin---\n\n\
-                \t{}\n\
+                \t{redacted}\n\
                 \n---Cryptor key end---\n",
-                &CryptorKey::REDACTED_INFO
+
+                redacted=self.config.clone().redacted_label(),
             )
         }
-
     }
 }
 
-/// An implementation of the `std::fmt::Debug` trait for `CryptorKey`
+/// An implementation of the `std::fmt::Debug` trait for [`CryptorKey`]
 impl std::fmt::Debug for CryptorKey {
+
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 
-        let key_length = self.key_material.len();
-
-        let key_material_hex = self
-            .key_material
-            .iter()
-            .map(|b| format!("{:02x}", b))
-            .collect::<Vec<String>>()
-            .join(" ");
-
-        if cfg!(debug_assertions) {
-            // this is a Debug build, so we can display sensitive info
-
+        if cfg!(debug_assertions) && !self.config.is_redacted() {
+            // this is a Debug build *AND* redacted flag is FALSE
             f.debug_struct("CryptorKey")
-            .field("key_material", &key_material_hex)
-            .field("key_length", &key_length)
+            .field("key_material", &self.key_material)
             .finish()
 
         } else {
 
-            write!(f, "CryptorKey {}", &CryptorKey::REDACTED_INFO)
+            // this is a Release build *OR* redacted flag is TRUE
+            write!(f, "CryptorKey {}", self.config.clone().redacted_label())
         }
     }
 }
 
-impl CryptorKey {
+/// Implement the `PartialEq` trait for the [`CryptorKey`] type.
+impl PartialEq for CryptorKey {
 
-    // sensitive info handling
-    const REDACTED_INFO: &str = "REDACTED";
+    /// Determines if two [`CryptorKey`] instances are equal.
+    ///
+    /// This function compares the `key_material` fields of two [`CryptorKey`] instances.
+    /// It does not compare the `config` fields because the `config` field does not affect the functional equivalence of two [`CryptorKey`] instances.
+    ///
+    /// # Arguments
+    ///
+    /// * `other` - The other [`CryptorKey`] instance to compare with.
+    ///
+    /// # Returns
+    ///
+    /// Returns `true` if the `data` and `context` fields are equal between the two [`CryptorKey`] instances, 
+    /// Otherwise returns `false`.
+    fn eq(&self, other: &Self) -> bool {
+
+        // Don't compare the config fields
+        self.key_material == other.key_material
+    }
+}
+
+
+/// Implementation for [`CryptorKey`]
+impl CryptorKey {
 
     /// Length of the encryption key in `bytes`
     const CRYPTOR_KEY_LENGTH: usize = 32;
 
-    /// Generate a new symmetric AEAD encryption key from scratch.
+    /// Constructs a new instance of the [`CryptorKey`] type.
+    ///
+    /// # Arguments
+    ///
+    /// * `rng` - A mutable reference to an object implementing both the `CryptoRng` and `RngCore` traits. 
+    ///           This is used to generate the cryptographic key for the ChaCha20Poly1305 algorithm.
+    ///
+    /// # Returns
+    ///
+    /// Returns a new instance of the [`CryptorKey`] type with a fresh cryptographic key generated via the provided random number generator (`rng`) and a new [`SensitiveInfoConfig`] object.
+    ///
+    /// A [`CryptorKey`] is generated uniformly at random. It is a 32-byte pseudorandom key for use in the [ChaCha20Poly1305 scheme](https://www.rfc-editor.org/rfc/rfc8439) for
+    /// authenticated encryption with associated data (AEAD).
     pub fn new(rng: &mut (impl CryptoRng + RngCore)) -> Self {
+
         Self {
             key_material: Box::new(ChaCha20Poly1305::generate_key(rng)),
+            config: SensitiveInfoConfig::new(true),
         }
     }
 
@@ -101,10 +136,13 @@ impl CryptorKey {
     pub fn from_file(path: impl AsRef<Path>) -> Result<Self, CryptoError> {
 
         // read key from a file
-        let bytes = std::fs::read(&path)
+        let mut key_bytes = std::fs::read(&path)
             .map_err(|e| CryptoError::FileIo(e, path.as_ref().to_path_buf()))?;
 
-        Self::from_bytes(&bytes)
+        let cryptor_key = Self::from_bytes(&key_bytes);
+        key_bytes.zeroize();
+
+        cryptor_key
     }
 
     /// Returns the [`CryptorKey`] key based on key material in the caller's
@@ -120,60 +158,16 @@ impl CryptorKey {
         // copy caller's key material
         key_bytes.copy_from_slice(cryptor_key);
 
-        // return a new instance of CryptorKey
         Ok(Self {
             key_material: Box::new(key_bytes.into()),
+            config: SensitiveInfoConfig::new(true),
         })
     }
 
-    /// WARNING: this generates a copy of the key,
-    /// and should only be used to derive another key from this key using a KDF.
-    /// This should explicitly stay pub(super) to avoid abuse.
-    #[allow(dead_code)]
-    pub(super) fn into_bytes(self) -> [u8; CryptorKey::CRYPTOR_KEY_LENGTH] {
+    /// Converts [`CryptorKey`] to a byte array.
+    pub fn into_bytes(self) -> [u8; CryptorKey::CRYPTOR_KEY_LENGTH] {
+
         (*self.key_material).into()
-    }
-}
-
-/// Implementation of the `TryFrom` trait for converting from `CryptorKey` to
-/// `Vec<u8>`
-impl TryFrom<CryptorKey> for Vec<u8> {
-    type Error = CryptoError;
-
-    fn try_from(key: CryptorKey) -> Result<Self, Self::Error> {
-        // len || key || context
-        let key_length = u8::try_from(key.key_material.len())
-            .map_err(|_| CryptoError::CannotEncodeDataLength)?;
-
-        let bytes = iter::once(key_length).chain(*key.key_material).collect();
-        Ok(bytes)
-    }
-}
-
-/// Implementation of the `TryFrom` trait for converting from `Vec<u8>` to
-/// `CryptorKey`
-impl TryFrom<Vec<u8>> for CryptorKey {
-    type Error = CryptoError;
-
-    fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
-        // len (should always be 32) || key (32 bytes) || context (remainder)
-        let len = *bytes.first().ok_or(CryptoError::ConversionError)? as usize;
-        if len != 32 {
-            return Err(CryptoError::ConversionError);
-        }
-
-        let key_offset = len + 1;
-        let key = bytes
-            .get(1..key_offset)
-            .ok_or(CryptoError::ConversionError)?;
-        let _context: Vec<u8> = bytes
-            .get(key_offset..)
-            .ok_or(CryptoError::ConversionError)?
-            .into();
-
-        Ok(Self {
-            key_material: Box::from(*chacha20poly1305::Key::from_slice(key)),
-        })
     }
 }
 
@@ -183,62 +177,45 @@ pub(super) mod test {
 
     use super::*;
     use std::{fs, fs::File, io::Write};
+    use crate::infrastructure::sensitive_info::sensitive_info_check;    
 
     const CRYPTOR_KEY_FILENAME: &str = "temp_encryption_key.bin";
 
     /// Test the correctness of the sensitive information handling.
-    /// 
-    ///     In the Release build: sensitive info is expected to be REDACTED
-    ///     In the Debug build: sensitive info can be displayed
     #[test]
     fn cryptor_key_sensitive_info_handling_on_debug_and_display() {
+
         let mut rng = rand::thread_rng();
-        
-        let encryption_key = CryptorKey::new(&mut rng);
+        let mut encryption_key = CryptorKey::new(&mut rng);
 
-        // create formatted strings for Debug and Display traits
-        let debug_format_cryptor_key = format!("{:?}", encryption_key);
-        let display_format_cryptor_key = format!("{}", encryption_key);
+        // sensitive information should be redacted by default, let's test...
+        sensitive_info_check(&encryption_key, &encryption_key.config).unwrap();
 
-        println!("\nCryptor key debug:{:?}", debug_format_cryptor_key);
-        println!("\nCryptor key display:{}", display_format_cryptor_key);
-
-        // Calculate the expected state of redacted info based on the build type.
-        //  False for the Debug build, True for the Release build.
-        let should_be_redacted = !cfg!(debug_assertions);
-
-        // check if output contains the redacted tag.
-        let is_debug_redacted = debug_format_cryptor_key.contains(&CryptorKey::REDACTED_INFO);
-        let is_display_redacted = display_format_cryptor_key.contains(&CryptorKey::REDACTED_INFO);
-
-        // check if the redacted tag is applied correctly for Debug and Display traits.
-        assert_eq!(is_debug_redacted, should_be_redacted,
-                    "Unexpected debug output: {}",
-                    if should_be_redacted { "Found UN-REDACTED info!!!" } else { "Found REDACTED info." });
-
-        assert_eq!(is_display_redacted, should_be_redacted,
-                    "Unexpected display output: {}",
-                    if should_be_redacted { "Found UN-REDACTED info!!!" } else { "Found REDACTED info." });
+        // unredact sensitive information, and test
+        encryption_key.config.unredact();
+        sensitive_info_check(&encryption_key, &encryption_key.config).unwrap();
     }
 
     /// Test the conversion from bytes to struct
     #[test]
     fn cryptor_key_from_bytes() -> Result<(), CryptoError> {
+
         let mut rng = rand::thread_rng();
 
         let encryption_key = CryptorKey::new(&mut rng);
-        // clone the key bytes
-        let encryption_key_bytes = encryption_key.key_material.clone();
 
         // use the cloned key bytes to create a new key
-        let encryption_key_from_bytes =
-            CryptorKey::from_bytes(&encryption_key_bytes)?;
+        let encryption_key_bytes = encryption_key.key_material.clone();        
+        let mut encryption_key_from_bytes = CryptorKey::from_bytes(&encryption_key_bytes)?;
+        // allow sensitive info to be shown
+        encryption_key_from_bytes.config.unredact();
 
         println!(
             "\nEncryption key: 0x{key:02x?}\n\
             Key length: {key_len}\n\
             \
             \nConverted encryption key:\n{converted_key}\n",
+
             key = encryption_key_bytes,
             key_len = encryption_key_bytes.len(),
             converted_key = encryption_key_from_bytes,
@@ -251,56 +228,44 @@ pub(super) mod test {
         Ok(())
     }
 
-    /// Test the conversion from struct to bytes
-    #[test]
-    fn cryptor_key_to_bytes() -> Result<(), CryptoError> {
-        let mut rng = rand::thread_rng();
-
-        let encryption_key = CryptorKey::new(&mut rng);
-
-        println!("\nEncryption key:\n{key}", key = encryption_key);
-
-        // clone here before we lose ownership
-        let encryption_key_clone = encryption_key.clone();
-
-        // convert the key to bytes
-        let encryption_key_bytes = encryption_key.into_bytes();
-
-        // create a new key from the converted bytes
-        let new_encryption_key = CryptorKey::from_bytes(&encryption_key_bytes)?;
-
-        println!("\nConverted encryption key:\n{key}", key = new_encryption_key);
-
-        // compare the original key and the newly created key from the original key
-        // bytes
-        assert_eq!(encryption_key_clone, new_encryption_key);
-
-        Ok(())
-    }
-
     /// Test the conversion from bytes to struct when the length is wrong.
     #[test]
     fn key_from_bytes_wrong_length_fails() -> Result<(), CryptoError> {
-        let mut rng = rand::thread_rng();
 
-        let encryption_key = CryptorKey::new(&mut rng);
-        let encryption_key_bytes = encryption_key.key_material.clone();
+        // test conversion with a key byte array that is TOO SHORT
+        let number_of_key_bytes = CryptorKey::CRYPTOR_KEY_LENGTH-1;
+        let key_bytes = vec![0xab; number_of_key_bytes];
+
+        let new_encryption_key_from_bytes = CryptorKey::from_bytes(&key_bytes);
 
         println!(
-            "\nEncryption key: 0x{key:02x?}\n\
-            Key length: {key_len}",
-            key = encryption_key_bytes,
-            key_len = encryption_key_bytes.len(),
+            "\nConvert encryption key using {number_of_key_bytes} bytes:\n{new_encryption_key_from_bytes:x?}\n\n",
+            number_of_key_bytes=number_of_key_bytes,
+            new_encryption_key_from_bytes=new_encryption_key_from_bytes,
         );
+
+        // make sure we have an invalid key error
+        assert_eq!(
+            new_encryption_key_from_bytes
+                .unwrap_err()
+                .to_string(),
+            CryptoError::InvalidEncryptionKey.to_string()
+        );
+
+        // test conversion with a key byte array that is TOO LONG
+        let number_of_key_bytes = CryptorKey::CRYPTOR_KEY_LENGTH+1;
+        let key_bytes = vec![0xab; number_of_key_bytes];
 
         let new_encryption_key_from_bytes =
-            CryptorKey::from_bytes(&encryption_key_bytes[..31]);
+            CryptorKey::from_bytes(&key_bytes);
 
         println!(
-            "\nConverted encryption key:\n{:02x?}\n\n",
-            new_encryption_key_from_bytes
+            "\nConvert encryption key using {number_of_key_bytes} bytes:\n{new_encryption_key_from_bytes:02x?}\n\n",
+            number_of_key_bytes=number_of_key_bytes,
+            new_encryption_key_from_bytes=new_encryption_key_from_bytes,
         );
 
+        // make sure we have an invalid key error
         assert_eq!(
             new_encryption_key_from_bytes
                 .unwrap_err()
@@ -314,7 +279,9 @@ pub(super) mod test {
     /// Test reading a key from a file.
     #[test]
     fn key_from_file() -> Result<(), CryptoError> {
-        // call the test helper function
+
+        // Use a helper function to write/read the key to/from a file.
+        // That way we can clean up the temp file in success and failure cases.
         let result = key_from_file_helper();
 
         // Always try to delete the file, even if key_from_file_helper()
@@ -335,6 +302,7 @@ pub(super) mod test {
 
     /// Helper function, so we can handle read from file failures correctly.
     fn key_from_file_helper() -> Result<(), CryptoError> {
+
         const KEY_FILENAME: &str = "temp_encryption_key.bin";
 
         let mut rng = rand::thread_rng();
@@ -346,14 +314,18 @@ pub(super) mod test {
             .expect("Failed to create a temp key file.");
 
         // clone it for later, before we lose ownership
-        let encryption_key_original = encryption_key.clone();
+        let mut encryption_key_original = encryption_key.clone();
 
         encryption_key_file
             .write_all(&encryption_key.into_bytes())
             .expect("Failed to write to a temp key file.");
 
         // read the key from a file
-        let encryption_key_from_file = CryptorKey::from_file(KEY_FILENAME)?;
+        let mut encryption_key_from_file = CryptorKey::from_file(KEY_FILENAME)?;
+
+        // allow sensitive info to be shown
+        encryption_key_from_file.config.unredact();
+        encryption_key_original.config.unredact();
 
         println!("\nEncryption key:\n{key}", key = encryption_key_original);
         println!("\nEncryption key from a file:\n{key_from_file}",
