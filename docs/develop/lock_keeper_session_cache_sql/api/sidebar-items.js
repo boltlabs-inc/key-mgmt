@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"static":["CALLSITE","META"],"struct":["PostgresSessionCache","Record"]};
+window.SIDEBAR_ITEMS = {"struct":["PostgresSessionCache"]};
