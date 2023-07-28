@@ -22,11 +22,11 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 use crate::types::database::account::UserId;
 
 mod arbitrary_secret;
+mod cryptor;
+mod cryptor_key;
 mod data_blob;
 mod generic;
 pub mod sharding;
-mod cryptor;
-mod cryptor_key;
 mod signing_key;
 mod signing_private_key;
 mod storage_key;
