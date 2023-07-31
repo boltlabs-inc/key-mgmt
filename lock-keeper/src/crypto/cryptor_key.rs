@@ -269,7 +269,7 @@ pub(super) mod test {
         // Now handle the result of key_from_file_helper()
         match result {
             Ok(()) => (),
-            Err(e) => println!("Test failed: {}", e),
+            Err(e) => panic!("Test failed: {}", e),
         }
 
         Ok(())
