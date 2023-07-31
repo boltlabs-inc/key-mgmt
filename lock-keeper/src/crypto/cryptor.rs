@@ -98,7 +98,7 @@ impl TryFrom<Encryptor> for Vec<u8> {
         // context data || config len (2 bytes) || config data
 
         let context: Vec<u8> = encryptor.context.to_owned().into();
-        let config: Vec<u8> = encryptor.config.to_owned().into();
+        let config: Vec<u8> = encryptor.config.to_owned().try_into()?;
 
         let data_length =
             u16::try_from(encryptor.data.len()).map_err(|_| CryptoError::CannotEncodeDataLength)?;

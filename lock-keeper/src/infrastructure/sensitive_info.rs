@@ -2,7 +2,6 @@
 //! information handling.
 
 use crate::crypto::CryptoError;
-use std::convert::From;
 use tracing::error;
 
 use serde::{Deserialize, Serialize};
@@ -21,18 +20,24 @@ pub struct SensitiveInfoConfig {
 }
 
 /// Conversion from `Vec<u8>` to [`SensitiveInfoConfig`]
-impl From<Vec<u8>> for SensitiveInfoConfig {
-    fn from(bytes: Vec<u8>) -> Self {
-        let config: SensitiveInfoConfig = bincode::deserialize(&bytes).unwrap();
-        config
+impl TryFrom<Vec<u8>> for SensitiveInfoConfig {
+    type Error = CryptoError;
+
+    fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
+        let config: SensitiveInfoConfig =
+            bincode::deserialize(&bytes).map_err(|_| CryptoError::ConversionError)?;
+        Ok(config)
     }
 }
 
 /// Conversion from [`SensitiveInfoConfig`] to `Vec<u8>`
-impl From<SensitiveInfoConfig> for Vec<u8> {
-    fn from(config: SensitiveInfoConfig) -> Self {
-        let encoded: Vec<u8> = bincode::serialize(&config).unwrap();
-        encoded
+impl TryFrom<SensitiveInfoConfig> for Vec<u8> {
+    type Error = CryptoError;
+
+    fn try_from(config: SensitiveInfoConfig) -> Result<Self, Self::Error> {
+        let encoded: Vec<u8> =
+            bincode::serialize(&config).map_err(|_| CryptoError::ConversionError)?;
+        Ok(encoded)
     }
 }
 
