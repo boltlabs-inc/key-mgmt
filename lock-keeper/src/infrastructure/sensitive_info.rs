@@ -13,8 +13,9 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 #[derive(Clone, PartialEq, Eq, Zeroize, ZeroizeOnDrop, Serialize, Deserialize)]
 pub struct SensitiveInfoConfig {
     /// A boolean indicating whether sensitive information should be redacted.
-    ///     If set to true, the sensitive information will be redacted (hidden
-    /// or masked).     If set to false, the sensitive information will not
+    /// If set to true, the sensitive information will be redacted (hidden
+    /// or masked).     
+    /// If set to false, the sensitive information will not
     /// be redacted.
     redact_sensitive_info: bool,
 }
