@@ -13,11 +13,6 @@ use crate::infrastructure::sensitive_info::SensitiveInfoConfig;
 
 /// The [`CryptorKey`] type is a default-length symmetric encryption key
 /// for an AEAD scheme. It can be used to securely encrypt data.
-///
-/// Note: we don't implement the Copy trait.
-/// This is because implementing Copy could potentially lead to multiple copies
-/// of the key in memory, which increases the chances of the key being leaked or
-/// exposed.
 #[derive(Clone, Eq, Zeroize, ZeroizeOnDrop)]
 pub struct CryptorKey {
     pub(super) key_material: Box<chacha20poly1305::Key>,
