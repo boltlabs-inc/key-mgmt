@@ -161,6 +161,7 @@ pub(super) mod test {
 
     use super::*;
     use crate::infrastructure::sensitive_info::sensitive_info_check;
+    use anyhow::anyhow;
     use std::{fs, fs::File, io::Write};
 
     const CRYPTOR_KEY_FILENAME: &str = "temp_encryption_key.bin";
@@ -275,7 +276,7 @@ pub(super) mod test {
     }
 
     /// Helper function, so we can handle read from file failures correctly.
-    fn key_from_file_helper() -> Result<(), CryptoError> {
+    fn key_from_file_helper() -> Result<(), anyhow::Error> {
         const KEY_FILENAME: &str = "temp_encryption_key.bin";
 
         let mut rng = rand::thread_rng();
@@ -283,8 +284,9 @@ pub(super) mod test {
         let encryption_key = CryptorKey::new(&mut rng);
 
         // create a temp file to store the key
+        //let mut encryption_key_file = File::create(KEY_FILENAME)?;
         let mut encryption_key_file =
-            File::create(KEY_FILENAME).expect("Failed to create a temp key file.");
+            File::create(KEY_FILENAME).map_err(|_| anyhow!("Failed to create a temp key file."))?;
 
         // clone it for later, before we lose ownership
         let mut encryption_key_original = encryption_key.clone();
@@ -308,7 +310,7 @@ pub(super) mod test {
 
         // make sure that key read from the file *is* the same as the original key
         if encryption_key_original != encryption_key_from_file {
-            return Err(CryptoError::InvalidEncryptionKey);
+            return Err(CryptoError::InvalidEncryptionKey.into());
         }
 
         Ok(())
