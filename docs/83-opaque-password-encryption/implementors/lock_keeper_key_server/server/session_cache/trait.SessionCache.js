@@ -1,0 +1,3 @@
+(function() {var implementors = {
+"lock_keeper_session_cache_sql":[["impl SessionCache for <a class=\"struct\" href=\"lock_keeper_session_cache_sql/api/struct.PostgresSessionCache.html\" title=\"struct lock_keeper_session_cache_sql::api::PostgresSessionCache\">PostgresSessionCache</a>"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

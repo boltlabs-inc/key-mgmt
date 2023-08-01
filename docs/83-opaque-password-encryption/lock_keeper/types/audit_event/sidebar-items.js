@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["ALL_ACTIONS","KEY_ONLY_ACTIONS","SYSTEM_ONLY_ACTIONS"],"enum":["EventStatus","EventType"],"struct":["AuditEvent","AuditEventOptions"]};

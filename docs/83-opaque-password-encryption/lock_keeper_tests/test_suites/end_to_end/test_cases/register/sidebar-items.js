@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["register_same_user_twice_fails","register_works","run_tests"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["cannot_remote_generate_after_logout","remote_generate_works","run_tests"]};
