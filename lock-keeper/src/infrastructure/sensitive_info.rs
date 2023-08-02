@@ -8,7 +8,8 @@ use serde::{Deserialize, Serialize};
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
 /// The [`SensitiveInfoConfig`] type is used to configure how we handle
-/// sensitive information such as cryptographic keys, passwords, etc.
+/// sensitive information (cryptographic keys, passwords, etc.) when using
+/// `Display` and `Debug`.
 #[derive(Clone, PartialEq, Eq, Zeroize, ZeroizeOnDrop, Serialize, Deserialize)]
 pub struct SensitiveInfoConfig {
     /// A boolean indicating whether sensitive information should be redacted.
