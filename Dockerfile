@@ -1,4 +1,4 @@
-FROM rust:1.67
+FROM rust:1.65
 ENV CONFIG="dev/config/docker/Binary.toml"
 
 RUN apt-get update && apt-get install -y protobuf-compiler && rm -rf /var/lib/apt/lists/*
