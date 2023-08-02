@@ -467,7 +467,7 @@ impl Decryptor {
     ///
     /// Returns a new instance of the [`Decryptor`] type, initialized with the
     /// provided `ciphertext`, `context`, `nonce`, and `config`.
-    pub fn new(
+    fn new(
         ciphertext: Vec<u8>,
         context: CryptorContext,
         nonce: chacha20poly1305::Nonce,
