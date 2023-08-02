@@ -429,10 +429,9 @@ impl std::fmt::Debug for Decryptor {
 impl PartialEq for Decryptor {
     /// Determines if two [`Decryptor`] instances are equal.
     ///
-    /// This function compares the `data`, `ciphertext` and `none` fields of two
-    /// [`Decryptor`] instances. It does not compare the `config` fields
-    /// because the `config` field does not affect the functional equivalence of
-    /// two [`Decryptor`] instances.
+    /// This function compares the fields of two [`Decryptor`] instances,
+    /// excluding the `config` field because the `config` field does not
+    /// affect the functional equivalence of two [`Decryptor`] instances.
     ///
     /// # Arguments
     ///
@@ -440,8 +439,8 @@ impl PartialEq for Decryptor {
     ///
     /// # Returns
     ///
-    /// Returns `true` if the `data` and `context` fields are equal between the
-    /// two [`Decryptor`] instances, Otherwise returns `false`.
+    /// Returns `true` if the non-`config` fields are equal between the two
+    /// [`Decryptor`] instances, Otherwise returns `false`.
     fn eq(&self, other: &Self) -> bool {
         // Don't compare the config fields
         self.ciphertext == other.ciphertext
