@@ -531,6 +531,10 @@
 <a href="#531" id="531">531</a>
 <a href="#532" id="532">532</a>
 <a href="#533" id="533">533</a>
+<a href="#534" id="534">534</a>
+<a href="#535" id="535">535</a>
+<a href="#536" id="536">536</a>
+<a href="#537" id="537">537</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Application-specific cryptographic types and operations.
 //!
 //! Defines and implements keys and secret types, and the appropriate
@@ -555,6 +559,8 @@
 <span class="kw">use </span><span class="kw">crate</span>::types::database::account::UserId;
 
 <span class="kw">mod </span>arbitrary_secret;
+<span class="kw">mod </span>cryptor;
+<span class="kw">mod </span>cryptor_key;
 <span class="kw">mod </span>data_blob;
 <span class="kw">mod </span>generic;
 <span class="kw">pub mod </span>sharding;
@@ -564,6 +570,8 @@
 
 <span class="kw">use </span><span class="kw">crate</span>::rpc::Message;
 <span class="kw">pub use </span>arbitrary_secret::Secret;
+<span class="kw">pub use </span>cryptor::{CryptorContext, Decryptor, Encryptor};
+<span class="kw">pub use </span>cryptor_key::CryptorKey;
 <span class="kw">pub use </span>data_blob::DataBlob;
 <span class="kw">use </span>generic::{AssociatedData, EncryptionKey};
 <span class="kw">pub use </span>generic::{CryptoError, Encrypted};

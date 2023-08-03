@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["logging","pem_utils"]};
+window.SIDEBAR_ITEMS = {"mod":["logging","pem_utils","sensitive_info"]};
