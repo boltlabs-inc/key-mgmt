@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use chacha20poly1305::{
     aead::{Aead, Payload},
     AeadCore, ChaCha20Poly1305, KeyInit,
@@ -26,6 +28,11 @@ pub enum CryptoError {
     DecryptionFailed,
     #[error("Encryption failed")]
     EncryptionFailed,
+    #[error("Invalid encryption key")]
+    InvalidEncryptionKey,
+    #[error("Sensitive info check failed")]
+    SensitiveInfoCheckFailed,
+
     /// The `impl<T> Encrypted<T>` has some trait bounds for converting a
     /// `TryFrom::Error` associated type into a CryptoError.
     /// Rust automatically implements `TryFrom<T, Error=Infallible>` when
@@ -51,6 +58,11 @@ pub enum CryptoError {
     ShardingFailed(String),
     #[error("Signature did not verify")]
     VerificationFailed,
+
+    /// IO error specific to file IO failing. Allows us to include the file that
+    /// failed as part of the error.
+    #[error("File IO error. Cause: {0}. On file: {1}")]
+    FileIo(std::io::Error, PathBuf),
 }
 
 /// The associated data used in [`Encrypted`] AEAD ciphertexts and
@@ -382,18 +394,19 @@ impl TryFrom<Vec<u8>> for Secret {
 }
 
 /// Helper type for parsing byte array into integers and slices.
-struct ParseBytes {
+#[derive(ZeroizeOnDrop)]
+pub(super) struct ParseBytes {
     bytes: Vec<u8>,
     offset: usize,
 }
 
 impl ParseBytes {
-    fn new(bytes: Vec<u8>) -> ParseBytes {
+    pub fn new(bytes: Vec<u8>) -> ParseBytes {
         ParseBytes { bytes, offset: 0 }
     }
 
     /// Take next `n` bytes from array.
-    fn take_bytes(&mut self, n: usize) -> Result<&[u8], CryptoError> {
+    pub fn take_bytes(&mut self, n: usize) -> Result<&[u8], CryptoError> {
         let slice = &self
             .bytes
             .get(self.offset..self.offset + n)
@@ -411,7 +424,7 @@ impl ParseBytes {
     }
 
     /// Take the rest of the bytes from the array.
-    fn take_rest(&mut self) -> Result<&[u8], CryptoError> {
+    pub fn take_rest(&mut self) -> Result<&[u8], CryptoError> {
         self.bytes
             .get(self.offset..)
             .ok_or(CryptoError::ConversionError)
