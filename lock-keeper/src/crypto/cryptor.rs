@@ -271,6 +271,10 @@ impl Encryptor {
 }
 
 /// The context (a.k.a. associated data).
+/// 
+/// TODO: We should consider making this a trait and require the calling
+/// application to define appropriate context for each of their encrypted types.
+/// See issue key-mgmt#542
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct CryptorContext {
     key_server_name: Vec<u8>,
