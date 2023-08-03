@@ -33,6 +33,7 @@ mod storage_key;
 
 use crate::rpc::Message;
 pub use arbitrary_secret::Secret;
+pub use cryptor::{CryptorContext, Decryptor, Encryptor};
 pub use cryptor_key::CryptorKey;
 pub use data_blob::DataBlob;
 use generic::{AssociatedData, EncryptionKey};
