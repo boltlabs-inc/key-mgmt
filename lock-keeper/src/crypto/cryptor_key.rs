@@ -145,6 +145,29 @@ impl CryptorKey {
     }
 
     /// Converts [`CryptorKey`] to a byte array.
+    ///
+    /// # Warning
+    ///
+    /// This method gives direct access to the key material bytes.
+    /// The caller should be careful to manually zeroize them after use to
+    /// prevent unintended exposure of sensitive information. Consider using
+    /// the `zeroize` crate to securely zero the data.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use zeroize::Zeroize;
+    /// use lock_keeper::crypto::CryptorKey;///
+    ///
+    /// let mut rng = rand::thread_rng();
+    /// let encryption_key = CryptorKey::new(&mut rng);
+    /// let mut key_bytes = encryption_key.into_bytes();
+    ///
+    /// // Use the key bytes...
+    ///
+    /// // When done, zeroize the key bytes
+    /// key_bytes.zeroize();
+    /// ```
     pub fn into_bytes(self) -> [u8; CryptorKey::CRYPTOR_KEY_LENGTH] {
         (*self.key_material).into()
     }
@@ -279,7 +302,6 @@ pub(super) mod test {
         let encryption_key = CryptorKey::new(&mut rng);
 
         // create a temp file to store the key
-        //let mut encryption_key_file = File::create(KEY_FILENAME)?;
         let mut encryption_key_file =
             File::create(KEY_FILENAME).map_err(|_| anyhow!("Failed to create a temp key file."))?;
 
