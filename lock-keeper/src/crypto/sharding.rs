@@ -168,11 +168,14 @@ pub struct ShardedSigningKeyPair {
 }
 
 impl ShardedSigningKeyPair {
-    pub fn new(public_key: SigningPublicKey, encrypted_shards: Vec<EncryptedShard>) -> Self {
-        Self {
-            public_key,
-            encrypted_shards,
-        }
+    pub fn create_and_encrypt(seal_key: &SealKey) -> Result<ShardedSigningKeyPair, CryptoError> {
+        let key_pair = SigningPrivateKey::generate(&mut OsRng);
+
+        let key_data = ShardedSigningKeyPair {
+            public_key: key_pair.public_key(),
+            encrypted_shards: key_pair.shard_key_and_encrypt(seal_key)?,
+        };
+        Ok(key_data)
     }
 
     pub fn public_key(&self) -> &SigningPublicKey {
