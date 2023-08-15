@@ -1,7 +1,7 @@
 use crate::crypto::{CryptoError, SigningPrivateKey, SigningPublicKey};
 use aes_gcm::{aead::Aead, AeadCore, Aes256Gcm, Key, KeyInit, Nonce};
 use k256::Scalar;
-use rand::rngs::OsRng;
+use rand::{rngs::OsRng, CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::{Debug, Formatter},
@@ -159,8 +159,9 @@ impl Debug for UnencryptedShard {
     }
 }
 
-/// Maestro key pair made up of the public key, and the private key split into
-/// shards.
+/// Maestro key pair made up of a `public_key` and `encrypted_shards`.
+/// The shards represent the private key that has been sharded, those
+/// shards are then encrypted by a seal key.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ShardedSigningKeyPair {
     public_key: SigningPublicKey,
@@ -168,25 +169,38 @@ pub struct ShardedSigningKeyPair {
 }
 
 impl ShardedSigningKeyPair {
-    pub fn new(public_key: SigningPublicKey, encrypted_shards: Vec<EncryptedShard>) -> Self {
-        Self {
-            public_key,
-            encrypted_shards,
-        }
+    /// This function generates a new random `[SigningPrivateKey]` using the
+    /// given `rng`. Then, it shards the private key component and encrypts
+    /// those shards with the given `seal_key`.
+    pub fn create_and_encrypt(
+        seal_key: &SealKey,
+        rng: &mut (impl RngCore + CryptoRng),
+    ) -> Result<ShardedSigningKeyPair, CryptoError> {
+        let key_pair = SigningPrivateKey::generate(rng);
+
+        let key_data = ShardedSigningKeyPair {
+            public_key: key_pair.public_key(),
+            encrypted_shards: key_pair.shard_key_and_encrypt(seal_key)?,
+        };
+        Ok(key_data)
     }
 
+    /// Get a reference to the public key.
     pub fn public_key(&self) -> &SigningPublicKey {
         &self.public_key
     }
 
+    /// Get a reference to the encrypted shards.
     pub fn shards(&self) -> &[EncryptedShard] {
         &self.encrypted_shards
     }
 
+    /// Take the shards from this `[ShardedSigningKeyPair]`.
     pub fn into_shards(self) -> Vec<EncryptedShard> {
         self.encrypted_shards
     }
 
+    /// Convert the `[ShardedSigningKeyPair]` into its constituent parts.
     pub fn into_parts(self) -> (SigningPublicKey, Vec<EncryptedShard>) {
         (self.public_key, self.encrypted_shards)
     }
