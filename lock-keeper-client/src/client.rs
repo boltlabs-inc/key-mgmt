@@ -41,6 +41,11 @@ impl FromStr for Password {
 }
 
 impl Password {
+    // tptodo:
+    // pub fn new(bytes: &[u8]) -> Self {
+    //     Password(bytes.to_vec())
+    // }
+
     pub fn as_bytes(&self) -> &[u8] {
         &self.0[..]
     }
