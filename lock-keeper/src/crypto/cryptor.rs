@@ -237,7 +237,7 @@ impl Encryptor {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```ignore
     /// // Assuming you've set up an `Encryptor` instance named `encryptor`
     /// let data_bytes: &[u8] = encryptor.data();
     /// ```
@@ -481,7 +481,7 @@ impl TryFrom<Decryptor> for Vec<u8> {
         let bytes = ciphertext_length
             .to_be_bytes()
             .into_iter()
-            .chain(decryptor.ciphertext.to_owned())
+            .chain(decryptor.ciphertext)
             .chain(context_length.to_be_bytes())
             .chain(context)
             .chain(nonce_length.to_be_bytes())
