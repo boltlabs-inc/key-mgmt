@@ -459,7 +459,8 @@ impl TryFrom<Decryptor> for Vec<u8> {
     fn try_from(decryptor: Decryptor) -> Result<Self, Self::Error> {
         // Output byte array format:
         // ciphertext len (2 bytes) || ciphertext || context len (2 bytes) ||
-        // context data || nonce len (2 bytes) || nonce data || config len (2 bytes) || config data
+        // context data || nonce len (2 bytes) || nonce data || config len (2 bytes) ||
+        // config data
 
         let context: Vec<u8> = decryptor.context.to_owned().into();
         let config: Vec<u8> = decryptor.config.to_owned().try_into()?;
@@ -502,7 +503,8 @@ impl TryFrom<Vec<u8>> for Decryptor {
     fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
         // Input byte array format:
         // ciphertext len (2 bytes) || ciphertext || context len (2 bytes) ||
-        // context data || nonce len (2 bytes) || nonce data || config len (2 bytes) || config data
+        // context data || nonce len (2 bytes) || nonce data || config len (2 bytes) ||
+        // config data
 
         // we'll be parsing the byte array, and creating an instance of Decryptor type
         let mut parse = ParseBytes::new(bytes);
