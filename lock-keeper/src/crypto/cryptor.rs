@@ -228,6 +228,28 @@ impl Encryptor {
         }
     }
 
+    /// Returns a reference to the encrypted data bytes stored within the
+    /// [`Encryptor`] instance.
+    ///
+    /// This method provides read-only access to the internal `data` field,
+    /// ensuring that the encrypted data cannot be modified directly by the
+    /// caller.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// // Assuming you've set up an `Encryptor` instance named `encryptor`
+    /// let data_bytes: &[u8] = encryptor.data();
+    /// ```
+    ///
+    /// # Returns
+    ///
+    /// A byte slice (`&[u8]`) that represents the encrypted data.    
+    /// Returns a reference to the data bytes.
+    pub fn data(&self) -> &[u8] {
+        &self.data
+    }
+
     /// Encrypts data using the provided encryption key.
     ///
     /// # Arguments
@@ -429,6 +451,111 @@ impl std::fmt::Debug for Decryptor {
     }
 }
 
+/// Implementation of the `TryFrom` trait for converting from [`Decryptor`] to
+/// `Vec<u8>`
+impl TryFrom<Decryptor> for Vec<u8> {
+    type Error = CryptoError;
+
+    fn try_from(decryptor: Decryptor) -> Result<Self, Self::Error> {
+        // Output byte array format:
+        // ciphertext len (2 bytes) || ciphertext || context len (2 bytes) ||
+        // context data || nonce len (2 bytes) || nonce data || config len (2 bytes) || config data
+
+        let context: Vec<u8> = decryptor.context.to_owned().into();
+        let config: Vec<u8> = decryptor.config.to_owned().try_into()?;
+        let nonce: Vec<u8> = decryptor.nonce.to_vec();
+
+        let ciphertext_length = u16::try_from(decryptor.ciphertext.len())
+            .map_err(|_| CryptoError::CannotEncodeDataLength)?;
+
+        let context_length =
+            u16::try_from(context.len()).map_err(|_| CryptoError::CannotEncodeDataLength)?;
+
+        let config_length =
+            u16::try_from(config.len()).map_err(|_| CryptoError::CannotEncodeDataLength)?;
+
+        let nonce_length =
+            u16::try_from(nonce.len()).map_err(|_| CryptoError::CannotEncodeDataLength)?;
+
+        let bytes = ciphertext_length
+            .to_be_bytes()
+            .into_iter()
+            .chain(decryptor.ciphertext.to_owned())
+            .chain(context_length.to_be_bytes())
+            .chain(context)
+            .chain(nonce_length.to_be_bytes())
+            .chain(nonce)
+            .chain(config_length.to_be_bytes())
+            .chain(config)
+            .collect();
+
+        Ok(bytes)
+    }
+}
+
+/// Implementation of the `TryFrom` trait for converting from `Vec<u8>` to
+/// [`Decryptor`]
+impl TryFrom<Vec<u8>> for Decryptor {
+    type Error = CryptoError;
+
+    #[instrument(skip_all, err(Debug))]
+    fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
+        // Input byte array format:
+        // ciphertext len (2 bytes) || ciphertext || context len (2 bytes) ||
+        // context data || nonce len (2 bytes) || nonce data || config len (2 bytes) || config data
+
+        // we'll be parsing the byte array, and creating an instance of Decryptor type
+        let mut parse = ParseBytes::new(bytes);
+
+        let ciphertext_length = parse.take_bytes_as_u16()?;
+        // data_length is being converted from u16 to usize.
+        // This conversion is always valid, guaranteed to never truncate data,
+        // because a usize is always at least as large as a u16.
+        let ciphertext = parse.take_bytes(ciphertext_length as usize)?.to_vec();
+
+        let context_length = parse.take_bytes_as_u16()?;
+        let context: Vec<u8> = parse.take_bytes(context_length as usize)?.to_vec();
+
+        // make sure that the length of the context matches the parsed length
+        if context.len() != context_length as usize {
+            return Err(CryptoError::ConversionError);
+        }
+
+        let nonce_length = parse.take_bytes_as_u16()?;
+        let nonce: Vec<u8> = parse.take_bytes(nonce_length as usize)?.to_vec();
+
+        // create a default instance of Nonce type, so we can get the expected length
+        let nonce_length_default = chacha20poly1305::Nonce::default().len();
+        // need to clone nonce from the slice that was previously serialized
+        let mut nonce_new = chacha20poly1305::Nonce::default();
+        if nonce_length == nonce_length_default as u16 {
+            nonce_new.clone_from_slice(&nonce);
+        } else {
+            return Err(CryptoError::ConversionError);
+        }
+
+        // make sure that the length of the nonce matches the parsed length
+        if nonce.len() != nonce_length as usize {
+            return Err(CryptoError::ConversionError);
+        }
+
+        let config_length = parse.take_bytes_as_u16()?;
+        let config: Vec<u8> = parse.take_rest()?.to_vec();
+
+        // make sure that the length of the config matches the parsed length
+        if config.len() != config_length as usize {
+            return Err(CryptoError::ConversionError);
+        }
+
+        Ok(Self {
+            ciphertext,
+            context: context.try_into()?,
+            nonce: nonce_new,
+            config: config.try_into()?,
+        })
+    }
+}
+
 /// Implement the `PartialEq` trait for the [`Decryptor`] type.
 impl PartialEq for Decryptor {
     /// Determines if two [`Decryptor`] instances are equal.
@@ -603,6 +730,64 @@ mod test {
 
         // compare the original and converted encryptor
         assert_eq!(encryptor, encryptor_from_vec);
+
+        Ok(())
+    }
+
+    /// Converts a decryptor between [`Decryptor`] and `Vec<u8>`
+    /// representations and verifies the conversion.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`CryptoError`] if there is an error during encryption or
+    /// conversion.
+    #[test]
+    fn decryptor_vec_u8_conversion() -> Result<(), CryptoError> {
+        let mut rng = rand::thread_rng();
+
+        // generate some random data
+        let data_plaintext = generate_random_data(DATA_BYTES_LENGTH);
+
+        // create an Encryptor instance
+        let encryptor = Encryptor::new(
+            data_plaintext.to_vec(),
+            CryptorContext::new(KEY_SERVER_NAME),
+            SensitiveInfoConfig::new(true),
+        );
+
+        // generate an encryption key
+        let data_encryption_key = CryptorKey::new(&mut rng);
+
+        // encrypt the data
+        let mut decryptor = encryptor.encrypt(&mut rng, &data_encryption_key)?;
+
+        // unredact the decryptor, so we can have display all of the sensitive info for
+        // debugging/visual inspection
+        decryptor.config.unredact();
+
+        // convert decryptor to Vec<u8> by cloning
+        let decryptor_vec: Vec<u8> = decryptor.clone().try_into()?;
+
+        // convert Vec<u8> back to decryptor
+        let decryptor_from_vec: Decryptor = decryptor_vec.try_into()?;
+
+        println!(
+            "\nOriginal raw plaintext data: 0x{data:02x?}",
+            data = data_plaintext
+        );
+        println!(
+            "Original raw plaintext data length: {data_len}",
+            data_len = data_plaintext.len()
+        );
+
+        println!("\nOriginal decryptor: {decryptor}", decryptor = decryptor);
+        println!(
+            "\nConverted encryptor: {decryptor}",
+            decryptor = decryptor_from_vec
+        );
+
+        // compare the original and converted decryptor
+        assert_eq!(decryptor, decryptor_from_vec);
 
         Ok(())
     }
