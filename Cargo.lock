@@ -1281,7 +1281,7 @@ dependencies = [
 
 [[package]]
 name = "key-server-cli"
-version = "1.0.1"
+version = "1.8.0"
 dependencies = [
  "base64 0.13.1",
  "clap",
@@ -1320,7 +1320,7 @@ checksum = "09fc20d2ca12cb9f044c93e3bd6d32d523e6e2ec3db4f7b2939cd99026ecd3f0"
 
 [[package]]
 name = "lock-keeper"
-version = "1.0.1"
+version = "1.8.0"
 dependencies = [
  "aes-gcm",
  "anyhow",
@@ -1359,7 +1359,7 @@ dependencies = [
 
 [[package]]
 name = "lock-keeper-client"
-version = "1.0.1"
+version = "1.8.0"
 dependencies = [
  "argon2",
  "async-trait",
@@ -1391,7 +1391,7 @@ dependencies = [
 
 [[package]]
 name = "lock-keeper-client-cli"
-version = "1.0.1"
+version = "1.8.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1415,7 +1415,7 @@ dependencies = [
 
 [[package]]
 name = "lock-keeper-key-server"
-version = "1.0.1"
+version = "1.8.0"
 dependencies = [
  "argon2",
  "async-trait",
@@ -1451,7 +1451,7 @@ dependencies = [
 
 [[package]]
 name = "lock-keeper-postgres"
-version = "1.0.1"
+version = "1.8.0"
 dependencies = [
  "async-trait",
  "bincode",
@@ -1472,7 +1472,7 @@ dependencies = [
 
 [[package]]
 name = "lock-keeper-session-cache-sql"
-version = "1.0.1"
+version = "1.8.0"
 dependencies = [
  "async-trait",
  "bincode",
@@ -1498,7 +1498,7 @@ dependencies = [
 
 [[package]]
 name = "lock-keeper-tests"
-version = "1.0.1"
+version = "1.8.0"
 dependencies = [
  "base64 0.13.1",
  "clap",
