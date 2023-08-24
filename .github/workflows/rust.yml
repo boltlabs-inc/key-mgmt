@@ -35,11 +35,13 @@ jobs:
 
       # Install Rust toolchain
       # action repo is here https://github.com/dtolnay/rust-toolchain
-      - name: Install Rust toolchain stable      
-        uses: dtolnay/rust-toolchain@1.70
+      - name: Install Rust toolchain stable
+        uses: dtolnay/rust-toolchain@1.70.0
         with:
-          toolchain: stable
-          components: clippy                
+          # Do NOT use `toolchain` input. It will cause the cargo version specified
+          # above to be ignored!
+          # toolchain: stable // Do NOT use.
+          components: clippy
 
       - name: Install Protoc
         uses: arduino/setup-protoc@v1.1.2
