@@ -23,7 +23,7 @@ jobs:
       # Install Rust toolchain
       # action repo is here https://github.com/dtolnay/rust-toolchain
       - name: Install Rust toolchain stable      
-        uses: dtolnay/rust-toolchain@1.70
+        uses: dtolnay/rust-toolchain@1.70.0
         with:
           # Do NOT use `toolchain` input. It will cause the cargo version specified
           # above to be ignored!
