@@ -730,6 +730,81 @@ mod test {
         Ok(())
     }
 
+    /// Sets up a [`Decryptor`] instance for testing.
+    ///
+    /// # Returns
+    ///
+    /// Returns a `Result` containing the [`Decryptor`] instance if successful,
+    /// or a [`CryptoError`] if any step in the setup fails.    
+    fn setup_decryptor() -> Result<Decryptor, CryptoError> {
+        let mut rng = rand::thread_rng();
+
+        // Generate some random data
+        let data_plaintext = generate_random_data(DATA_BYTES_LENGTH);
+
+        // Create an Encryptor instance
+        let encryptor = Encryptor::new(
+            data_plaintext.to_vec(),
+            CryptorContext::new(KEY_SERVER_NAME),
+            SensitiveInfoConfig::new(true),
+        );
+
+        // Generate an encryption key
+        let data_encryption_key = CryptorKey::new(&mut rng);
+
+        // Encrypt the data
+        let mut decryptor = encryptor.encrypt(&mut rng, &data_encryption_key)?;
+
+        // Unredact the decryptor, so we can display all of the sensitive info for
+        // debugging/visual inspection
+        decryptor.config.unredact();
+
+        Ok(decryptor)
+    }
+
+    /// Converts a decryptor from `Vec<u8>` to [`Decryptor`].
+    /// Removes some bytes to make the conversion fail.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`CryptoError`] if there is an error
+    #[test]
+    fn decryptor_conversion_test_incomplete_fields() -> Result<(), CryptoError> {
+        let decryptor = setup_decryptor()?;
+
+        let mut decryptor_vec: Vec<u8> = decryptor.try_into()?;
+
+        // Remove some bytes to simulate incomplete fields
+        decryptor_vec.truncate(decryptor_vec.len() - 10);
+
+        // This should fail
+        assert!(Decryptor::try_from(decryptor_vec).is_err());
+
+        Ok(())
+    }
+
+    /// Converts a decryptor from `Vec<u8>` to [`Decryptor`].
+    /// Adds extra bytes at the end of the byte array to make the conversion
+    /// fail.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`CryptoError`] if there is an error
+    #[test]
+    fn decryptor_conversion_test_extra_bytes_at_end() -> Result<(), CryptoError> {
+        let decryptor = setup_decryptor()?;
+
+        let mut decryptor_vec: Vec<u8> = decryptor.try_into()?;
+
+        // Append extra bytes
+        decryptor_vec.extend_from_slice(&[0xBB, 0xAA, 0xAA, 0xDD]);
+
+        // This should fail
+        assert!(Decryptor::try_from(decryptor_vec).is_err());
+
+        Ok(())
+    }
+
     /// Converts a decryptor between [`Decryptor`] and `Vec<u8>`
     /// representations and verifies the conversion.
     ///
@@ -739,42 +814,13 @@ mod test {
     /// conversion.
     #[test]
     fn decryptor_vec_u8_conversion() -> Result<(), CryptoError> {
-        let mut rng = rand::thread_rng();
-
-        // generate some random data
-        let data_plaintext = generate_random_data(DATA_BYTES_LENGTH);
-
-        // create an Encryptor instance
-        let encryptor = Encryptor::new(
-            data_plaintext.to_vec(),
-            CryptorContext::new(KEY_SERVER_NAME),
-            SensitiveInfoConfig::new(true),
-        );
-
-        // generate an encryption key
-        let data_encryption_key = CryptorKey::new(&mut rng);
-
-        // encrypt the data
-        let mut decryptor = encryptor.encrypt(&mut rng, &data_encryption_key)?;
-
-        // unredact the decryptor, so we can have display all of the sensitive info for
-        // debugging/visual inspection
-        decryptor.config.unredact();
+        let decryptor = setup_decryptor()?;
 
         // convert decryptor to Vec<u8> by cloning
         let decryptor_vec: Vec<u8> = decryptor.clone().try_into()?;
 
         // convert Vec<u8> back to decryptor
         let decryptor_from_vec: Decryptor = decryptor_vec.try_into()?;
-
-        println!(
-            "\nOriginal raw plaintext data: 0x{data:02x?}",
-            data = data_plaintext
-        );
-        println!(
-            "Original raw plaintext data length: {data_len}",
-            data_len = data_plaintext.len()
-        );
 
         println!("\nOriginal decryptor: {decryptor}", decryptor = decryptor);
         println!(
