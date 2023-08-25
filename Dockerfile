@@ -6,7 +6,7 @@ WORKDIR /usr/src/lock-keeper-key-server
 COPY . .
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/src/lock-keeper-key-server/target \
-    cargo install --path ./bin/key-server-cli
+    cargo install --locked --path ./bin/key-server-cli
 
 VOLUME /app
 

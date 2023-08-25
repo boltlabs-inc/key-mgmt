@@ -11,7 +11,7 @@ use lock_keeper::{
         audit_event::{AuditEvent, AuditEventOptions, EventStatus, EventType},
         database::{
             account::{Account, AccountId, AccountName, UserId},
-            secrets::StoredSecret,
+            secrets::{secret_types::SERVER_ENCRYPTED_BLOB, StoredSecret},
         },
         operations::ClientAction,
     },
@@ -71,6 +71,16 @@ impl DataStore for PostgresDB {
         filter: SecretFilter,
     ) -> Result<StoredSecret, DatabaseError> {
         Ok(self.get_secret_impl(account_id, key_id, filter).await?)
+    }
+
+    async fn get_server_encrypted_blob(
+        &self,
+        account_id: AccountId,
+        key_id: &KeyId,
+    ) -> Result<StoredSecret, DatabaseError> {
+        Ok(self
+            .get_server_encrypted_blob_impl(account_id, key_id)
+            .await?)
     }
 
     async fn delete_secret(
@@ -273,7 +283,7 @@ impl PostgresDB {
         debug!("Matching entries from query: {}", matches.len());
 
         // Iterator will stop and the first error is returned if our conversion fails.
-        let results: Result<Vec<_>, _> = matches.into_iter().map(TryFrom::try_from).collect();
+        let results: Result<Vec<_>, _> = matches.into_iter().map(AuditEvent::try_from).collect();
         results
     }
 
@@ -328,9 +338,9 @@ impl PostgresDB {
             SecretDB,
             "UPDATE Secrets \
                 SET retrieved=TRUE \
-             FROM Secrets S LEFT JOIN SecretTypes ST \
-                ON S.secret_type_id=ST.secret_type_id \
-             WHERE S.key_id=$1 AND S.account_id=$2 AND ST.secret_type LIKE $3 \
+             FROM Secrets S INNER JOIN SecretTypes ST \
+                ON S.secret_type_id=ST.secret_type_id AND ST.secret_type LIKE $3 \
+             WHERE S.key_id=$1 AND S.account_id=$2 \
              RETURNING S.key_id, S.account_id, ST.secret_type, S.secret, S.retrieved",
             key_id.as_bytes(),
             account_id.0,
@@ -363,6 +373,36 @@ impl PostgresDB {
                     _ => Err(PostgresError::InvalidRowCountFound),
                 }
             }
+            Some(secret_db) => Ok(secret_db.try_into()?),
+        }
+    }
+
+    /// This function provides a simplified query for server encrypted blobs.
+    #[instrument(skip_all, err(Debug), fields(key_id=?key_id))]
+    pub(crate) async fn get_server_encrypted_blob_impl(
+        &self,
+        account_id: AccountId,
+        key_id: &KeyId,
+    ) -> Result<StoredSecret, PostgresError> {
+        debug!("Fetching user secret.");
+
+        // Join tables to map secret_type to the corresponding secret_type_id.
+        // Update the retrieved value on Secrets.retrieved
+        let secret_db: Option<SecretDB> = sqlx::query_as!(
+            SecretDB,
+            "SELECT S.key_id, S.account_id, ST.secret_type, S.secret, S.retrieved
+             FROM Secrets S INNER JOIN SecretTypes ST
+                ON S.secret_type_id=ST.secret_type_id AND ST.secret_type = $3
+             WHERE S.key_id=$1 AND S.account_id=$2",
+            key_id.as_bytes(),
+            account_id.0,
+            SERVER_ENCRYPTED_BLOB
+        )
+        .fetch_optional(&self.connection_pool)
+        .await?;
+
+        match secret_db {
+            None => Err(PostgresError::NoEntry),
             Some(secret_db) => Ok(secret_db.try_into()?),
         }
     }

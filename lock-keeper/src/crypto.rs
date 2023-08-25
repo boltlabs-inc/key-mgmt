@@ -22,19 +22,26 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 use crate::types::database::account::UserId;
 
 mod arbitrary_secret;
+mod cryptor;
+mod cryptor_key;
 mod data_blob;
 mod generic;
+pub mod sharding;
 mod signing_key;
+mod signing_private_key;
 mod storage_key;
 
 use crate::rpc::Message;
 pub use arbitrary_secret::Secret;
+pub use cryptor::{CryptorContext, Decryptor, Encryptor};
+pub use cryptor_key::CryptorKey;
 pub use data_blob::DataBlob;
 use generic::{AssociatedData, EncryptionKey};
 pub use generic::{CryptoError, Encrypted};
 pub use signing_key::{
     Import, Signable, SignableBytes, Signature, SigningKeyPair, SigningPublicKey,
 };
+pub use signing_private_key::{RecoverableSignature, SigningPrivateKey};
 #[cfg(test)]
 use storage_key::test::create_test_export_key;
 pub use storage_key::{RemoteStorageKey, StorageKey};
@@ -176,10 +183,10 @@ impl MasterKey {
     /// This must be run by the client.
     /// It takes the following steps:
     /// 1. Generate a new [`StorageKey`] to encrypt stored data with
-    /// 2. Derive the decryption key from the master key,
-    ///    using the associated data
-    /// 3. Encrypt the storage key under the encryption key,
-    ///    using an AEAD scheme
+    /// 2. Derive the decryption key from the master key, using the associated
+    ///    data
+    /// 3. Encrypt the storage key under the encryption key, using an AEAD
+    ///    scheme
     /// 4. Return the encrypted storage key
     pub fn create_and_encrypt_storage_key(
         self,

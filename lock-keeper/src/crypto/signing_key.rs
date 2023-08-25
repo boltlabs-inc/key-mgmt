@@ -2,18 +2,17 @@ use crate::{
     crypto::{
         generic::EncryptionKey,
         signing_key::generation_types::{CLIENT_GENERATED, IMPORTED, SERVER_GENERATED},
-        RemoteStorageKey,
+        RemoteStorageKey, SigningPrivateKey,
     },
     types::database::account::UserId,
     LockKeeperError,
 };
-use k256::ecdsa::{
-    self,
-    signature::{Signer, Verifier},
-    SigningKey, VerifyingKey,
-};
+use k256::ecdsa::{self, signature::DigestVerifier, VerifyingKey};
 use rand::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
+use sha3::Digest;
+use std::str::FromStr;
+use tracing::error;
 use zeroize::ZeroizeOnDrop;
 
 use super::{generic::AssociatedData, CryptoError, Encrypted, Export, KeyId, StorageKey};
@@ -31,7 +30,7 @@ pub trait Signable: AsRef<[u8]> {
         &self,
         public_key: &SigningPublicKey,
         signature: &Signature,
-    ) -> Result<(), LockKeeperError>;
+    ) -> Result<(), CryptoError>;
 }
 
 /// Wrapper used to declare arbitrary bytes as [`Signable`].
@@ -52,18 +51,15 @@ impl AsRef<[u8]> for SignableBytes {
 
 impl Signable for SignableBytes {
     fn sign(&self, signing_key_pair: &SigningKeyPair) -> Signature {
-        Signature(signing_key_pair.signing_key.sign(&self.0))
+        signing_key_pair.signing_key.sign(&self.0)
     }
 
     fn verify(
         &self,
         public_key: &SigningPublicKey,
         signature: &Signature,
-    ) -> Result<(), LockKeeperError> {
-        Ok(public_key
-            .0
-            .verify(&self.0, &signature.0)
-            .map_err(|_| CryptoError::VerificationFailed)?)
+    ) -> Result<(), CryptoError> {
+        public_key.verify(&self.0, signature)
     }
 }
 
@@ -78,23 +74,17 @@ pub mod generation_types {
 /// pair.
 ///
 /// This can be generated locally by the client or remotely by the server.
-#[derive(Debug, Clone, PartialEq, Eq, ZeroizeOnDrop)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SigningKeyPair {
-    signing_key: SigningKey,
-    #[zeroize(skip)]
+    signing_key: SigningPrivateKey,
     context: AssociatedData,
 }
-
-/// The public component of an ECDSA signing key, and context about the key.
-#[allow(unused)]
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct SigningPublicKey(VerifyingKey);
 
 impl SigningKeyPair {
     /// Create a new `SigningKeyPair` with the given associated data.
     fn generate(rng: &mut (impl CryptoRng + RngCore), context: &AssociatedData) -> Self {
         Self {
-            signing_key: SigningKey::random(rng),
+            signing_key: SigningPrivateKey::generate(rng),
             context: context.clone(),
         }
     }
@@ -106,7 +96,7 @@ impl SigningKeyPair {
 
     /// Retrieve the public portion of the key.
     pub fn public_key(&self) -> SigningPublicKey {
-        SigningPublicKey(self.signing_key.verifying_key())
+        self.signing_key.public_key()
     }
 
     /// Retrieve the context associated with the signing key.
@@ -154,8 +144,7 @@ impl SigningKeyPair {
             .with_str(IMPORTED);
 
         let signing_key = Self {
-            signing_key: SigningKey::from_bytes(key_material)
-                .map_err(|_| CryptoError::ConversionError)?,
+            signing_key: SigningPrivateKey::from_bytes(key_material)?,
             context: context.clone(),
         };
 
@@ -191,6 +180,59 @@ impl SigningKeyPair {
             signing_key.clone(),
             Encrypted::encrypt(rng, &storage_key.0, signing_key, &context)?,
         ))
+    }
+}
+
+/// The public component of an ECDSA signing key.
+#[allow(unused)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SigningPublicKey(VerifyingKey);
+
+impl From<VerifyingKey> for SigningPublicKey {
+    fn from(public_key: VerifyingKey) -> Self {
+        SigningPublicKey(public_key)
+    }
+}
+
+impl SigningPublicKey {
+    /// Verify a `Signature` using this public key. This function will hash the
+    /// message using SHA3-256 (Keccak).
+    pub fn verify(
+        &self,
+        message: impl AsRef<[u8]>,
+        signature: &Signature,
+    ) -> Result<(), CryptoError> {
+        let digest = sha3::Keccak256::new_with_prefix(message);
+
+        self.0.verify_digest(digest, &signature.0).map_err(|e| {
+            error!("{e}");
+            CryptoError::VerificationFailed
+        })
+    }
+
+    /// Construct a [`SigningPublicKey`] from a PEM-encoded string.
+    ///
+    /// Keys in this format begin with the following delimiter:
+    /// -----BEGIN PUBLIC KEY-----
+    pub fn from_pem(pem: &str) -> Result<Self, CryptoError> {
+        let key = VerifyingKey::from_str(pem).map_err(|e| {
+            error!("{e}");
+            CryptoError::ConversionError
+        })?;
+
+        Ok(Self(key))
+    }
+
+    /// Serialize this VerifyingKey as a SEC1-encoded bytes (with point
+    /// compression applied).
+    pub fn to_bytes(&self) -> Vec<u8> {
+        self.0.to_sec1_bytes().to_vec()
+    }
+
+    /// Serialize this VerifyingKey as a SEC1-encoded bytestring (without point
+    /// compression applied).
+    pub fn to_encoded_point(&self) -> Vec<u8> {
+        self.0.to_encoded_point(false).as_bytes().to_vec()
     }
 }
 
@@ -262,7 +304,7 @@ impl TryFrom<&[u8]> for Import {
         // Check if these bytes are correctly formatted to make a signing key,
         // but don't actually use the key.
         let _signing_key =
-            SigningKey::from_bytes(bytes).map_err(|_| CryptoError::ConversionError)?;
+            ecdsa::SigningKey::try_from(bytes).map_err(|_| CryptoError::ConversionError)?;
 
         Ok(Self {
             key_material: bytes.into(),
@@ -297,9 +339,7 @@ impl Import {
             .with_bytes(key_id.clone())
             .with_str(IMPORTED);
 
-        let signing_key =
-            SigningKey::from_bytes(&self.key_material).map_err(|_| CryptoError::ConversionError)?;
-
+        let signing_key = SigningPrivateKey::from_bytes(&self.key_material)?;
         Ok(SigningKeyPair {
             signing_key,
             context,
@@ -310,8 +350,8 @@ impl Import {
 impl From<SigningKeyPair> for Export {
     fn from(key_pair: SigningKeyPair) -> Self {
         Self {
-            key_material: key_pair.signing_key.to_bytes().to_vec(),
-            context: key_pair.context.to_owned().into(),
+            key_material: key_pair.signing_key.as_bytes(),
+            context: key_pair.context.into(),
         }
     }
 }
@@ -319,9 +359,9 @@ impl From<SigningKeyPair> for Export {
 impl Export {
     /// Convert `Export` into a [`SigningKeyPair`].
     pub fn into_signing_key(self) -> Result<SigningKeyPair, LockKeeperError> {
-        let signing_key = SigningKey::from_bytes(self.key_material.as_slice())
-            .map_err(|_| CryptoError::ConversionError)?;
+        let signing_key = SigningPrivateKey::from_bytes(&self.key_material)?;
         let context = self.context.to_owned().try_into()?;
+
         Ok(SigningKeyPair {
             signing_key,
             context,
@@ -334,10 +374,10 @@ impl TryFrom<SigningKeyPair> for Vec<u8> {
 
     fn try_from(key_pair: SigningKeyPair) -> Result<Self, Self::Error> {
         let domain_separator_bytes: Vec<u8> = SigningKeyPair::domain_separator().into();
-        let signing_key = key_pair.signing_key.to_bytes();
+        let signing_key = key_pair.signing_key.as_bytes();
         let sk_length =
             u8::try_from(signing_key.len()).map_err(|_| CryptoError::CannotEncodeDataLength)?;
-        let context = Vec::<u8>::from(key_pair.context.to_owned());
+        let context = Vec::<u8>::from(key_pair.context);
 
         let bytes = domain_separator_bytes
             .into_iter()
@@ -374,8 +414,7 @@ impl TryFrom<Vec<u8>> for SigningKeyPair {
         let signing_key_bytes = value
             .get(signing_key_offset..signing_key_end)
             .ok_or(CryptoError::ConversionError)?;
-        let signing_key =
-            SigningKey::from_bytes(signing_key_bytes).map_err(|_| CryptoError::ConversionError)?;
+        let signing_key = SigningPrivateKey::from_bytes(signing_key_bytes)?;
 
         // AssociatedData `try_into` handles length prepending
         let context_offset = signing_key_end;
@@ -394,11 +433,18 @@ impl TryFrom<Vec<u8>> for SigningKeyPair {
 
 /// A signature on an object encrypted under the ECDSA signature scheme.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Signature(ecdsa::Signature);
+pub struct Signature(pub(super) ecdsa::Signature);
 
-impl AsRef<[u8]> for Signature {
-    fn as_ref(&self) -> &[u8] {
-        self.0.as_ref()
+impl Signature {
+    /// Serialize this signature as ASN.1 DER.
+    pub fn to_der(&self) -> Vec<u8> {
+        self.0.to_der().as_bytes().to_vec()
+    }
+
+    /// Parse a signature from ASN.1 DER.
+    pub fn from_der(der: &[u8]) -> Result<Self, CryptoError> {
+        let signature = ecdsa::Signature::from_der(der)?;
+        Ok(Signature(signature))
     }
 }
 
@@ -407,26 +453,68 @@ mod test {
     use super::*;
     use rand::Rng;
 
+    use super::Signature;
     use crate::{
-        crypto::{generic::AssociatedData, CryptoError, KeyId, SigningKeyPair, StorageKey},
+        crypto::{generic::AssociatedData, CryptoError, KeyId, Signable, StorageKey},
         types::database::account::UserId,
         LockKeeperError,
     };
-    use k256::{ecdsa::SigningKey, schnorr::signature::Signature as EcdsaSignature};
+    use k256::ecdsa;
 
-    use super::Signature;
+    /* Public and private key pairs used for testing. These keys were generated
+       as follows using the `openssl` command line utility:
+       # Generate `secp256k1` private key
+       > openssl ecparam -genkey -out test.pem -name secp256k1 -noout
+       # Derive  public key from private key.
+       > openssl ec -in test.pem -pubout -out test_public.pem
+       # Get private key in PKCS#8-encoded pem format.
+       > openssl pkcs8 -topk8 -nocrypt -in test.pem -out test_p8.pem
+    */
+    const PUBLIC_KEY: &str = r#"
+-----BEGIN PUBLIC KEY-----
+MFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAEEfw/MOmtobnF36IKi6WcN/sSbP2nrdSE
+3bKZV9X0j+bukH19wqtyp+JC6OiKY5E8LQn5bWM7ihBy2+0Tl0mHVQ==
+-----END PUBLIC KEY-----
+"#;
+
+    const PRIVATE_KEY: &str = r#"
+-----BEGIN PRIVATE KEY-----
+MIGEAgEAMBAGByqGSM49AgEGBSuBBAAKBG0wawIBAQQg5X2FE2dAPaL6hD6hAN93
+6Gd61wZkW5i00WrrIQVt9P2hRANCAAQR/D8w6a2hucXfogqLpZw3+xJs/aet1ITd
+splX1fSP5u6QfX3Cq3Kn4kLo6IpjkTwtCfltYzuKEHLb7ROXSYdV
+-----END PRIVATE KEY-----
+"#;
+
+    // Ensure we can read a public key in the expected format.
+    #[test]
+    fn public_key_from_pem_works() {
+        let _ = SigningPublicKey::from_pem(PUBLIC_KEY).unwrap();
+    }
+
+    // Ensure a public key we read in can be used to verify bytes signed by the
+    // corresponding private key.
+    #[test]
+    fn public_key_from_pem_can_verify() {
+        let public_key = SigningPublicKey::from_pem(PUBLIC_KEY).unwrap();
+        let signing_key = SigningPrivateKey(ecdsa::SigningKey::from_str(PRIVATE_KEY).unwrap());
+
+        let message = "hello world!".as_bytes();
+        let signature = signing_key.sign(message);
+
+        public_key.verify(message, &signature).unwrap();
+    }
 
     #[test]
     fn signing_keys_conversion_works() {
         let mut rng = rand::thread_rng();
         for _ in 0..1000 {
-            let signing_key = SigningKey::random(&mut rng);
+            let signing_key = ecdsa::SigningKey::random(&mut rng);
             let bytes = signing_key.to_bytes();
-            let output_key = SigningKey::from_bytes(&bytes).unwrap();
+            let output_key = ecdsa::SigningKey::from_bytes(&bytes).unwrap();
             assert_eq!(signing_key, output_key);
 
-            let byte_vec: Vec<u8> = signing_key.to_bytes().into_iter().collect();
-            let output_key = SigningKey::from_bytes(&byte_vec).unwrap();
+            let bytes = signing_key.to_bytes();
+            let output_key = ecdsa::SigningKey::from_bytes(&bytes).unwrap();
             assert_eq!(signing_key, output_key);
         }
     }
@@ -541,7 +629,7 @@ mod test {
         let user_id = UserId::new(&mut rng)?;
         let key_id = KeyId::generate(&mut rng, &user_id)?;
 
-        let key_material = SigningKey::random(rng.clone()).to_bytes().to_vec();
+        let key_material = ecdsa::SigningKey::random(&mut rng).to_bytes().to_vec();
         let (_, encrypted_import_key) = SigningKeyPair::import_and_encrypt(
             &key_material,
             &mut rng,
@@ -565,7 +653,7 @@ mod test {
 
         let key = SigningKeyPair::generate(&mut rng, &context);
 
-        let raw_bytes = key.signing_key.to_bytes();
+        let raw_bytes = key.signing_key.as_bytes();
         let import: Import = raw_bytes.as_slice().try_into()?;
 
         let output_key: SigningKeyPair = import.into_signing_key(&user_id, &key_id)?;
@@ -599,7 +687,6 @@ mod test {
     #[test]
     fn signing_works() {
         let mut rng = rand::thread_rng();
-
         let signing_key = SigningKeyPair::generate(&mut rng, &AssociatedData::new());
         let public_key = signing_key.public_key();
 
@@ -608,6 +695,28 @@ mod test {
             .map(|len| -> Vec<u8> { std::iter::repeat_with(|| rng.gen()).take(len).collect() })
             .map(|msg| (msg.sign(&signing_key), msg))
             .all(|(sig, msg)| msg.verify(&public_key, &sig).is_ok()));
+    }
+
+    #[test]
+    fn signature_from_der_works() {
+        const MESSAGE: &str = "Hello World!";
+        // Create a signature and convert it to der format.
+        let mut rng = rand::thread_rng();
+        let signing_key = SigningKeyPair::generate(&mut rng, &AssociatedData::new());
+        let signature = signing_key.signing_key.sign(MESSAGE);
+        let der = signature.to_der();
+
+        // Make new signature from der and verify.
+        let signature2 = Signature::from_der(&der).expect("Failed to read from der.");
+        let public_key = signing_key.public_key();
+        public_key
+            .verify(MESSAGE, &signature2)
+            .expect("Verification failed.");
+
+        assert_eq!(
+            signature, signature2,
+            "Signature mismatch after conversion."
+        );
     }
 
     #[test]
@@ -644,7 +753,7 @@ mod test {
         let signing_key = SigningKeyPair::generate(&mut rng, &AssociatedData::new());
         let message = b"the signature on this message will get tweaked".to_vec();
         let sig = message.sign(&signing_key);
-        let sig_bytes = sig.0.as_bytes();
+        let sig_bytes = sig.0.to_bytes();
 
         // try flipping some of the bits
         for i in 0..sig_bytes.len() {
@@ -652,7 +761,7 @@ mod test {
             tweaked[i] ^= 1;
 
             // either the signature won't parse...
-            let signature = match k256::ecdsa::Signature::from_bytes(&tweaked) {
+            let signature = match k256::ecdsa::Signature::from_slice(&tweaked) {
                 Ok(sig) => sig,
                 Err(_) => continue,
             };
@@ -705,7 +814,7 @@ mod test {
         let user_id = UserId::new(&mut rng)?;
         let key_id = KeyId::generate(&mut rng, &user_id)?;
 
-        let key_material = SigningKey::random(rng.clone()).to_bytes().to_vec();
+        let key_material = ecdsa::SigningKey::random(&mut rng).to_bytes().to_vec();
         let (key, encrypted_key) = SigningKeyPair::import_and_encrypt(
             &key_material,
             &mut rng,
@@ -756,7 +865,7 @@ mod test {
         assert!(contains_str(secret, SERVER_GENERATED));
 
         // Use the local-import creation function
-        let key_material = SigningKey::random(rng.clone()).to_bytes();
+        let key_material = ecdsa::SigningKey::random(&mut rng).to_bytes();
         let (imported_secret, _) = SigningKeyPair::import_and_encrypt(
             &key_material,
             &mut rng,
@@ -780,32 +889,29 @@ mod test {
 
     impl Signable for Vec<u8> {
         fn sign(&self, signing_key: &SigningKeyPair) -> Signature {
-            (&self).sign(signing_key)
+            signing_key.signing_key.sign(self)
         }
 
         fn verify(
             &self,
             public_key: &SigningPublicKey,
             signature: &Signature,
-        ) -> Result<(), LockKeeperError> {
+        ) -> Result<(), CryptoError> {
             (&self).verify(public_key, signature)
         }
     }
 
     impl Signable for &Vec<u8> {
         fn sign(&self, signing_key: &SigningKeyPair) -> Signature {
-            Signature(signing_key.signing_key.sign(self))
+            signing_key.signing_key.sign(self)
         }
 
         fn verify(
             &self,
             public_key: &SigningPublicKey,
             signature: &Signature,
-        ) -> Result<(), LockKeeperError> {
-            Ok(public_key
-                .0
-                .verify(self, &signature.0)
-                .map_err(|_| CryptoError::VerificationFailed)?)
+        ) -> Result<(), CryptoError> {
+            public_key.verify(self, signature)
         }
     }
 }

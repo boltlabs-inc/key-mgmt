@@ -209,52 +209,6 @@
     },
     "query": "DELETE FROM Session WHERE session_id=$1"
   },
-  "80a65d1c4a01b551f1d51c6653fa0b11db7c19989f7d173236d18aee81cf23aa": {
-    "describe": {
-      "columns": [
-        {
-          "name": "key_id",
-          "ordinal": 0,
-          "type_info": "Bytea"
-        },
-        {
-          "name": "account_id",
-          "ordinal": 1,
-          "type_info": "Int8"
-        },
-        {
-          "name": "secret_type",
-          "ordinal": 2,
-          "type_info": "Varchar"
-        },
-        {
-          "name": "secret",
-          "ordinal": 3,
-          "type_info": "Bytea"
-        },
-        {
-          "name": "retrieved",
-          "ordinal": 4,
-          "type_info": "Bool"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false
-      ],
-      "parameters": {
-        "Left": [
-          "Bytea",
-          "Int8",
-          "Text"
-        ]
-      }
-    },
-    "query": "UPDATE Secrets SET retrieved=TRUE FROM Secrets S LEFT JOIN SecretTypes ST ON S.secret_type_id=ST.secret_type_id WHERE S.key_id=$1 AND S.account_id=$2 AND ST.secret_type LIKE $3 RETURNING S.key_id, S.account_id, ST.secret_type, S.secret, S.retrieved"
-  },
   "a21d7af271ced00fee3c25d1411292882da68f5c1602979a761ca29aaa2b1ba0": {
     "describe": {
       "columns": [],
@@ -325,6 +279,52 @@
     },
     "query": "SELECT COUNT(1) as \"count!\" FROM Secrets WHERE key_id=$1"
   },
+  "d1733695dd39f77175e8d8222d953358ee6dd312890a7d5e9a1778483b8ed20a": {
+    "describe": {
+      "columns": [
+        {
+          "name": "key_id",
+          "ordinal": 0,
+          "type_info": "Bytea"
+        },
+        {
+          "name": "account_id",
+          "ordinal": 1,
+          "type_info": "Int8"
+        },
+        {
+          "name": "secret_type",
+          "ordinal": 2,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "secret",
+          "ordinal": 3,
+          "type_info": "Bytea"
+        },
+        {
+          "name": "retrieved",
+          "ordinal": 4,
+          "type_info": "Bool"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Int8",
+          "Text"
+        ]
+      }
+    },
+    "query": "SELECT S.key_id, S.account_id, ST.secret_type, S.secret, S.retrieved\n             FROM Secrets S INNER JOIN SecretTypes ST\n                ON S.secret_type_id=ST.secret_type_id AND ST.secret_type = $3\n             WHERE S.key_id=$1 AND S.account_id=$2"
+  },
   "e97f51eea5136f5c4632dc4e9d1a73f5715d84ab053d3c643f50a6599d1ad924": {
     "describe": {
       "columns": [
@@ -345,5 +345,51 @@
       }
     },
     "query": "INSERT INTO Session (account_id, session_key) VALUES ($1, $2) RETURNING session_id"
+  },
+  "f61fe815139ed1623edf26f839c75c2c7642bd699819ec921abd47bd4749b72b": {
+    "describe": {
+      "columns": [
+        {
+          "name": "key_id",
+          "ordinal": 0,
+          "type_info": "Bytea"
+        },
+        {
+          "name": "account_id",
+          "ordinal": 1,
+          "type_info": "Int8"
+        },
+        {
+          "name": "secret_type",
+          "ordinal": 2,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "secret",
+          "ordinal": 3,
+          "type_info": "Bytea"
+        },
+        {
+          "name": "retrieved",
+          "ordinal": 4,
+          "type_info": "Bool"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Int8",
+          "Text"
+        ]
+      }
+    },
+    "query": "UPDATE Secrets SET retrieved=TRUE FROM Secrets S INNER JOIN SecretTypes ST ON S.secret_type_id=ST.secret_type_id AND ST.secret_type LIKE $3 WHERE S.key_id=$1 AND S.account_id=$2 RETURNING S.key_id, S.account_id, ST.secret_type, S.secret, S.retrieved"
   }
 }

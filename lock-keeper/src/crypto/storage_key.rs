@@ -155,8 +155,8 @@ impl Encrypted<StorageKey> {
     /// retrieve a storage key from the server.
     ///
     /// This must be run by the client. It takes the following steps:
-    /// 1. Derive the decryption key from the master key using
-    ///    the associated data
+    /// 1. Derive the decryption key from the master key using the associated
+    ///    data
     /// 2. Decrypt the encrypted storage key using the decryption key
     /// 3. Return the decrypted [`StorageKey`]
     pub fn decrypt_storage_key(

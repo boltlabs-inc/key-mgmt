@@ -13,6 +13,8 @@ pub mod register;
 pub mod remote_generate;
 pub mod remote_sign;
 pub mod retrieve;
+pub mod retrieve_blob;
+pub mod store_blob;
 pub mod wait;
 
 pub use authenticate::Authenticate;
@@ -30,6 +32,8 @@ pub use register::Register;
 pub use remote_generate::RemoteGenerate;
 pub use remote_sign::RemoteSign;
 pub use retrieve::Retrieve;
+pub use retrieve_blob::RetrieveBlob;
+pub use store_blob::StoreBlob;
 pub use wait::Wait;
 
 use crate::state::State;
@@ -80,7 +84,7 @@ pub trait CliCommand: Debug {
     where
         Self: Sized,
     {
-        let mut split: _ = s.trim().split(' ');
+        let mut split = s.trim().split(' ');
 
         let command = split
             .next()
@@ -163,6 +167,8 @@ pub fn get_cmd_functions<F: GetCmdFunction>() -> Vec<F::FunctionSignature> {
         F::get_function::<RemoteGenerate>(),
         F::get_function::<RemoteSign>(),
         F::get_function::<Retrieve>(),
+        F::get_function::<RetrieveBlob>(),
+        F::get_function::<StoreBlob>(),
         F::get_function::<Wait>(),
     ]
 }

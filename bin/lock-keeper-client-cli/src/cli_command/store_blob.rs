@@ -3,21 +3,18 @@ use std::time::{Duration, SystemTime};
 use crate::{cli_command::CliCommand, state::State};
 use anyhow::Error;
 use async_trait::async_trait;
-use lock_keeper::crypto::SignableBytes;
 use lock_keeper_client::LockKeeperClient;
 
 #[derive(Debug)]
-pub struct RemoteSign {
-    name: String,
-    data: String,
+pub struct StoreBlob {
+    blob: String,
+    name: Option<String>,
 }
 
 #[async_trait]
-impl CliCommand for RemoteSign {
+impl CliCommand for StoreBlob {
     async fn execute(self: Box<Self>, state: &mut State) -> Result<Duration, Error> {
         let credentials = state.get_credentials()?;
-        // Get key_id from storage
-        let entry = state.get_key_id(&self.name)?;
 
         // Authenticate user to the key server
         let lock_keeper_client = LockKeeperClient::authenticated_client(
@@ -28,40 +25,43 @@ impl CliCommand for RemoteSign {
         .await
         .result?;
 
-        let bytes = SignableBytes(self.data.into_bytes());
-
         let now = SystemTime::now();
         // If successful, proceed to generate a secret with the established session
-        let signature = lock_keeper_client
-            .remote_sign_bytes(entry.key_id.clone(), bytes)
+        let key_id = lock_keeper_client
+            .store_server_encrypted_blob(self.blob.into_bytes())
             .await
             .result?;
         let elapsed = now.elapsed()?;
 
-        println!("Signature: {}", hex::encode(signature.to_der()));
+        // Store Key Id
+        let stored = state.store_entry(self.name, key_id)?;
+        println!("Stored blob with id: {stored}");
         Ok(elapsed)
     }
 
     fn parse_command_args(slice: &[&str]) -> Option<Self> {
         match slice {
-            // All arguments after the key name are joined by spaces to form the text to be signed
-            [key_name, string_to_sign @ ..] => Some(RemoteSign {
-                name: key_name.to_string(),
-                data: string_to_sign.join(" "),
+            [blob, name] => Some(StoreBlob {
+                blob: blob.to_string(),
+                name: Some(name.to_string()),
+            }),
+            [blob] => Some(StoreBlob {
+                blob: blob.to_string(),
+                name: None,
             }),
             _ => None,
         }
     }
 
     fn format() -> &'static str {
-        "remote-sign [key_name] [string_to_sign]"
+        "store-blob [key_name (optional)]"
     }
 
     fn aliases() -> Vec<&'static str> {
-        vec!["remote-sign", "sign", "rs"]
+        vec!["store-blob", "blob", "sb"]
     }
 
     fn description() -> &'static str {
-        "Remotely sign a string with the specified key."
+        "Store an arbitrary blob of bytes."
     }
 }

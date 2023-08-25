@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use chacha20poly1305::{
     aead::{Aead, Payload},
     AeadCore, ChaCha20Poly1305, KeyInit,
@@ -7,28 +9,30 @@ use serde::{Deserialize, Serialize};
 use std::{iter, marker::PhantomData};
 use thiserror::Error;
 
+use k256::ecdsa;
 use std::{convert::Infallible, mem::size_of};
 use tracing::instrument;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
 /// Errors that arise in the cryptography module.
-#[derive(Debug, Clone, Copy, Error)]
+#[derive(Debug, Error)]
 pub enum CryptoError {
-    #[error("Conversion error")]
-    ConversionError,
-    #[error("Encryption failed")]
-    EncryptionFailed,
-    #[error("Decryption failed")]
-    DecryptionFailed,
-    #[error("Key derivation failed: {0}")]
-    KeyDerivationFailed(hkdf::InvalidLength),
-    #[error("RNG failed")]
-    RandomNumberGeneratorFailed,
     /// Length of data too large for our integer data type.
     #[error("Encryption/Decryption failed due to data length.")]
     CannotEncodeDataLength,
-    #[error("Signature did not verify")]
-    VerificationFailed,
+    #[error("Failed to combine shards into key: {0}")]
+    CombineShardsFailed(String),
+    #[error("Conversion error")]
+    ConversionError,
+    #[error("Decryption failed")]
+    DecryptionFailed,
+    #[error("Encryption failed")]
+    EncryptionFailed,
+    #[error("Invalid encryption key")]
+    InvalidEncryptionKey,
+    #[error("Sensitive info check failed")]
+    SensitiveInfoCheckFailed,
+
     /// The `impl<T> Encrypted<T>` has some trait bounds for converting a
     /// `TryFrom::Error` associated type into a CryptoError.
     /// Rust automatically implements `TryFrom<T, Error=Infallible>` when
@@ -36,6 +40,29 @@ pub enum CryptoError {
     /// From<CryptoError> for Infallible` holds true in this case.
     #[error(transparent)]
     Infallible(#[from] Infallible),
+    #[error("Key derivation failed: {0}")]
+    KeyDerivationFailed(hkdf::InvalidLength),
+    #[error("Failed to convert scalar to non-zero scalar.")]
+    NonZeroScalarConversion,
+    #[error("RNG failed")]
+    RandomNumberGeneratorFailed,
+    #[error("Incorrect size for seal key: {0}.")]
+    IncorrectSealKeySize(usize),
+    #[error("Signature generation failed: {0}")]
+    Signature(#[from] ecdsa::signature::Error),
+    #[error("Failed to decrypt shard: {0}")]
+    ShardDecryptionFailed(String),
+    #[error("Failed to encrypt shard: {0}")]
+    ShardEncryptionFailed(String),
+    #[error("Failed split key into shards: {0}")]
+    ShardingFailed(String),
+    #[error("Signature did not verify")]
+    VerificationFailed,
+
+    /// IO error specific to file IO failing. Allows us to include the file that
+    /// failed as part of the error.
+    #[error("File IO error. Cause: {0}. On file: {1}")]
+    FileIo(std::io::Error, PathBuf),
 }
 
 /// The associated data used in [`Encrypted`] AEAD ciphertexts and
@@ -367,18 +394,19 @@ impl TryFrom<Vec<u8>> for Secret {
 }
 
 /// Helper type for parsing byte array into integers and slices.
-struct ParseBytes {
+#[derive(ZeroizeOnDrop)]
+pub(super) struct ParseBytes {
     bytes: Vec<u8>,
     offset: usize,
 }
 
 impl ParseBytes {
-    fn new(bytes: Vec<u8>) -> ParseBytes {
+    pub fn new(bytes: Vec<u8>) -> ParseBytes {
         ParseBytes { bytes, offset: 0 }
     }
 
     /// Take next `n` bytes from array.
-    fn take_bytes(&mut self, n: usize) -> Result<&[u8], CryptoError> {
+    pub fn take_bytes(&mut self, n: usize) -> Result<&[u8], CryptoError> {
         let slice = &self
             .bytes
             .get(self.offset..self.offset + n)
@@ -390,13 +418,13 @@ impl ParseBytes {
     /// Take next two bytes and convert them into a u16.
     pub fn take_bytes_as_u16(&mut self) -> Result<u16, CryptoError> {
         let &[f, s] = self.take_bytes(size_of::<u16>())? else {
-            return Err(CryptoError::ConversionError)
+            return Err(CryptoError::ConversionError);
         };
         Ok(u16::from_be_bytes([f, s]))
     }
 
     /// Take the rest of the bytes from the array.
-    fn take_rest(&mut self) -> Result<&[u8], CryptoError> {
+    pub fn take_rest(&mut self) -> Result<&[u8], CryptoError> {
         self.bytes
             .get(self.offset..)
             .ok_or(CryptoError::ConversionError)

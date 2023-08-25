@@ -1,7 +1,7 @@
 use crate::{
     server::{
         channel::{Authenticated, Channel},
-        database::{DataStore, SecretFilter},
+        database::DataStore,
         Context, Operation,
     },
     LockKeeperServerError,
@@ -9,10 +9,7 @@ use crate::{
 use async_trait::async_trait;
 use lock_keeper::{
     crypto::{DataBlob, Encrypted},
-    types::{
-        database::secrets::secret_types::SERVER_ENCRYPTED_BLOB,
-        operations::retrieve_server_encrypted_blob::{client, server},
-    },
+    types::operations::retrieve_server_encrypted_blob::{client, server},
     LockKeeperError,
 };
 use rand::rngs::StdRng;
@@ -42,11 +39,7 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for RetrieveServerEncry
 
         let stored_secret = context
             .db
-            .get_secret(
-                account_id,
-                &request.key_id,
-                SecretFilter::secret_type(SERVER_ENCRYPTED_BLOB),
-            )
+            .get_server_encrypted_blob(account_id, &request.key_id)
             .await?;
 
         let blob: Encrypted<DataBlob> =
