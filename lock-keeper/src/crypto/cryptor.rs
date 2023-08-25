@@ -530,22 +530,8 @@ impl TryFrom<Vec<u8>> for Decryptor {
         let context: Vec<u8> = parse.take_bytes(context_length as usize)?.to_vec();
 
         let nonce_length = parse.take_bytes_as_u16()?;
-        let nonce: Vec<u8> = parse.take_bytes(nonce_length as usize)?.to_vec();
-
-        // create a default instance of Nonce type, so we can get the expected length
-        let nonce_length_default = chacha20poly1305::Nonce::default().len();
-        // need to clone nonce from the slice that was previously serialized
-        let mut nonce_new = chacha20poly1305::Nonce::default();
-        if nonce_length == nonce_length_default as u16 {
-            nonce_new.clone_from_slice(&nonce);
-        } else {
-            return Err(CryptoError::ConversionError);
-        }
-
-        // make sure that the length of the nonce matches the parsed length
-        if nonce.len() != nonce_length as usize {
-            return Err(CryptoError::ConversionError);
-        }
+        let nonce: [u8; 12] = parse.take_bytes(nonce_length as usize)?.try_into()
+                    .map_err(|_| CryptoError::ConversionError)?;        
 
         let config_length = parse.take_bytes_as_u16()?;
         let config: Vec<u8> = parse.take_rest()?.to_vec();
@@ -558,7 +544,7 @@ impl TryFrom<Vec<u8>> for Decryptor {
         Ok(Self {
             ciphertext,
             context: context.try_into()?,
-            nonce: nonce_new,
+            nonce: nonce.try_into()?,
             config: config.try_into()?,
         })
     }
