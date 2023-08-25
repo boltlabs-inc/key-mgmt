@@ -529,11 +529,6 @@ impl TryFrom<Vec<u8>> for Decryptor {
         let context_length = parse.take_bytes_as_u16()?;
         let context: Vec<u8> = parse.take_bytes(context_length as usize)?.to_vec();
 
-        // make sure that the length of the context matches the parsed length
-        if context.len() != context_length as usize {
-            return Err(CryptoError::ConversionError);
-        }
-
         let nonce_length = parse.take_bytes_as_u16()?;
         let nonce: Vec<u8> = parse.take_bytes(nonce_length as usize)?.to_vec();
 
