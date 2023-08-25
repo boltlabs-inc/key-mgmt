@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["RegisterFinish","pass user ID and registration-finish message from OPAQUE"],["RegisterStart","pass user ID and registration-start message from OPAQUE"]]};
+window.SIDEBAR_ITEMS = {"struct":["RegisterFinish","RegisterStart"]};

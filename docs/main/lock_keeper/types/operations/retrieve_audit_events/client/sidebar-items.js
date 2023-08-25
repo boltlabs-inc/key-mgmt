@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["Request","Query specific set of audit event logs"]]};
+window.SIDEBAR_ITEMS = {"struct":["Request"]};

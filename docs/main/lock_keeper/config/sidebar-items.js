@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":[["opaque",""]]};
+window.SIDEBAR_ITEMS = {"mod":["opaque"]};

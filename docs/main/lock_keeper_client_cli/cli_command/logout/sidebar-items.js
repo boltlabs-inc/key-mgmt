@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["Logout",""]]};
+window.SIDEBAR_ITEMS = {"struct":["Logout"]};

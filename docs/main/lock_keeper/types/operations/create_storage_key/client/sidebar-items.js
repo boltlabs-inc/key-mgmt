@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["SendStorageKey",""]]};
+window.SIDEBAR_ITEMS = {"struct":["SendStorageKey"]};

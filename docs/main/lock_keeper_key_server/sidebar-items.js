@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":[["config",""],["error",""],["operations",""],["server",""]]};
+window.SIDEBAR_ITEMS = {"mod":["config","error","operations","server"]};

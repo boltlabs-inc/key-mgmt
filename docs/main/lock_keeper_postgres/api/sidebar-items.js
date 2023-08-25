@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":[["append_value_list","Create a SQL query list of the form (val1, val2, …). Error is returned if the iterator is empty"]],"struct":[["PostgresDB",""]]};
+window.SIDEBAR_ITEMS = {"fn":["append_value_list"],"struct":["PostgresDB"]};

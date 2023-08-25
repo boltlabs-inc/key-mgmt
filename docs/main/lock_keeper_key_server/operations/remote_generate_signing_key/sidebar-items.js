@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["RemoteGenerateSigningKey",""]]};
+window.SIDEBAR_ITEMS = {"struct":["RemoteGenerateSigningKey"]};

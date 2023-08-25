@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["DeleteKey",""]]};
+window.SIDEBAR_ITEMS = {"struct":["DeleteKey"]};

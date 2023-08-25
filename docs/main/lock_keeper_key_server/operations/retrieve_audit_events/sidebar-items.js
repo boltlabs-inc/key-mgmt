@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["RetrieveAuditEvents",""]]};
+window.SIDEBAR_ITEMS = {"struct":["RetrieveAuditEvents"]};

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":[["PostgresError",""]],"mod":[["api",""],["config",""],["error",""],["types",""]],"struct":[["Config",""],["ConfigFile",""],["PostgresDB",""]]};
+window.SIDEBAR_ITEMS = {"enum":["PostgresError"],"mod":["api","config","error","types"],"struct":["Config","ConfigFile","PostgresDB"]};

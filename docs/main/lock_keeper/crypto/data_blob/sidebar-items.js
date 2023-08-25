@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["DataBlob","A blob of bytes for storing in the server."]]};
+window.SIDEBAR_ITEMS = {"struct":["DataBlob"]};

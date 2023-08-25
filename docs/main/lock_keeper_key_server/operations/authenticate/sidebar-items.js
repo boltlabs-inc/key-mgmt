@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":[["authenticate_finish","Second part of our sever-side authentication protocol. After this step, a session key is established between server and client. This function returns this key."],["authenticate_start","Returns the server-side start message along with a login result that will be used in the finish step."]],"struct":[["Authenticate",""],["AuthenticateStartResult",""]]};
+window.SIDEBAR_ITEMS = {"fn":["authenticate_finish","authenticate_start"],"struct":["Authenticate","AuthenticateStartResult"]};

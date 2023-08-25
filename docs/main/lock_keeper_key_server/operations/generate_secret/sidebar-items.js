@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":[["generate_key_id","First step for generation:"],["store_key","Second step for generation operation."]],"struct":[["GenerateSecret",""]]};
+window.SIDEBAR_ITEMS = {"fn":["generate_key_id","store_key"],"struct":["GenerateSecret"]};

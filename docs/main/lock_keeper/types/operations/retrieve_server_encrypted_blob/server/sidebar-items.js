@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["Response","Response from server returning the requested data blob."]]};
+window.SIDEBAR_ITEMS = {"struct":["Response"]};

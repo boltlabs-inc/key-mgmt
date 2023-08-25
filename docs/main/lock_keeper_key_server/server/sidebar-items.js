@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":[["start_lock_keeper_server","Starts a full Lock Keeper server stack based on the given config."]],"mod":[["channel",""],["context",""],["database","Database for key-servers."],["opaque_storage",""],["operation",""],["service",""],["session_cache",""]],"struct":[["LockKeeperKeyServer",""]]};
+window.SIDEBAR_ITEMS = {"fn":["start_lock_keeper_server"],"mod":["channel","context","database","opaque_storage","operation","service","session_cache"],"struct":["LockKeeperKeyServer"]};

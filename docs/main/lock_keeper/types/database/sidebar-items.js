@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":[["account","Database models for users and user-related fields"],["secrets","Database models for secrets"]],"struct":[["HexBytes","Convenience type for serializing byte arrays as hex strings. Add the `#[serde(try_from = \"HexBytes\", into = \"HexBytes\")]` attribute macro above any type you’d like to serialize this way. This type should only be used to serialize byte collections. It should not be used directly."]]};
+window.SIDEBAR_ITEMS = {"mod":["account","secrets"],"struct":["HexBytes"]};

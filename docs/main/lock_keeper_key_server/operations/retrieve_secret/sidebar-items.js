@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["RetrieveSecret",""]]};
+window.SIDEBAR_ITEMS = {"struct":["RetrieveSecret"]};

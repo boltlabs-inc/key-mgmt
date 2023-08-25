@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":[["CLIENT_GENERATED",""],["IMPORTED",""],["SERVER_GENERATED",""]]};
+window.SIDEBAR_ITEMS = {"constant":["CLIENT_GENERATED","IMPORTED","SERVER_GENERATED"]};

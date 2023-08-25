@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["AccountDB","Mapping of our [Account] type as it looks in the table. sqlx can use this to map selected rows to this rust type."],["AuditEventDB","Mapping of our [AuditEvent] type as it looks in the table. sqlx can use this to map selected rows to this rust type."],["SecretDB","Mapping of our [StoredSecret] type as it looks in the table. sqlx can use this to map selected rows to this rust type."]]};
+window.SIDEBAR_ITEMS = {"struct":["AccountDB","AuditEventDB","SecretDB"]};

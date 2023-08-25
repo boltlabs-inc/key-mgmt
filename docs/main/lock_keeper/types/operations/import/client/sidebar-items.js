@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["Request","send material to import"]]};
+window.SIDEBAR_ITEMS = {"struct":["Request"]};

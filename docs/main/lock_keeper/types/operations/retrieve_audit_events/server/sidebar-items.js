@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["Response","Return vector of audit events"]]};
+window.SIDEBAR_ITEMS = {"struct":["Response"]};

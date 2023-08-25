@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":[["can_delete_arbitrary_secret",""],["can_delete_signing_key",""],["cannot_delete_another_users_key",""],["cannot_delete_fake_key",""],["run_tests",""]]};
+window.SIDEBAR_ITEMS = {"fn":["can_delete_arbitrary_secret","can_delete_signing_key","cannot_delete_another_users_key","cannot_delete_fake_key","run_tests"]};

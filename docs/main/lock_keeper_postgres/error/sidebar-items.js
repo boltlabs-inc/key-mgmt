@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":[["ConfigError",""],["PostgresError",""]]};
+window.SIDEBAR_ITEMS = {"enum":["ConfigError","PostgresError"]};

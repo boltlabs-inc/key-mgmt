@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":[["store_storage_key","Look up account and ensure the user doesn’t already have a key stored."]],"struct":[["CreateStorageKey",""]]};
+window.SIDEBAR_ITEMS = {"fn":["store_storage_key"],"struct":["CreateStorageKey"]};

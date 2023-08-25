@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["NUM_SHARDS","SEAL_KEY_LENGTH","SHARD_THRESHOLD"],"struct":["EncryptedShard","SealKey","ShardedSigningKeyPair","UnencryptedShard"]};
