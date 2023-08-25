@@ -468,15 +468,15 @@ impl TryFrom<Decryptor> for Vec<u8> {
             nonce,
             config,
             context,
-        } = decryptor; 
+        } = decryptor;
 
         // convert each field to bytes as needed
         let context_bytes: Vec<u8> = context.into();
         let config_bytes: Vec<u8> = config.try_into()?;
 
         // convert lengths to u16...
-        let ciphertext_length = u16::try_from(ciphertext.len())
-            .map_err(|_| CryptoError::CannotEncodeDataLength)?;
+        let ciphertext_length =
+            u16::try_from(ciphertext.len()).map_err(|_| CryptoError::CannotEncodeDataLength)?;
 
         let context_length =
             u16::try_from(context_bytes.len()).map_err(|_| CryptoError::CannotEncodeDataLength)?;
@@ -530,8 +530,10 @@ impl TryFrom<Vec<u8>> for Decryptor {
         let context: Vec<u8> = parse.take_bytes(context_length as usize)?.to_vec();
 
         let nonce_length = parse.take_bytes_as_u16()?;
-        let nonce: [u8; 12] = parse.take_bytes(nonce_length as usize)?.try_into()
-                    .map_err(|_| CryptoError::ConversionError)?;        
+        let nonce: [u8; 12] = parse
+            .take_bytes(nonce_length as usize)?
+            .try_into()
+            .map_err(|_| CryptoError::ConversionError)?;
 
         let config_length = parse.take_bytes_as_u16()?;
         let config: Vec<u8> = parse.take_rest()?.to_vec();
