@@ -462,32 +462,43 @@ impl TryFrom<Decryptor> for Vec<u8> {
         // context data || nonce len (2 bytes) || nonce data || config len (2 bytes) ||
         // config data
 
-        let context: Vec<u8> = decryptor.context.to_owned().into();
-        let config: Vec<u8> = decryptor.config.to_owned().try_into()?;
-        let nonce: Vec<u8> = decryptor.nonce.to_vec();
+        // de-structure the Decryptor struct to get direct access to its fields
+        let Decryptor {
+            ciphertext,
+            nonce,
+            config,
+            context,
+        } = decryptor; 
 
-        let ciphertext_length = u16::try_from(decryptor.ciphertext.len())
+        // convert each field to bytes as needed
+        let context_bytes: Vec<u8> = context.into();
+        let config_bytes: Vec<u8> = config.try_into()?;
+
+        // convert lengths to u16...
+        let ciphertext_length = u16::try_from(ciphertext.len())
             .map_err(|_| CryptoError::CannotEncodeDataLength)?;
 
         let context_length =
-            u16::try_from(context.len()).map_err(|_| CryptoError::CannotEncodeDataLength)?;
+            u16::try_from(context_bytes.len()).map_err(|_| CryptoError::CannotEncodeDataLength)?;
 
         let config_length =
-            u16::try_from(config.len()).map_err(|_| CryptoError::CannotEncodeDataLength)?;
+            u16::try_from(config_bytes.len()).map_err(|_| CryptoError::CannotEncodeDataLength)?;
 
         let nonce_length =
             u16::try_from(nonce.len()).map_err(|_| CryptoError::CannotEncodeDataLength)?;
 
+        // construct the output byte array...
+        // convert lengths from u16 to big-endian bytes
         let bytes = ciphertext_length
             .to_be_bytes()
             .into_iter()
-            .chain(decryptor.ciphertext)
+            .chain(ciphertext)
             .chain(context_length.to_be_bytes())
-            .chain(context)
+            .chain(context_bytes)
             .chain(nonce_length.to_be_bytes())
             .chain(nonce)
             .chain(config_length.to_be_bytes())
-            .chain(config)
+            .chain(config_bytes)
             .collect();
 
         Ok(bytes)
