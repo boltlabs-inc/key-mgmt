@@ -770,7 +770,7 @@ mod test {
     ///
     /// Returns a [`CryptoError`] if there is an error
     #[test]
-    fn decryptor_conversion_test_incomplete_fields() -> Result<(), CryptoError> {
+    fn decryptor_from_bytes_requires_all_fields() -> Result<(), CryptoError> {
         let decryptor = setup_decryptor()?;
 
         let mut decryptor_vec: Vec<u8> = decryptor.try_into()?;
@@ -792,7 +792,7 @@ mod test {
     ///
     /// Returns a [`CryptoError`] if there is an error
     #[test]
-    fn decryptor_conversion_test_extra_bytes_at_end() -> Result<(), CryptoError> {
+    fn decryptor_from_bytes_cannot_have_extra_bytes() -> Result<(), CryptoError> {
         let decryptor = setup_decryptor()?;
 
         let mut decryptor_vec: Vec<u8> = decryptor.try_into()?;
@@ -814,7 +814,7 @@ mod test {
     /// Returns a [`CryptoError`] if there is an error during encryption or
     /// conversion.
     #[test]
-    fn decryptor_vec_u8_conversion() -> Result<(), CryptoError> {
+    fn decryptor_vec_u8_conversion_works() -> Result<(), CryptoError> {
         let decryptor = setup_decryptor()?;
 
         // convert decryptor to Vec<u8> by cloning
