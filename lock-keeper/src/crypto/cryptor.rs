@@ -530,6 +530,7 @@ impl TryFrom<Vec<u8>> for Decryptor {
         let context: Vec<u8> = parse.take_bytes(context_length as usize)?.to_vec();
 
         let nonce_length = parse.take_bytes_as_u16()?;
+        // ChaCha20Poly1305 nonces should always be exactly 12 bytes
         let nonce: [u8; 12] = parse
             .take_bytes(nonce_length as usize)?
             .try_into()
