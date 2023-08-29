@@ -385,6 +385,10 @@
 <a href="#385" id="385">385</a>
 <a href="#386" id="386">386</a>
 <a href="#387" id="387">387</a>
+<a href="#388" id="388">388</a>
+<a href="#389" id="389">389</a>
+<a href="#390" id="390">390</a>
+<a href="#391" id="391">391</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Client object to interact with the key server.
 
 </span><span class="kw">use crate</span>::{
@@ -428,6 +432,10 @@
 }
 
 <span class="kw">impl </span>Password {
+    <span class="kw">pub fn </span>new(bytes: Vec&lt;u8&gt;) -&gt; <span class="self">Self </span>{
+        Password(bytes)
+    }
+
     <span class="kw">pub fn </span>as_bytes(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[u8] {
         <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>[..]
     }
