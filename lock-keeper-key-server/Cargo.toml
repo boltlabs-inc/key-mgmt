@@ -17,6 +17,7 @@ clap.workspace = true
 futures.workspace = true
 humantime-serde.workspace = true
 hyper.workspace = true
+metered.workspace = true
 opaque-ke.workspace = true
 prost.workspace = true
 rand.workspace = true

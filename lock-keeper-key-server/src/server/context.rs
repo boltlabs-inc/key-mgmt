@@ -11,7 +11,7 @@ use uuid::Uuid;
 
 use crate::{Config, LockKeeperServerError};
 
-use super::{database::DataStore, session_cache::SessionCache};
+use super::{database::DataStore, metrics::OperationMetrics, session_cache::SessionCache};
 
 pub(crate) struct Context<DB: DataStore> {
     pub db: Arc<DB>,
@@ -20,6 +20,7 @@ pub(crate) struct Context<DB: DataStore> {
     pub key_id: Option<KeyId>,
     /// Our user session keys are held in this cache after authentication.
     pub session_cache: Arc<Mutex<dyn SessionCache>>,
+    pub operation_metrics: Arc<OperationMetrics>,
 }
 
 impl<DB: DataStore> Context<DB> {

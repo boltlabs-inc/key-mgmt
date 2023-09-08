@@ -1,12 +1,14 @@
 pub(crate) mod channel;
 pub(crate) mod context;
 pub mod database;
+pub(crate) mod metrics;
 pub(crate) mod opaque_storage;
 mod operation;
 mod service;
 pub mod session_cache;
 
 pub(crate) use context::Context;
+use metered::{metered, ResponseTime};
 pub(crate) use operation::Operation;
 pub use service::start_lock_keeper_server;
 use tokio_stream::wrappers::ReceiverStream;
@@ -16,7 +18,7 @@ use crate::{config::Config, error::LockKeeperServerError, operations};
 
 use lock_keeper::{
     constants::METADATA,
-    rpc::{lock_keeper_rpc_server::LockKeeperRpc, Empty, SessionStatus},
+    rpc::{lock_keeper_rpc_server::LockKeeperRpc, Empty, MetricsResponse, SessionStatus},
     types::{operations::RequestMetadata, Message, MessageStream},
 };
 
@@ -28,6 +30,7 @@ use tonic::{Request, Response, Status, Streaming};
 
 use self::{
     channel::{Authenticated, Channel, Unauthenticated},
+    metrics::Metrics,
     operation::{handle_authenticated_request, handle_unauthenticated_request},
 };
 
@@ -36,6 +39,7 @@ pub struct LockKeeperKeyServer<DB: DataStore> {
     db: Arc<DB>,
     rng: Arc<Mutex<StdRng>>,
     session_cache: Arc<Mutex<dyn SessionCache>>,
+    metrics: Arc<Metrics>,
 }
 
 impl<DB: DataStore> LockKeeperKeyServer<DB> {
@@ -51,6 +55,7 @@ impl<DB: DataStore> LockKeeperKeyServer<DB> {
             db,
             rng: Arc::new(Mutex::new(rng)),
             session_cache: session_key_cache,
+            metrics: Arc::new(Metrics::default()),
         })
     }
 
@@ -61,10 +66,12 @@ impl<DB: DataStore> LockKeeperKeyServer<DB> {
             rng: self.rng.clone(),
             key_id: None,
             session_cache: self.session_cache.clone(),
+            operation_metrics: self.metrics.operation_metrics.clone(),
         }
     }
 }
 
+#[metered(registry = GeneralMetrics, registry_expr = self.metrics.general_metrics, visibility = pub)]
 #[tonic::async_trait]
 impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
     type AuthenticateStream = MessageStream;
@@ -83,11 +90,13 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
     type RetrieveAuditEventsStream = MessageStream;
     type RetrieveStorageKeyStream = MessageStream;
 
+    #[measure(ResponseTime)]
     async fn health(&self, _: Request<Empty>) -> Result<Response<Empty>, Status> {
         Ok(Response::new(Empty {}))
     }
 
     #[instrument(skip_all, err(Debug))]
+    #[measure(ResponseTime)]
     async fn check_session(
         &self,
         request: Request<Empty>,
@@ -113,6 +122,7 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         Ok(Response::new(SessionStatus { is_session_valid }))
     }
 
+    #[measure(ResponseTime)]
     async fn register(
         &self,
         request: Request<tonic::Streaming<Message>>,
@@ -122,6 +132,7 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         Ok(response)
     }
 
+    #[measure(ResponseTime)]
     async fn authenticate(
         &self,
         request: Request<tonic::Streaming<Message>>,
@@ -131,6 +142,7 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         Ok(response)
     }
 
+    #[measure(ResponseTime)]
     async fn logout(
         &self,
         request: Request<tonic::Streaming<Message>>,
@@ -140,6 +152,7 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         Ok(response)
     }
 
+    #[measure(ResponseTime)]
     async fn create_storage_key(
         &self,
         request: Request<tonic::Streaming<Message>>,
@@ -149,6 +162,7 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         Ok(response)
     }
 
+    #[measure(ResponseTime)]
     async fn delete_key(
         &self,
         request: Request<tonic::Streaming<Message>>,
@@ -158,6 +172,7 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         Ok(response)
     }
 
+    #[measure(ResponseTime)]
     async fn generate_secret(
         &self,
         request: Request<tonic::Streaming<Message>>,
@@ -167,6 +182,7 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         Ok(response)
     }
 
+    #[measure(ResponseTime)]
     async fn get_user_id(
         &self,
         request: Request<tonic::Streaming<Message>>,
@@ -176,6 +192,7 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         Ok(response)
     }
 
+    #[measure(ResponseTime)]
     async fn import_signing_key(
         &self,
         request: Request<tonic::Streaming<Message>>,
@@ -185,6 +202,15 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         Ok(response)
     }
 
+    #[measure(ResponseTime)]
+    async fn metrics(&self, _: Request<Empty>) -> Result<Response<MetricsResponse>, Status> {
+        let json = self.metrics.json()?;
+        let metrics = serde_json::to_string(&json).map_err(LockKeeperServerError::SerdeJson)?;
+
+        Ok(Response::new(MetricsResponse { metrics }))
+    }
+
+    #[measure(ResponseTime)]
     async fn store_server_encrypted_blob(
         &self,
         request: Request<Streaming<Message>>,
@@ -199,6 +225,7 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         Ok(response)
     }
 
+    #[measure(ResponseTime)]
     async fn remote_generate(
         &self,
         request: Request<tonic::Streaming<Message>>,
@@ -213,6 +240,7 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         Ok(response)
     }
 
+    #[measure(ResponseTime)]
     async fn remote_sign_bytes(
         &self,
         request: Request<tonic::Streaming<Message>>,
@@ -222,6 +250,7 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         Ok(response)
     }
 
+    #[measure(ResponseTime)]
     async fn retrieve_server_encrypted_blob(
         &self,
         request: Request<Streaming<Message>>,
@@ -236,6 +265,7 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         Ok(response)
     }
 
+    #[measure(ResponseTime)]
     async fn retrieve_secret(
         &self,
         request: Request<tonic::Streaming<Message>>,
@@ -245,6 +275,7 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         Ok(response)
     }
 
+    #[measure(ResponseTime)]
     async fn retrieve_audit_events(
         &self,
         request: Request<tonic::Streaming<Message>>,
@@ -256,6 +287,7 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
         Ok(response)
     }
 
+    #[measure(ResponseTime)]
     async fn retrieve_storage_key(
         &self,
         request: Request<tonic::Streaming<Message>>,
@@ -274,7 +306,7 @@ impl<DB: DataStore> LockKeeperKeyServer<DB> {
         request: Request<Streaming<Message>>,
     ) -> Result<(Channel<Unauthenticated>, Response<MessageStream>), LockKeeperServerError> {
         debug!("Creating new unauthenticated channel.");
-        let (channel, rx) = Channel::new(request)?;
+        let (channel, rx) = Channel::new(request, self.metrics.clone())?;
         let response = Response::new(ReceiverStream::new(rx));
 
         Ok((channel, response))

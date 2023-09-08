@@ -1,3 +1,4 @@
+use metered::measure;
 use rand::{CryptoRng, RngCore};
 use std::{fmt::Debug, sync::Arc};
 use tokio::sync::{
@@ -17,6 +18,8 @@ use lock_keeper::{
     },
     LockKeeperError,
 };
+
+use super::metrics::Metrics;
 
 const BUFFER_SIZE: usize = 2;
 
@@ -43,6 +46,7 @@ pub struct Channel<AUTH> {
     receiver: Streaming<Message>,
     metadata: RequestMetadata,
     auth: AUTH,
+    pub metrics: Arc<Metrics>,
 }
 
 impl<AUTH> Channel<AUTH> {
@@ -79,6 +83,7 @@ pub struct Unauthenticated;
 impl Channel<Unauthenticated> {
     pub fn new(
         request: Request<Streaming<Message>>,
+        metrics: Arc<Metrics>,
     ) -> Result<(Self, Receiver<Result<Message, Status>>), LockKeeperError> {
         let (sender, remote_receiver) = mpsc::channel(BUFFER_SIZE);
 
@@ -94,6 +99,7 @@ impl Channel<Unauthenticated> {
                 receiver: request.into_inner(),
                 metadata,
                 auth: Unauthenticated,
+                metrics,
             },
             remote_receiver,
         ))
@@ -114,16 +120,22 @@ impl Channel<Unauthenticated> {
                 session_key,
                 rng,
             },
+            metrics: self.metrics,
         }
     }
 
     /// Receive the next message on the channel and convert it to the type `R`.
     pub async fn receive<R: ConvertMessage>(&mut self) -> Result<R, LockKeeperError> {
-        match self.receiver.next().await {
+        match measure!(
+            &self.metrics.channel_metrics.receive_message,
+            self.receiver.next().await
+        ) {
             Some(message) => {
                 let message = message?;
-                let result =
-                    R::from_message(message).map_err(|_| LockKeeperError::InvalidMessage)?;
+                let result = measure!(
+                    &self.metrics.channel_metrics.receive_from_message,
+                    R::from_message(message).map_err(|_| LockKeeperError::InvalidMessage)?
+                );
                 Ok(result)
             }
             None => Err(LockKeeperError::NoMessageReceived),
@@ -133,8 +145,14 @@ impl Channel<Unauthenticated> {
     /// Send a message across the channel. This function accepts any type that
     /// can be converted to a `Message`.
     pub async fn send(&mut self, message: impl ConvertMessage) -> Result<(), LockKeeperError> {
-        let payload = Ok(message.to_message()?);
-        Ok(self.sender.send(payload).await?)
+        let payload = Ok(measure!(
+            &self.metrics.channel_metrics.send_to_message,
+            message.to_message()?
+        ));
+        Ok(measure!(
+            &self.metrics.channel_metrics.send_message,
+            self.sender.send(payload).await?
+        ))
     }
 }
 
@@ -159,14 +177,24 @@ impl<RNG: CryptoRng + RngCore> Channel<Authenticated<RNG>> {
 
     /// Receive the next message on the channel and convert it to the type `R`.
     pub async fn receive<R: ConvertMessage>(&mut self) -> Result<R, LockKeeperError> {
-        match self.receiver.next().await {
+        match measure!(
+            &self.metrics.channel_metrics.receive_message,
+            self.receiver.next().await
+        ) {
             Some(message) => {
                 let message = message?;
-                let encrypted_message: Encrypted<Message> =
-                    Encrypted::<Message>::try_from_message(message)?;
-                let message = encrypted_message.decrypt_message(&self.auth.session_key)?;
-                let result =
-                    R::from_message(message).map_err(|_| LockKeeperError::InvalidMessage)?;
+                let encrypted_message: Encrypted<Message> = measure!(
+                    &self.metrics.channel_metrics.receive_into_encrypted,
+                    Encrypted::<Message>::try_from_message(message)?
+                );
+                let message = measure!(
+                    &self.metrics.channel_metrics.receive_decrypt,
+                    encrypted_message.decrypt_message(&self.auth.session_key)?
+                );
+                let result = measure!(
+                    &self.metrics.channel_metrics.receive_from_message,
+                    R::from_message(message).map_err(|_| LockKeeperError::InvalidMessage)?
+                );
                 Ok(result)
             }
             None => Err(LockKeeperError::NoMessageReceived),
@@ -176,19 +204,28 @@ impl<RNG: CryptoRng + RngCore> Channel<Authenticated<RNG>> {
     /// Send a message across the channel. This function accepts any type that
     /// can be converted to a `Message`.
     pub async fn send(&mut self, message: impl ConvertMessage) -> Result<(), LockKeeperError> {
-        let message = message.to_message()?;
+        let message = measure!(
+            &self.metrics.channel_metrics.send_to_message,
+            message.to_message()?
+        );
 
-        let encrypted_message = {
+        let encrypted = measure!(&self.metrics.channel_metrics.send_encrypt, {
             let mut rng = self.auth.rng.lock().await;
             self.auth
                 .session_key
                 .encrypt(&mut *rng, message)
                 .map_err(LockKeeperError::Crypto)?
-        }
-        .try_into_message()?;
+        });
+        let encrypted_message = measure!(
+            &self.metrics.channel_metrics.send_try_into_message,
+            encrypted.try_into_message()?
+        );
 
         let payload = Ok(encrypted_message);
 
-        Ok(self.sender.send(payload).await?)
+        Ok(measure!(
+            &self.metrics.channel_metrics.send_message,
+            self.sender.send(payload).await?
+        ))
     }
 }

@@ -20,7 +20,10 @@ use lock_keeper::{
         },
     },
 };
+use metered::ResponseTime;
 use rand::{rngs::StdRng, SeedableRng};
+use serde::Serialize;
+use serde_json::Value;
 use std::{str::FromStr, sync::Arc};
 use tokio::sync::{mpsc, Mutex};
 use tokio_stream::wrappers::ReceiverStream;
@@ -51,7 +54,7 @@ impl Password {
 }
 
 /// A single session with the LockKeeper key server.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub(crate) struct Session {
     session_id: Uuid,
     session_key: OpaqueSessionKey,
@@ -65,7 +68,7 @@ pub(crate) struct Session {
 /// during which multiple requests can be made to the server.
 ///
 /// TODO #30: This abstraction needs a lot of design attention.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 #[allow(unused)]
 pub struct LockKeeperClient {
     session: Session,
@@ -75,6 +78,21 @@ pub struct LockKeeperClient {
     master_key: MasterKey,
     tonic_client: LockKeeperRpcClient<LockKeeperRpcClientInner>,
     pub(crate) rng: Arc<Mutex<StdRng>>,
+    pub(crate) metrics: Arc<ChannelMetrics>,
+}
+
+#[derive(Debug, Default, Serialize)]
+pub struct ChannelMetrics {
+    pub receive_message: ResponseTime,
+    pub receive_into_encrypted: ResponseTime,
+    pub receive_decrypt: ResponseTime,
+    pub receive_from_message: ResponseTime,
+    pub receive_to_result: ResponseTime,
+
+    pub send_to_message: ResponseTime,
+    pub send_encrypt: ResponseTime,
+    pub send_try_into_message: ResponseTime,
+    pub send_message: ResponseTime,
 }
 
 /// Connection type used by `LockKeeperRpcClient`.
@@ -138,6 +156,8 @@ impl LockKeeperClient {
         config: &Config,
         request_id: Uuid,
     ) -> Result<Self> {
+        let metrics = Arc::new(ChannelMetrics::default());
+
         // Authenticate with key server
         let mut client = match client {
             Some(client) => client,
@@ -149,7 +169,7 @@ impl LockKeeperClient {
         let mut rng = StdRng::from_entropy();
         let rng_arc_mutex = Arc::new(Mutex::new(rng));
         let mut client_channel =
-            Self::create_unauthenticated_channel(&mut client, &metadata).await?;
+            Self::create_unauthenticated_channel(&mut client, &metadata, metrics.clone()).await?;
         let mut auth_result = Self::handle_authentication(
             client_channel,
             rng_arc_mutex.clone(),
@@ -170,6 +190,7 @@ impl LockKeeperClient {
             &metadata,
             auth_result.session_key.clone(),
             rng_arc_mutex.clone(),
+            metrics.clone(),
         )
         .await?;
         let user_id = Self::handle_get_user_id(authenticated_channel).await?;
@@ -187,6 +208,7 @@ impl LockKeeperClient {
             account_name: account_name.clone(),
             user_id,
             master_key: auth_result.master_key,
+            metrics,
         };
         Ok(client)
     }
@@ -219,6 +241,7 @@ impl LockKeeperClient {
     pub(crate) async fn create_unauthenticated_channel(
         client: &mut LockKeeperRpcClient<LockKeeperRpcClientInner>,
         metadata: &RequestMetadata,
+        metrics: Arc<ChannelMetrics>,
     ) -> Result<Channel<Unauthenticated>> {
         // Create channel to send messages to server after connection is established via
         // RPC
@@ -259,7 +282,7 @@ impl LockKeeperClient {
             }
         }?;
 
-        let mut channel = Channel::new(tx, server_response)?;
+        let mut channel = Channel::new(tx, server_response, metrics)?;
         Ok(channel)
     }
 
@@ -279,6 +302,7 @@ impl LockKeeperClient {
         metadata: &RequestMetadata,
         session_key: OpaqueSessionKey,
         rng: Arc<Mutex<StdRng>>,
+        metrics: Arc<ChannelMetrics>,
     ) -> Result<Channel<Authenticated<StdRng>>> {
         // Create channel to send messages to server after connection is established via
         // RPC
@@ -323,8 +347,8 @@ impl LockKeeperClient {
             }
         }?;
 
-        let mut channel =
-            Channel::new(tx, server_response)?.into_authenticated(session_key, rng.clone());
+        let mut channel = Channel::new(tx, server_response, metrics)?
+            .into_authenticated(session_key, rng.clone());
         Ok(channel)
     }
 
@@ -338,6 +362,7 @@ impl LockKeeperClient {
             &metadata,
             self.session.session_key.clone(),
             self.rng.clone(),
+            self.metrics.clone(),
         )
         .await?;
         let response: logout_server::Response = client_channel.receive().await?;
@@ -358,6 +383,7 @@ impl LockKeeperClient {
             &metadata,
             self.session_key().clone(),
             self.rng.clone(),
+            self.metrics.clone(),
         )
         .await?;
 
@@ -369,6 +395,12 @@ impl LockKeeperClient {
             .ciphertext
             .decrypt_storage_key(self.master_key.clone(), self.user_id())?;
         Ok(storage_key)
+    }
+
+    pub fn client_metrics(&self) -> Result<Value> {
+        let channel_metrics =
+            serde_json::to_value(&self.metrics).map_err(LockKeeperClientError::SerdeJson)?;
+        Ok(channel_metrics)
     }
 }
 

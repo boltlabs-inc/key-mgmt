@@ -20,8 +20,10 @@ mod retrieve_server_encrypted_blob;
 mod store_server_encrypted_blob;
 
 use crate::{
-    client::Password, config::Config, response::Metadata, LockKeeperClient, LockKeeperClientError,
-    LockKeeperResponse,
+    client::{ChannelMetrics, Password},
+    config::Config,
+    response::Metadata,
+    LockKeeperClient, LockKeeperClientError, LockKeeperResponse,
 };
 use lock_keeper::{
     constants::METADATA,
@@ -145,7 +147,12 @@ impl LockKeeperClient {
         let mut client = Self::connect(config).await?;
         let metadata = RequestMetadata::new(account_name, ClientAction::Register, None, request_id);
 
-        let client_channel = Self::create_unauthenticated_channel(&mut client, &metadata).await?;
+        let client_channel = Self::create_unauthenticated_channel(
+            &mut client,
+            &metadata,
+            Arc::new(ChannelMetrics::default()),
+        )
+        .await?;
         let master_key =
             Self::handle_registration(client_channel, rng.clone(), account_name, password).await?;
 
@@ -158,6 +165,7 @@ impl LockKeeperClient {
             &request_metadata,
             client.session_key().clone(),
             rng.clone(),
+            client.metrics.clone(),
         )
         .await?;
         client
@@ -187,6 +195,7 @@ impl LockKeeperClient {
             &metadata,
             self.session_key().clone(),
             self.rng.clone(),
+            self.metrics.clone(),
         )
         .await?;
 
@@ -216,6 +225,7 @@ impl LockKeeperClient {
             &metadata,
             self.session_key().clone(),
             self.rng.clone(),
+            self.metrics.clone(),
         )
         .await?;
         // Get local-only secret
@@ -255,6 +265,7 @@ impl LockKeeperClient {
             &metadata,
             self.session_key().clone(),
             self.rng.clone(),
+            self.metrics.clone(),
         )
         .await?;
         // Get local-only secret
@@ -286,6 +297,7 @@ impl LockKeeperClient {
             &metadata,
             self.session_key().clone(),
             self.rng.clone(),
+            self.metrics.clone(),
         )
         .await?;
 
@@ -315,10 +327,21 @@ impl LockKeeperClient {
             &metadata,
             self.session_key().clone(),
             self.rng.clone(),
+            self.metrics.clone(),
         )
         .await?;
         self.handle_import_signing_key(client_channel, key_material)
             .await
+    }
+
+    /// Get server performance metrics.
+    pub async fn metrics(config: &Config) -> Result<String, LockKeeperClientError> {
+        use lock_keeper::rpc::Empty;
+
+        let mut client = Self::connect(config).await?;
+        let metrics = client.metrics(Empty {}).await?;
+
+        Ok(metrics.into_inner().metrics)
     }
 
     /// Retrieve a server-encrypted blob from server specified by the given
@@ -347,6 +370,7 @@ impl LockKeeperClient {
             &metadata,
             self.session_key().clone(),
             self.rng.clone(),
+            self.metrics.clone(),
         )
         .await?;
 
@@ -383,6 +407,7 @@ impl LockKeeperClient {
             &metadata,
             self.session_key().clone(),
             self.rng.clone(),
+            self.metrics.clone(),
         )
         .await?;
 
@@ -409,6 +434,7 @@ impl LockKeeperClient {
             &metadata,
             self.session_key().clone(),
             self.rng.clone(),
+            self.metrics.clone(),
         )
         .await?;
 
@@ -445,6 +471,7 @@ impl LockKeeperClient {
             &metadata,
             self.session_key().clone(),
             self.rng.clone(),
+            self.metrics.clone(),
         )
         .await?;
         self.handle_remote_sign_bytes(client_channel, key_id, bytes)
@@ -492,6 +519,7 @@ impl LockKeeperClient {
             &metadata,
             self.session_key().clone(),
             self.rng.clone(),
+            self.metrics.clone(),
         )
         .await?;
         self.handle_retrieve_audit_events(client_channel, event_type, options)
@@ -527,6 +555,7 @@ impl LockKeeperClient {
             &metadata,
             self.session_key().clone(),
             self.rng.clone(),
+            self.metrics.clone(),
         )
         .await?;
 

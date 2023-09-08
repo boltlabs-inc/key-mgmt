@@ -52,6 +52,8 @@ pub enum LockKeeperClientError {
     #[error(transparent)]
     Rustls(#[from] rustls::Error),
     #[error(transparent)]
+    SerdeJson(#[from] serde_json::Error),
+    #[error(transparent)]
     Toml(#[from] toml::de::Error),
     #[error(transparent)]
     TonicStatus(Status),
