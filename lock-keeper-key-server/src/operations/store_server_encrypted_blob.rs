@@ -14,6 +14,7 @@ use lock_keeper::{
         operations::store_server_encrypted_blob::{client, server},
     },
 };
+use metered::measure;
 use rand::rngs::StdRng;
 use tracing::{info, instrument};
 
@@ -35,37 +36,55 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for StoreServerEncrypte
         context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
         info!("Starting store server-encrypted blob protocol.");
-        let request: client::Request = channel.receive().await?;
-        let user_id = channel.user_id();
 
-        // Check size of blob.
-        if request.data_blob.len() > context.config.max_blob_size as usize {
-            return Err(LockKeeperServerError::BlobSizeTooLarge);
-        }
+        measure!(&context.operation_metrics.store_blob_total, {
+            let request: client::Request =
+                measure!(&context.operation_metrics.store_blob_receive_msg, {
+                    channel.receive().await?
+                });
+            let user_id = channel.user_id();
 
-        // Generate new KeyId
-        let key_id = {
-            let mut rng = context.rng.lock().await;
-            KeyId::generate(&mut *rng, user_id)?
-        };
-        context.key_id = Some(key_id.clone());
+            // Check size of blob.
+            if request.data_blob.len() > context.config.max_blob_size as usize {
+                return Err(LockKeeperServerError::BlobSizeTooLarge);
+            }
 
-        // Create a new data blob from client's data.
-        let blob = DataBlob::create(request.data_blob, user_id, &key_id)?;
+            let (key_id, secret) = measure!(&context.operation_metrics.store_blob_prepare, {
+                // Generate new KeyId
+                let key_id = {
+                    let mut rng = context.rng.lock().await;
+                    KeyId::generate(&mut *rng, user_id)?
+                };
+                context.key_id = Some(key_id.clone());
 
-        let encrypted_blob = {
-            let mut rng = context.rng.lock().await;
-            context
-                .config
-                .remote_storage_key
-                .encrypt_data_blob(&mut *rng, blob)?
-        };
+                // Create a new data blob from client's data.
+                let blob = DataBlob::create(request.data_blob, user_id, &key_id)?;
 
-        let secret =
-            StoredSecret::from_data_blob(key_id.clone(), channel.account_id(), encrypted_blob)?;
-        context.db.add_secret(secret).await?;
+                let encrypted_blob = {
+                    let mut rng = context.rng.lock().await;
+                    context
+                        .config
+                        .remote_storage_key
+                        .encrypt_data_blob(&mut *rng, blob)?
+                };
 
-        channel.send(server::Response { key_id }).await?;
+                let secret = StoredSecret::from_data_blob(
+                    key_id.clone(),
+                    channel.account_id(),
+                    encrypted_blob,
+                )?;
+
+                (key_id, secret)
+            });
+
+            measure!(&context.operation_metrics.store_blob_database, {
+                context.db.add_secret(secret).await?;
+            });
+
+            measure!(&context.operation_metrics.store_blob_send_msg, {
+                channel.send(server::Response { key_id }).await?;
+            })
+        });
 
         info!("Successfully completed store server-encrypted blob protocol.");
         Ok(())

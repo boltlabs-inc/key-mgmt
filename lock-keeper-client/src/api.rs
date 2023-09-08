@@ -321,6 +321,16 @@ impl LockKeeperClient {
             .await
     }
 
+    /// Get server performance metrics.
+    pub async fn metrics(config: &Config) -> Result<String, LockKeeperClientError> {
+        use lock_keeper::rpc::Empty;
+
+        let mut client = Self::connect(config).await?;
+        let metrics = client.metrics(Empty {}).await?;
+
+        Ok(metrics.into_inner().metrics)
+    }
+
     /// Retrieve a server-encrypted blob from server specified by the given
     /// `key_id`.
     pub async fn retrieve_server_encrypted_blob(
