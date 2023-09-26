@@ -105,7 +105,7 @@ impl AssociatedData {
     }
 
     pub(super) fn with_bytes(self, ad: impl IntoIterator<Item = u8>) -> Self {
-        AssociatedData(self.0.into_iter().chain(ad.into_iter()).collect())
+        AssociatedData(self.0.into_iter().chain(ad).collect())
     }
 }
 
