@@ -39,17 +39,18 @@ dependencies = [
 ]
 
 [[package]]
-name = "aes-gcm"
-version = "0.10.2"
+name = "aes-gcm-siv"
+version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "209b47e8954a928e1d72e86eca7000ebb6655fe1436d33eefc2201cad027e237"
+checksum = "ae0784134ba9375416d469ec31e7c5f9fa94405049cf08c5ce5b4698be673e0d"
 dependencies = [
  "aead",
  "aes",
  "cipher",
  "ctr",
- "ghash",
+ "polyval",
  "subtle",
+ "zeroize",
 ]
 
 [[package]]
@@ -946,16 +947,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ghash"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d930750de5717d2dd0b8c0d42c076c0e884c81a73e6cab859bbd2339c71e3e40"
-dependencies = [
- "opaque-debug",
- "polyval",
-]
-
-[[package]]
 name = "gimli"
 version = "0.27.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1281,7 +1272,7 @@ dependencies = [
 
 [[package]]
 name = "key-server-cli"
-version = "1.8.0"
+version = "1.12.0"
 dependencies = [
  "base64 0.13.1",
  "clap",
@@ -1320,9 +1311,9 @@ checksum = "09fc20d2ca12cb9f044c93e3bd6d32d523e6e2ec3db4f7b2939cd99026ecd3f0"
 
 [[package]]
 name = "lock-keeper"
-version = "1.8.0"
+version = "1.12.0"
 dependencies = [
- "aes-gcm",
+ "aes-gcm-siv",
  "anyhow",
  "argon2",
  "async-trait",
@@ -1359,7 +1350,7 @@ dependencies = [
 
 [[package]]
 name = "lock-keeper-client"
-version = "1.8.0"
+version = "1.12.0"
 dependencies = [
  "argon2",
  "async-trait",
@@ -1391,7 +1382,7 @@ dependencies = [
 
 [[package]]
 name = "lock-keeper-client-cli"
-version = "1.8.0"
+version = "1.12.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1415,7 +1406,7 @@ dependencies = [
 
 [[package]]
 name = "lock-keeper-key-server"
-version = "1.8.0"
+version = "1.12.0"
 dependencies = [
  "argon2",
  "async-trait",
@@ -1451,7 +1442,7 @@ dependencies = [
 
 [[package]]
 name = "lock-keeper-postgres"
-version = "1.8.0"
+version = "1.12.0"
 dependencies = [
  "async-trait",
  "bincode",
@@ -1472,7 +1463,7 @@ dependencies = [
 
 [[package]]
 name = "lock-keeper-session-cache-sql"
-version = "1.8.0"
+version = "1.12.0"
 dependencies = [
  "async-trait",
  "bincode",
@@ -1498,7 +1489,7 @@ dependencies = [
 
 [[package]]
 name = "lock-keeper-tests"
-version = "1.8.0"
+version = "1.12.0"
 dependencies = [
  "base64 0.13.1",
  "clap",

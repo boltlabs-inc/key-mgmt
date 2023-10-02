@@ -41,6 +41,10 @@ impl FromStr for Password {
 }
 
 impl Password {
+    pub fn new(bytes: Vec<u8>) -> Self {
+        Password(bytes)
+    }
+
     pub fn as_bytes(&self) -> &[u8] {
         &self.0[..]
     }

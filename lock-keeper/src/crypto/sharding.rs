@@ -1,5 +1,5 @@
 use crate::crypto::{CryptoError, SigningPrivateKey, SigningPublicKey};
-use aes_gcm::{aead::Aead, AeadCore, Aes256Gcm, Key, KeyInit, Nonce};
+use aes_gcm_siv::{aead::Aead, AeadCore, Aes256GcmSiv, Key, KeyInit, Nonce};
 use k256::Scalar;
 use rand::{rngs::OsRng, CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
@@ -21,7 +21,8 @@ pub const SHARD_THRESHOLD: usize = 3;
 
 /// KMS Seal Key used for encryption and decryption.
 ///
-/// We implement `Debug` and `Clone` because enclave codes relies on it.
+/// We implement `Debug` (with key material redacted) and `Clone` because
+/// enclave codes relies on it.
 #[derive(Clone, Eq, PartialEq, ZeroizeOnDrop)]
 pub struct SealKey {
     /// Our seal key is represented as a [`SEAL_KEY_LENGTH`] byte array.
@@ -33,13 +34,17 @@ impl SealKey {
         Self { material: seal_key }
     }
 
-    /// Convert key into a format that [`aes_gcm`] understands.
-    fn as_aes256gcm(&self) -> &Key<Aes256Gcm> {
-        self.material().into()
-    }
-
     pub fn material(&self) -> &[u8] {
         &self.material
+    }
+}
+
+impl AsRef<Key<Aes256GcmSiv>> for SealKey {
+    fn as_ref(&self) -> &Key<Aes256GcmSiv> {
+        // I think this won't clone the bytes; the `From` impl between slices and
+        // generic arrays uses an unsafe pointer type conversion but doesn't
+        // allocate any new memory.
+        self.material().into()
     }
 }
 
@@ -139,8 +144,8 @@ impl UnencryptedShard {
     }
 
     fn encrypt_shard(mut self, seal_key: &SealKey) -> Result<EncryptedShard, CryptoError> {
-        let nonce: Nonce<_> = Aes256Gcm::generate_nonce(&mut OsRng);
-        let cipher = Aes256Gcm::new(seal_key.as_aes256gcm());
+        let nonce = Aes256GcmSiv::generate_nonce(&mut OsRng);
+        let cipher = Aes256GcmSiv::new(seal_key.as_ref());
 
         // Encrypt shard, zeroize unecrypted shard regardless of the results of encrypt.
         let result = cipher.encrypt(&nonce, self.material.as_slice());
@@ -215,12 +220,12 @@ pub struct EncryptedShard {
     /// Encrypted material for this shard.
     encrypted: Vec<u8>,
     // Nonce used to encrypt this shard.
-    nonce: Nonce<<Aes256Gcm as AeadCore>::NonceSize>,
+    nonce: Nonce,
 }
 
 impl EncryptedShard {
     fn decrypt_shard(self, seal_key: &SealKey) -> Result<UnencryptedShard, CryptoError> {
-        let cipher = Aes256Gcm::new(seal_key.as_aes256gcm());
+        let cipher = Aes256GcmSiv::new(seal_key.as_ref());
 
         let decrypted = cipher
             .decrypt(&self.nonce, self.encrypted.as_slice())
