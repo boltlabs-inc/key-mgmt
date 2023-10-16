@@ -86,7 +86,7 @@ async fn store_data_blob_identity(db: TestDatabase) -> Result<()> {
     let (key_id, remote_storage_key) = db.store_server_encrypted_blob(&mut rng, &account).await?;
 
     let stored_secret = db
-        .get_secret(account.account_id, &key_id, SecretFilter::default())
+        .get_server_encrypted_blob(account.account_id, &key_id)
         .await?;
 
     let encrypted_blob: Encrypted<DataBlob> =
@@ -109,15 +109,6 @@ async fn store_data_blob_identity(db: TestDatabase) -> Result<()> {
         stored_secret.secret_type, SERVER_ENCRYPTED_BLOB,
         "Secret type matches after storing and retrieving."
     );
-    assert!(
-        !stored_secret.retrieved,
-        "Retrieved set to false the first time."
-    );
-    // Retrieve again to check `retrieved` field.
-    let stored_secret = db
-        .get_secret(account.account_id, &key_id, SecretFilter::default())
-        .await?;
-    assert!(stored_secret.retrieved, "Retrieved set to true.");
 
     Ok(())
 }
