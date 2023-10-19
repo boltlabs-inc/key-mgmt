@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE Accounts SET storage_key=$1 WHERE account_id=$2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Bytea",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "2a476ff3e93a6bcf01abfe53b79e46f057dabe847af05d5282151530eca770b9"
+}

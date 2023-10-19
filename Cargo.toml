@@ -1,9 +1,11 @@
 [workspace]
 members = [
     "bin/key-server-cli",
-    "lock-keeper",
-    "lock-keeper-client",
     "bin/lock-keeper-client-cli",
+    "lock-keeper",
+    "blob-server/blob-server-backend",
+    "blob-server/blob-server-cli",
+    "lock-keeper-client",
     "lock-keeper-key-server",
     "lock-keeper-tests",
     "persistence/lock-keeper-sql",
@@ -36,6 +38,7 @@ serde = "1"
 serde_json = "1.0.85"
 serde_with = "1"
 strum = { version = "0.24.1", features = ["derive"] }
+sqlx = { version = "0.7.2", features = [ "runtime-tokio", "tls-native-tls", "postgres", "time", "uuid"]}
 thiserror = "1"
 time = { version = "0.3.17", features = ["macros", "serde", "serde-human-readable"] }
 tokio = { version = "1", features = ["full"] }
@@ -43,6 +46,7 @@ tokio-rustls = "0.23"
 tokio-stream = "0.1"
 toml = "0.5"
 tonic = "0.8"
+tower = "0.4"
 tracing = "0.1"
 tracing-futures = "0.2"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }

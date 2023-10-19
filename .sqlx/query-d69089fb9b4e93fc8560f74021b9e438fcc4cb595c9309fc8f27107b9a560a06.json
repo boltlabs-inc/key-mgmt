@@ -1,0 +1,46 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT * FROM blob\n               WHERE blob_id=$1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "blob_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "blob_account_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "data",
+        "type_info": "Bytea"
+      },
+      {
+        "ordinal": 3,
+        "name": "time_created",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 4,
+        "name": "time_modified",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "d69089fb9b4e93fc8560f74021b9e438fcc4cb595c9309fc8f27107b9a560a06"
+}

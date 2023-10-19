@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO Secrets (key_id, account_id, secret, secret_type_id, retrieved) SELECT $1, $2, $3, SecretTypes.secret_type_id, $4 FROM SecretTypes WHERE SecretTypes.secret_type=$5",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Bytea",
+        "Int8",
+        "Bytea",
+        "Bool",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5b84e7a6d3ddcfa41c0a1ffab525850dc6d2b72a6e7ca7cfd0dc401bb067da93"
+}

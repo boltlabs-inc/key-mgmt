@@ -1,0 +1,23 @@
+syntax = "proto3";
+package blob_server_rpc;
+
+service BlobServerRpc {
+  rpc StoreBlob (StoreBlobRequest) returns (StoreBlobResponse);
+  rpc RetrieveBlob (RetrieveBlobRequest) returns (RetrieveBlobResponse);
+}
+
+message StoreBlobRequest {
+  bytes blob = 1;
+}
+
+message StoreBlobResponse {
+  int64 blob_id = 1;
+}
+
+message RetrieveBlobRequest {
+  int64 blob_id = 1;
+}
+
+message RetrieveBlobResponse {
+  bytes blob = 1;
+}

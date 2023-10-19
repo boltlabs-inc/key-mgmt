@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM Secrets\n            WHERE account_id=$1 AND key_id=$2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Bytea"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "c6f0107e37f43190293ef3ca849ff284ca7d1f266b9fc168284467873246245b"
+}

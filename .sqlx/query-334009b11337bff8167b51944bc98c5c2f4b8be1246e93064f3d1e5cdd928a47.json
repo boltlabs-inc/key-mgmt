@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO Accounts (user_id, account_name, server_registration)VALUES ($1, $2, $3)\n             RETURNING account_id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "account_id",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Bytea",
+        "Varchar",
+        "Bytea"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "334009b11337bff8167b51944bc98c5c2f4b8be1246e93064f3d1e5cdd928a47"
+}

@@ -1,0 +1,48 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE Secrets SET retrieved=TRUE FROM Secrets S INNER JOIN SecretTypes ST ON S.secret_type_id=ST.secret_type_id AND ST.secret_type LIKE $3 WHERE S.key_id=$1 AND S.account_id=$2 RETURNING S.key_id, S.account_id, ST.secret_type, S.secret, S.retrieved",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "key_id",
+        "type_info": "Bytea"
+      },
+      {
+        "ordinal": 1,
+        "name": "account_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "secret_type",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "secret",
+        "type_info": "Bytea"
+      },
+      {
+        "ordinal": 4,
+        "name": "retrieved",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Bytea",
+        "Int8",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "f61fe815139ed1623edf26f839c75c2c7642bd699819ec921abd47bd4749b72b"
+}

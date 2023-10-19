@@ -1,0 +1,46 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT * FROM blob_account\n               WHERE name=$1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "blob_account_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "api_secret",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "time_created",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 4,
+        "name": "time_modified",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "3bd4f89efde0d3fe668a205a9fa37cc702930f5232b7e140ea7feaa9ac348a8a"
+}

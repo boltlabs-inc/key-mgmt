@@ -1,0 +1,20 @@
+address = "0.0.0.0"
+port = 1116
+max_blob_size = 1024
+
+[logging]
+stdout_log_level = "INFO"
+
+[logging.log_files]
+blob_server_logs_file_name = "/app/logs/docker/blob-server.log"
+all_logs_file_name = "/app/logs/docker/blob-all.log"
+
+[database]
+username = 'test'
+password = 'test_password'
+address = 'postgres:5432'
+db_name = 'test'
+max_connections = 5
+connection_retries = 5
+connection_retry_delay = "5s"
+connection_timeout = "3s"

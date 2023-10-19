@@ -2,7 +2,7 @@
 default_to_workspace = false
 
 # -- Server Tasks --
-
+ 
 # Shorthand task to start server and monitor its output.
 [tasks.run]
 alias = "start-server-attached"
@@ -27,17 +27,24 @@ dependencies = ["teardown", "start"]
 [tasks.start-server-attached]
 command = "docker"
 args = ["compose", "up",
-        "--build", "postgres", "nginx", "key_server", "ks_client_auth", "ks_nginx",
+        "--build", "postgres", "key_server", "blob_server",
         "--attach", "key_server", 
-        "--attach", "ks_client_auth",
-        "--attach", "ks_nginx",
+        "--attach", "blob_server",
 ]
 
 # Start a key server in the background
 [tasks.start-server-detached]
 command = "docker"
 args = ["compose", "up", 
-        "--build", "postgres", "nginx", "key_server", "ks_client_auth", "ks_nginx",
+        "--build", "postgres", "key_server", "blob_server",
+        "--wait",
+]
+
+# Start the blob server stack without the key server
+[tasks.start-blob-server]
+command = "docker"
+args = ["compose", "up",
+        "--build", "postgres", "blob_server", 
         "--wait",
 ]
 
@@ -113,7 +120,7 @@ args = ["doc", "--all-features", "--no-deps", "--document-private-items", "--wor
 [tasks.sqlx-prepare]
 env = { "DATABASE_URL" = "postgres://test:test_password@localhost:5432/test" }
 command = "cargo"
-args = ["sqlx", "prepare", "--merged"]
+args = ["sqlx", "prepare", "--workspace"]
 
 # Connect to test database using `psql`
 [tasks.test-db]
@@ -121,6 +128,11 @@ env = { "PGPASSWORD" = "test_password" }
 command = "psql"
 args = ["-h", "localhost", "-p", "5432", "-d", "test", "-U", "test"]
 
+# Run blob server migrations
+[tasks.migrate-blob-server]
+env = { "DATABASE_URL" = "postgres://test:test_password@localhost:5432/test" }
+command = "refinery"
+args = ["migrate", "-e", "DATABASE_URL", "-p", "blob-server/database/migrations"]
 
 # -- Aliases --
 [tasks.fmt]
@@ -136,6 +148,9 @@ alias = "ci-clippy"
 
 [tasks.test]
 alias = "ci-test"
+
+[tasks.bs]
+alias = "start-blob-server"
 
 # -- Client CLI tasks --
 

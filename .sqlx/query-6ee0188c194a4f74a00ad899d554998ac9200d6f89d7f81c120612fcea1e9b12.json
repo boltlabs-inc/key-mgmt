@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE blob_account\n               SET api_secret=$1\n               WHERE name=$2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "6ee0188c194a4f74a00ad899d554998ac9200d6f89d7f81c120612fcea1e9b12"
+}

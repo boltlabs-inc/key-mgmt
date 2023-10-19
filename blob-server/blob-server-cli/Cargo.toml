@@ -1,0 +1,24 @@
+[package]
+name = "blob-server-cli"
+edition = "2021"
+version.workspace = true
+
+[dependencies]
+# Local dependencies
+lock-keeper = { path = "../../lock-keeper" }
+blob-server-backend = { path = "../blob-server-backend" }
+
+# Workspace dependencies
+clap.workspace = true
+serde.workspace = true
+tokio.workspace = true
+tokio-rustls.workspace = true
+tokio-stream.workspace = true
+toml.workspace = true
+tracing.workspace = true
+tracing-futures.workspace = true
+tracing-subscriber.workspace = true
+
+# Other dependencies
+base64 = "0.13"
+tracing-appender = "0.2"
