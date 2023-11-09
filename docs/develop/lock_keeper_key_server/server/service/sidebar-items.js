@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["handle_connection","start_lock_keeper_server","start_service"]};
+window.SIDEBAR_ITEMS = {"constant":["BRANCHES"],"fn":["handle_connection","start_lock_keeper_server","start_service"],"static":["CALLSITE","META"]};

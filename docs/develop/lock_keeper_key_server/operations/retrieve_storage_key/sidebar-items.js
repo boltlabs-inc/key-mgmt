@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["RetrieveStorageKey"]};
+window.SIDEBAR_ITEMS = {"static":["CALLSITE","META"],"struct":["RetrieveStorageKey"]};

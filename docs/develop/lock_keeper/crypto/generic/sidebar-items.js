@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["CryptoError"],"struct":["AssociatedData","Encrypted","EncryptionKey","ParseBytes","Secret"]};
+window.SIDEBAR_ITEMS = {"enum":["CryptoError"],"static":["CALLSITE","META"],"struct":["AssociatedData","Encrypted","EncryptionKey","ParseBytes","Secret"]};
