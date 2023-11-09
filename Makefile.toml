@@ -82,7 +82,6 @@ dependencies = ["ci-test"]
 dependencies = ["ci-format", "ci-clippy", "ci-build", "ci-test", "ci-doc-test", "ci-docs"]
 
 [tasks.ci-format]
-toolchain = "nightly"
 command = "cargo"
 args = ["fmt", "--all", "--check"]
 
@@ -124,7 +123,6 @@ args = ["-h", "localhost", "-p", "5432", "-d", "test", "-U", "test"]
 
 # -- Aliases --
 [tasks.fmt]
-toolchain = "nightly"
 command = "cargo"
 args = ["fmt", "--all"]
 
