@@ -592,6 +592,7 @@
 <a href="#592" id="592">592</a>
 <a href="#593" id="593">593</a>
 <a href="#594" id="594">594</a>
+<a href="#595" id="595">595</a>
 </pre></div><pre class="rust"><code><span class="kw">use crate</span>::{
     types::{AccountDB, AuditEventDB, SecretDB},
     Config, PostgresError,
@@ -748,6 +749,7 @@
 
             <span class="comment">// Create a connection pool based on our config.
             </span><span class="kw">let </span>pool = PgPoolOptions::new()
+                .min_connections(config.min_connections)
                 .max_connections(config.max_connections)
                 .acquire_timeout(config.connection_timeout)
                 .connect(<span class="kw-2">&amp;</span>config.uri())
