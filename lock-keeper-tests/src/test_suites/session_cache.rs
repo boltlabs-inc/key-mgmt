@@ -50,6 +50,7 @@ pub async fn new_cache(expiration: &str) -> Result<PostgresSessionCache> {
         password = 'test_password'
         address = 'localhost:5432'
         db_name = 'test'
+        min_connections = 2
         max_connections = 5
         connection_retries = 5
         connection_retry_delay = "5s"

@@ -154,6 +154,7 @@ impl PostgresDB {
 
             // Create a connection pool based on our config.
             let pool = PgPoolOptions::new()
+                .min_connections(config.min_connections)
                 .max_connections(config.max_connections)
                 .acquire_timeout(config.connection_timeout)
                 .connect(&config.uri())
