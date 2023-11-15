@@ -7,6 +7,7 @@ pub mod help;
 pub mod import;
 pub mod list;
 pub mod logout;
+pub mod metrics;
 pub mod print;
 pub mod quit;
 pub mod register;
@@ -36,7 +37,7 @@ pub use retrieve_blob::RetrieveBlob;
 pub use store_blob::StoreBlob;
 pub use wait::Wait;
 
-use crate::state::State;
+use crate::{cli_command::metrics::Metrics, state::State};
 use anyhow::{anyhow, bail};
 use async_trait::async_trait;
 use std::{fmt::Debug, time::Duration};
@@ -161,6 +162,7 @@ pub fn get_cmd_functions<F: GetCmdFunction>() -> Vec<F::FunctionSignature> {
         F::get_function::<Import>(),
         F::get_function::<List>(),
         F::get_function::<Logout>(),
+        F::get_function::<Metrics>(),
         F::get_function::<Print>(),
         F::get_function::<Quit>(),
         F::get_function::<Register>(),

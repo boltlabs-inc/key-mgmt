@@ -51,7 +51,7 @@ impl Password {
 }
 
 /// A single session with the LockKeeper key server.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub(crate) struct Session {
     session_id: Uuid,
     session_key: OpaqueSessionKey,
@@ -65,7 +65,7 @@ pub(crate) struct Session {
 /// during which multiple requests can be made to the server.
 ///
 /// TODO #30: This abstraction needs a lot of design attention.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 #[allow(unused)]
 pub struct LockKeeperClient {
     session: Session,
@@ -73,7 +73,7 @@ pub struct LockKeeperClient {
     account_name: AccountName,
     user_id: UserId,
     master_key: MasterKey,
-    tonic_client: LockKeeperRpcClient<LockKeeperRpcClientInner>,
+    pub(crate) tonic_client: LockKeeperRpcClient<LockKeeperRpcClientInner>,
     pub(crate) rng: Arc<Mutex<StdRng>>,
 }
 
