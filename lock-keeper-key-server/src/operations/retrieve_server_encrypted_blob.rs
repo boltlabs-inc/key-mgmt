@@ -12,6 +12,7 @@ use lock_keeper::{
     types::operations::retrieve_server_encrypted_blob::{client, server},
     LockKeeperError,
 };
+use metered::measure;
 use rand::rngs::StdRng;
 use tracing::{info, instrument};
 
@@ -31,26 +32,34 @@ impl<DB: DataStore> Operation<Authenticated<StdRng>, DB> for RetrieveServerEncry
         context: &mut Context<DB>,
     ) -> Result<(), LockKeeperServerError> {
         info!("Starting retrieve server-encrypted blob protocol.");
-        let request: client::Request = channel.receive().await?;
-        // We cannot inline this expression, or Rust will complain about holding
-        // references across `await` in a future.
-        let account_id = channel.account_id();
-        context.key_id = Some(request.key_id.clone());
 
-        let stored_secret = context
-            .db
-            .get_server_encrypted_blob(account_id, &request.key_id)
-            .await?;
+        measure!(&context.operation_metrics.retrieve_blob_total, {
+            let request: client::Request = channel.receive().await?;
 
-        let blob: Encrypted<DataBlob> =
-            serde_json::from_slice(&stored_secret.bytes).map_err(LockKeeperError::SerdeJson)?;
-        let blob = blob.decrypt_data_blob(&context.config.remote_storage_key)?;
+            // We cannot inline this expression, or Rust will complain about holding
+            // references across `await` in a future.
+            let account_id = channel.account_id();
+            context.key_id = Some(request.key_id.clone());
 
-        channel
-            .send(server::Response {
-                data_blob: blob.blob_data(),
-            })
-            .await?;
+            let stored_secret = measure!(&context.operation_metrics.retrieve_blob_database, {
+                context
+                    .db
+                    .get_server_encrypted_blob(account_id, &request.key_id)
+                    .await?
+            });
+
+            let blob = {
+                let blob: Encrypted<DataBlob> = serde_json::from_slice(&stored_secret.bytes)
+                    .map_err(LockKeeperError::SerdeJson)?;
+                blob.decrypt_data_blob(&context.config.remote_storage_key)?
+            };
+
+            channel
+                .send(server::Response {
+                    data_blob: blob.blob_data(),
+                })
+                .await?;
+        });
 
         info!("Successfully completed retrieve server-encrypted blob protocol.");
         Ok(())

@@ -78,6 +78,7 @@ impl TestDatabase {
             password = 'test_password'
             address = 'localhost'
             db_name = 'test'
+            min_connections = 2
             max_connections = 5
             connection_retries = 5
             connection_retry_delay = "5s"

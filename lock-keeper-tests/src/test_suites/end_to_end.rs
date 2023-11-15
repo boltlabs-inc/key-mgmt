@@ -10,8 +10,8 @@ use crate::{
 use colored::Colorize;
 use lock_keeper_client::Config;
 use test_cases::{
-    authenticate, check_session, delete_key, export, generate, import, register, remote_generate,
-    remote_sign, retrieve,
+    authenticate, check_session, delete_key, export, generate, import, metrics, register,
+    remote_generate, remote_sign, retrieve,
 };
 
 pub async fn run_tests(environments: &Environments) -> Result<Vec<TestResult>> {
@@ -45,6 +45,7 @@ pub async fn run_tests_with_config(
     let import_results = import::run_tests(config, filters).await?;
     let remote_generate_results = remote_generate::run_tests(config, filters).await?;
     let remote_sign_results = remote_sign::run_tests(config, filters).await?;
+    let metrics_results = metrics::run_tests(config, filters).await?;
 
     println!("Results for environment: {}", environment_name.magenta());
     // Report results after all tests finish so results show up together
@@ -73,6 +74,7 @@ pub async fn run_tests_with_config(
         "remote sign tests: {}",
         report_test_results(&remote_sign_results)
     );
+    println!("metrics tests: {}", report_test_results(&metrics_results));
 
     println!();
 
@@ -87,6 +89,7 @@ pub async fn run_tests_with_config(
         .chain(import_results)
         .chain(remote_generate_results)
         .chain(remote_sign_results)
+        .chain(metrics_results)
         .collect();
 
     Ok(results)

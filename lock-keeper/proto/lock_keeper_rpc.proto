@@ -11,6 +11,7 @@ service LockKeeperRpc {
   rpc Health (Empty) returns (Empty);
   rpc ImportSigningKey (stream Message) returns (stream Message);
   rpc Logout (stream Message) returns (stream Message);
+  rpc Metrics (Empty) returns (MetricsResponse);
   rpc StoreServerEncryptedBlob (stream Message) returns (stream Message);
   rpc Register (stream Message) returns (stream Message);
   rpc RemoteGenerate (stream Message) returns (stream Message);
@@ -29,4 +30,8 @@ message Empty {}
 
 message SessionStatus {
   bool is_session_valid = 1;
+}
+
+message MetricsResponse {
+  string metrics = 1;
 }

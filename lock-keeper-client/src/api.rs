@@ -321,6 +321,15 @@ impl LockKeeperClient {
             .await
     }
 
+    /// Get server performance metrics.
+    pub async fn metrics(&self) -> Result<String, LockKeeperClientError> {
+        let response = self
+            .tonic_client()
+            .metrics(lock_keeper::rpc::Empty {})
+            .await?;
+        Ok(response.into_inner().metrics)
+    }
+
     /// Retrieve a server-encrypted blob from server specified by the given
     /// `key_id`.
     pub async fn retrieve_server_encrypted_blob(

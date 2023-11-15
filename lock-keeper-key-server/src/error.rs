@@ -63,6 +63,8 @@ pub enum LockKeeperServerError {
     #[error(transparent)]
     Rustls(#[from] rustls::Error),
     #[error(transparent)]
+    SerdeJson(#[from] serde_json::Error),
+    #[error(transparent)]
     StrumParseError(#[from] strum::ParseError),
     #[error(transparent)]
     Toml(#[from] toml::de::Error),
@@ -120,6 +122,7 @@ impl From<LockKeeperServerError> for Status {
             | LockKeeperServerError::RemoteStorageKeyMissing
             | LockKeeperServerError::EnvVar(_)
             | LockKeeperServerError::Rustls(_)
+            | LockKeeperServerError::SerdeJson(_)
             | LockKeeperServerError::StrumParseError(_)
             | LockKeeperServerError::Toml(_)
             | LockKeeperServerError::WebPki(_) => Status::internal("Internal server error"),
