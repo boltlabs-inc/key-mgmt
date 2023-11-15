@@ -9,7 +9,7 @@ use std::{
 };
 
 #[derive(Clone, Deserialize, Serialize, Eq, PartialEq)]
-#[serde(deny_unknown_fields, rename_all = "snake_case")]
+#[serde(rename_all = "snake_case")]
 pub struct ConfigFile {
     /// Optional, convenience field for specifying the username. Should only be
     /// used for development!
@@ -19,6 +19,7 @@ pub struct ConfigFile {
     pub password: Option<String>,
     pub address: String,
     pub db_name: String,
+    pub min_connections: u32,
     pub max_connections: u32,
     pub connection_retries: u32,
     #[serde(with = "humantime_serde")]
@@ -43,6 +44,7 @@ impl Debug for ConfigFile {
             .field("password", &"REDACTED")
             .field("address", &self.address)
             .field("db_name", &self.db_name)
+            .field("min_connections", &self.min_connections)
             .field("max_connections", &self.max_connections)
             .field("connection_retries", &self.connection_retries)
             .field("connection_retry_delay", &self.connection_retry_delay)
@@ -66,6 +68,7 @@ pub struct Config {
 
     /// Name of database. Appended to URI to make the full path.
     pub db_name: String,
+    pub min_connections: u32,
     pub max_connections: u32,
     pub connection_retries: u32,
     pub connection_retry_delay: Duration,
@@ -79,6 +82,7 @@ impl Debug for Config {
             .field("password", &"REDACTED")
             .field("address", &self.address)
             .field("db_name", &self.db_name)
+            .field("min_connections", &self.min_connections)
             .field("max_connections", &self.max_connections)
             .field("connection_retries", &self.connection_retries)
             .field("connection_retry_delay", &self.connection_retry_delay)
@@ -110,6 +114,7 @@ impl TryFrom<ConfigFile> for Config {
             password: config.password.ok_or(ConfigError::MissingPassword)?,
             address: config.address,
             db_name: config.db_name,
+            min_connections: config.min_connections,
             max_connections: config.max_connections,
             connection_retries: config.connection_retries,
             connection_retry_delay: config.connection_retry_delay,
@@ -131,6 +136,7 @@ mod test {
             password: Some("test_password".to_string()),
             address: "localhost".to_string(),
             db_name: "test_db".to_string(),
+            min_connections: 2,
             max_connections: 5,
             connection_retries: 5,
             connection_retry_delay: Duration::from_secs(5),
@@ -145,6 +151,7 @@ mod test {
             password = "test_password"
             address = "localhost"
             db_name = "test_db"
+            min_connections = 2
             max_connections = 5
             connection_retries = 5
             connection_retry_delay = "5s"
