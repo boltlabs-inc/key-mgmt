@@ -1,3 +1,5 @@
+//! Code related to the storage of the OPAQUE secret key used for encrypting.
+
 use lock_keeper::config::opaque::OpaqueCipherSuite;
 use opaque_ke::{keypair::PrivateKey, Ristretto255, ServerSetup};
 use rand::rngs::StdRng;
