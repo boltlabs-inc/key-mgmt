@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["CryptorContext","Decryptor","Encryptor"]};
+window.SIDEBAR_ITEMS = {"static":["CALLSITE","META"],"struct":["CryptorContext","Decryptor","Encryptor"]};

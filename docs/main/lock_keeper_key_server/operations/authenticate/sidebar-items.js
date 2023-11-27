@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["authenticate_finish","authenticate_start"],"struct":["Authenticate","AuthenticateStartResult"]};
+window.SIDEBAR_ITEMS = {"fn":["authenticate_finish","authenticate_start"],"static":["CALLSITE","META"],"struct":["Authenticate","AuthenticateStartResult"]};

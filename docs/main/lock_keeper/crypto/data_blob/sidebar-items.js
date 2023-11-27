@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["DataBlob"]};
+window.SIDEBAR_ITEMS = {"static":["CALLSITE","META"],"struct":["DataBlob"]};
