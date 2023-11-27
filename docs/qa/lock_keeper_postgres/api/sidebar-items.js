@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["append_value_list"],"static":["CALLSITE","META"],"struct":["PostgresDB","Record"]};

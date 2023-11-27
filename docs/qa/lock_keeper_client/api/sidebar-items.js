@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["authenticate","create_storage_key","delete_key","generate_secret","get_user_id","import","register","remote_generate_signing_key","remote_sign_bytes","retrieve","retrieve_audit_events","retrieve_server_encrypted_blob","store_server_encrypted_blob"],"struct":["GenerateResult","LocalStorage","RemoteGenerateResult"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["register_finish","register_start"],"static":["CALLSITE","META"],"struct":["Register"]};

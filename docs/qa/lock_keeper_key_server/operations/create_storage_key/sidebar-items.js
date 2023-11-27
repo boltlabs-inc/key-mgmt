@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["store_storage_key"],"static":["CALLSITE","META"],"struct":["CreateStorageKey"]};
