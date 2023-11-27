@@ -5,7 +5,7 @@ name: Rust
 on:
   workflow_dispatch:
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, develop, qa ]
 
 jobs:
   build:
@@ -26,13 +26,6 @@ jobs:
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
 
-      # Install Rust nightly toolchain
-      # action repo is here https://github.com/dtolnay/rust-toolchain  
-      - name: Install Rust toolchain nightly
-        uses: dtolnay/rust-toolchain@nightly
-        with:
-          components: rustfmt                
-
       # Install Rust toolchain
       # action repo is here https://github.com/dtolnay/rust-toolchain
       - name: Install Rust toolchain stable
@@ -41,7 +34,7 @@ jobs:
           # Do NOT use `toolchain` input. It will cause the cargo version specified
           # above to be ignored!
           # toolchain: stable // Do NOT use.
-          components: clippy
+          components: clippy, rustfmt
 
       - name: Install Protoc
         uses: arduino/setup-protoc@v1.1.2

@@ -3,7 +3,7 @@ name: E2E tests
 on:
   workflow_dispatch:
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, develop, qa ]
 
 jobs:
   test:
@@ -22,13 +22,10 @@ jobs:
 
       # Install Rust toolchain
       # action repo is here https://github.com/dtolnay/rust-toolchain
+      # Do NOT use `toolchain` input. It will cause the cargo version specified
+      # above to be ignored!
       - name: Install Rust toolchain stable      
         uses: dtolnay/rust-toolchain@1.70.0
-        with:
-          # Do NOT use `toolchain` input. It will cause the cargo version specified
-          # above to be ignored!
-          # toolchain: stable // Do NOT use.
-          components: clippy
 
       - name: Cache
         uses: actions/cache@v2
