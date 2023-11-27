@@ -4,7 +4,7 @@ name: Push key server image
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, qa ]
 
 env:
   REGISTRY: ghcr.io
