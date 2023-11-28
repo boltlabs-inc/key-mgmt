@@ -27,17 +27,15 @@ dependencies = ["teardown", "start"]
 [tasks.start-server-attached]
 command = "docker"
 args = ["compose", "up",
-        "--build", "postgres", "nginx", "key_server", "ks_client_auth", "ks_nginx",
+        "--build", "postgres", "key_server",
         "--attach", "key_server", 
-        "--attach", "ks_client_auth",
-        "--attach", "ks_nginx",
 ]
 
 # Start a key server in the background
 [tasks.start-server-detached]
 command = "docker"
 args = ["compose", "up", 
-        "--build", "postgres", "nginx", "key_server", "ks_client_auth", "ks_nginx",
+        "--build", "postgres", "key_server",
         "--wait",
 ]
 

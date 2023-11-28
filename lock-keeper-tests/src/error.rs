@@ -8,8 +8,6 @@ pub type Result<T> = std::result::Result<T, LockKeeperTestError>;
 pub enum LockKeeperTestError {
     #[error("\"--standard-only\" flag can only be used when `--test-type=e2e`")]
     StandardOnlyFlag,
-    #[error("Client config missing for required environment: \"{0}\". Check TestEnvironments.toml if you're using the default environment config.")]
-    MissingRequiredConfig(String),
     #[error("Invalid test type: {0}")]
     InvalidTestType(String),
     #[error("One or more test cases failed.")]

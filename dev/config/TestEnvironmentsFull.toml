@@ -1,0 +1,3 @@
+standard = "./dev/config/local/Client.toml"
+client_auth = "./dev/config/local-client-auth/Client.toml"
+nginx = "./dev/config/nginx-tls/Client.toml"

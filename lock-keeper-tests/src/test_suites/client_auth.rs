@@ -34,7 +34,7 @@ async fn client_auth_not_required(environments: Environments) -> Result<()> {
 }
 
 async fn client_auth_required(environments: Environments) -> Result<()> {
-    let result = LockKeeperClient::health(environments.client_auth_config()?).await;
+    let result = LockKeeperClient::health(environments.client_auth_config().unwrap()).await;
     assert!(result.is_ok());
 
     Ok(())
@@ -42,7 +42,7 @@ async fn client_auth_required(environments: Environments) -> Result<()> {
 
 async fn client_auth_required_not_provided(environments: Environments) -> Result<()> {
     // Point to client auth server but remove auth from client
-    let mut client_config = environments.client_auth_config()?.clone();
+    let mut client_config = environments.client_auth_config().unwrap().clone();
     client_config.tls_config = environments.standard_config()?.tls_config.clone();
 
     assert!(LockKeeperClient::health(&client_config).await.is_err());
@@ -53,7 +53,11 @@ async fn client_auth_required_not_provided(environments: Environments) -> Result
 async fn client_auth_not_required_but_provided(environments: Environments) -> Result<()> {
     // Point to no auth client but add auth
     let mut client_config = environments.standard_config()?.clone();
-    client_config.tls_config = environments.client_auth_config()?.tls_config.clone();
+    client_config.tls_config = environments
+        .client_auth_config()
+        .unwrap()
+        .tls_config
+        .clone();
 
     let result = LockKeeperClient::health(&client_config).await;
     assert!(result.is_ok());

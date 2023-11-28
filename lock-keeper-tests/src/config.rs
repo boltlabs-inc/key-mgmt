@@ -8,7 +8,6 @@ use crate::{error::LockKeeperTestError, utils, Cli};
 
 pub const STANDARD_CONFIG_NAME: &str = "standard";
 pub const CLIENT_AUTH_CONFIG_NAME: &str = "client_auth";
-pub const REQUIRED_CONFIGS: &[&str] = &[STANDARD_CONFIG_NAME, CLIENT_AUTH_CONFIG_NAME];
 
 /// Contains test configs for all environments defined in the test environment
 /// configuration file. This allows us to use specific configs for certain tests
@@ -39,21 +38,6 @@ impl TryFrom<Cli> for Environments {
             configs.insert(name, client_config);
         }
 
-        // Set required configs based on simple flag
-        let required_configs = if cli.standard_only {
-            &[STANDARD_CONFIG_NAME]
-        } else {
-            REQUIRED_CONFIGS
-        };
-
-        for required_config in required_configs {
-            if !configs.contains_key(*required_config) {
-                return Err(LockKeeperTestError::MissingRequiredConfig(
-                    required_config.to_string(),
-                ));
-            }
-        }
-
         Ok(Self { configs, filters })
     }
 }
@@ -82,8 +66,8 @@ impl Environments {
         self.config(STANDARD_CONFIG_NAME)
     }
 
-    pub fn client_auth_config(&self) -> Result<&Config, LockKeeperTestError> {
-        self.config(CLIENT_AUTH_CONFIG_NAME)
+    pub fn client_auth_config(&self) -> Option<&Config> {
+        self.configs.get(CLIENT_AUTH_CONFIG_NAME)
     }
 }
 
