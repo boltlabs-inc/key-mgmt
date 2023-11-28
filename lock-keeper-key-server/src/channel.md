@@ -21,11 +21,11 @@ sent over `Channel`s.
 
 ## Setting up Channels in Client and Server
 Some ceremony is required to set up these channels. `Channel`s are implemented in terms of two unidirectional channels:
-- Channel 1: Server holds receiving end and client holds sending end.
-- Channel 2: Server holds sending end and client holds receiving end. 
+- Channel 1: Created by client. Receiving end is sent to server. Communication direction: Client -> Server.
+- Channel 2: Created by server. Receiving end is sent to client. Communication direction: Server -> Client.
 
-Channel 1 is instantiated by the client when making the initial gRPC call. The receiver end is kept by the client, the
-sending end is sent along with the initial `Request`. When the server receives this request, it saves the receiver end
+Channel 1 is created by the client when making the initial gRPC call. The sending end is kept by the client, the
+receiving end is sent along with the initial `Request`. When the server receives this request, it saves the receiver end
 that the client sent. The server then creates a new channel: The server keeps the sender end and is expected to send the
 receiver end back to the client. At this point the server must do two things:
 1) Send the receiver end back to the client.

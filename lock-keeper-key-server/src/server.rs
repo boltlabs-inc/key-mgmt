@@ -78,7 +78,7 @@ impl<DB: DataStore> LockKeeperKeyServer<DB> {
 /// 3) We spawn a tokio thread to actually handle the request, this request-handler thread is able
 /// to communicate bi-directionally with the client using the channel.
 /// 4) The methods below return with the `receiver` end of the channel. The client receives this
-/// end and is able to instatiate   
+/// channel-end which it can use to receive further messages from the server.   
 #[tonic::async_trait]
 impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
     type AuthenticateStream = MessageStream;
