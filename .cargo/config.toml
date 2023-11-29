@@ -1,0 +1,2 @@
+[registries]
+key-mgmt-registry = { index = "https://github.com/boltlabs-inc/key-mgmt-registry" }

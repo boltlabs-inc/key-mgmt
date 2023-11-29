@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 # Local dependencies
-lock-keeper = { path = "../lock-keeper" }
+lock-keeper = { version = "2.3.0", registry = "key-mgmt-registry" }
 
 # Workspace dependencies
 argon2.workspace = true
