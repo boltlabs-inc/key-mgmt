@@ -3,7 +3,6 @@ name = "lock-keeper-client-cli"
 version.workspace = true
 edition = "2021"
 
-
 [dependencies]
 # Local dependencies
 lock-keeper = { version = "2.3.0", registry = "key-mgmt-registry" }

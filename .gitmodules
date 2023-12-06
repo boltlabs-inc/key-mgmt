@@ -1,0 +1,3 @@
+[submodule "key-mgmt-registry"]
+	path = key-mgmt-registry
+	url = https://github.com/boltlabs-inc/key-mgmt-registry
