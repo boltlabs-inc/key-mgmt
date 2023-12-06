@@ -22,5 +22,5 @@ jobs:
           command: install
           args: --debug cargo-index
 
-      - name: Run publish script
-        run: ./publish-to-local-cargo-registry.sh
+      # - name: Run publish script
+      #   run: ./publish-to-local-cargo-registry.sh
