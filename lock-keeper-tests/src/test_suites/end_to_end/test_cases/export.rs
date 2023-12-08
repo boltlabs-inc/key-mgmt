@@ -1,5 +1,5 @@
 use colored::Colorize;
-use lock_keeper::{
+use lock_keeper_client::lock_keeper::{
     crypto::Secret,
     types::{audit_event::EventStatus, operations::ClientAction},
 };

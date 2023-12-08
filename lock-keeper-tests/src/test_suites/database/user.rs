@@ -1,7 +1,7 @@
 //! Integration tests for user objects in the database
 
 use colored::Colorize;
-use lock_keeper::types::database::account::{AccountName, UserId};
+use lock_keeper_client::lock_keeper::types::database::account::{AccountName, UserId};
 use lock_keeper_key_server::server::database::DataStore;
 use rand::{rngs::StdRng, SeedableRng};
 

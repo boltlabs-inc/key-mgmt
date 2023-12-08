@@ -1,5 +1,5 @@
 use colored::Colorize;
-use lock_keeper::rpc::SessionStatus;
+use lock_keeper_client::lock_keeper::rpc::SessionStatus;
 use lock_keeper_client::Config;
 
 use crate::{

@@ -3,7 +3,7 @@ use std::time::{Duration, SystemTime};
 use crate::{cli_command::CliCommand, state::State};
 use anyhow::Error;
 use async_trait::async_trait;
-use lock_keeper::types::operations::retrieve_secret::RetrieveContext;
+use lock_keeper_client::lock_keeper::types::operations::retrieve_secret::RetrieveContext;
 use lock_keeper_client::LockKeeperClient;
 
 #[derive(Debug)]

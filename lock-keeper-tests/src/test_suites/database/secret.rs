@@ -1,7 +1,7 @@
 //! Integration tests for secret objects in the database
 
 use colored::Colorize;
-use lock_keeper::{
+use lock_keeper_client::lock_keeper::{
     crypto::{DataBlob, Encrypted},
     LockKeeperError,
 };
@@ -11,7 +11,7 @@ use rand::{rngs::StdRng, SeedableRng};
 use crate::{config::TestFilters, error::Result, run_parallel, utils::TestResult};
 
 use super::TestDatabase;
-use lock_keeper::types::database::secrets::secret_types::SERVER_ENCRYPTED_BLOB;
+use lock_keeper_client::lock_keeper::types::database::secrets::secret_types::SERVER_ENCRYPTED_BLOB;
 
 pub async fn run_tests(filters: &TestFilters) -> Result<Vec<TestResult>> {
     println!("{}", "Running secret tests".cyan());

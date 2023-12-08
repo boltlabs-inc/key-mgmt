@@ -8,8 +8,8 @@ use std::{
 };
 
 use anyhow::anyhow;
-use lock_keeper::crypto::{Export, KeyId, Secret};
 use lock_keeper_client::api::{GenerateResult, LocalStorage};
+use lock_keeper_client::lock_keeper::crypto::{Export, KeyId, Secret};
 use serde::{Deserialize, Serialize};
 
 /// Container for all locally stored key data.

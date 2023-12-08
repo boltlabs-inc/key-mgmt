@@ -12,7 +12,7 @@ use crate::{
     error::Result,
     utils::{report_test_results, TestResult},
 };
-use lock_keeper::{
+use lock_keeper_client::lock_keeper::{
     crypto::{
         DataBlob, Encrypted, Import, KeyId, MasterKey, RemoteStorageKey, Secret, SigningKeyPair,
         StorageKey,

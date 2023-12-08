@@ -5,7 +5,7 @@ use crate::{
 };
 use colored::Colorize;
 use generic_array::GenericArray;
-use lock_keeper::{
+use lock_keeper_client::lock_keeper::{
     crypto::{OpaqueSessionKey, RemoteStorageKey},
     types::database::account::AccountId,
 };

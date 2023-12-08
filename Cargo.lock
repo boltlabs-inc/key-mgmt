@@ -1276,7 +1276,7 @@ version = "2.3.2"
 dependencies = [
  "base64 0.13.1",
  "clap",
- "lock-keeper 2.3.0",
+ "lock-keeper 2.3.2 (registry+https://github.com/boltlabs-inc/key-mgmt-registry)",
  "lock-keeper-key-server",
  "lock-keeper-postgres",
  "lock-keeper-session-cache-sql",
@@ -1311,9 +1311,7 @@ checksum = "09fc20d2ca12cb9f044c93e3bd6d32d523e6e2ec3db4f7b2939cd99026ecd3f0"
 
 [[package]]
 name = "lock-keeper"
-version = "2.3.0"
-source = "registry+https://github.com/boltlabs-inc/key-mgmt-registry"
-checksum = "eb824a3b171fa40ea8e6d56d8dbb5416c1ead39a81b7c35d7379d2d0f20e2ab9"
+version = "2.3.2"
 dependencies = [
  "aes-gcm-siv",
  "anyhow",
@@ -1353,6 +1351,8 @@ dependencies = [
 [[package]]
 name = "lock-keeper"
 version = "2.3.2"
+source = "registry+https://github.com/boltlabs-inc/key-mgmt-registry"
+checksum = "71f9829211af3f710d1cc7b2b924e916c3163417cd9e12c500f0a2f26ae98847"
 dependencies = [
  "aes-gcm-siv",
  "anyhow",
@@ -1391,9 +1391,7 @@ dependencies = [
 
 [[package]]
 name = "lock-keeper-client"
-version = "2.3.0"
-source = "registry+https://github.com/boltlabs-inc/key-mgmt-registry"
-checksum = "c51b2512c46ff75a0f06022d93746365d64a1b5ae52c6720d820dad5339f9994"
+version = "2.3.2"
 dependencies = [
  "argon2",
  "async-trait",
@@ -1403,7 +1401,7 @@ dependencies = [
  "http-body",
  "hyper",
  "hyper-rustls",
- "lock-keeper 2.3.0",
+ "lock-keeper 2.3.2 (registry+https://github.com/boltlabs-inc/key-mgmt-registry)",
  "opaque-ke",
  "prost",
  "rand",
@@ -1426,6 +1424,8 @@ dependencies = [
 [[package]]
 name = "lock-keeper-client"
 version = "2.3.2"
+source = "registry+https://github.com/boltlabs-inc/key-mgmt-registry"
+checksum = "3a141a5bc04d1fac300ae2fc221ff85304a2b48fb269f4a32f19bb7a24ac32e7"
 dependencies = [
  "argon2",
  "async-trait",
@@ -1435,7 +1435,7 @@ dependencies = [
  "http-body",
  "hyper",
  "hyper-rustls",
- "lock-keeper 2.3.0",
+ "lock-keeper 2.3.2 (registry+https://github.com/boltlabs-inc/key-mgmt-registry)",
  "opaque-ke",
  "prost",
  "rand",
@@ -1465,8 +1465,7 @@ dependencies = [
  "colored",
  "hex",
  "humantime",
- "lock-keeper 2.3.0",
- "lock-keeper-client 2.3.0",
+ "lock-keeper-client 2.3.2 (registry+https://github.com/boltlabs-inc/key-mgmt-registry)",
  "rand",
  "serde",
  "serde_json",
@@ -1492,7 +1491,7 @@ dependencies = [
  "generic-array",
  "humantime-serde",
  "hyper",
- "lock-keeper 2.3.0",
+ "lock-keeper 2.3.2 (registry+https://github.com/boltlabs-inc/key-mgmt-registry)",
  "opaque-ke",
  "prost",
  "rand",
@@ -1523,7 +1522,7 @@ dependencies = [
  "bincode",
  "futures",
  "humantime-serde",
- "lock-keeper 2.3.0",
+ "lock-keeper 2.3.2 (registry+https://github.com/boltlabs-inc/key-mgmt-registry)",
  "lock-keeper-key-server",
  "opaque-ke",
  "serde",
@@ -1545,7 +1544,7 @@ dependencies = [
  "futures",
  "generic-array",
  "humantime-serde",
- "lock-keeper 2.3.0",
+ "lock-keeper 2.3.2 (registry+https://github.com/boltlabs-inc/key-mgmt-registry)",
  "lock-keeper-key-server",
  "opaque-ke",
  "rand",
@@ -1571,8 +1570,7 @@ dependencies = [
  "colored",
  "futures",
  "generic-array",
- "lock-keeper 2.3.0",
- "lock-keeper-client 2.3.0",
+ "lock-keeper-client 2.3.2 (registry+https://github.com/boltlabs-inc/key-mgmt-registry)",
  "lock-keeper-key-server",
  "lock-keeper-postgres",
  "lock-keeper-session-cache-sql",

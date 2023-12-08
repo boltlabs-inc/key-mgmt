@@ -29,7 +29,7 @@ pub enum LockKeeperTestError {
     #[error(transparent)]
     Io(#[from] std::io::Error),
     #[error("LockKeeperError: {0:?}")]
-    LockKeeper(#[from] lock_keeper::LockKeeperError),
+    LockKeeper(#[from] lock_keeper_client::lock_keeper::LockKeeperError),
     #[error("LockKeeperClientError: {0:?}")]
     LockKeeperClient(#[from] lock_keeper_client::LockKeeperClientError),
     #[error("LockKeeperServerError: {0:?}")]

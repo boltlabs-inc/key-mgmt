@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 # Local dependencies
-lock-keeper = { version = "2.3.0", registry = "key-mgmt-registry" }
+lock-keeper = { version = "2.3.2", registry = "key-mgmt-registry" }
 lock-keeper-key-server = { path = "../../lock-keeper-key-server" }
 lock-keeper-postgres = { path = "../../persistence/lock-keeper-sql" }
 lock-keeper-session-cache-sql = { path = "../../persistence/lock-keeper-session-cache-sql" }

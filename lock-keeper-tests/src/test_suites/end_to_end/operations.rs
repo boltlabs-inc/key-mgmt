@@ -1,5 +1,5 @@
 use crate::{test_suites::end_to_end::test_cases::TestState, LockKeeperTestError};
-use lock_keeper::{
+use lock_keeper_client::lock_keeper::{
     crypto::{Import, KeyId},
     types::{
         audit_event::{AuditEventOptions, EventStatus, EventType},

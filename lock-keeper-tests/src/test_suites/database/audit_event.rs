@@ -1,7 +1,7 @@
 //! Integration tests for audit event objects in the database
 
 use colored::Colorize;
-use lock_keeper::{
+use lock_keeper_client::lock_keeper::{
     crypto::KeyId,
     types::{
         audit_event::{AuditEvent, AuditEventOptions, EventStatus, EventType},

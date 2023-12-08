@@ -5,7 +5,7 @@ use crate::{
     state::{Credentials, State},
 };
 use async_trait::async_trait;
-use lock_keeper::types::database::account::AccountName;
+use lock_keeper_client::lock_keeper::types::database::account::AccountName;
 use lock_keeper_client::{client::Password, LockKeeperClient};
 
 #[derive(Debug)]

@@ -6,7 +6,7 @@ use std::{
 use crate::{cli_command::CliCommand, state::State};
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
-use lock_keeper::types::audit_event::{AuditEventOptions, EventType};
+use lock_keeper_client::lock_keeper::types::audit_event::{AuditEventOptions, EventType};
 use lock_keeper_client::LockKeeperClient;
 use time::{format_description::well_known::Iso8601, OffsetDateTime};
 use uuid::Uuid;

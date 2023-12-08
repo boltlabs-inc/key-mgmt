@@ -3,7 +3,7 @@ use std::time::{Duration, SystemTime};
 use crate::{cli_command::CliCommand, state::State};
 use anyhow::Error;
 use async_trait::async_trait;
-use lock_keeper::crypto::Import as LkImport;
+use lock_keeper_client::lock_keeper::crypto::Import as LkImport;
 use lock_keeper_client::LockKeeperClient;
 use rand::Rng;
 

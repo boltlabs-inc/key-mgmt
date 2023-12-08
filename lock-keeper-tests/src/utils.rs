@@ -11,7 +11,7 @@ use crate::{
 };
 use colored::Colorize;
 use futures::Future;
-use lock_keeper::config::opaque::OpaqueCipherSuite;
+use lock_keeper_client::lock_keeper::config::opaque::OpaqueCipherSuite;
 use lock_keeper_client::{Config as ClientConfig, LockKeeperClient};
 use opaque_ke::{
     ClientRegistration, ClientRegistrationFinishParameters, ServerRegistration, ServerSetup,

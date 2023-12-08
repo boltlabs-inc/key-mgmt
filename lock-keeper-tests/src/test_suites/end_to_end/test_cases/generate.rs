@@ -1,5 +1,5 @@
 use colored::Colorize;
-use lock_keeper::types::{audit_event::EventStatus, operations::ClientAction};
+use lock_keeper_client::lock_keeper::types::{audit_event::EventStatus, operations::ClientAction};
 use lock_keeper_client::{Config, LockKeeperClientError};
 
 use crate::{

@@ -1,5 +1,5 @@
 use crate::utils::tagged;
-use lock_keeper::types::database::account::AccountName;
+use lock_keeper_client::lock_keeper::types::database::account::AccountName;
 use lock_keeper_client::{client::Password, Config, LockKeeperClient, LockKeeperClientError};
 use std::str::FromStr;
 
