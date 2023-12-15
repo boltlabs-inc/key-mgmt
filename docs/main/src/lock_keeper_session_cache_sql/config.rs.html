@@ -176,6 +176,13 @@
 <a href="#176" id="176">176</a>
 <a href="#177" id="177">177</a>
 <a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Config for session cache.
 
 </span><span class="kw">use crate</span>::{error::ConfigError, Error};
@@ -194,6 +201,7 @@
 
     <span class="doccomment">/// Name of database. Appended to URI to make the full path.
     </span><span class="kw">pub </span>db_name: String,
+    <span class="kw">pub </span>min_connections: u32,
     <span class="kw">pub </span>max_connections: u32,
     <span class="kw">pub </span>connection_retries: u32,
     <span class="kw">pub </span>connection_retry_delay: Duration,
@@ -208,6 +216,7 @@
             .field(<span class="string">&quot;password&quot;</span>, <span class="kw-2">&amp;</span><span class="string">&quot;REDACTED&quot;</span>)
             .field(<span class="string">&quot;address&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.address)
             .field(<span class="string">&quot;db_name&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.db_name)
+            .field(<span class="string">&quot;min_connections&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.min_connections)
             .field(<span class="string">&quot;max_connections&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.max_connections)
             .field(<span class="string">&quot;connection_retries&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.connection_retries)
             .field(<span class="string">&quot;connection_retry_delay&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.connection_retry_delay)
@@ -249,6 +258,7 @@
             password: config.password.ok_or(ConfigError::MissingPassword)<span class="question-mark">?</span>,
             address: config.address,
             db_name: config.db_name,
+            min_connections: config.min_connections,
             max_connections: config.max_connections,
             connection_retries: config.connection_retries,
             connection_retry_delay: config.connection_retry_delay,
@@ -261,7 +271,7 @@
 }
 
 <span class="attr">#[derive(Clone, Deserialize, Serialize)]
-#[serde(deny_unknown_fields, rename_all = <span class="string">&quot;snake_case&quot;</span>)]
+#[serde(rename_all = <span class="string">&quot;snake_case&quot;</span>)]
 </span><span class="kw">pub struct </span>ConfigFile {
     <span class="doccomment">/// Optional, convenience field for specifying the username. Should only be
     /// used for development!
@@ -271,6 +281,7 @@
     </span><span class="kw">pub </span>password: <span class="prelude-ty">Option</span>&lt;String&gt;,
     <span class="kw">pub </span>address: String,
     <span class="kw">pub </span>db_name: String,
+    <span class="kw">pub </span>min_connections: u32,
     <span class="kw">pub </span>max_connections: u32,
     <span class="kw">pub </span>connection_retries: u32,
     <span class="attr">#[serde(with = <span class="string">&quot;humantime_serde&quot;</span>)]
@@ -295,6 +306,7 @@
             .field(<span class="string">&quot;password&quot;</span>, <span class="kw-2">&amp;</span><span class="string">&quot;REDACTED&quot;</span>)
             .field(<span class="string">&quot;address&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.address)
             .field(<span class="string">&quot;db_name&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.db_name)
+            .field(<span class="string">&quot;min_connections&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.min_connections)
             .field(<span class="string">&quot;max_connections&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.max_connections)
             .field(<span class="string">&quot;connection_retries&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.connection_retries)
             .field(<span class="string">&quot;connection_retry_delay&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.connection_retry_delay)
@@ -323,7 +335,8 @@
             password: <span class="string">&quot;this_is_the_password&quot;</span>.to_string(),
             address: <span class="string">&quot;address&quot;</span>.to_string(),
             db_name: <span class="string">&quot;db_name&quot;</span>.to_string(),
-            max_connections: <span class="number">1</span>,
+            min_connections: <span class="number">2</span>,
+            max_connections: <span class="number">5</span>,
             connection_retries: <span class="number">1</span>,
             connection_retry_delay: Duration::from_secs(<span class="number">1</span>),
             connection_timeout: Duration::from_secs(<span class="number">1</span>),
@@ -342,6 +355,7 @@
             password: <span class="prelude-val">Some</span>(<span class="string">&quot;this_is_the_password&quot;</span>.to_string()),
             address: <span class="string">&quot;localhost&quot;</span>.to_string(),
             db_name: <span class="string">&quot;test_db&quot;</span>.to_string(),
+            min_connections: <span class="number">2</span>,
             max_connections: <span class="number">5</span>,
             connection_retries: <span class="number">5</span>,
             connection_retry_delay: Duration::from_secs(<span class="number">5</span>),

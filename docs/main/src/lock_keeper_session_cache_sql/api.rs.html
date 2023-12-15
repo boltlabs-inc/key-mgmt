@@ -164,6 +164,7 @@
 <a href="#164" id="164">164</a>
 <a href="#165" id="165">165</a>
 <a href="#166" id="166">166</a>
+<a href="#167" id="167">167</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>lock_keeper::{
     crypto::{Encrypted, OpaqueSessionKey},
@@ -203,6 +204,7 @@
 
             <span class="comment">// Create a connection pool based on our config.
             </span><span class="kw">let </span>pool = PgPoolOptions::new()
+                .min_connections(config.min_connections)
                 .max_connections(config.max_connections)
                 .acquire_timeout(config.connection_timeout)
                 .connect(<span class="kw-2">&amp;</span>config.uri())
