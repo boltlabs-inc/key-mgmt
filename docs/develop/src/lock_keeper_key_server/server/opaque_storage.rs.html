@@ -121,7 +121,11 @@
 <a href="#121" id="121">121</a>
 <a href="#122" id="122">122</a>
 <a href="#123" id="123">123</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>lock_keeper::config::opaque::OpaqueCipherSuite;
+<a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
+</pre></div><pre class="rust"><code><span class="doccomment">//! Code related to the storage of the OPAQUE secret key used for encrypting.
+
+</span><span class="kw">use </span>lock_keeper::config::opaque::OpaqueCipherSuite;
 <span class="kw">use </span>opaque_ke::{keypair::PrivateKey, Ristretto255, ServerSetup};
 <span class="kw">use </span>rand::rngs::StdRng;
 <span class="kw">use </span>std::{
