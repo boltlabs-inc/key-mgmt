@@ -155,6 +155,8 @@
 <a href="#155" id="155">155</a>
 <a href="#156" id="156">156</a>
 <a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>async_trait::async_trait;
 
 <span class="kw">use </span>lock_keeper::{infrastructure::logging, types::audit_event::EventStatus};
@@ -182,7 +184,8 @@
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperServerError&gt;;
 }
 
-<span class="doccomment">/// This function is only called by the client via our gRPC endpoints.
+<span class="doccomment">/// This function is called server-side to handle a request made by a client
+/// via our gRPC endpoints.
 ///
 /// This function spawns a task to do the actual work and returns immediately.
 /// We must return immediately as we are in the middle of a gRPC call which
@@ -236,7 +239,8 @@
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="doccomment">/// This function is only called by the client via our gRPC endpoints.
+<span class="doccomment">/// This function is called server-side to handle a request made by a client
+/// via our gRPC endpoints.
 ///
 /// This function spawns a task to do the actual work and returns immediately.
 /// We must return immediately as we are in the middle of a gRPC call which

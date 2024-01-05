@@ -593,7 +593,12 @@
 <a href="#593" id="593">593</a>
 <a href="#594" id="594">594</a>
 <a href="#595" id="595">595</a>
-</pre></div><pre class="rust"><code><span class="kw">use crate</span>::{
+<a href="#596" id="596">596</a>
+<a href="#597" id="597">597</a>
+<a href="#598" id="598">598</a>
+</pre></div><pre class="rust"><code><span class="doccomment">//! Actual implementation of the `DataStore` trait for our postgres type.
+//! SQL queries are found here.
+</span><span class="kw">use crate</span>::{
     types::{AccountDB, AuditEventDB, SecretDB},
     Config, PostgresError,
 };
@@ -629,7 +634,8 @@
     </span>connection_pool: PgPool,
 }
 
-<span class="attr">#[async_trait]
+<span class="doccomment">/// Trait implementation just calls out to the equivalent methods implemented directly on [`PostgresDB`].
+</span><span class="attr">#[async_trait]
 </span><span class="kw">impl </span>DataStore <span class="kw">for </span>PostgresDB {
     <span class="kw">async fn </span>create_audit_event(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
