@@ -25,7 +25,8 @@ pub(crate) trait Operation<AUTH: Send + 'static, DB: DataStore>:
     ) -> Result<(), LockKeeperServerError>;
 }
 
-/// This function is only called by the client via our gRPC endpoints.
+/// This function is called server-side to handle a request made by a client
+/// via our gRPC endpoints.
 ///
 /// This function spawns a task to do the actual work and returns immediately.
 /// We must return immediately as we are in the middle of a gRPC call which
@@ -79,7 +80,8 @@ pub(crate) async fn handle_authenticated_request<
     Ok(())
 }
 
-/// This function is only called by the client via our gRPC endpoints.
+/// This function is called server-side to handle a request made by a client
+/// via our gRPC endpoints.
 ///
 /// This function spawns a task to do the actual work and returns immediately.
 /// We must return immediately as we are in the middle of a gRPC call which

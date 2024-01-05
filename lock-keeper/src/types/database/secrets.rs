@@ -1,4 +1,5 @@
-//! Database models for secrets
+//! This module specifies our [`StoredSecret`] type. Which is a general representation
+//! of a secret to be stored in our database.
 
 use crate::{
     crypto::{DataBlob, Encrypted, KeyId, Secret, SigningKeyPair},
@@ -10,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use super::account::AccountId;
 
 /// Generic representation of a secret that is stored in a database.
-/// Databased implementors must be able to store and return [StoredSecret]s. So
+/// Databased implementors must be able to store and return [`StoredSecret`]s. So
 /// we make all fields in this struct public.
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct StoredSecret {
