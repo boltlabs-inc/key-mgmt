@@ -551,7 +551,7 @@
 /// used for decryption.
 ///
 /// This type includes the nonce used for encryption.
-</span><span class="attr">#[derive(Clone, Serialize, Deserialize)]
+</span><span class="attr">#[derive(Clone, Serialize, Deserialize, ZeroizeOnDrop)]
 </span><span class="kw">pub struct </span>EncryptedShard {
     <span class="doccomment">/// Encrypted material for this shard.
     </span>encrypted: Vec&lt;u8&gt;,

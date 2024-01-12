@@ -192,6 +192,12 @@
 <a href="#192" id="192">192</a>
 <a href="#193" id="193">193</a>
 <a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a>
+<a href="#200" id="200">200</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>rand::{CryptoRng, RngCore};
 <span class="kw">use </span>std::{fmt::Debug, sync::Arc};
 <span class="kw">use </span>tokio::sync::{
@@ -212,7 +218,9 @@
     LockKeeperError,
 };
 
-<span class="kw">const </span>BUFFER_SIZE: usize = <span class="number">2</span>;
+<span class="doccomment">/// Number of buffer in our MPSC Channel. Determines how many messages
+/// may be queued in channel.
+</span><span class="kw">const </span>BUFFER_SIZE: usize = <span class="number">2</span>;
 
 <span class="doccomment">/// Server-side implementation of a two-way channel between a client and the
 /// server used to communicate `Message` objects.
@@ -223,15 +231,18 @@
 ///
 /// These are tokio MPSC channels, but `tonic` is able to use them to send
 /// messages via the network between the server and client.
+///
+/// The `AUTH` generic parameter allows our channel to be generic over
+/// either _authenticated_ or _unauthenticated_ operations.
 </span><span class="attr">#[derive(Debug)]
 </span><span class="kw">pub struct </span>Channel&lt;AUTH&gt; {
-    <span class="doccomment">/// Sending end of an unidirectional channel. Allows us to send messages
-    /// to the client. The server spawned a receiver and sender end. The
-    /// receiver end was returned from the gRPC call. So the client has the
-    /// receiving end.
+    <span class="doccomment">/// `Sender` end of an unidirectional channel. Allows us to send messages
+    /// to the client. The server spawns the `sender` and `receiver` ends as a pair.
+    /// The `receiver` is sent to the client as part of gRPC call so the server
+    /// can send the client messages using this channel.
     </span>sender: Sender&lt;<span class="prelude-ty">Result</span>&lt;Message, Status&gt;&gt;,
     <span class="doccomment">/// A receiver end of an unidirectional channel. Allows us to receive
-    /// messages from the client. When the client made a gRPC call, it send
+    /// messages from the client. When the client made a gRPC call, it sent
     /// this receiving end. The client can send messages to it and we will
     /// receive them.
     </span>receiver: Streaming&lt;Message&gt;,
@@ -257,12 +268,68 @@
 }
 
 <span class="doccomment">/// Passed to channel type as the `AUTH` generic parameter.
+///
 /// It is used for channels that handle authenticated operations.
 /// This type ensures that messages moving across a channel are encrypted.
 </span><span class="kw">pub struct </span>Authenticated&lt;RNG: CryptoRng + RngCore&gt; {
     <span class="kw">pub </span>session_key: OpaqueSessionKey,
     <span class="kw">pub </span>account: Account,
     <span class="kw">pub </span>rng: Arc&lt;Mutex&lt;RNG&gt;&gt;,
+}
+
+<span class="kw">impl</span>&lt;RNG: CryptoRng + RngCore&gt; Channel&lt;Authenticated&lt;RNG&gt;&gt; {
+    <span class="doccomment">/// Returns the account ID for the authenticated user.
+    </span><span class="kw">pub fn </span>account_id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; AccountId {
+        <span class="self">self</span>.auth.account.account_id
+    }
+
+    <span class="kw">pub fn </span>user_id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>UserId {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.auth.account.user_id
+    }
+
+    <span class="doccomment">/// Returns the full account info for the authenticated user.
+    </span><span class="kw">pub fn </span>account(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Account {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.auth.account
+    }
+
+    <span class="kw">pub fn </span>set_storage_key(<span class="kw-2">&amp;mut </span><span class="self">self</span>, storage_key: Encrypted&lt;StorageKey&gt;) {
+        <span class="self">self</span>.auth.account.storage_key = <span class="prelude-val">Some</span>(storage_key);
+    }
+
+    <span class="doccomment">/// Receive the next message on the channel and convert it to the type `R`.
+    </span><span class="kw">pub async fn </span>receive&lt;R: ConvertMessage&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;R, LockKeeperError&gt; {
+        <span class="kw">match </span><span class="self">self</span>.receiver.next().<span class="kw">await </span>{
+            <span class="prelude-val">Some</span>(message) =&gt; {
+                <span class="kw">let </span>message = message<span class="question-mark">?</span>;
+                <span class="kw">let </span>encrypted_message: Encrypted&lt;Message&gt; =
+                    Encrypted::&lt;Message&gt;::try_from_message(message)<span class="question-mark">?</span>;
+                <span class="kw">let </span>message = encrypted_message.decrypt_message(<span class="kw-2">&amp;</span><span class="self">self</span>.auth.session_key)<span class="question-mark">?</span>;
+                <span class="kw">let </span>result =
+                    R::from_message(message).map_err(|<span class="kw">_</span>| LockKeeperError::InvalidMessage)<span class="question-mark">?</span>;
+                <span class="prelude-val">Ok</span>(result)
+            }
+            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(LockKeeperError::NoMessageReceived),
+        }
+    }
+
+    <span class="doccomment">/// Send a message across the channel. This function accepts any type that
+    /// can be converted to a `message` via the [`ConvertMessage`] trait.
+    </span><span class="kw">pub async fn </span>send(<span class="kw-2">&amp;mut </span><span class="self">self</span>, message: <span class="kw">impl </span>ConvertMessage) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperError&gt; {
+        <span class="kw">let </span>message = message.to_message()<span class="question-mark">?</span>;
+
+        <span class="kw">let </span>encrypted_message = {
+            <span class="kw">let </span><span class="kw-2">mut </span>rng = <span class="self">self</span>.auth.rng.lock().<span class="kw">await</span>;
+            <span class="self">self</span>.auth
+                .session_key
+                .encrypt(<span class="kw-2">&amp;mut *</span>rng, message)
+                .map_err(LockKeeperError::Crypto)<span class="question-mark">?
+        </span>}
+        .try_into_message()<span class="question-mark">?</span>;
+
+        <span class="kw">let </span>payload = <span class="prelude-val">Ok</span>(encrypted_message);
+
+        <span class="prelude-val">Ok</span>(<span class="self">self</span>.sender.send(payload).<span class="kw">await</span><span class="question-mark">?</span>)
+    }
 }
 
 <span class="doccomment">/// Passed to channel type as the `AUTH` generic parameter.
@@ -328,61 +395,6 @@
     /// can be converted to a `Message`.
     </span><span class="kw">pub async fn </span>send(<span class="kw-2">&amp;mut </span><span class="self">self</span>, message: <span class="kw">impl </span>ConvertMessage) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperError&gt; {
         <span class="kw">let </span>payload = <span class="prelude-val">Ok</span>(message.to_message()<span class="question-mark">?</span>);
-        <span class="prelude-val">Ok</span>(<span class="self">self</span>.sender.send(payload).<span class="kw">await</span><span class="question-mark">?</span>)
-    }
-}
-
-<span class="kw">impl</span>&lt;RNG: CryptoRng + RngCore&gt; Channel&lt;Authenticated&lt;RNG&gt;&gt; {
-    <span class="doccomment">/// Returns the account ID for the authenticated user.
-    </span><span class="kw">pub fn </span>account_id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; AccountId {
-        <span class="self">self</span>.auth.account.account_id
-    }
-
-    <span class="kw">pub fn </span>user_id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>UserId {
-        <span class="kw-2">&amp;</span><span class="self">self</span>.auth.account.user_id
-    }
-
-    <span class="doccomment">/// Returns the full account info for the authenticated user.
-    </span><span class="kw">pub fn </span>account(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Account {
-        <span class="kw-2">&amp;</span><span class="self">self</span>.auth.account
-    }
-
-    <span class="kw">pub fn </span>set_storage_key(<span class="kw-2">&amp;mut </span><span class="self">self</span>, storage_key: Encrypted&lt;StorageKey&gt;) {
-        <span class="self">self</span>.auth.account.storage_key = <span class="prelude-val">Some</span>(storage_key);
-    }
-
-    <span class="doccomment">/// Receive the next message on the channel and convert it to the type `R`.
-    </span><span class="kw">pub async fn </span>receive&lt;R: ConvertMessage&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;R, LockKeeperError&gt; {
-        <span class="kw">match </span><span class="self">self</span>.receiver.next().<span class="kw">await </span>{
-            <span class="prelude-val">Some</span>(message) =&gt; {
-                <span class="kw">let </span>message = message<span class="question-mark">?</span>;
-                <span class="kw">let </span>encrypted_message: Encrypted&lt;Message&gt; =
-                    Encrypted::&lt;Message&gt;::try_from_message(message)<span class="question-mark">?</span>;
-                <span class="kw">let </span>message = encrypted_message.decrypt_message(<span class="kw-2">&amp;</span><span class="self">self</span>.auth.session_key)<span class="question-mark">?</span>;
-                <span class="kw">let </span>result =
-                    R::from_message(message).map_err(|<span class="kw">_</span>| LockKeeperError::InvalidMessage)<span class="question-mark">?</span>;
-                <span class="prelude-val">Ok</span>(result)
-            }
-            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(LockKeeperError::NoMessageReceived),
-        }
-    }
-
-    <span class="doccomment">/// Send a message across the channel. This function accepts any type that
-    /// can be converted to a `Message`.
-    </span><span class="kw">pub async fn </span>send(<span class="kw-2">&amp;mut </span><span class="self">self</span>, message: <span class="kw">impl </span>ConvertMessage) -&gt; <span class="prelude-ty">Result</span>&lt;(), LockKeeperError&gt; {
-        <span class="kw">let </span>message = message.to_message()<span class="question-mark">?</span>;
-
-        <span class="kw">let </span>encrypted_message = {
-            <span class="kw">let </span><span class="kw-2">mut </span>rng = <span class="self">self</span>.auth.rng.lock().<span class="kw">await</span>;
-            <span class="self">self</span>.auth
-                .session_key
-                .encrypt(<span class="kw-2">&amp;mut *</span>rng, message)
-                .map_err(LockKeeperError::Crypto)<span class="question-mark">?
-        </span>}
-        .try_into_message()<span class="question-mark">?</span>;
-
-        <span class="kw">let </span>payload = <span class="prelude-val">Ok</span>(encrypted_message);
-
         <span class="prelude-val">Ok</span>(<span class="self">self</span>.sender.send(payload).<span class="kw">await</span><span class="question-mark">?</span>)
     }
 }
