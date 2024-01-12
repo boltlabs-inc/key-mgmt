@@ -1,3 +1,5 @@
+//! Actual implementation of the `DataStore` trait for our postgres type.
+//! SQL queries are found here.
 use crate::{
     types::{AccountDB, AuditEventDB, SecretDB},
     Config, PostgresError,
@@ -34,6 +36,7 @@ pub struct PostgresDB {
     connection_pool: PgPool,
 }
 
+/// Trait implementation just calls out to the equivalent methods implemented directly on [`PostgresDB`].
 #[async_trait]
 impl DataStore for PostgresDB {
     async fn create_audit_event(

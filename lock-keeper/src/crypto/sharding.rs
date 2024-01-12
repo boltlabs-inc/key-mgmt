@@ -215,7 +215,7 @@ impl ShardedSigningKeyPair {
 /// used for decryption.
 ///
 /// This type includes the nonce used for encryption.
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, ZeroizeOnDrop)]
 pub struct EncryptedShard {
     /// Encrypted material for this shard.
     encrypted: Vec<u8>,
