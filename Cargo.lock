@@ -1336,6 +1336,7 @@ dependencies = [
  "anyhow",
  "argon2",
  "async-trait",
+ "base64 0.21.2",
  "bincode",
  "bytes",
  "chacha20poly1305",
