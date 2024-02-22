@@ -45,7 +45,7 @@ impl TryFrom<SensitiveInfoConfig> for Vec<u8> {
 impl SensitiveInfoConfig {
     /// Tis is the label used to redact sensitive information in the library
     /// output
-    const REDACTED_INFO_LABEL: &str = "***REDACTED***";
+    const REDACTED_INFO_LABEL: &'static str = "***REDACTED***";
 
     /// Constructor for [`SensitiveInfoConfig`] type.
     /// The default is to redact sensitive information in the output.
