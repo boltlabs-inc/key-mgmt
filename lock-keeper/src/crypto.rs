@@ -26,6 +26,7 @@ mod cryptor;
 mod cryptor_key;
 mod data_blob;
 mod generic;
+pub mod seal_signing_private_key;
 pub mod secure_structs;
 pub mod sharding;
 mod signing_key;

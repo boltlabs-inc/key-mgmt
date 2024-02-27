@@ -28,6 +28,10 @@ pub enum CryptoError {
     DecryptionFailed,
     #[error("Encryption failed")]
     EncryptionFailed,
+    #[error(transparent)]
+    FromBase64(#[from] base64::DecodeError),
+    #[error(transparent)]
+    FromBincode(#[from] bincode::Error),
     #[error("Invalid encryption key")]
     InvalidEncryptionKey,
     #[error("Sensitive info check failed")]
