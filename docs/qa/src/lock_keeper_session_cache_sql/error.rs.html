@@ -91,7 +91,7 @@
 </span><span class="kw">pub enum </span>ConfigError {
     <span class="attr">#[error(<span class="string">&quot;Could not read config file {1}. Error: {0}.&quot;</span>)]
     </span>ConfigFileReadFailure(std::io::Error, PathBuf),
-    <span class="attr">#[error(<span class="string">&quot;Failed to read TOML file contents: {0}&quot;</span>)]
+    <span class="attr">#[error(<span class="string">&quot;Fail to read TOML file contents.&quot;</span>)]
     </span>TomlReadFailure(<span class="attr">#[from] </span>toml::de::Error),
     <span class="attr">#[error(<span class="string">&quot;Missing session cache username.&quot;</span>)]
     </span>MissingUsername,
