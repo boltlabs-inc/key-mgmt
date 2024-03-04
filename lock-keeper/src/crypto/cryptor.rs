@@ -161,7 +161,7 @@ impl TryFrom<Vec<u8>> for Encryptor {
 
         Ok(Self {
             data,
-            context: context.into(),
+            context: context.try_into()?,
             config: config.try_into()?,
         })
     }
@@ -546,8 +546,8 @@ impl TryFrom<Vec<u8>> for Decryptor {
 
         Ok(Self {
             ciphertext,
-            context: context.into(),
-            nonce: nonce.into(),
+            context: context.try_into()?,
+            nonce: nonce.try_into()?,
             config: config.try_into()?,
         })
     }

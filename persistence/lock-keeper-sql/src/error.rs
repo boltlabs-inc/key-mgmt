@@ -30,7 +30,7 @@ pub enum PostgresError {
 pub enum ConfigError {
     #[error("Could not read config file {1}. Error: {0}.")]
     ConfigFileReadFailure(std::io::Error, PathBuf),
-    #[error("Failed to read TOML file contents: {0}")]
+    #[error("Fail to read TOML file contents.")]
     TomlReadFailure(#[from] toml::de::Error),
     #[error("Missing database username.")]
     MissingUsername,
