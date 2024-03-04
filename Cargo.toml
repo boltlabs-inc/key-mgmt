@@ -12,11 +12,12 @@ members = [
 exclude = ["dev/generate-opaque-server-setup"]
 
 [workspace.package]
-version = "2.4.0"
+version = "2.5.0"
 
 [workspace.dependencies]
 argon2 = "0.4"
 async-trait = "0.1"
+base64 = "0.21.0"
 bincode = "1"
 bytes = { version = "1", features = ["serde"] }
 clap = { version = "3", features = ["derive", "env"] }
