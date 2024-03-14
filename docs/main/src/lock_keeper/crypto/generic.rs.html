@@ -716,6 +716,10 @@
 <a href="#716" id="716">716</a>
 <a href="#717" id="717">717</a>
 <a href="#718" id="718">718</a>
+<a href="#719" id="719">719</a>
+<a href="#720" id="720">720</a>
+<a href="#721" id="721">721</a>
+<a href="#722" id="722">722</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::path::PathBuf;
 
 <span class="kw">use </span>chacha20poly1305::{
@@ -746,6 +750,10 @@
     </span>DecryptionFailed,
     <span class="attr">#[error(<span class="string">&quot;Encryption failed&quot;</span>)]
     </span>EncryptionFailed,
+    <span class="attr">#[error(transparent)]
+    </span>FromBase64(<span class="attr">#[from] </span>base64::DecodeError),
+    <span class="attr">#[error(transparent)]
+    </span>FromBincode(<span class="attr">#[from] </span>bincode::Error),
     <span class="attr">#[error(<span class="string">&quot;Invalid encryption key&quot;</span>)]
     </span>InvalidEncryptionKey,
     <span class="attr">#[error(<span class="string">&quot;Sensitive info check failed&quot;</span>)]
