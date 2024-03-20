@@ -29,6 +29,7 @@ pub struct Config {
     pub opaque_server_setup: ServerSetup<OpaqueCipherSuite, PrivateKey<Ristretto255>>,
     pub remote_storage_key: RemoteStorageKey,
     pub logging: LoggingConfig,
+    pub release_toml_path: PathBuf,
     /// Maximum size allowed for the store sever-encrypted blob endpoint.
     /// This size  bounded by types lengths that can be represented as a u16.
     pub max_blob_size: u16,
@@ -81,6 +82,7 @@ impl Config {
             tls_config,
             opaque_server_setup,
             logging: config.logging,
+            release_toml_path: config.release_toml_path,
             max_blob_size: config.max_blob_size,
         })
     }
@@ -110,6 +112,7 @@ pub struct ConfigFile {
     pub opaque_path: PathBuf,
     pub opaque_server_key: Option<PathBuf>,
     pub logging: LoggingConfig,
+    pub release_toml_path: PathBuf,
     pub tls_config: Option<TlsConfig>,
     pub max_blob_size: u16,
 }
@@ -214,6 +217,7 @@ mod tests {
             opaque_path = "tests/gen/opaque"
             opaque_server_key = "tests/gen/opaque/server_setup"
             remote_storage_key = "test_sse.key"
+            release_toml_path = "./boltlabs-release.toml
             max_blob_size = 1024
 
             [tls_config]
@@ -238,6 +242,7 @@ mod tests {
             opaque_path,
             opaque_server_key,
             logging,
+            release_toml_path,
             max_blob_size,
         } = ConfigFile::from_str(config_str).unwrap();
 
@@ -246,6 +251,7 @@ mod tests {
         assert_eq!(address, IpAddr::from_str("127.0.0.2").unwrap());
         assert_eq!(port, 1114);
         assert_eq!(remote_storage_key, Some(PathBuf::from("test_sse.key")));
+        assert_eq!(release_toml_path, PathBuf::from("./boltlabs-release.toml"));
         assert_eq!(tls_config.private_key, Some(PathBuf::from("test.key")));
         assert_eq!(tls_config.certificate_chain, PathBuf::from("test.crt"));
         assert!(!tls_config.client_auth);

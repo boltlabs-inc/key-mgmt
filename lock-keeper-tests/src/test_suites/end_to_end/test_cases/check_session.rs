@@ -1,5 +1,4 @@
 use colored::Colorize;
-use lock_keeper::rpc::SessionStatus;
 use lock_keeper_client::Config;
 
 use crate::{
@@ -26,13 +25,12 @@ async fn check_session_with_valid_session(config: Config) -> Result<()> {
     let state = init_test_state(&config).await?;
     let client = authenticate(&state).await.result?;
 
-    let res = client.check_session().await;
-    assert!(matches!(
-        res,
-        Ok(SessionStatus {
-            is_session_valid: true
-        })
-    ));
+    let res = client.check_session().await?;
+    let key_mgmt_version = String::from("develop");
+    let build_date = String::from("develop");
+    assert!(res.is_session_valid);
+    assert_eq!(res.key_mgmt_version, key_mgmt_version);
+    assert_eq!(res.build_date, build_date);
 
     Ok(())
 }
@@ -43,13 +41,12 @@ async fn check_session_with_invalid_session(config: Config) -> Result<()> {
 
     client.logout().await.result?;
 
-    let res = client.check_session().await;
-    assert!(matches!(
-        res,
-        Ok(SessionStatus {
-            is_session_valid: false
-        })
-    ));
+    let res = client.check_session().await?;
+    let key_mgmt_version = String::from("develop");
+    let build_date = String::from("develop");
+    assert!(!res.is_session_valid);
+    assert_eq!(res.key_mgmt_version, key_mgmt_version);
+    assert_eq!(res.build_date, build_date);
 
     Ok(())
 }

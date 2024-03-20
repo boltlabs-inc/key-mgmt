@@ -22,7 +22,8 @@ use lock_keeper::{
 
 use crate::server::{database::DataStore, session_cache::SessionCache};
 use rand::{rngs::StdRng, SeedableRng};
-use std::sync::Arc;
+use serde::{Deserialize, Serialize};
+use std::{path::Path, sync::Arc};
 use tokio::sync::Mutex;
 use tonic::{Request, Response, Status, Streaming};
 
@@ -123,8 +124,14 @@ impl<DB: DataStore> LockKeeperRpc for LockKeeperKeyServer<DB> {
             }
         };
 
+        let release_info = ReleaseInfo::from_toml_file(&self.config.release_toml_path)?;
+
         info!("Session check complete.");
-        Ok(Response::new(SessionStatus { is_session_valid }))
+        Ok(Response::new(SessionStatus {
+            is_session_valid,
+            key_mgmt_version: release_info.key_mgmt_version,
+            build_date: release_info.build_date,
+        }))
     }
 
     async fn register(
@@ -335,5 +342,22 @@ impl<DB: DataStore> LockKeeperKeyServer<DB> {
         let channel = channel.into_authenticated(account, session_key, context.rng.clone());
 
         Ok((channel, response))
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub struct ReleaseInfo {
+    #[serde(alias = "keymgmt")]
+    pub key_mgmt_version: String,
+    #[serde(alias = "build-date")]
+    pub build_date: String,
+}
+
+impl ReleaseInfo {
+    fn from_toml_file(toml_path: impl AsRef<Path>) -> Result<Self, LockKeeperServerError> {
+        let toml_string = std::fs::read_to_string(&toml_path)
+            .map_err(|e| LockKeeperServerError::FileIo(e, toml_path.as_ref().to_path_buf()))?;
+        Ok(toml::from_str(&toml_string)?)
     }
 }
