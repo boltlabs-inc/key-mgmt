@@ -25,7 +25,7 @@ jobs:
       # Do NOT use `toolchain` input. It will cause the cargo version specified
       # above to be ignored!
       - name: Install Rust toolchain stable      
-        uses: dtolnay/rust-toolchain@1.70.0
+        uses: dtolnay/rust-toolchain@1.73.0
 
       - name: Cache
         uses: actions/cache@v2
