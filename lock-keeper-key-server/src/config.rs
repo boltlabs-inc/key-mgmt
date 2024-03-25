@@ -217,7 +217,7 @@ mod tests {
             opaque_path = "tests/gen/opaque"
             opaque_server_key = "tests/gen/opaque/server_setup"
             remote_storage_key = "test_sse.key"
-            release_toml_path = "./boltlabs-release.toml
+            release_toml_path = "./boltlabs-release.toml"
             max_blob_size = 1024
 
             [tls_config]

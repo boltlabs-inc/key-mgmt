@@ -176,6 +176,7 @@ port = 1114
 opaque_path = "dev/opaque"
 opaque_server_key = "dev/opaque/server_setup"
 remote_storage_key = "dev/remote-storage-key/gen/remote_storage.key"
+release_toml_path = "./boltlabs-release.toml"
 max_blob_size = 1024
 
 [tls_config]
@@ -195,6 +196,7 @@ address = "127.0.0.1"
 port = 1114
 opaque_path = "dev/opaque"
 opaque_server_key = "dev/opaque/server_setup"
+release_toml_path = "./boltlabs-release.toml"
 max_blob_size = 1024
 
 [tls_config]
@@ -215,6 +217,7 @@ address = "127.0.0.1"
 port = 1114
 opaque_path = "dev/opaque"
 remote_storage_key = "dev/remote-storage-key/gen/remote_storage.key"
+release_toml_path = "./boltlabs-release.toml"
 max_blob_size = 1024
 
 [tls_config]
@@ -236,6 +239,7 @@ port = 1114
 opaque_path = "dev/opaque"
 opaque_server_key = "dev/opaque/server_setup"
 remote_storage_key = "dev/remote-storage-key/gen/remote_storage.key"
+release_toml_path = "./boltlabs-release.toml"
 max_blob_size = 1024
 
 [tls_config]
