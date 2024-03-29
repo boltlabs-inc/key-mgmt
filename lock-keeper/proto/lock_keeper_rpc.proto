@@ -29,4 +29,6 @@ message Empty {}
 
 message SessionStatus {
   bool is_session_valid = 1;
+  string key_mgmt_version = 2;
+  string build_date = 3;
 }
