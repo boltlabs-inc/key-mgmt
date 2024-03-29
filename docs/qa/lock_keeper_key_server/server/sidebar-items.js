@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["start_lock_keeper_server"],"mod":["channel","context","database","opaque_storage","operation","service","session_cache"],"static":["CALLSITE","META"],"struct":["LockKeeperKeyServer"]};
+window.SIDEBAR_ITEMS = {"fn":["start_lock_keeper_server"],"mod":["channel","context","database","opaque_storage","operation","service","session_cache"],"static":["CALLSITE","META"],"struct":["LockKeeperKeyServer","ReleaseInfo"]};
