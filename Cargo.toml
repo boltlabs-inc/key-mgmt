@@ -12,7 +12,7 @@ members = [
 exclude = ["dev/generate-opaque-server-setup"]
 
 [workspace.package]
-version = "2.6.0"
+version = "2.7.0"
 
 [workspace.dependencies]
 argon2 = "0.4"
