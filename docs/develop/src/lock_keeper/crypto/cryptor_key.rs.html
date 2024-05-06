@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `lock-keeper/src/crypto/cryptor_key.rs`."><title>cryptor_key.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ba5701c5741a7b69.css" id="mainThemeStyle"><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="lock_keeper" data-themes="" data-resource-suffix="" data-rustdoc-version="1.70.0 (90c541806 2023-05-31)" data-search-js="search-e077946657036a58.js" data-settings-js="settings-298e1ea74db45b39.js" data-settings-css="settings-7bfb4c59cc6bc502.css" data-theme-light-css="light-0f8c037637f9eb3e.css" data-theme-dark-css="dark-1097f8e92a01e3cf.css" data-theme-ayu-css="ayu-614652228113ac93.css" ></div><script src="../../../static.files/storage-62ce34ea385b278a.js"></script><script defer src="../../../static.files/source-script-905937fbbdc8e9ea.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../static.files/main-f61008743c98d196.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../static.files/light-0f8c037637f9eb3e.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../static.files/dark-1097f8e92a01e3cf.css"><link rel="stylesheet" href="../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../lock_keeper/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `lock-keeper/src/crypto/cryptor_key.rs`."><title>cryptor_key.rs - source</title><script> if (window.location.protocol !== "file:") document.write(`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2">`)</script><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-e935ef01ae1c1829.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="lock_keeper" data-themes="" data-resource-suffix="" data-rustdoc-version="1.78.0 (9b00956e5 2024-04-29)" data-channel="1.78.0" data-search-js="search-42d8da7a6b9792c2.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-12cf3b4f4f9dc36d.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../lock_keeper/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -361,12 +363,12 @@
             <span class="comment">// this is a Debug build *AND* redacted flag is FALSE
             </span><span class="macro">write!</span>(
                 f,
-                <span class="string">&quot;\n---Cryptor key begin---\n\n\
+                <span class="string">"\n---Cryptor key begin---\n\n\
                 \
                 \tKey: 0x{key:02x?}\n\
                 \tKey length: {key_len}\n\
                 \
-                \n---Cryptor key end---\n&quot;</span>,
+                \n---Cryptor key end---\n"</span>,
                 key = <span class="self">self</span>.key_material,
                 key_len = <span class="self">self</span>.key_material.len(),
             )
@@ -374,9 +376,9 @@
             <span class="comment">// this is a Release build *OR* redacted flag is TRUE
             </span><span class="macro">write!</span>(
                 f,
-                <span class="string">&quot;\n---Cryptor key begin---\n\n\
+                <span class="string">"\n---Cryptor key begin---\n\n\
                 \t{redacted}\n\
-                \n---Cryptor key end---\n&quot;</span>,
+                \n---Cryptor key end---\n"</span>,
                 redacted = <span class="self">self</span>.config.clone().redacted_label(),
             )
         }
@@ -385,15 +387,15 @@
 
 <span class="doccomment">/// An implementation of the `std::fmt::Debug` trait for [`CryptorKey`]
 </span><span class="kw">impl </span>std::fmt::Debug <span class="kw">for </span>CryptorKey {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; std::fmt::Result {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; std::fmt::Result {
         <span class="kw">if </span><span class="macro">cfg!</span>(debug_assertions) &amp;&amp; !<span class="self">self</span>.config.is_redacted() {
             <span class="comment">// this is a Debug build *AND* redacted flag is FALSE
-            </span>f.debug_struct(<span class="string">&quot;CryptorKey&quot;</span>)
-                .field(<span class="string">&quot;key_material&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.key_material)
+            </span>f.debug_struct(<span class="string">"CryptorKey"</span>)
+                .field(<span class="string">"key_material"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.key_material)
                 .finish()
         } <span class="kw">else </span>{
             <span class="comment">// this is a Release build *OR* redacted flag is TRUE
-            </span><span class="macro">write!</span>(f, <span class="string">&quot;CryptorKey {}&quot;</span>, <span class="self">self</span>.config.clone().redacted_label())
+            </span><span class="macro">write!</span>(f, <span class="string">"CryptorKey {}"</span>, <span class="self">self</span>.config.clone().redacted_label())
         }
     }
 }
@@ -416,7 +418,7 @@
     /// Returns `true` if the `data` and `context` fields are equal between the
     /// two [`CryptorKey`] instances, Otherwise returns `false`.
     </span><span class="kw">fn </span>eq(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; bool {
-        <span class="comment">// Don&#39;t compare the config fields
+        <span class="comment">// Don't compare the config fields
         </span><span class="self">self</span>.key_material == other.key_material
     }
 }
@@ -461,7 +463,7 @@
         cryptor_key
     }
 
-    <span class="doccomment">/// Returns the [`CryptorKey`] key based on key material in the caller&#39;s
+    <span class="doccomment">/// Returns the [`CryptorKey`] key based on key material in the caller's
     /// byte array.
     </span><span class="kw">pub fn </span>from_bytes(cryptor_key: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, CryptoError&gt; {
         <span class="kw">if </span>cryptor_key.len() != CryptorKey::CRYPTOR_KEY_LENGTH {
@@ -470,7 +472,7 @@
 
         <span class="comment">// fixed size array initialized to zeros
         </span><span class="kw">let </span><span class="kw-2">mut </span>key_bytes = [<span class="number">0</span>; CryptorKey::CRYPTOR_KEY_LENGTH];
-        <span class="comment">// copy caller&#39;s key material
+        <span class="comment">// copy caller's key material
         </span>key_bytes.copy_from_slice(cryptor_key);
 
         <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
@@ -517,7 +519,7 @@
     <span class="kw">use </span>anyhow::anyhow;
     <span class="kw">use </span>std::{fs, fs::File, io::Write};
 
-    <span class="kw">const </span>CRYPTOR_KEY_FILENAME: <span class="kw-2">&amp;</span>str = <span class="string">&quot;temp_encryption_key.bin&quot;</span>;
+    <span class="kw">const </span>CRYPTOR_KEY_FILENAME: <span class="kw-2">&amp;</span>str = <span class="string">"temp_encryption_key.bin"</span>;
 
     <span class="doccomment">/// Test the correctness of the sensitive information handling.
     </span><span class="attr">#[test]
@@ -525,7 +527,7 @@
         <span class="kw">let </span><span class="kw-2">mut </span>rng = rand::thread_rng();
         <span class="kw">let </span><span class="kw-2">mut </span>encryption_key = CryptorKey::new(<span class="kw-2">&amp;mut </span>rng);
 
-        <span class="comment">// sensitive information should be redacted by default, let&#39;s test...
+        <span class="comment">// sensitive information should be redacted by default, let's test...
         </span>sensitive_info_check(<span class="kw-2">&amp;</span>encryption_key, <span class="kw-2">&amp;</span>encryption_key.config).unwrap();
 
         <span class="comment">// unredact sensitive information, and test
@@ -547,10 +549,10 @@
         </span>encryption_key_from_bytes.config.unredact();
 
         <span class="macro">println!</span>(
-            <span class="string">&quot;\nEncryption key: 0x{key:02x?}\n\
+            <span class="string">"\nEncryption key: 0x{key:02x?}\n\
             Key length: {key_len}\n\
             \
-            \nConverted encryption key:\n{converted_key}\n&quot;</span>,
+            \nConverted encryption key:\n{converted_key}\n"</span>,
             key = encryption_key_bytes,
             key_len = encryption_key_bytes.len(),
             converted_key = encryption_key_from_bytes,
@@ -573,7 +575,7 @@
         <span class="kw">let </span>new_encryption_key_from_bytes = CryptorKey::from_bytes(<span class="kw-2">&amp;</span>key_bytes);
 
         <span class="macro">println!</span>(
-            <span class="string">&quot;\nConvert encryption key using {number_of_key_bytes} bytes:\n{new_encryption_key_from_bytes:x?}\n\n&quot;</span>,
+            <span class="string">"\nConvert encryption key using {number_of_key_bytes} bytes:\n{new_encryption_key_from_bytes:x?}\n\n"</span>,
             number_of_key_bytes=number_of_key_bytes,
             new_encryption_key_from_bytes=new_encryption_key_from_bytes,
         );
@@ -591,7 +593,7 @@
         <span class="kw">let </span>new_encryption_key_from_bytes = CryptorKey::from_bytes(<span class="kw-2">&amp;</span>key_bytes);
 
         <span class="macro">println!</span>(
-            <span class="string">&quot;\nConvert encryption key using {number_of_key_bytes} bytes:\n{new_encryption_key_from_bytes:02x?}\n\n&quot;</span>,
+            <span class="string">"\nConvert encryption key using {number_of_key_bytes} bytes:\n{new_encryption_key_from_bytes:02x?}\n\n"</span>,
             number_of_key_bytes=number_of_key_bytes,
             new_encryption_key_from_bytes=new_encryption_key_from_bytes,
         );
@@ -616,13 +618,13 @@
         // encountered an error.
         </span><span class="kw">match </span>fs::remove_file(CRYPTOR_KEY_FILENAME) {
             <span class="prelude-val">Ok</span>(()) =&gt; (),
-            <span class="prelude-val">Err</span>(e) =&gt; <span class="macro">println!</span>(<span class="string">&quot;Failed to remove a temp key file: {}&quot;</span>, e),
+            <span class="prelude-val">Err</span>(e) =&gt; <span class="macro">println!</span>(<span class="string">"Failed to remove a temp key file: {}"</span>, e),
         }
 
         <span class="comment">// Now handle the result of key_from_file_helper()
         </span><span class="kw">match </span>result {
             <span class="prelude-val">Ok</span>(()) =&gt; (),
-            <span class="prelude-val">Err</span>(e) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Test failed: {}&quot;</span>, e),
+            <span class="prelude-val">Err</span>(e) =&gt; <span class="macro">panic!</span>(<span class="string">"Test failed: {}"</span>, e),
         }
 
         <span class="prelude-val">Ok</span>(())
@@ -630,7 +632,7 @@
 
     <span class="doccomment">/// Helper function, so we can handle read from file failures correctly.
     </span><span class="kw">fn </span>key_from_file_helper() -&gt; <span class="prelude-ty">Result</span>&lt;(), anyhow::Error&gt; {
-        <span class="kw">const </span>KEY_FILENAME: <span class="kw-2">&amp;</span>str = <span class="string">&quot;temp_encryption_key.bin&quot;</span>;
+        <span class="kw">const </span>KEY_FILENAME: <span class="kw-2">&amp;</span>str = <span class="string">"temp_encryption_key.bin"</span>;
 
         <span class="kw">let </span><span class="kw-2">mut </span>rng = rand::thread_rng();
 
@@ -638,14 +640,14 @@
 
         <span class="comment">// create a temp file to store the key
         </span><span class="kw">let </span><span class="kw-2">mut </span>encryption_key_file =
-            File::create(KEY_FILENAME).map_err(|<span class="kw">_</span>| <span class="macro">anyhow!</span>(<span class="string">&quot;Failed to create a temp key file.&quot;</span>))<span class="question-mark">?</span>;
+            File::create(KEY_FILENAME).map_err(|<span class="kw">_</span>| <span class="macro">anyhow!</span>(<span class="string">"Failed to create a temp key file."</span>))<span class="question-mark">?</span>;
 
         <span class="comment">// clone it for later, before we lose ownership
         </span><span class="kw">let </span><span class="kw-2">mut </span>encryption_key_original = encryption_key.clone();
 
         encryption_key_file
             .write_all(<span class="kw-2">&amp;</span>encryption_key.into_bytes())
-            .expect(<span class="string">&quot;Failed to write to a temp key file.&quot;</span>);
+            .expect(<span class="string">"Failed to write to a temp key file."</span>);
 
         <span class="comment">// read the key from a file
         </span><span class="kw">let </span><span class="kw-2">mut </span>encryption_key_from_file = CryptorKey::from_file(KEY_FILENAME)<span class="question-mark">?</span>;
@@ -654,9 +656,9 @@
         </span>encryption_key_from_file.config.unredact();
         encryption_key_original.config.unredact();
 
-        <span class="macro">println!</span>(<span class="string">&quot;\nEncryption key:\n{key}&quot;</span>, key = encryption_key_original);
+        <span class="macro">println!</span>(<span class="string">"\nEncryption key:\n{key}"</span>, key = encryption_key_original);
         <span class="macro">println!</span>(
-            <span class="string">&quot;\nEncryption key from a file:\n{key_from_file}&quot;</span>,
+            <span class="string">"\nEncryption key from a file:\n{key_from_file}"</span>,
             key_from_file = encryption_key_from_file
         );
 

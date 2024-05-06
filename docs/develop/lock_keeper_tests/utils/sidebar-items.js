@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["NUM_RETRIES","RETRY_DELAY","RNG_SEED"],"enum":["TestResult"],"fn":["random_bytes","report_test_results","run_test_case","server_registration","tagged","wait_for_server"]};
+window.SIDEBAR_ITEMS = {"constant":["RNG_SEED"],"enum":["TestResult"],"fn":["random_bytes","report_test_results","run_test_case","server_registration","tagged","wait_for_server"]};

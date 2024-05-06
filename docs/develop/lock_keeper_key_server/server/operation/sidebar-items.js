@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["audit_event","handle_authenticated_request","handle_error","handle_unauthenticated_request"],"static":["CALLSITE","META"],"trait":["Operation"]};
+window.SIDEBAR_ITEMS = {"fn":["audit_event","handle_authenticated_request","handle_error","handle_unauthenticated_request"],"trait":["Operation"]};

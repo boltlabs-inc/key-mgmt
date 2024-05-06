@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `bin/key-server-cli/src/main.rs`."><title>main.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ba5701c5741a7b69.css" id="mainThemeStyle"><div id="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="key_server_cli" data-themes="" data-resource-suffix="" data-rustdoc-version="1.70.0 (90c541806 2023-05-31)" data-search-js="search-e077946657036a58.js" data-settings-js="settings-298e1ea74db45b39.js" data-settings-css="settings-7bfb4c59cc6bc502.css" data-theme-light-css="light-0f8c037637f9eb3e.css" data-theme-dark-css="dark-1097f8e92a01e3cf.css" data-theme-ayu-css="ayu-614652228113ac93.css" ></div><script src="../../static.files/storage-62ce34ea385b278a.js"></script><script defer src="../../static.files/source-script-905937fbbdc8e9ea.js"></script><script defer src="../../source-files.js"></script><script defer src="../../static.files/main-f61008743c98d196.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../static.files/light-0f8c037637f9eb3e.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../static.files/dark-1097f8e92a01e3cf.css"><link rel="stylesheet" href="../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../key_server_cli/index.html"><img class="rust-logo" src="../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `bin/key-server-cli/src/main.rs`."><title>main.rs - source</title><script> if (window.location.protocol !== "file:") document.write(`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2">`)</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-e935ef01ae1c1829.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="key_server_cli" data-themes="" data-resource-suffix="" data-rustdoc-version="1.78.0 (9b00956e5 2024-04-29)" data-channel="1.78.0" data-search-js="search-42d8da7a6b9792c2.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-12cf3b4f4f9dc36d.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../key_server_cli/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -460,11 +462,11 @@
 //! Events have an info level attached to them. You may create a new event by
 //! using the appropriate macro event macro from `tracing`, e.g:
 //! ```
-//! info!(&quot;This is a logging event!&quot;);
+//! info!("This is a logging event!");
 //! ```
 //!   You may add runtime values to our events as well:
 //! ```
-//! info!(&quot;Logging config settings: {:?}&quot;, config.logging);
+//! info!("Logging config settings: {:?}", config.logging);
 //! ```
 //! This uses the same syntax as Rust string formatting.
 //!
@@ -477,7 +479,7 @@
 //! ```text
 //!   2022-12-06T18:57:40.022422Z  INFO lock_keeper_key_server::server::operation: This operation completed successfully!
 //!     at lock-keeper-key-server/src/server/operation.rs:72
-//!     in lock_keeper_key_server::server::operation::handle_request with request_id: &quot;52ad8008-1eb9-4ad5-8bce-0344a958fd1e&quot;, action: &quot;Authenticate&quot;
+//!     in lock_keeper_key_server::server::operation::handle_request with request_id: "52ad8008-1eb9-4ad5-8bce-0344a958fd1e", action: "Authenticate"
 //! ```
 //! This event has the `handle_request` span attached to it. Additionally, spans
 //! may contain _fields_. These fields attached relevant data to all events
@@ -517,7 +519,7 @@
 //! Your type must implement `Debug` if you wish to include it as a field.
 //!
 //! #### Recording Fields Not Immediately Available as Arguments.
-//! Sometimes we want to add a field to a span where the field data isn&#39;t
+//! Sometimes we want to add a field to a span where the field data isn't
 //! immediately available as an argument to the function. Consider the following
 //! example:
 //! ```text
@@ -529,8 +531,8 @@
 //!     ) -&gt; Result&lt;_, _&gt; {
 //!
 //!         let request_id = Uuid::new_v4();
-//!         logging::record_field(&quot;request_id&quot;, &amp;request_id);
-//!         info!(&quot;Handling new client request.&quot;);
+//!         logging::record_field("request_id", &amp;request_id);
+//!         info!("Handling new client request.");
 //!
 //!         ... // Lots more things happen afterwards.
 //!     }
@@ -539,13 +541,13 @@
 //! none of these are function arguments! When the function body executes, we
 //! create a `request_id` which we _record_
 //! using our [record_field][lock_keeper::infrastructure::logging::record_field]
-//! function. So our event `info!(&quot;Handling new client request.&quot;);` will have
+//! function. So our event `info!("Handling new client request.");` will have
 //! the `request_id` field attached:
 //! ```text
 //!   2022-12-06T18:57:39.667194Z  INFO
 //! lock_keeper_key_server::server::operation: Handling new client request.
 //!     at lock-keeper-key-server/src/server/operation.rs:48
-//!     in lock_keeper_key_server::server::operation::handle_request with request_id: &quot;52ad8008-1eb9-4ad5-8bce-0344a958fd1e&quot;
+//!     in lock_keeper_key_server::server::operation::handle_request with request_id: "52ad8008-1eb9-4ad5-8bce-0344a958fd1e"
 //! ```
 //!
 //! Notice we have not recorded the `action` and `request_id` fields by the time
@@ -574,14 +576,14 @@
 //! 3) Have return values which are useful to log.
 //!
 //! Instrumenting multiple functions which call each other will create a useful
-//! &quot;backtrace-like&quot; context which allows us to understand the calling context
+//! "backtrace-like" context which allows us to understand the calling context
 //! of an event. For example:
 //! ```text
 //!   2022-12-06T18:57:39.669808Z  INFO
 //! lock_keeper_key_server::operations::authenticate: Starting authentication protocol.
 //!     at lock-keeper-key-server/src/operations/authenticate.rs:38
 //!     in lock_keeper_key_server::operations::authenticate::operation
-//!     in lock_keeper_key_server::server::operation::handle_request with request_id: &quot;52ad8008-1eb9-4ad5-8bce-0344a958fd1e&quot;, action: &quot;Authenticate&quot;
+//!     in lock_keeper_key_server::server::operation::handle_request with request_id: "52ad8008-1eb9-4ad5-8bce-0344a958fd1e", action: "Authenticate"
 //! ```
 //! We want to avoid instrumenting uninteresting functions, e.g. functions which
 //! represent an implementation detail instead of a logical step in our server
@@ -662,7 +664,7 @@
 <span class="attr">#[tokio::main]
 </span><span class="kw">pub async fn </span>main() {
     <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = run_main().<span class="kw">await </span>{
-        <span class="macro">eprintln!</span>(<span class="string">&quot;Server error: {e}&quot;</span>);
+        <span class="macro">eprintln!</span>(<span class="string">"Server error: {e}"</span>);
     }
 }
 
@@ -702,28 +704,28 @@
     // will ensure that our logs are flushed.
     </span><span class="kw">let </span>_logging = init_logging(<span class="kw-2">&amp;</span>server_config)<span class="question-mark">?</span>;
 
-    <span class="macro">info!</span>(<span class="string">&quot;Sever started!&quot;</span>);
-    <span class="macro">info!</span>(<span class="string">&quot;Logging config settings: {:?}&quot;</span>, server_config.logging);
+    <span class="macro">info!</span>(<span class="string">"Sever started!"</span>);
+    <span class="macro">info!</span>(<span class="string">"Logging config settings: {:?}"</span>, server_config.logging);
 
     <span class="kw">let </span>database_config = get_database_config(
         cli.database_username,
         cli.database_password,
         <span class="kw-2">&amp;</span>config.database,
     );
-    <span class="macro">info!</span>(<span class="string">&quot;Database config settings: {:?}&quot;</span>, database_config);
+    <span class="macro">info!</span>(<span class="string">"Database config settings: {:?}"</span>, database_config);
     <span class="kw">let </span>postgres = PostgresDB::connect(database_config)
         .<span class="kw">await
-        </span>.expect(<span class="string">&quot;Failed connecting to database.&quot;</span>);
+        </span>.expect(<span class="string">"Failed connecting to database."</span>);
 
     <span class="kw">let </span>session_config = get_session_cache_config(
         cli.session_cache_username,
         cli.session_cache_password,
         <span class="kw-2">&amp;</span>config.session_cache,
     );
-    <span class="macro">info!</span>(<span class="string">&quot;Session cache config settings: {:?}&quot;</span>, session_config);
+    <span class="macro">info!</span>(<span class="string">"Session cache config settings: {:?}"</span>, session_config);
     <span class="kw">let </span>session_cache = PostgresSessionCache::connect(session_config)
         .<span class="kw">await
-        </span>.expect(<span class="string">&quot;Failed connecting to session cache.&quot;</span>);
+        </span>.expect(<span class="string">"Failed connecting to session cache."</span>);
     start_lock_keeper_server(server_config, postgres, session_cache).<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="prelude-val">Ok</span>(())
 }
@@ -736,7 +738,7 @@
     <span class="comment">// Read config file for database settings.
     </span><span class="kw">let </span><span class="kw-2">mut </span>db_config_file = DatabaseConfigFile::from_file(path).unwrap_or_else(|e| {
         <span class="macro">panic!</span>(
-            <span class="string">&quot;Failed to read database config file. File: {}. Reason {}&quot;</span>,
+            <span class="string">"Failed to read database config file. File: {}. Reason {}"</span>,
             path.display(),
             e
         )
@@ -744,12 +746,12 @@
 
     <span class="kw">if </span>db_config_file.username.is_some() {
         <span class="macro">warn!</span>(
-            <span class="string">&quot;Database username defined in config file. Ensure you are not running in production!&quot;
+            <span class="string">"Database username defined in config file. Ensure you are not running in production!"
         </span>);
     }
     <span class="kw">if </span>db_config_file.password.is_some() {
         <span class="macro">warn!</span>(
-            <span class="string">&quot;Database password defined in config file. Ensure you are not running in production!&quot;
+            <span class="string">"Database password defined in config file. Ensure you are not running in production!"
         </span>);
     }
 
@@ -772,7 +774,7 @@
     <span class="comment">// Read config file for database settings.
     </span><span class="kw">let </span><span class="kw-2">mut </span>session_config_file = SessionConfigFile::from_file(path).unwrap_or_else(|e| {
         <span class="macro">panic!</span>(
-            <span class="string">&quot;Failed to read session cache config. Reason {} file: {}.&quot;</span>,
+            <span class="string">"Failed to read session cache config. Reason {} file: {}."</span>,
             e,
             path.display()
         )
@@ -780,12 +782,12 @@
 
     <span class="kw">if </span>session_config_file.username.is_some() {
         <span class="macro">warn!</span>(
-            <span class="string">&quot;Session cache username defined in config file. Ensure you are not running in production!&quot;
+            <span class="string">"Session cache username defined in config file. Ensure you are not running in production!"
         </span>);
     }
     <span class="kw">if </span>session_config_file.password.is_some() {
         <span class="macro">warn!</span>(
-            <span class="string">&quot;Session cache password defined in config file. Ensure you are not running in production!&quot;
+            <span class="string">"Session cache password defined in config file. Ensure you are not running in production!"
         </span>);
     }
 
@@ -889,9 +891,9 @@
 </span><span class="kw">fn </span>our_targets_filter(level: Level) -&gt; Targets {
     Targets::new()
         <span class="comment">// List our different targets here. Anything under our server.
-        </span>.with_target(<span class="string">&quot;key_server_cli&quot;</span>, level)
-        .with_target(<span class="string">&quot;lock_keeper_key_server&quot;</span>, level)
-        .with_target(<span class="string">&quot;lock_keeper&quot;</span>, level)
-        .with_target(<span class="string">&quot;lock_keeper_session_cache_sql&quot;</span>, level)
+        </span>.with_target(<span class="string">"key_server_cli"</span>, level)
+        .with_target(<span class="string">"lock_keeper_key_server"</span>, level)
+        .with_target(<span class="string">"lock_keeper"</span>, level)
+        .with_target(<span class="string">"lock_keeper_session_cache_sql"</span>, level)
 }
 </code></pre></div></section></main></body></html>

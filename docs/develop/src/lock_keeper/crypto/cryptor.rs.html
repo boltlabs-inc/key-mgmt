@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `lock-keeper/src/crypto/cryptor.rs`."><title>cryptor.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ba5701c5741a7b69.css" id="mainThemeStyle"><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="lock_keeper" data-themes="" data-resource-suffix="" data-rustdoc-version="1.70.0 (90c541806 2023-05-31)" data-search-js="search-e077946657036a58.js" data-settings-js="settings-298e1ea74db45b39.js" data-settings-css="settings-7bfb4c59cc6bc502.css" data-theme-light-css="light-0f8c037637f9eb3e.css" data-theme-dark-css="dark-1097f8e92a01e3cf.css" data-theme-ayu-css="ayu-614652228113ac93.css" ></div><script src="../../../static.files/storage-62ce34ea385b278a.js"></script><script defer src="../../../static.files/source-script-905937fbbdc8e9ea.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../static.files/main-f61008743c98d196.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../static.files/light-0f8c037637f9eb3e.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../static.files/dark-1097f8e92a01e3cf.css"><link rel="stylesheet" href="../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../lock_keeper/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `lock-keeper/src/crypto/cryptor.rs`."><title>cryptor.rs - source</title><script> if (window.location.protocol !== "file:") document.write(`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2">`)</script><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-e935ef01ae1c1829.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="lock_keeper" data-themes="" data-resource-suffix="" data-rustdoc-version="1.78.0 (9b00956e5 2024-04-29)" data-channel="1.78.0" data-search-js="search-42d8da7a6b9792c2.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-12cf3b4f4f9dc36d.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../lock_keeper/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -1018,19 +1020,19 @@
             </span><span class="kw">let </span>data_hex = <span class="self">self
                 </span>.data
                 .iter()
-                .map(|b| <span class="macro">format!</span>(<span class="string">&quot;{:02x}&quot;</span>, b))
+                .map(|b| <span class="macro">format!</span>(<span class="string">"{:02x}"</span>, b))
                 .collect::&lt;Vec&lt;String&gt;&gt;()
-                .join(<span class="string">&quot; &quot;</span>);
+                .join(<span class="string">" "</span>);
 
             <span class="macro">write!</span>(
                 f,
-                <span class="string">&quot;\n---Encryptor begin---\n\n\
+                <span class="string">"\n---Encryptor begin---\n\n\
                 \
                 \tdata: 0x[{data}]\n\
                 \tdata length: {data_len}\n\
                 {context}\n\
                 \
-                \n---Encryptor end---\n&quot;</span>,
+                \n---Encryptor end---\n"</span>,
                 data = data_hex,
                 data_len = <span class="self">self</span>.data.len(),
                 context = <span class="self">self</span>.context,
@@ -1039,9 +1041,9 @@
             <span class="comment">// this is a Release build *OR* redacted flag is TRUE
             </span><span class="macro">write!</span>(
                 f,
-                <span class="string">&quot;\n---Encryptor begin---\n\n\
+                <span class="string">"\n---Encryptor begin---\n\n\
                 \t{redacted}\n\
-                \n---Encryptor end---\n&quot;</span>,
+                \n---Encryptor end---\n"</span>,
                 redacted = <span class="self">self</span>.config.clone().redacted_label(),
             )
         }
@@ -1050,17 +1052,17 @@
 
 <span class="doccomment">/// An implementation of the `std::fmt::Debug` trait for [`Encryptor`]
 </span><span class="kw">impl </span>std::fmt::Debug <span class="kw">for </span>Encryptor {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; std::fmt::Result {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; std::fmt::Result {
         <span class="kw">if </span><span class="macro">cfg!</span>(debug_assertions) &amp;&amp; !<span class="self">self</span>.config.is_redacted() {
             <span class="comment">// this is a Debug build *AND* redacted flag is FALSE
 
-            </span>f.debug_struct(<span class="string">&quot;Encryptor&quot;</span>)
-                .field(<span class="string">&quot;data&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.data)
-                .field(<span class="string">&quot;context&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.context)
+            </span>f.debug_struct(<span class="string">"Encryptor"</span>)
+                .field(<span class="string">"data"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.data)
+                .field(<span class="string">"context"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.context)
                 .finish()
         } <span class="kw">else </span>{
             <span class="comment">// this is a Release build *OR* redacted flag is TRUE
-            </span><span class="macro">write!</span>(f, <span class="string">&quot;Encryptor {}&quot;</span>, <span class="self">self</span>.config.clone().redacted_label())
+            </span><span class="macro">write!</span>(f, <span class="string">"Encryptor {}"</span>, <span class="self">self</span>.config.clone().redacted_label())
         }
     }
 }
@@ -1111,7 +1113,7 @@
         // data len (2 bytes) || data || context len (2 bytes) ||
         // context data || config len (2 bytes) || config data
 
-        // we&#39;ll be parsing the byte array, and creating an instance of Encryptor type
+        // we'll be parsing the byte array, and creating an instance of Encryptor type
         </span><span class="kw">let </span><span class="kw-2">mut </span>parse = ParseBytes::new(bytes);
 
         <span class="kw">let </span>data_length = parse.take_bytes_as_u16()<span class="question-mark">?</span>;
@@ -1162,7 +1164,7 @@
     /// Returns `true` if the `data` and `context` fields are equal between the
     /// two [`Encryptor`] instances, Otherwise returns `false`.
     </span><span class="kw">fn </span>eq(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; bool {
-        <span class="comment">// Don&#39;t compare the config fields
+        <span class="comment">// Don't compare the config fields
         </span><span class="self">self</span>.data == other.data &amp;&amp; <span class="self">self</span>.context == other.context
     }
 }
@@ -1215,7 +1217,7 @@
     /// # Examples
     ///
     /// ```ignore
-    /// // Assuming you&#39;ve set up an `Encryptor` instance named `encryptor`
+    /// // Assuming you've set up an `Encryptor` instance named `encryptor`
     /// let data_bytes: &amp;[u8] = encryptor.data();
     /// ```
     ///
@@ -1256,7 +1258,7 @@
         <span class="comment">// Generate nonce and encrypt the payload
         </span><span class="kw">let </span>nonce = ChaCha20Poly1305::generate_nonce(rng);
         <span class="kw">let </span>encrypted_data = cipher.encrypt(<span class="kw-2">&amp;</span>nonce, payload).map_err(|e| {
-            <span class="macro">error!</span>(<span class="string">&quot;Encryption failed unexpectedly. {:?}&quot;</span>, e);
+            <span class="macro">error!</span>(<span class="string">"Encryption failed unexpectedly. {:?}"</span>, e);
             CryptoError::EncryptionFailed
         })<span class="question-mark">?</span>;
 
@@ -1285,15 +1287,15 @@
         <span class="kw">let </span>key_server_name_hex = <span class="self">self
             </span>.key_server_name
             .iter()
-            .map(|b| <span class="macro">format!</span>(<span class="string">&quot;{:02x}&quot;</span>, b))
+            .map(|b| <span class="macro">format!</span>(<span class="string">"{:02x}"</span>, b))
             .collect::&lt;Vec&lt;String&gt;&gt;()
-            .join(<span class="string">&quot; &quot;</span>);
+            .join(<span class="string">" "</span>);
 
         <span class="macro">write!</span>(
             f,
-            <span class="string">&quot;\n\nContext:\n\
+            <span class="string">"\n\nContext:\n\
             \tkey server name: 0x[{key_server_name}]\n\
-            \tkey server name length: {key_server_name_len}\n&quot;</span>,
+            \tkey server name length: {key_server_name_len}\n"</span>,
             key_server_name = key_server_name_hex,
             key_server_name_len = <span class="self">self</span>.key_server_name.len(),
         )
@@ -1318,12 +1320,12 @@
     ///
     /// From string slices...
     /// ```ignore
-    ///     let context = CryptorContext::new(&quot;my_key_server&quot;);
+    ///     let context = CryptorContext::new("my_key_server");
     /// ```
     ///
     /// From `Vec&lt;u8&gt;`...
     /// ```ignore
-    ///     let key_server_name = &quot;my_key_server&quot;.as_bytes().to_vec();
+    ///     let key_server_name = "my_key_server".as_bytes().to_vec();
     ///     let context = CryptorContext::new(key_server_name);
     /// ```
     </span><span class="kw">pub fn </span>new&lt;T: AsRef&lt;[u8]&gt;&gt;(key_server_name: T) -&gt; <span class="self">Self </span>{
@@ -1373,16 +1375,16 @@
         <span class="kw">let </span>ciphertext_hex = <span class="self">self
             </span>.ciphertext
             .iter()
-            .map(|b| <span class="macro">format!</span>(<span class="string">&quot;{:02x}&quot;</span>, b))
+            .map(|b| <span class="macro">format!</span>(<span class="string">"{:02x}"</span>, b))
             .collect::&lt;Vec&lt;String&gt;&gt;()
-            .join(<span class="string">&quot; &quot;</span>);
+            .join(<span class="string">" "</span>);
 
         <span class="kw">if </span><span class="macro">cfg!</span>(debug_assertions) &amp;&amp; !<span class="self">self</span>.config.is_redacted() {
             <span class="comment">// this is a Debug build *AND* redacted flag is FALSE
 
             </span><span class="macro">write!</span>(
                 f,
-                <span class="string">&quot;\n---Encrypted data begin---\n\n\
+                <span class="string">"\n---Encrypted data begin---\n\n\
                 \
                 \tciphertext: 0x[{ciphertext}]\n\
                 \tciphertext length: {ciphertext_len}\n\
@@ -1390,7 +1392,7 @@
                 \tnonce: {nonce:02x?}\n\
                 \tnonce length: {nonce_len}\n
                 \
-                \n---Encrypted data end---\n&quot;</span>,
+                \n---Encrypted data end---\n"</span>,
                 ciphertext = ciphertext_hex,
                 ciphertext_len = <span class="self">self</span>.ciphertext.len(),
                 context = <span class="self">self</span>.context,
@@ -1401,9 +1403,9 @@
             <span class="comment">// this is a Release build *OR* redacted flag is TRUE
             </span><span class="macro">write!</span>(
                 f,
-                <span class="string">&quot;\n---Encrypted data begin---\n\n\
+                <span class="string">"\n---Encrypted data begin---\n\n\
                 \t{redacted}\n\
-                \n---Encrypted data end---\n&quot;</span>,
+                \n---Encrypted data end---\n"</span>,
                 redacted = <span class="self">self</span>.config.clone().redacted_label(),
             )
         }
@@ -1412,18 +1414,18 @@
 
 <span class="doccomment">/// An implementation of the `std::fmt::Debug` trait for [`Decryptor`]
 </span><span class="kw">impl </span>std::fmt::Debug <span class="kw">for </span>Decryptor {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; std::fmt::Result {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; std::fmt::Result {
         <span class="kw">if </span><span class="macro">cfg!</span>(debug_assertions) &amp;&amp; !<span class="self">self</span>.config.is_redacted() {
             <span class="comment">// this is a Debug build *AND* redacted flag is FALSE
 
-            </span>f.debug_struct(<span class="string">&quot;Decryptor&quot;</span>)
-                .field(<span class="string">&quot;ciphertext&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.ciphertext)
-                .field(<span class="string">&quot;nonce&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.nonce)
-                .field(<span class="string">&quot;context&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.context)
+            </span>f.debug_struct(<span class="string">"Decryptor"</span>)
+                .field(<span class="string">"ciphertext"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.ciphertext)
+                .field(<span class="string">"nonce"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.nonce)
+                .field(<span class="string">"context"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.context)
                 .finish()
         } <span class="kw">else </span>{
             <span class="comment">// this is a Release build *OR* redacted flag is TRUE
-            </span><span class="macro">write!</span>(f, <span class="string">&quot;Decryptor {}&quot;</span>, <span class="self">self</span>.config.clone().redacted_label())
+            </span><span class="macro">write!</span>(f, <span class="string">"Decryptor {}"</span>, <span class="self">self</span>.config.clone().redacted_label())
         }
     }
 }
@@ -1494,7 +1496,7 @@
         // context data || nonce len (2 bytes) || nonce data || config len (2 bytes) ||
         // config data
 
-        // we&#39;ll be parsing the byte array, and creating an instance of Decryptor type
+        // we'll be parsing the byte array, and creating an instance of Decryptor type
         </span><span class="kw">let </span><span class="kw-2">mut </span>parse = ParseBytes::new(bytes);
 
         <span class="kw">let </span>ciphertext_length = parse.take_bytes_as_u16()<span class="question-mark">?</span>;
@@ -1547,7 +1549,7 @@
     /// Returns `true` if the non-`config` fields are equal between the two
     /// [`Decryptor`] instances, Otherwise returns `false`.
     </span><span class="kw">fn </span>eq(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; bool {
-        <span class="comment">// Don&#39;t compare the config fields
+        <span class="comment">// Don't compare the config fields
         </span><span class="self">self</span>.ciphertext == other.ciphertext
             &amp;&amp; <span class="self">self</span>.context == other.context
             &amp;&amp; <span class="self">self</span>.nonce == other.nonce
@@ -1627,7 +1629,7 @@
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="kw">use </span><span class="kw">crate</span>::infrastructure::sensitive_info::sensitive_info_check;
 
-    <span class="kw">const </span>KEY_SERVER_NAME: <span class="kw-2">&amp;</span>str = <span class="string">&quot;test_key_server_1&quot;</span>;
+    <span class="kw">const </span>KEY_SERVER_NAME: <span class="kw-2">&amp;</span>str = <span class="string">"test_key_server_1"</span>;
     <span class="kw">const </span>DATA_BYTES_LENGTH: usize = <span class="number">257</span>;
 
     <span class="doccomment">/// Test the correctness of the sensitive information handling.
@@ -1644,18 +1646,18 @@
         );
 
         <span class="macro">println!</span>(
-            <span class="string">&quot;\nEncryptor with redacted config:\n{encryptor}&quot;</span>,
+            <span class="string">"\nEncryptor with redacted config:\n{encryptor}"</span>,
             encryptor = encryptor
         );
 
-        <span class="comment">// sensitive information is currently redacted, let&#39;s test that
+        <span class="comment">// sensitive information is currently redacted, let's test that
         </span>sensitive_info_check(<span class="kw-2">&amp;</span>encryptor, <span class="kw-2">&amp;</span>encryptor.config).unwrap();
 
         <span class="comment">// unredact sensitive information, and test
         </span>encryptor.config.unredact();
 
         <span class="macro">println!</span>(
-            <span class="string">&quot;\nEncryptor with un-redacted config:\n{encryptor}&quot;</span>,
+            <span class="string">"\nEncryptor with un-redacted config:\n{encryptor}"</span>,
             encryptor = encryptor
         );
 
@@ -1688,17 +1690,17 @@
         </span><span class="kw">let </span>encryptor_from_vec: Encryptor = encryptor_vec.try_into()<span class="question-mark">?</span>;
 
         <span class="macro">println!</span>(
-            <span class="string">&quot;\nOriginal raw plaintext data: 0x{data:02x?}&quot;</span>,
+            <span class="string">"\nOriginal raw plaintext data: 0x{data:02x?}"</span>,
             data = data_plaintext
         );
         <span class="macro">println!</span>(
-            <span class="string">&quot;Original raw plaintext data length: {data_len}&quot;</span>,
+            <span class="string">"Original raw plaintext data length: {data_len}"</span>,
             data_len = data_plaintext.len()
         );
 
-        <span class="macro">println!</span>(<span class="string">&quot;\nOriginal encryptor: {encryptor}&quot;</span>, encryptor = encryptor);
+        <span class="macro">println!</span>(<span class="string">"\nOriginal encryptor: {encryptor}"</span>, encryptor = encryptor);
         <span class="macro">println!</span>(
-            <span class="string">&quot;\nConverted encryptor: {encryptor}&quot;</span>,
+            <span class="string">"\nConverted encryptor: {encryptor}"</span>,
             encryptor = encryptor_from_vec
         );
 
@@ -1800,9 +1802,9 @@
         <span class="comment">// convert Vec&lt;u8&gt; back to decryptor
         </span><span class="kw">let </span>decryptor_from_vec: Decryptor = decryptor_vec.try_into()<span class="question-mark">?</span>;
 
-        <span class="macro">println!</span>(<span class="string">&quot;\nOriginal decryptor: {decryptor}&quot;</span>, decryptor = decryptor);
+        <span class="macro">println!</span>(<span class="string">"\nOriginal decryptor: {decryptor}"</span>, decryptor = decryptor);
         <span class="macro">println!</span>(
-            <span class="string">&quot;\nConverted encryptor: {decryptor}&quot;</span>,
+            <span class="string">"\nConverted encryptor: {decryptor}"</span>,
             decryptor = decryptor_from_vec
         );
 
@@ -1845,14 +1847,14 @@
         </span>encrypted_data.config.unredact();
 
         <span class="macro">println!</span>(
-            <span class="string">&quot;\nKey server name:\n{} (hex encoded: {})&quot;</span>,
+            <span class="string">"\nKey server name:\n{} (hex encoded: {})"</span>,
             KEY_SERVER_NAME,
             hex::encode(KEY_SERVER_NAME)
         );
         <span class="macro">println!</span>(
-            <span class="string">&quot;\nPlaintext data:{data:02x?}\
+            <span class="string">"\nPlaintext data:{data:02x?}\
             \nPlaintext data length: {data_len}\
-            \n\nEncrypted data:\n{encrypted_data}&quot;</span>,
+            \n\nEncrypted data:\n{encrypted_data}"</span>,
             data = data,
             data_len = data.len(),
             encrypted_data = encrypted_data,
@@ -1864,9 +1866,9 @@
         </span>decrypted_data.config.unredact();
 
         <span class="macro">println!</span>(
-            <span class="string">&quot;\nPlaintext data: {data:02x?}\
+            <span class="string">"\nPlaintext data: {data:02x?}\
             \nPlaintext data length: {data_len}\
-            \n\nDecrypted data:\n{decrypted_data}&quot;</span>,
+            \n\nDecrypted data:\n{decrypted_data}"</span>,
             data = data,
             data_len = data.len(),
             decrypted_data = decrypted_data,
@@ -1908,7 +1910,7 @@
         </span>encrypted_data.config.unredact();
 
         <span class="macro">println!</span>(
-            <span class="string">&quot;\nEncrypted data:{encrypted_data}&quot;</span>,
+            <span class="string">"\nEncrypted data:{encrypted_data}"</span>,
             encrypted_data = encrypted_data
         );
 
@@ -1916,10 +1918,10 @@
         </span>encrypted_data
             .context
             .key_server_name
-            .extend_from_slice(<span class="string">&quot;__baaaaaad__&quot;</span>.as_bytes());
+            .extend_from_slice(<span class="string">"__baaaaaad__"</span>.as_bytes());
 
         <span class="macro">println!</span>(
-            <span class="string">&quot;\nCorrupt encrypted data :{encrypted_data}&quot;</span>,
+            <span class="string">"\nCorrupt encrypted data :{encrypted_data}"</span>,
             encrypted_data = encrypted_data
         );
 

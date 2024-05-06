@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `bin/lock-keeper-client-cli/src/cli_command/get_audit_events.rs`."><title>get_audit_events.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ba5701c5741a7b69.css" id="mainThemeStyle"><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="lock_keeper_client_cli" data-themes="" data-resource-suffix="" data-rustdoc-version="1.70.0 (90c541806 2023-05-31)" data-search-js="search-e077946657036a58.js" data-settings-js="settings-298e1ea74db45b39.js" data-settings-css="settings-7bfb4c59cc6bc502.css" data-theme-light-css="light-0f8c037637f9eb3e.css" data-theme-dark-css="dark-1097f8e92a01e3cf.css" data-theme-ayu-css="ayu-614652228113ac93.css" ></div><script src="../../../static.files/storage-62ce34ea385b278a.js"></script><script defer src="../../../static.files/source-script-905937fbbdc8e9ea.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../static.files/main-f61008743c98d196.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../static.files/light-0f8c037637f9eb3e.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../static.files/dark-1097f8e92a01e3cf.css"><link rel="stylesheet" href="../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../lock_keeper_client_cli/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `bin/lock-keeper-client-cli/src/cli_command/get_audit_events.rs`."><title>get_audit_events.rs - source</title><script> if (window.location.protocol !== "file:") document.write(`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2">`)</script><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-e935ef01ae1c1829.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="lock_keeper_client_cli" data-themes="" data-resource-suffix="" data-rustdoc-version="1.78.0 (9b00956e5 2024-04-29)" data-channel="1.78.0" data-search-js="search-42d8da7a6b9792c2.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-12cf3b4f4f9dc36d.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../lock_keeper_client_cli/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -238,12 +240,12 @@
             </span>.result<span class="question-mark">?</span>;
         <span class="kw">let </span>elapsed = now.elapsed()<span class="question-mark">?</span>;
 
-        <span class="macro">println!</span>(<span class="string">&quot;Audit Events:&quot;</span>);
+        <span class="macro">println!</span>(<span class="string">"Audit Events:"</span>);
         <span class="kw">for </span>event <span class="kw">in </span>audit_event_log {
-            <span class="macro">println!</span>(<span class="string">&quot;----------------------------------&quot;</span>);
-            <span class="macro">println!</span>(<span class="string">&quot;{event}&quot;</span>);
+            <span class="macro">println!</span>(<span class="string">"----------------------------------"</span>);
+            <span class="macro">println!</span>(<span class="string">"{event}"</span>);
         }
-        <span class="macro">println!</span>(<span class="string">&quot;----------------------------------&quot;</span>);
+        <span class="macro">println!</span>(<span class="string">"----------------------------------"</span>);
 
         <span class="prelude-val">Ok</span>(elapsed)
     }
@@ -296,52 +298,52 @@
         }
     }
 
-    <span class="kw">fn </span>format() -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str {
-        <span class="string">&quot;audit [query_options (see help)]&quot;
+    <span class="kw">fn </span>format() -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str {
+        <span class="string">"audit [query_options (see help)]"
     </span>}
 
-    <span class="kw">fn </span>aliases() -&gt; Vec&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str&gt;
+    <span class="kw">fn </span>aliases() -&gt; Vec&lt;<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt;
     <span class="kw">where
         </span><span class="self">Self</span>: Sized,
     {
-        <span class="macro">vec!</span>[<span class="string">&quot;audit&quot;</span>]
+        <span class="macro">vec!</span>[<span class="string">"audit"</span>]
     }
 
-    <span class="kw">fn </span>description() -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str
+    <span class="kw">fn </span>description() -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str
     <span class="kw">where
         </span><span class="self">Self</span>: Sized,
     {
-        <span class="string">&quot;Retrieves audit events for the authenticated user.
+        <span class="string">"Retrieves audit events for the authenticated user.
          Additional query options are available with the following commands.
          Options:
             - type:event_type (all, key-only, system-only)
             - keys:key_name1,key_name_2
             - request-id:uuid
-        &quot;
+        "
     </span>}
 }
 
 <span class="kw">fn </span>parse_option(text: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;ParsedAuditEventOption, Error&gt; {
-    <span class="kw">const </span>ERROR_MESSAGE: <span class="kw-2">&amp;</span>str = <span class="string">&quot;Invalid audit event option&quot;</span>;
+    <span class="kw">const </span>ERROR_MESSAGE: <span class="kw-2">&amp;</span>str = <span class="string">"Invalid audit event option"</span>;
 
-    <span class="kw">let </span><span class="kw-2">mut </span>option_split = text.splitn(<span class="number">2</span>, <span class="string">&#39;:&#39;</span>);
+    <span class="kw">let </span><span class="kw-2">mut </span>option_split = text.splitn(<span class="number">2</span>, <span class="string">':'</span>);
 
     <span class="kw">let </span>option_name = option_split.next().ok_or_else(|| <span class="macro">anyhow!</span>(ERROR_MESSAGE))<span class="question-mark">?</span>;
     <span class="kw">let </span>option_value = option_split.next().ok_or_else(|| <span class="macro">anyhow!</span>(ERROR_MESSAGE))<span class="question-mark">?</span>;
 
     <span class="kw">match </span>option_name {
-        <span class="string">&quot;type&quot; </span>=&gt; <span class="prelude-val">Ok</span>(ParsedAuditEventOption::EventType(EventType::from_str(
+        <span class="string">"type" </span>=&gt; <span class="prelude-val">Ok</span>(ParsedAuditEventOption::EventType(EventType::from_str(
             option_value,
         )<span class="question-mark">?</span>)),
-        <span class="string">&quot;keys&quot; </span>| <span class="string">&quot;key&quot; </span>=&gt; {
-            <span class="kw">let </span>key_names: Vec&lt;String&gt; = option_value.split(<span class="string">&#39;,&#39;</span>).map(ToString::to_string).collect();
+        <span class="string">"keys" </span>| <span class="string">"key" </span>=&gt; {
+            <span class="kw">let </span>key_names: Vec&lt;String&gt; = option_value.split(<span class="string">','</span>).map(ToString::to_string).collect();
             <span class="prelude-val">Ok</span>(ParsedAuditEventOption::KeyNames(key_names))
         }
-        <span class="string">&quot;request-id&quot; </span>=&gt; <span class="prelude-val">Ok</span>(ParsedAuditEventOption::RequestId(option_value.parse()<span class="question-mark">?</span>)),
-        <span class="string">&quot;before&quot; </span>=&gt; <span class="prelude-val">Ok</span>(ParsedAuditEventOption::BeforeDate(parse_date(
+        <span class="string">"request-id" </span>=&gt; <span class="prelude-val">Ok</span>(ParsedAuditEventOption::RequestId(option_value.parse()<span class="question-mark">?</span>)),
+        <span class="string">"before" </span>=&gt; <span class="prelude-val">Ok</span>(ParsedAuditEventOption::BeforeDate(parse_date(
             option_value,
         )<span class="question-mark">?</span>)),
-        <span class="string">&quot;after&quot; </span>=&gt; <span class="prelude-val">Ok</span>(ParsedAuditEventOption::AfterDate(parse_date(option_value)<span class="question-mark">?</span>)),
+        <span class="string">"after" </span>=&gt; <span class="prelude-val">Ok</span>(ParsedAuditEventOption::AfterDate(parse_date(option_value)<span class="question-mark">?</span>)),
         <span class="kw">_ </span>=&gt; <span class="macro">anyhow::bail!</span>(ERROR_MESSAGE),
     }
 }
@@ -350,10 +352,10 @@
     <span class="kw">match </span>OffsetDateTime::parse(date_str, <span class="kw-2">&amp;</span>Iso8601::DEFAULT) {
         <span class="prelude-val">Ok</span>(date) =&gt; <span class="prelude-val">Ok</span>(date),
         <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
-            <span class="kw">let </span>iso_format = <span class="macro">format!</span>(<span class="string">&quot;{date_str}T00:00:00Z&quot;</span>);
+            <span class="kw">let </span>iso_format = <span class="macro">format!</span>(<span class="string">"{date_str}T00:00:00Z"</span>);
             <span class="kw">match </span>OffsetDateTime::parse(<span class="kw-2">&amp;</span>iso_format, <span class="kw-2">&amp;</span>Iso8601::DEFAULT) {
                 <span class="prelude-val">Ok</span>(date) =&gt; <span class="prelude-val">Ok</span>(date),
-                <span class="prelude-val">Err</span>(e) =&gt; <span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">&quot;Invalid date format {:?}&quot;</span>, e)),
+                <span class="prelude-val">Err</span>(e) =&gt; <span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">"Invalid date format {:?}"</span>, e)),
             }
         }
     }
