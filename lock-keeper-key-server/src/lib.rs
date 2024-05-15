@@ -3,7 +3,10 @@
 #![warn(future_incompatible)]
 #![warn(unused)]
 #![forbid(rustdoc::broken_intra_doc_links)]
-
+// Getting some weird Clippy warning that don't
+// make sense. May be related to Clippy complaining
+// about auto-generated code. Allow this.
+#![allow(clippy::blocks_in_conditions)]
 pub mod config;
 pub mod error;
 pub mod operations;
