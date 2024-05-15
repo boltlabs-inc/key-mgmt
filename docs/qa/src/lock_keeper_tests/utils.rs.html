@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `lock-keeper-tests/src/utils.rs`."><title>utils.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ba5701c5741a7b69.css" id="mainThemeStyle"><div id="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="lock_keeper_tests" data-themes="" data-resource-suffix="" data-rustdoc-version="1.70.0 (90c541806 2023-05-31)" data-search-js="search-e077946657036a58.js" data-settings-js="settings-298e1ea74db45b39.js" data-settings-css="settings-7bfb4c59cc6bc502.css" data-theme-light-css="light-0f8c037637f9eb3e.css" data-theme-dark-css="dark-1097f8e92a01e3cf.css" data-theme-ayu-css="ayu-614652228113ac93.css" ></div><script src="../../static.files/storage-62ce34ea385b278a.js"></script><script defer src="../../static.files/source-script-905937fbbdc8e9ea.js"></script><script defer src="../../source-files.js"></script><script defer src="../../static.files/main-f61008743c98d196.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../static.files/light-0f8c037637f9eb3e.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../static.files/dark-1097f8e92a01e3cf.css"><link rel="stylesheet" href="../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../lock_keeper_tests/index.html"><img class="rust-logo" src="../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `lock-keeper-tests/src/utils.rs`."><title>utils.rs - source</title><script> if (window.location.protocol !== "file:") document.write(`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2">`)</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-e935ef01ae1c1829.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="lock_keeper_tests" data-themes="" data-resource-suffix="" data-rustdoc-version="1.78.0 (9b00956e5 2024-04-29)" data-channel="1.78.0" data-search-js="search-42d8da7a6b9792c2.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-12cf3b4f4f9dc36d.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../lock_keeper_tests/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -271,14 +273,14 @@
 };
 <span class="kw">use </span>rand::{distributions::Alphanumeric, Rng};
 
-<span class="kw">pub const </span>RNG_SEED: <span class="kw-2">&amp;</span>[u8; <span class="number">32</span>] = <span class="string">b&quot;we love deterministic testing!!!&quot;</span>;
+<span class="kw">pub const </span>RNG_SEED: <span class="kw-2">&amp;</span>[u8; <span class="number">32</span>] = <span class="string">b"we love deterministic testing!!!"</span>;
 
 <span class="doccomment">/// Add random text to the end of a string
 /// # Example
 /// ```
-/// let user = tagged(&quot;user&quot;);
-/// println!(&quot;{user}&quot;);
-/// // Prints something like &quot;user_1h65k35&quot;
+/// let user = tagged("user");
+/// println!("{user}");
+/// // Prints something like "user_1h65k35"
 /// ```
 </span><span class="kw">pub fn </span>tagged(text: <span class="kw">impl </span>AsRef&lt;str&gt;) -&gt; String {
     <span class="kw">let </span>text = text.as_ref();
@@ -288,7 +290,7 @@
         .map(char::from)
         .collect();
 
-    <span class="macro">format!</span>(<span class="string">&quot;{text}_{tag}&quot;</span>)
+    <span class="macro">format!</span>(<span class="string">"{text}_{tag}"</span>)
 }
 
 <span class="doccomment">/// Locally simulates OPAQUE registration to get a valid
@@ -298,18 +300,18 @@
 
     <span class="kw">let </span>server_setup = ServerSetup::&lt;OpaqueCipherSuite&gt;::new(<span class="kw-2">&amp;mut </span>rng);
     <span class="kw">let </span>client_reg_start_result =
-        ClientRegistration::&lt;OpaqueCipherSuite&gt;::start(<span class="kw-2">&amp;mut </span>rng, <span class="string">b&quot;password&quot;</span>).unwrap();
+        ClientRegistration::&lt;OpaqueCipherSuite&gt;::start(<span class="kw-2">&amp;mut </span>rng, <span class="string">b"password"</span>).unwrap();
     <span class="kw">let </span>server_reg_start_result = ServerRegistration::&lt;OpaqueCipherSuite&gt;::start(
         <span class="kw-2">&amp;</span>server_setup,
         client_reg_start_result.message,
-        <span class="string">b&quot;email@email.com&quot;</span>,
+        <span class="string">b"email@email.com"</span>,
     )
     .unwrap();
     <span class="kw">let </span>client_reg_finish_result = client_reg_start_result
         .state
         .finish(
             <span class="kw-2">&amp;mut </span>rng,
-            <span class="string">b&quot;password&quot;</span>,
+            <span class="string">b"password"</span>,
             server_reg_start_result.message,
             ClientRegistrationFinishParameters::default(),
         )
@@ -330,7 +332,7 @@
 /// run_parallel(test_1(), test_2(&amp;db))
 /// ```
 </span><span class="attr">#[macro_export]
-</span><span class="macro">macro_rules! </span>run_parallel {
+</span><span class="macro">macro_rules!</span> run_parallel {
     (<span class="macro-nonterminal">$filters</span>:expr, $(<span class="macro-nonterminal">$task</span>:expr),+,) =&gt; {
         <span class="macro">run_parallel!</span>(<span class="macro-nonterminal">$filters</span>, $(<span class="macro-nonterminal">$task</span>),+)
     };
@@ -355,7 +357,7 @@
 </span><span class="kw">pub async fn </span>run_test_case(
     filters: <span class="kw-2">&amp;</span>TestFilters,
     name: <span class="kw-2">&amp;</span>str,
-    task: <span class="kw">impl </span>Future&lt;Output = <span class="prelude-ty">Result</span>&lt;()&gt;&gt; + Send + <span class="lifetime">&#39;static</span>,
+    task: <span class="kw">impl </span>Future&lt;Output = <span class="prelude-ty">Result</span>&lt;()&gt;&gt; + Send + <span class="lifetime">'static</span>,
     results: Arc&lt;Mutex&lt;Vec&lt;TestResult&gt;&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">use </span>futures::FutureExt;
@@ -366,16 +368,16 @@
 
     <span class="comment">// Get name of test from function name
     </span><span class="kw">let </span>name = name
-        .split(<span class="string">&#39;(&#39;</span>)
+        .split(<span class="string">'('</span>)
         .next()
-        .expect(<span class="string">&quot;Function has at least one character&quot;</span>);
-    test_result.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;\n{name}:\n&quot;</span>));
+        .expect(<span class="string">"Function has at least one character"</span>);
+    test_result.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"\n{name}:\n"</span>));
 
     <span class="kw">if </span>!filters.matches(name) {
         <span class="kw">let </span><span class="kw-2">mut </span>results = results.lock().unwrap();
         results.push(Skipped);
-        test_result.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, <span class="string">&quot;skipped\n&quot;</span>.bright_blue()));
-        <span class="macro">println!</span>(<span class="string">&quot;{test_result}&quot;</span>);
+        test_result.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"{}"</span>, <span class="string">"skipped\n"</span>.bright_blue()));
+        <span class="macro">println!</span>(<span class="string">"{test_result}"</span>);
         <span class="kw">return </span><span class="prelude-val">Ok</span>(());
     }
 
@@ -386,7 +388,7 @@
 
     <span class="comment">// Create an new panic hook to catch assert! checks
     </span>std::panic::set_hook(Box::new(|<span class="kw">_</span>| {
-        <span class="comment">// Don&#39;t print panic details
+        <span class="comment">// Don't print panic details
     </span>}));
 
     <span class="comment">// Catch any panic and print test result
@@ -400,7 +402,7 @@
                         <span class="kw">let </span><span class="kw-2">mut </span>results = results.lock().unwrap();
                         results.push(Passed);
                     }
-                    test_result.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, <span class="string">&quot;ok\n&quot;</span>.green()));
+                    test_result.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"{}"</span>, <span class="string">"ok\n"</span>.green()));
                 }
                 <span class="comment">// task returned but it was Err
                 </span><span class="prelude-val">Err</span>(e) =&gt; {
@@ -408,7 +410,7 @@
                         <span class="kw">let </span><span class="kw-2">mut </span>results = results.lock().unwrap();
                         results.push(Failed);
                     }
-                    test_result.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}: {}\n&quot;</span>, <span class="string">&quot;failed&quot;</span>.red(), e));
+                    test_result.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"{}: {}\n"</span>, <span class="string">"failed"</span>.red(), e));
                 }
             }
         }
@@ -420,18 +422,18 @@
                         <span class="kw">let </span><span class="kw-2">mut </span>results = results.lock().unwrap();
                         results.push(Failed);
                     }
-                    test_result.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, <span class="string">&quot;Test panicked\n&quot;</span>.red()));
+                    test_result.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"{}"</span>, <span class="string">"Test panicked\n"</span>.red()));
 
                     <span class="comment">// Try to convert message to `&amp;str` or `String` and print
                     </span><span class="kw">if let </span><span class="prelude-val">Some</span>(message) = panic.downcast_ref::&lt;<span class="kw-2">&amp;</span>str&gt;() {
-                        test_result.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{message}\n&quot;</span>));
+                        test_result.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"{message}\n"</span>));
                     }
                     <span class="kw">if let </span><span class="prelude-val">Some</span>(message) = panic.downcast_ref::&lt;String&gt;() {
-                        test_result.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{message}\n&quot;</span>));
+                        test_result.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"{message}\n"</span>));
                     }
                 }
                 <span class="prelude-val">Err</span>(e) =&gt; {
-                    test_result.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}: {}\n&quot;</span>, <span class="string">&quot;failed&quot;</span>.red(), e));
+                    test_result.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"{}: {}\n"</span>, <span class="string">"failed"</span>.red(), e));
                 }
             }
         }
@@ -440,11 +442,11 @@
                 <span class="kw">let </span><span class="kw-2">mut </span>results = results.lock().unwrap();
                 results.push(Failed);
             }
-            test_result.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;failed: {err:?}\n&quot;</span>));
+            test_result.push_str(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"failed: {err:?}\n"</span>));
         }
     }
 
-    <span class="macro">println!</span>(<span class="string">&quot;{test_result}&quot;</span>);
+    <span class="macro">println!</span>(<span class="string">"{test_result}"</span>);
 
     <span class="comment">// Replace original panic hook
     </span>std::panic::set_hook(panic_hook);
@@ -464,23 +466,23 @@
 
     <span class="kw">let </span>any_failed = results.iter().any(|r| <span class="kw-2">*</span>r == Failed);
     <span class="kw">if </span>any_failed {
-        <span class="kw">return </span><span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, <span class="string">&quot;FAILED&quot;</span>.red());
+        <span class="kw">return </span><span class="macro">format!</span>(<span class="string">"{}"</span>, <span class="string">"FAILED"</span>.red());
     }
 
     <span class="kw">let </span>num_results = results.len();
     <span class="kw">let </span>num_skipped = results.iter().filter(|r| <span class="kw-2">**</span>r == Skipped).count();
 
     <span class="kw">if </span>num_skipped == num_results {
-        <span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, <span class="string">&quot;SKIPPED&quot;</span>.bright_blue())
+        <span class="macro">format!</span>(<span class="string">"{}"</span>, <span class="string">"SKIPPED"</span>.bright_blue())
     } <span class="kw">else if </span>num_skipped &gt; <span class="number">0 </span>{
         <span class="macro">format!</span>(
-            <span class="string">&quot;{} ({} {})&quot;</span>,
-            <span class="string">&quot;PASSED&quot;</span>.green(),
+            <span class="string">"{} ({} {})"</span>,
+            <span class="string">"PASSED"</span>.green(),
             num_skipped,
-            <span class="string">&quot;SKIPPED&quot;</span>.bright_blue()
+            <span class="string">"SKIPPED"</span>.bright_blue()
         )
     } <span class="kw">else </span>{
-        <span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, <span class="string">&quot;PASSED&quot;</span>.green())
+        <span class="macro">format!</span>(<span class="string">"{}"</span>, <span class="string">"PASSED"</span>.green())
     }
 }
 
@@ -489,13 +491,13 @@
     <span class="kw">const </span>RETRY_DELAY: Duration = Duration::from_secs(<span class="number">10</span>);
 
     <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..NUM_RETRIES {
-        <span class="macro">println!</span>(<span class="string">&quot;Attempting to connect to server...&quot;</span>);
+        <span class="macro">println!</span>(<span class="string">"Attempting to connect to server..."</span>);
         <span class="kw">match </span>LockKeeperClient::health(config).<span class="kw">await </span>{
             <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(()),
             <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
-                <span class="macro">println!</span>(<span class="string">&quot;Server connection failed. Retrying in {RETRY_DELAY:?}&quot;</span>);
+                <span class="macro">println!</span>(<span class="string">"Server connection failed. Retrying in {RETRY_DELAY:?}"</span>);
                 <span class="kw">if </span>i == <span class="number">0 </span>{
-                    <span class="macro">println!</span>(<span class="string">&quot;Did you remember to run `cargo make start`?&quot;</span>);
+                    <span class="macro">println!</span>(<span class="string">"Did you remember to run `cargo make start`?"</span>);
                 }
                 std::thread::sleep(RETRY_DELAY);
             }

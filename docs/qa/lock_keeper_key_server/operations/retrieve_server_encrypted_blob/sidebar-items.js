@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"static":["CALLSITE","META"],"struct":["RetrieveServerEncryptedBlob"]};
+window.SIDEBAR_ITEMS = {"struct":["RetrieveServerEncryptedBlob"]};
