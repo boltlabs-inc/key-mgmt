@@ -3,8 +3,8 @@
     // Required methods
     fn <a href="#tymethod.create_session" class="fn">create_session</a>&lt;'life0, 'async_trait&gt;(
         &amp;'life0 self,
-        account_id: AccountId,
-        session_key: Encrypted&lt;OpaqueSessionKey&gt;
+        account_id: <a class="struct" href="../../../lock_keeper/types/database/account/struct.AccountId.html" title="struct lock_keeper::types::database::account::AccountId">AccountId</a>,
+        session_key: <a class="struct" href="../../../lock_keeper/crypto/generic/struct.Encrypted.html" title="struct lock_keeper::crypto::generic::Encrypted">Encrypted</a>&lt;<a class="struct" href="../../../lock_keeper/crypto/struct.OpaqueSessionKey.html" title="struct lock_keeper::crypto::OpaqueSessionKey">OpaqueSessionKey</a>&gt;
     ) -&gt; <a class="struct" href="https://doc.rust-lang.org/1.78.0/core/pin/struct.Pin.html" title="struct core::pin::Pin">Pin</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.78.0/alloc/boxed/struct.Box.html" title="struct alloc::boxed::Box">Box</a>&lt;dyn <a class="trait" href="https://doc.rust-lang.org/1.78.0/core/future/future/trait.Future.html" title="trait core::future::future::Future">Future</a>&lt;Output = <a class="enum" href="https://doc.rust-lang.org/1.78.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="https://docs.rs/uuid/1.4.1/uuid/struct.Uuid.html" title="struct uuid::Uuid">Uuid</a>, <a class="enum" href="enum.SessionCacheError.html" title="enum lock_keeper_key_server::server::session_cache::SessionCacheError">SessionCacheError</a>&gt;&gt; + <a class="trait" href="https://doc.rust-lang.org/1.78.0/core/marker/trait.Send.html" title="trait core::marker::Send">Send</a> + 'async_trait&gt;&gt;
        <span class="where">where Self: 'async_trait,
              'life0: 'async_trait</span>;
@@ -21,13 +21,13 @@
        <span class="where">where Self: 'async_trait,
              'life0: 'async_trait</span>;
 }</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Cache holding our sessions, per user, after authentication. Maps
-[<code>AccountId</code>]s to <a href="struct.Session.html" title="struct lock_keeper_key_server::server::session_cache::Session"><code>Session</code></a>s. Sessions should be tagged with a
+<a href="../../../lock_keeper/types/database/account/struct.AccountId.html" title="struct lock_keeper::types::database::account::AccountId"><code>AccountId</code></a>s to <a href="struct.Session.html" title="struct lock_keeper_key_server::server::session_cache::Session"><code>Session</code></a>s. Sessions should be tagged with a
 timestamp. A session is considered invalid after the expiration time has
 elapsed.</p>
 </div></details><h2 id="required-methods" class="section-header">Required Methods<a href="#required-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="tymethod.create_session" class="method"><a class="src rightside" href="../../../src/lock_keeper_key_server/server/session_cache.rs.html#61-65">source</a><h4 class="code-header">fn <a href="#tymethod.create_session" class="fn">create_session</a>&lt;'life0, 'async_trait&gt;(
     &amp;'life0 self,
-    account_id: AccountId,
-    session_key: Encrypted&lt;OpaqueSessionKey&gt;
+    account_id: <a class="struct" href="../../../lock_keeper/types/database/account/struct.AccountId.html" title="struct lock_keeper::types::database::account::AccountId">AccountId</a>,
+    session_key: <a class="struct" href="../../../lock_keeper/crypto/generic/struct.Encrypted.html" title="struct lock_keeper::crypto::generic::Encrypted">Encrypted</a>&lt;<a class="struct" href="../../../lock_keeper/crypto/struct.OpaqueSessionKey.html" title="struct lock_keeper::crypto::OpaqueSessionKey">OpaqueSessionKey</a>&gt;
 ) -&gt; <a class="struct" href="https://doc.rust-lang.org/1.78.0/core/pin/struct.Pin.html" title="struct core::pin::Pin">Pin</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.78.0/alloc/boxed/struct.Box.html" title="struct alloc::boxed::Box">Box</a>&lt;dyn <a class="trait" href="https://doc.rust-lang.org/1.78.0/core/future/future/trait.Future.html" title="trait core::future::future::Future">Future</a>&lt;Output = <a class="enum" href="https://doc.rust-lang.org/1.78.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="https://docs.rs/uuid/1.4.1/uuid/struct.Uuid.html" title="struct uuid::Uuid">Uuid</a>, <a class="enum" href="enum.SessionCacheError.html" title="enum lock_keeper_key_server::server::session_cache::SessionCacheError">SessionCacheError</a>&gt;&gt; + <a class="trait" href="https://doc.rust-lang.org/1.78.0/core/marker/trait.Send.html" title="trait core::marker::Send">Send</a> + 'async_trait&gt;&gt;<div class="where">where
     Self: 'async_trait,
     'life0: 'async_trait,</div></h4></section></summary><div class="docblock"><p>Store a newly created session for the specified user. The previous
