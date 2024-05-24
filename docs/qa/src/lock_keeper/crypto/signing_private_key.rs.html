@@ -215,6 +215,12 @@
 <a href="#213" id="213">213</a>
 <a href="#214" id="214">214</a>
 <a href="#215" id="215">215</a>
+<a href="#216" id="216">216</a>
+<a href="#217" id="217">217</a>
+<a href="#218" id="218">218</a>
+<a href="#219" id="219">219</a>
+<a href="#220" id="220">220</a>
+<a href="#221" id="221">221</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::crypto::{CryptoError, Signature, SigningPublicKey};
 <span class="kw">use </span>k256::{
     ecdsa,
@@ -239,6 +245,12 @@
     recovery_id: u8,
 }
 
+<span class="kw">impl </span>From&lt;ecdsa::Signature&gt; <span class="kw">for </span>Signature {
+    <span class="kw">fn </span>from(s: ecdsa::Signature) -&gt; <span class="self">Self </span>{
+        Signature(s)
+    }
+}
+
 <span class="doccomment">/// Type representing signature broken into its constituent parts.
 ///
 /// Useful for interoperability with other libraries.
@@ -252,7 +264,7 @@
 }
 
 <span class="kw">impl </span>RecoverableSignature {
-    <span class="kw">fn </span>new(signature: Signature, recovery_id: RecoveryId) -&gt; <span class="self">Self </span>{
+    <span class="kw">pub fn </span>new(signature: Signature, recovery_id: RecoveryId) -&gt; <span class="self">Self </span>{
         RecoverableSignature {
             signature,
             recovery_id: u8::from(recovery_id),
