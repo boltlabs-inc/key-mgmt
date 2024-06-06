@@ -22,6 +22,12 @@ pub struct RecoverableSignature {
     recovery_id: u8,
 }
 
+impl From<ecdsa::Signature> for Signature {
+    fn from(s: ecdsa::Signature) -> Self {
+        Signature(s)
+    }
+}
+
 /// Type representing signature broken into its constituent parts.
 ///
 /// Useful for interoperability with other libraries.
@@ -35,7 +41,7 @@ pub struct RecoverableSignatureParts {
 }
 
 impl RecoverableSignature {
-    fn new(signature: Signature, recovery_id: RecoveryId) -> Self {
+    pub fn new(signature: Signature, recovery_id: RecoveryId) -> Self {
         RecoverableSignature {
             signature,
             recovery_id: u8::from(recovery_id),
