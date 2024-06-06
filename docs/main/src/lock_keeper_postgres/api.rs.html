@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `persistence/lock-keeper-sql/src/api.rs`."><title>api.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ba5701c5741a7b69.css" id="mainThemeStyle"><div id="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="lock_keeper_postgres" data-themes="" data-resource-suffix="" data-rustdoc-version="1.70.0 (90c541806 2023-05-31)" data-search-js="search-e077946657036a58.js" data-settings-js="settings-298e1ea74db45b39.js" data-settings-css="settings-7bfb4c59cc6bc502.css" data-theme-light-css="light-0f8c037637f9eb3e.css" data-theme-dark-css="dark-1097f8e92a01e3cf.css" data-theme-ayu-css="ayu-614652228113ac93.css" ></div><script src="../../static.files/storage-62ce34ea385b278a.js"></script><script defer src="../../static.files/source-script-905937fbbdc8e9ea.js"></script><script defer src="../../source-files.js"></script><script defer src="../../static.files/main-f61008743c98d196.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../static.files/light-0f8c037637f9eb3e.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../static.files/dark-1097f8e92a01e3cf.css"><link rel="stylesheet" href="../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../lock_keeper_postgres/index.html"><img class="rust-logo" src="../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `persistence/lock-keeper-sql/src/api.rs`."><title>api.rs - source</title><script> if (window.location.protocol !== "file:") document.write(`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2">`)</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-e935ef01ae1c1829.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="lock_keeper_postgres" data-themes="" data-resource-suffix="" data-rustdoc-version="1.78.0 (9b00956e5 2024-04-29)" data-channel="1.78.0" data-search-js="search-42d8da7a6b9792c2.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-12cf3b4f4f9dc36d.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../lock_keeper_postgres/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -732,9 +734,9 @@
 }
 
 <span class="kw">impl </span>Debug <span class="kw">for </span>PostgresDB {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; std::fmt::Result {
-        f.debug_struct(<span class="string">&quot;PostgresDB&quot;</span>)
-            .field(<span class="string">&quot;uri&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.config.uri())
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; std::fmt::Result {
+        f.debug_struct(<span class="string">"PostgresDB"</span>)
+            .field(<span class="string">"uri"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.config.uri())
             .finish()
     }
 }
@@ -742,7 +744,7 @@
 <span class="kw">impl </span>PostgresDB {
     <span class="attr">#[instrument(err(Debug))]
     </span><span class="kw">pub async fn </span>connect(config: Config) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, PostgresError&gt; {
-        <span class="macro">info!</span>(<span class="string">&quot;Connecting to database&quot;</span>);
+        <span class="macro">info!</span>(<span class="string">"Connecting to database"</span>);
 
         <span class="kw">let </span><span class="kw-2">mut </span>attempts = <span class="number">0</span>;
 
@@ -765,9 +767,9 @@
                 <span class="prelude-val">Ok</span>(pool) =&gt; <span class="kw">break </span>pool,
                 <span class="prelude-val">Err</span>(e) =&gt; {
                     attempts += <span class="number">1</span>;
-                    <span class="macro">error!</span>(<span class="string">&quot;{e}&quot;</span>);
+                    <span class="macro">error!</span>(<span class="string">"{e}"</span>);
                     <span class="macro">error!</span>(
-                        <span class="string">&quot;Failed to connect to db. Attempts: {attempts}. Retrying in {:?}&quot;</span>,
+                        <span class="string">"Failed to connect to db. Attempts: {attempts}. Retrying in {:?}"</span>,
                         config.connection_retry_delay
                     );
                     tokio::time::sleep(config.connection_retry_delay).<span class="kw">await</span>;
@@ -794,14 +796,14 @@
         action: ClientAction,
         status: EventStatus,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), PostgresError&gt; {
-        <span class="macro">debug!</span>(<span class="string">&quot;Storing new audit event.&quot;</span>);
+        <span class="macro">debug!</span>(<span class="string">"Storing new audit event."</span>);
 
         <span class="kw">let </span>timestamp = OffsetDateTime::now_utc();
         <span class="kw">let </span>key_id = key_id.as_ref().map(|k| k.as_bytes());
 
         <span class="kw">let </span>rows_affected = <span class="macro">sqlx::query!</span>(
-            <span class="string">&quot;INSERT INTO AuditEvents (account_id, key_id, request_id, client_action_id, event_status, timestamp) \
-             VALUES ($1, $2, $3, $4, $5, $6)&quot;</span>,
+            <span class="string">"INSERT INTO AuditEvents (account_id, key_id, request_id, client_action_id, event_status, timestamp) \
+             VALUES ($1, $2, $3, $4, $5, $6)"</span>,
             account_id.<span class="number">0</span>,
             key_id,
             request_id,
@@ -815,7 +817,7 @@
         <span class="comment">// Only one row should ever be affected by our insert. Something has gone
         // wrong...
         </span><span class="kw">if </span>rows_affected != <span class="number">1 </span>{
-            <span class="macro">error!</span>(<span class="string">&quot;Unexpected number of rows affected: {}&quot;</span>, rows_affected);
+            <span class="macro">error!</span>(<span class="string">"Unexpected number of rows affected: {}"</span>, rows_affected);
             <span class="kw">return </span><span class="prelude-val">Err</span>(PostgresError::InvalidRowCountFound);
         }
 
@@ -830,45 +832,45 @@
         event_type: EventType,
         options: AuditEventOptions,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;AuditEvent&gt;, PostgresError&gt; {
-        <span class="macro">debug!</span>(<span class="string">&quot;Finding audit event(s)&quot;</span>);
+        <span class="macro">debug!</span>(<span class="string">"Finding audit event(s)"</span>);
 
         <span class="kw">let </span><span class="kw-2">mut </span>query = QueryBuilder::new(
-            <span class="string">&quot;SELECT audit_event_id, key_id, request_id, account_id, client_action_id, event_status, timestamp \
+            <span class="string">"SELECT audit_event_id, key_id, request_id, account_id, client_action_id, event_status, timestamp \
              FROM AuditEvents \
-             WHERE &quot;</span>,
+             WHERE "</span>,
         );
 
-        <span class="comment">// Ensure account name matches, otherwise a client could fetch anyone&#39;s audit
+        <span class="comment">// Ensure account name matches, otherwise a client could fetch anyone's audit
         // events if they guess the request_id.
-        </span><span class="kw">let _ </span>= query.push(<span class="string">&quot; account_id=&quot;</span>).push_bind(account_id.<span class="number">0</span>);
+        </span><span class="kw">let _ </span>= query.push(<span class="string">" account_id="</span>).push_bind(account_id.<span class="number">0</span>);
 
         <span class="comment">// Add filtering based on after_date if present.
         </span><span class="kw">if let </span><span class="prelude-val">Some</span>(after_date) = options.after_date {
-            <span class="kw">let _ </span>= query.push(<span class="string">&quot; AND timestamp &gt;= &quot;</span>).push_bind(after_date);
+            <span class="kw">let _ </span>= query.push(<span class="string">" AND timestamp &gt;= "</span>).push_bind(after_date);
         }
 
         <span class="comment">// Add filtering based on before_date if present.
         </span><span class="kw">if let </span><span class="prelude-val">Some</span>(before_date) = options.before_date {
-            <span class="kw">let _ </span>= query.push(<span class="string">&quot; AND timestamp &lt;= &quot;</span>).push_bind(before_date);
+            <span class="kw">let _ </span>= query.push(<span class="string">" AND timestamp &lt;= "</span>).push_bind(before_date);
         }
 
         <span class="comment">// Add filtering based on key_ids if present.
         </span><span class="kw">if </span>!options.key_ids.is_empty() {
-            <span class="kw">let _ </span>= query.push(<span class="string">&quot; AND key_id IN &quot;</span>);
+            <span class="kw">let _ </span>= query.push(<span class="string">" AND key_id IN "</span>);
             <span class="comment">// Turn the key ids into bytes that postgres understands.
             </span><span class="kw">let </span>key_id_bytes = options.key_ids.iter().map(KeyId::as_bytes);
             append_value_list(<span class="kw-2">&amp;mut </span>query, key_id_bytes)<span class="question-mark">?</span>;
         }
 
         <span class="kw">if let </span><span class="prelude-val">Some</span>(request_id) = options.request_id {
-            <span class="kw">let _ </span>= query.push(<span class="string">&quot; AND request_id=&quot;</span>).push_bind(request_id);
+            <span class="kw">let _ </span>= query.push(<span class="string">" AND request_id="</span>).push_bind(request_id);
         }
 
         <span class="comment">// Add filtering based on actions if the user specific event types.
         </span><span class="kw">if </span>!<span class="macro">matches!</span>(event_type, EventType::All) {
             <span class="comment">// We use an IN operator to match multiple values based on the value of
             // `event_type`.
-            </span><span class="kw">let _ </span>= query.push(<span class="string">&quot; AND client_action_id IN &quot;</span>);
+            </span><span class="kw">let _ </span>= query.push(<span class="string">" AND client_action_id IN "</span>);
             <span class="comment">// Turn the actions into their integer value for faster searching.
             </span><span class="kw">let </span>actions = event_type.client_actions();
             <span class="kw">let </span>actions = actions.iter().map(|a| <span class="kw-2">*</span>a <span class="kw">as </span>i64);
@@ -876,13 +878,13 @@
             append_value_list(<span class="kw-2">&amp;mut </span>query, actions)<span class="question-mark">?</span>;
         }
 
-        <span class="macro">debug!</span>(<span class="string">&quot;Dynamically generated query: {}&quot;</span>, query.sql());
+        <span class="macro">debug!</span>(<span class="string">"Dynamically generated query: {}"</span>, query.sql());
 
         <span class="kw">let </span>matches: Vec&lt;AuditEventDB&gt; = query
             .build_query_as::&lt;AuditEventDB&gt;()
             .fetch_all(<span class="kw-2">&amp;</span><span class="self">self</span>.connection_pool)
             .<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="macro">debug!</span>(<span class="string">&quot;Matching entries from query: {}&quot;</span>, matches.len());
+        <span class="macro">debug!</span>(<span class="string">"Matching entries from query: {}"</span>, matches.len());
 
         <span class="comment">// Iterator will stop and the first error is returned if our conversion fails.
         </span><span class="kw">let </span>results: <span class="prelude-ty">Result</span>&lt;Vec&lt;<span class="kw">_</span>&gt;, <span class="kw">_</span>&gt; = matches.into_iter().map(AuditEvent::try_from).collect();
@@ -891,18 +893,18 @@
 
     <span class="attr">#[instrument(skip_all, err(Debug), fields(account_id, key_id, secret_type))]
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>add_secret_impl(<span class="kw-2">&amp;</span><span class="self">self</span>, secret: StoredSecret) -&gt; <span class="prelude-ty">Result</span>&lt;(), PostgresError&gt; {
-        logging::record_field(<span class="string">&quot;account_id&quot;</span>, <span class="kw-2">&amp;</span>secret.account_id);
-        logging::record_field(<span class="string">&quot;key_id&quot;</span>, <span class="kw-2">&amp;</span>secret.key_id);
-        logging::record_field(<span class="string">&quot;secret_type&quot;</span>, <span class="kw-2">&amp;</span>secret.secret_type);
-        <span class="macro">debug!</span>(<span class="string">&quot;Adding user secret.&quot;</span>);
+        logging::record_field(<span class="string">"account_id"</span>, <span class="kw-2">&amp;</span>secret.account_id);
+        logging::record_field(<span class="string">"key_id"</span>, <span class="kw-2">&amp;</span>secret.key_id);
+        logging::record_field(<span class="string">"secret_type"</span>, <span class="kw-2">&amp;</span>secret.secret_type);
+        <span class="macro">debug!</span>(<span class="string">"Adding user secret."</span>);
 
         <span class="kw">let </span>secret_db: SecretDB = SecretDB::from(secret);
 
         <span class="kw">let </span>rows_affected = <span class="macro">sqlx::query!</span>(
-            <span class="string">&quot;INSERT INTO Secrets (key_id, account_id, secret, secret_type_id, retrieved) \
+            <span class="string">"INSERT INTO Secrets (key_id, account_id, secret, secret_type_id, retrieved) \
              SELECT $1, $2, $3, SecretTypes.secret_type_id, $4 \
              FROM SecretTypes \
-             WHERE SecretTypes.secret_type=$5&quot;</span>,
+             WHERE SecretTypes.secret_type=$5"</span>,
             secret_db.key_id,
             secret_db.account_id,
             secret_db.secret,
@@ -916,7 +918,7 @@
         <span class="comment">// Only one row should ever be affected by our insert. Something has gone
         // wrong...
         </span><span class="kw">if </span>rows_affected != <span class="number">1 </span>{
-            <span class="macro">error!</span>(<span class="string">&quot;Unexpected number of rows affected: {}&quot;</span>, rows_affected);
+            <span class="macro">error!</span>(<span class="string">"Unexpected number of rows affected: {}"</span>, rows_affected);
             <span class="kw">return </span><span class="prelude-val">Err</span>(PostgresError::InvalidRowCountFound);
         }
 
@@ -932,24 +934,24 @@
         key_id: <span class="kw-2">&amp;</span>KeyId,
         filter: SecretFilter,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;StoredSecret, PostgresError&gt; {
-        <span class="macro">debug!</span>(<span class="string">&quot;Fetching user secret.&quot;</span>);
+        <span class="macro">debug!</span>(<span class="string">"Fetching user secret."</span>);
 
         <span class="comment">// Join tables to map secret_type to the corresponding secret_type_id.
         // Update the retrieved value on Secrets.retrieved
         </span><span class="kw">let </span>secret_db: <span class="prelude-ty">Option</span>&lt;SecretDB&gt; = <span class="macro">sqlx::query_as!</span>(
             SecretDB,
-            <span class="string">&quot;UPDATE Secrets \
+            <span class="string">"UPDATE Secrets \
                 SET retrieved=TRUE \
              FROM Secrets S INNER JOIN SecretTypes ST \
                 ON S.secret_type_id=ST.secret_type_id AND ST.secret_type LIKE $3 \
              WHERE S.key_id=$1 AND S.account_id=$2 \
-             RETURNING S.key_id, S.account_id, ST.secret_type, S.secret, S.retrieved&quot;</span>,
+             RETURNING S.key_id, S.account_id, ST.secret_type, S.secret, S.retrieved"</span>,
             key_id.as_bytes(),
             account_id.<span class="number">0</span>,
             <span class="comment">// We use the LIKE operator to support whether filter.secret_type is present or
             // not. In case it is not, we use a wildcard match for the secret_type
             // column.
-            </span>filter.secret_type.unwrap_or_else(|| <span class="string">&quot;%&quot;</span>.to_string())
+            </span>filter.secret_type.unwrap_or_else(|| <span class="string">"%"</span>.to_string())
         )
         .fetch_optional(<span class="kw-2">&amp;</span><span class="self">self</span>.connection_pool)
         .<span class="kw">await</span><span class="question-mark">?</span>;
@@ -957,18 +959,18 @@
         <span class="kw">match </span>secret_db {
             <span class="prelude-val">None </span>=&gt; {
                 <span class="comment">// Entry not found. Check if the key exists but the user_id was wrong!
-                // The &quot;count!&quot; syntax allows us to tell sqlx that the result of this expression
+                // The "count!" syntax allows us to tell sqlx that the result of this expression
                 // will not be null, and return type ((which is an anonymous record) of this
-                // `query!` should have a record field called &quot;count&quot;.
+                // `query!` should have a record field called "count".
                 </span><span class="kw">let </span>key_found = <span class="macro">sqlx::query!</span>(
-                    <span class="string">r#&quot;SELECT COUNT(1) as &quot;count!&quot; FROM Secrets WHERE key_id=$1&quot;#</span>,
+                    <span class="string">r#"SELECT COUNT(1) as "count!" FROM Secrets WHERE key_id=$1"#</span>,
                     key_id.as_bytes()
                 )
                 .fetch_one(<span class="kw-2">&amp;</span><span class="self">self</span>.connection_pool)
                 .<span class="kw">await</span><span class="question-mark">?</span>;
 
                 <span class="kw">match </span>key_found.count {
-                    <span class="comment">// The key doesn&#39;t even exist.
+                    <span class="comment">// The key doesn't even exist.
                     </span><span class="number">0 </span>=&gt; <span class="prelude-val">Err</span>(PostgresError::NoEntry),
                     <span class="comment">// The key exists but the secret_type or user_id were incorrect.
                     </span><span class="number">1 </span>=&gt; <span class="prelude-val">Err</span>(PostgresError::IncorrectKeyMetadata),
@@ -986,16 +988,16 @@
         account_id: AccountId,
         key_id: <span class="kw-2">&amp;</span>KeyId,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;StoredSecret, PostgresError&gt; {
-        <span class="macro">debug!</span>(<span class="string">&quot;Fetching user secret.&quot;</span>);
+        <span class="macro">debug!</span>(<span class="string">"Fetching user secret."</span>);
 
         <span class="comment">// Join tables to map secret_type to the corresponding secret_type_id.
         // Update the retrieved value on Secrets.retrieved
         </span><span class="kw">let </span>secret_db: <span class="prelude-ty">Option</span>&lt;SecretDB&gt; = <span class="macro">sqlx::query_as!</span>(
             SecretDB,
-            <span class="string">&quot;SELECT S.key_id, S.account_id, ST.secret_type, S.secret, S.retrieved
+            <span class="string">"SELECT S.key_id, S.account_id, ST.secret_type, S.secret, S.retrieved
              FROM Secrets S INNER JOIN SecretTypes ST
                 ON S.secret_type_id=ST.secret_type_id AND ST.secret_type = $3
-             WHERE S.key_id=$1 AND S.account_id=$2&quot;</span>,
+             WHERE S.key_id=$1 AND S.account_id=$2"</span>,
             key_id.as_bytes(),
             account_id.<span class="number">0</span>,
             SERVER_ENCRYPTED_BLOB
@@ -1017,11 +1019,11 @@
         account_id: AccountId,
         key_id: <span class="kw-2">&amp;</span>KeyId,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), PostgresError&gt; {
-        <span class="macro">debug!</span>(<span class="string">&quot;Deleting user secret.&quot;</span>);
+        <span class="macro">debug!</span>(<span class="string">"Deleting user secret."</span>);
 
         <span class="kw">let </span>rows_affected = <span class="macro">sqlx::query!</span>(
-            <span class="string">r#&quot;DELETE FROM Secrets
-            WHERE account_id=$1 AND key_id=$2&quot;#</span>,
+            <span class="string">r#"DELETE FROM Secrets
+            WHERE account_id=$1 AND key_id=$2"#</span>,
             account_id.<span class="number">0</span>,
             key_id.as_bytes()
         )
@@ -1043,13 +1045,13 @@
         account_name: <span class="kw-2">&amp;</span>AccountName,
         server_registration: <span class="kw-2">&amp;</span>ServerRegistration&lt;OpaqueCipherSuite&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Account, PostgresError&gt; {
-        <span class="macro">info!</span>(<span class="string">&quot;Creating new user.&quot;</span>);
+        <span class="macro">info!</span>(<span class="string">"Creating new user."</span>);
         <span class="kw">let </span>serialized = bincode::serialize(server_registration)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>account_id = <span class="macro">sqlx::query!</span>(
-            <span class="string">&quot;INSERT INTO Accounts (user_id, account_name, server_registration)\
+            <span class="string">"INSERT INTO Accounts (user_id, account_name, server_registration)\
              VALUES ($1, $2, $3)
-             RETURNING account_id&quot;</span>,
+             RETURNING account_id"</span>,
             user_id.as_ref(),
             account_name.as_ref(),
             serialized,
@@ -1073,12 +1075,12 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         account_name: <span class="kw-2">&amp;</span>AccountName,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Account&gt;, PostgresError&gt; {
-        <span class="macro">debug!</span>(<span class="string">&quot;Searching for user.&quot;</span>);
+        <span class="macro">debug!</span>(<span class="string">"Searching for user."</span>);
         <span class="kw">let </span>user_db = <span class="macro">sqlx::query_as!</span>(
             AccountDB,
-            <span class="string">&quot;SELECT account_id, user_id, account_name, storage_key, server_registration \
+            <span class="string">"SELECT account_id, user_id, account_name, storage_key, server_registration \
             FROM Accounts \
-            WHERE account_name=$1&quot;</span>,
+            WHERE account_name=$1"</span>,
             account_name.as_ref()
         )
         .fetch_optional(<span class="kw-2">&amp;</span><span class="self">self</span>.connection_pool)
@@ -1093,13 +1095,13 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         account_id: AccountId,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Account&gt;, PostgresError&gt; {
-        <span class="macro">debug!</span>(<span class="string">&quot;Searching for user by ID&quot;</span>);
+        <span class="macro">debug!</span>(<span class="string">"Searching for user by ID"</span>);
 
         <span class="kw">let </span>account_db: <span class="prelude-ty">Option</span>&lt;AccountDB&gt; = <span class="macro">sqlx::query_as!</span>(
             AccountDB,
-            <span class="string">&quot;SELECT account_id, user_id, account_name, storage_key, server_registration \
+            <span class="string">"SELECT account_id, user_id, account_name, storage_key, server_registration \
             FROM Accounts \
-            WHERE account_id=$1&quot;</span>,
+            WHERE account_id=$1"</span>,
             account_id.<span class="number">0
         </span>)
         .fetch_optional(<span class="kw-2">&amp;</span><span class="self">self</span>.connection_pool)
@@ -1114,11 +1116,11 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         account_id: AccountId,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), PostgresError&gt; {
-        <span class="macro">info!</span>(<span class="string">&quot;Deleting user.&quot;</span>);
+        <span class="macro">info!</span>(<span class="string">"Deleting user."</span>);
 
         <span class="comment">// Delete the entry and
         </span><span class="kw">let </span>result = <span class="macro">sqlx::query!</span>(
-            <span class="string">r#&quot;WITH deleted AS (DELETE FROM Accounts WHERE account_id=$1 RETURNING *) SELECT count(*) AS &quot;count!&quot; FROM deleted&quot;#</span>,
+            <span class="string">r#"WITH deleted AS (DELETE FROM Accounts WHERE account_id=$1 RETURNING *) SELECT count(*) AS "count!" FROM deleted"#</span>,
             account_id.<span class="number">0
         </span>)
         .fetch_one(<span class="kw-2">&amp;</span><span class="self">self</span>.connection_pool)
@@ -1138,12 +1140,12 @@
         account_id: AccountId,
         storage_key: Encrypted&lt;StorageKey&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), PostgresError&gt; {
-        <span class="macro">info!</span>(<span class="string">&quot;Setting storage key&quot;</span>);
+        <span class="macro">info!</span>(<span class="string">"Setting storage key"</span>);
 
         <span class="kw">let </span>storage_key = bincode::serialize(<span class="kw-2">&amp;</span>storage_key)<span class="question-mark">?</span>;
 
         <span class="kw">let _ </span>= <span class="macro">sqlx::query!</span>(
-            <span class="string">&quot;UPDATE Accounts SET storage_key=$1 WHERE account_id=$2&quot;</span>,
+            <span class="string">"UPDATE Accounts SET storage_key=$1 WHERE account_id=$2"</span>,
             storage_key,
             account_id.<span class="number">0</span>,
         )
@@ -1158,11 +1160,11 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         user_id: <span class="kw-2">&amp;</span>UserId,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;bool, PostgresError&gt; {
-        <span class="macro">info!</span>(<span class="string">&quot;Checking if user_id exists&quot;</span>);
+        <span class="macro">info!</span>(<span class="string">"Checking if user_id exists"</span>);
 
         <span class="kw">let </span>result = <span class="macro">sqlx::query!</span>(
-            <span class="string">r#&quot;SELECT count(*) as count FROM Accounts
-                WHERE user_id=$1&quot;#</span>,
+            <span class="string">r#"SELECT count(*) as count FROM Accounts
+                WHERE user_id=$1"#</span>,
             user_id.as_ref()
         )
         .fetch_one(<span class="kw-2">&amp;</span><span class="self">self</span>.connection_pool)
@@ -1179,19 +1181,19 @@
 <span class="doccomment">/// Create a SQL query list of the form (val1, val2, ...). Error is returned if
 /// the iterator is empty
 </span><span class="attr">#[allow(unused_results)]
-</span><span class="kw">fn </span>append_value_list&lt;<span class="lifetime">&#39;a</span>, I: <span class="lifetime">&#39;a </span>+ Encode&lt;<span class="lifetime">&#39;a</span>, Postgres&gt; + Send + Type&lt;Postgres&gt;&gt;(
-    query: <span class="kw-2">&amp;mut </span>QueryBuilder&lt;<span class="lifetime">&#39;a</span>, Postgres&gt;,
+</span><span class="kw">fn </span>append_value_list&lt;<span class="lifetime">'a</span>, I: <span class="lifetime">'a </span>+ Encode&lt;<span class="lifetime">'a</span>, Postgres&gt; + Send + Type&lt;Postgres&gt;&gt;(
+    query: <span class="kw-2">&amp;mut </span>QueryBuilder&lt;<span class="lifetime">'a</span>, Postgres&gt;,
     values: <span class="kw">impl </span>Iterator&lt;Item = I&gt; + Clone,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(), PostgresError&gt; {
     <span class="kw">if </span>values.clone().count() == <span class="number">0 </span>{
         <span class="kw">return </span><span class="prelude-val">Err</span>(PostgresError::InvalidAuditEventOptions);
     }
-    query.push(<span class="string">&quot;(&quot;</span>);
-    <span class="kw">let </span><span class="kw-2">mut </span>separated = query.separated(<span class="string">&quot;, &quot;</span>);
+    query.push(<span class="string">"("</span>);
+    <span class="kw">let </span><span class="kw-2">mut </span>separated = query.separated(<span class="string">", "</span>);
     <span class="kw">for </span>v <span class="kw">in </span>values {
         separated.push_bind(v);
     }
-    separated.push_unseparated(<span class="string">&quot;)&quot;</span>);
+    separated.push_unseparated(<span class="string">")"</span>);
     <span class="prelude-val">Ok</span>(())
 }
 </code></pre></div></section></main></body></html>

@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `lock-keeper/src/crypto/signing_key.rs`."><title>signing_key.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-ba5701c5741a7b69.css" id="mainThemeStyle"><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="lock_keeper" data-themes="" data-resource-suffix="" data-rustdoc-version="1.70.0 (90c541806 2023-05-31)" data-search-js="search-e077946657036a58.js" data-settings-js="settings-298e1ea74db45b39.js" data-settings-css="settings-7bfb4c59cc6bc502.css" data-theme-light-css="light-0f8c037637f9eb3e.css" data-theme-dark-css="dark-1097f8e92a01e3cf.css" data-theme-ayu-css="ayu-614652228113ac93.css" ></div><script src="../../../static.files/storage-62ce34ea385b278a.js"></script><script defer src="../../../static.files/source-script-905937fbbdc8e9ea.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../static.files/main-f61008743c98d196.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../static.files/light-0f8c037637f9eb3e.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../static.files/dark-1097f8e92a01e3cf.css"><link rel="stylesheet" href="../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../lock_keeper/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `lock-keeper/src/crypto/signing_key.rs`."><title>signing_key.rs - source</title><script> if (window.location.protocol !== "file:") document.write(`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2">`)</script><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-e935ef01ae1c1829.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="lock_keeper" data-themes="" data-resource-suffix="" data-rustdoc-version="1.78.0 (9b00956e5 2024-04-29)" data-channel="1.78.0" data-search-js="search-42d8da7a6b9792c2.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-12cf3b4f4f9dc36d.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../lock_keeper/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -981,9 +983,9 @@
 }
 
 <span class="kw">pub mod </span>generation_types {
-    <span class="kw">pub const </span>SERVER_GENERATED: <span class="kw-2">&amp;</span>str = <span class="string">&quot;server-generated&quot;</span>;
-    <span class="kw">pub const </span>CLIENT_GENERATED: <span class="kw-2">&amp;</span>str = <span class="string">&quot;client-generated&quot;</span>;
-    <span class="kw">pub const </span>IMPORTED: <span class="kw-2">&amp;</span>str = <span class="string">&quot;imported key&quot;</span>;
+    <span class="kw">pub const </span>SERVER_GENERATED: <span class="kw-2">&amp;</span>str = <span class="string">"server-generated"</span>;
+    <span class="kw">pub const </span>CLIENT_GENERATED: <span class="kw-2">&amp;</span>str = <span class="string">"client-generated"</span>;
+    <span class="kw">pub const </span>IMPORTED: <span class="kw-2">&amp;</span>str = <span class="string">"imported key"</span>;
 }
 
 <span class="doccomment">/// An ECDSA signing key pair, including a public component for verifying
@@ -1007,8 +1009,8 @@
     }
 
     <span class="doccomment">/// Domain separator for use in serializing signing keypairs.
-    </span><span class="kw">fn </span>domain_separator() -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str {
-        <span class="string">&quot;ECDSA signing key pair over curve secp256k1&quot;
+    </span><span class="kw">fn </span>domain_separator() -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str {
+        <span class="string">"ECDSA signing key pair over curve secp256k1"
     </span>}
 
     <span class="doccomment">/// Retrieve the public portion of the key.
@@ -1122,7 +1124,7 @@
         <span class="kw">let </span>digest = sha3::Keccak256::new_with_prefix(message);
 
         <span class="self">self</span>.<span class="number">0</span>.verify_digest(digest, <span class="kw-2">&amp;</span>signature.<span class="number">0</span>).map_err(|e| {
-            <span class="macro">error!</span>(<span class="string">&quot;{e}&quot;</span>);
+            <span class="macro">error!</span>(<span class="string">"{e}"</span>);
             CryptoError::VerificationFailed
         })
     }
@@ -1133,7 +1135,7 @@
     /// -----BEGIN PUBLIC KEY-----
     </span><span class="kw">pub fn </span>from_pem(pem: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, CryptoError&gt; {
         <span class="kw">let </span>key = VerifyingKey::from_str(pem).map_err(|e| {
-            <span class="macro">error!</span>(<span class="string">&quot;{e}&quot;</span>);
+            <span class="macro">error!</span>(<span class="string">"{e}"</span>);
             CryptoError::ConversionError
         })<span class="question-mark">?</span>;
 
@@ -1219,7 +1221,7 @@
     <span class="kw">type </span>Error = LockKeeperError;
     <span class="kw">fn </span>try_from(bytes: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
         <span class="comment">// Check if these bytes are correctly formatted to make a signing key,
-        // but don&#39;t actually use the key.
+        // but don't actually use the key.
         </span><span class="kw">let </span>_signing_key =
             ecdsa::SigningKey::try_from(bytes).map_err(|<span class="kw">_</span>| CryptoError::ConversionError)<span class="question-mark">?</span>;
 
@@ -1387,20 +1389,20 @@
        # Get private key in PKCS#8-encoded pem format.
        &gt; openssl pkcs8 -topk8 -nocrypt -in test.pem -out test_p8.pem
     */
-    </span><span class="kw">const </span>PUBLIC_KEY: <span class="kw-2">&amp;</span>str = <span class="string">r#&quot;
+    </span><span class="kw">const </span>PUBLIC_KEY: <span class="kw-2">&amp;</span>str = <span class="string">r#"
 -----BEGIN PUBLIC KEY-----
 MFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAEEfw/MOmtobnF36IKi6WcN/sSbP2nrdSE
 3bKZV9X0j+bukH19wqtyp+JC6OiKY5E8LQn5bWM7ihBy2+0Tl0mHVQ==
 -----END PUBLIC KEY-----
-&quot;#</span>;
+"#</span>;
 
-    <span class="kw">const </span>PRIVATE_KEY: <span class="kw-2">&amp;</span>str = <span class="string">r#&quot;
+    <span class="kw">const </span>PRIVATE_KEY: <span class="kw-2">&amp;</span>str = <span class="string">r#"
 -----BEGIN PRIVATE KEY-----
 MIGEAgEAMBAGByqGSM49AgEGBSuBBAAKBG0wawIBAQQg5X2FE2dAPaL6hD6hAN93
 6Gd61wZkW5i00WrrIQVt9P2hRANCAAQR/D8w6a2hucXfogqLpZw3+xJs/aet1ITd
 splX1fSP5u6QfX3Cq3Kn4kLo6IpjkTwtCfltYzuKEHLb7ROXSYdV
 -----END PRIVATE KEY-----
-&quot;#</span>;
+"#</span>;
 
     <span class="comment">// Ensure we can read a public key in the expected format.
     </span><span class="attr">#[test]
@@ -1415,7 +1417,7 @@ splX1fSP5u6QfX3Cq3Kn4kLo6IpjkTwtCfltYzuKEHLb7ROXSYdV
         <span class="kw">let </span>public_key = SigningPublicKey::from_pem(PUBLIC_KEY).unwrap();
         <span class="kw">let </span>signing_key = SigningPrivateKey(ecdsa::SigningKey::from_str(PRIVATE_KEY).unwrap());
 
-        <span class="kw">let </span>message = <span class="string">&quot;hello world!&quot;</span>.as_bytes();
+        <span class="kw">let </span>message = <span class="string">"hello world!"</span>.as_bytes();
         <span class="kw">let </span>signature = signing_key.sign(message);
 
         public_key.verify(message, <span class="kw-2">&amp;</span>signature).unwrap();
@@ -1454,7 +1456,7 @@ splX1fSP5u6QfX3Cq3Kn4kLo6IpjkTwtCfltYzuKEHLb7ROXSYdV
     /// imported keys (encrypted under a storage key).
     </span><span class="kw">fn </span>check_context(
         <span class="kw-2">mut </span>encrypted_key: Encrypted&lt;SigningKeyPair&gt;,
-        expected_extra_context: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str,
+        expected_extra_context: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str,
         user_id: UserId,
         key_id: KeyId,
         storage_key: StorageKey,
@@ -1502,12 +1504,12 @@ splX1fSP5u6QfX3Cq3Kn4kLo6IpjkTwtCfltYzuKEHLb7ROXSYdV
             .decrypt_signing_key(storage_key.clone(), user_id.clone(), key_id.clone())
             .is_err());
 
-        <span class="comment">// random extra context doesn&#39;t work
+        <span class="comment">// random extra context doesn't work
         </span><span class="kw">let </span>random_context = AssociatedData::new()
             .with_bytes(user_id.clone())
             .with_bytes(key_id.clone())
             .with_str(expected_extra_context)
-            .with_str(<span class="string">&quot;here is some interesting context that will fail to decrypt our key!&quot;</span>);
+            .with_str(<span class="string">"here is some interesting context that will fail to decrypt our key!"</span>);
         encrypted_key.associated_data = random_context;
         <span class="macro">assert!</span>(encrypted_key
             .decrypt_signing_key(storage_key, user_id, key_id)
@@ -1616,7 +1618,7 @@ splX1fSP5u6QfX3Cq3Kn4kLo6IpjkTwtCfltYzuKEHLb7ROXSYdV
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>signature_from_der_works() {
-        <span class="kw">const </span>MESSAGE: <span class="kw-2">&amp;</span>str = <span class="string">&quot;Hello World!&quot;</span>;
+        <span class="kw">const </span>MESSAGE: <span class="kw-2">&amp;</span>str = <span class="string">"Hello World!"</span>;
         <span class="comment">// Create a signature and convert it to der format.
         </span><span class="kw">let </span><span class="kw-2">mut </span>rng = rand::thread_rng();
         <span class="kw">let </span>signing_key = SigningKeyPair::generate(<span class="kw-2">&amp;mut </span>rng, <span class="kw-2">&amp;</span>AssociatedData::new());
@@ -1624,15 +1626,15 @@ splX1fSP5u6QfX3Cq3Kn4kLo6IpjkTwtCfltYzuKEHLb7ROXSYdV
         <span class="kw">let </span>der = signature.to_der();
 
         <span class="comment">// Make new signature from der and verify.
-        </span><span class="kw">let </span>signature2 = Signature::from_der(<span class="kw-2">&amp;</span>der).expect(<span class="string">&quot;Failed to read from der.&quot;</span>);
+        </span><span class="kw">let </span>signature2 = Signature::from_der(<span class="kw-2">&amp;</span>der).expect(<span class="string">"Failed to read from der."</span>);
         <span class="kw">let </span>public_key = signing_key.public_key();
         public_key
             .verify(MESSAGE, <span class="kw-2">&amp;</span>signature2)
-            .expect(<span class="string">&quot;Verification failed.&quot;</span>);
+            .expect(<span class="string">"Verification failed."</span>);
 
         <span class="macro">assert_eq!</span>(
             signature, signature2,
-            <span class="string">&quot;Signature mismatch after conversion.&quot;
+            <span class="string">"Signature mismatch after conversion."
         </span>);
     }
 
@@ -1642,10 +1644,10 @@ splX1fSP5u6QfX3Cq3Kn4kLo6IpjkTwtCfltYzuKEHLb7ROXSYdV
 
         <span class="kw">let </span>signing_key = SigningKeyPair::generate(<span class="kw-2">&amp;mut </span>rng, <span class="kw-2">&amp;</span>AssociatedData::new());
         <span class="kw">let </span>public_key = signing_key.public_key();
-        <span class="kw">let </span>message = <span class="string">b&quot;signatures won&#39;t verify with a bad message&quot;</span>.to_vec();
+        <span class="kw">let </span>message = <span class="string">b"signatures won't verify with a bad message"</span>.to_vec();
         <span class="kw">let </span>sig = message.sign(<span class="kw-2">&amp;</span>signing_key);
 
-        <span class="kw">let </span>bad_msg = <span class="string">b&quot;this is obviously not the same message&quot;</span>.to_vec();
+        <span class="kw">let </span>bad_msg = <span class="string">b"this is obviously not the same message"</span>.to_vec();
         <span class="macro">assert!</span>(bad_msg.verify(<span class="kw-2">&amp;</span>public_key, <span class="kw-2">&amp;</span>sig).is_err());
         <span class="macro">assert!</span>(message.verify(<span class="kw-2">&amp;</span>public_key, <span class="kw-2">&amp;</span>sig).is_ok());
     }
@@ -1655,7 +1657,7 @@ splX1fSP5u6QfX3Cq3Kn4kLo6IpjkTwtCfltYzuKEHLb7ROXSYdV
         <span class="kw">let </span><span class="kw-2">mut </span>rng = rand::thread_rng();
 
         <span class="kw">let </span>signing_key = SigningKeyPair::generate(<span class="kw-2">&amp;mut </span>rng, <span class="kw-2">&amp;</span>AssociatedData::new());
-        <span class="kw">let </span>message = <span class="string">b&quot;signatures won&#39;t verify with a bad public key&quot;</span>.to_vec();
+        <span class="kw">let </span>message = <span class="string">b"signatures won't verify with a bad public key"</span>.to_vec();
         <span class="kw">let </span>sig = message.sign(<span class="kw-2">&amp;</span>signing_key);
 
         <span class="kw">let </span>bad_key = SigningKeyPair::generate(<span class="kw-2">&amp;mut </span>rng, <span class="kw-2">&amp;</span>AssociatedData::new()).public_key();
@@ -1668,7 +1670,7 @@ splX1fSP5u6QfX3Cq3Kn4kLo6IpjkTwtCfltYzuKEHLb7ROXSYdV
         <span class="kw">let </span><span class="kw-2">mut </span>rng = rand::thread_rng();
 
         <span class="kw">let </span>signing_key = SigningKeyPair::generate(<span class="kw-2">&amp;mut </span>rng, <span class="kw-2">&amp;</span>AssociatedData::new());
-        <span class="kw">let </span>message = <span class="string">b&quot;the signature on this message will get tweaked&quot;</span>.to_vec();
+        <span class="kw">let </span>message = <span class="string">b"the signature on this message will get tweaked"</span>.to_vec();
         <span class="kw">let </span>sig = message.sign(<span class="kw-2">&amp;</span>signing_key);
         <span class="kw">let </span>sig_bytes = sig.<span class="number">0</span>.to_bytes();
 
@@ -1677,14 +1679,14 @@ splX1fSP5u6QfX3Cq3Kn4kLo6IpjkTwtCfltYzuKEHLb7ROXSYdV
             <span class="kw">let </span><span class="kw-2">mut </span>tweaked = sig_bytes.to_vec();
             tweaked[i] ^= <span class="number">1</span>;
 
-            <span class="comment">// either the signature won&#39;t parse...
+            <span class="comment">// either the signature won't parse...
             </span><span class="kw">let </span>signature = <span class="kw">match </span>k256::ecdsa::Signature::from_slice(<span class="kw-2">&amp;</span>tweaked) {
                 <span class="prelude-val">Ok</span>(sig) =&gt; sig,
                 <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="kw">continue</span>,
             };
             <span class="kw">let </span>tweaked_sig = Signature(signature);
 
-            <span class="comment">// ...or the signature won&#39;t verify.
+            <span class="comment">// ...or the signature won't verify.
             </span><span class="macro">assert!</span>(message
                 .verify(<span class="kw-2">&amp;</span>signing_key.public_key(), <span class="kw-2">&amp;</span>tweaked_sig)
                 .is_err());
@@ -1762,7 +1764,7 @@ splX1fSP5u6QfX3Cq3Kn4kLo6IpjkTwtCfltYzuKEHLb7ROXSYdV
 
         <span class="comment">// Convenient, inefficient method to check whether the AD for a key pair
         // contains a given string
-        </span><span class="kw">let </span>contains_str = |container: SigningKeyPair, subset: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str| -&gt; bool {
+        </span><span class="kw">let </span>contains_str = |container: SigningKeyPair, subset: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str| -&gt; bool {
             <span class="kw">let </span>container_ad: Vec&lt;u8&gt; = container.context().to_owned().into();
             <span class="kw">let </span>subset: Vec&lt;u8&gt; = subset.as_bytes().into();
             container_ad.windows(subset.len()).any(|c| c == subset)
